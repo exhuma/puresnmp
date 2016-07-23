@@ -69,6 +69,28 @@ class TestInteger(unittest.TestCase):
         expected = Integer(10)
         self.assertEqual(result, expected)
 
+    def test_encoding_large_value(self):
+        value = Integer(1913359423)
+        result = bytes(value)
+        expected = b"\x02\x04\x72\x0b\x8c\x3f"
+        self.assertEqual(result, expected)
+
+    def test_decoding_large_value(self):
+        result = Integer.from_bytes(b"\x02\x04\x72\x0b\x8c\x3f")
+        expected = Integer(1913359423)
+        self.assertEqual(result, expected)
+
+    def test_encoding_zero(self):
+        value = Integer(0)
+        result = bytes(value)
+        expected = b"\x02\x01\x00"
+        self.assertEqual(result, expected)
+
+    def test_decoding_zero(self):
+        result = Integer.from_bytes(b"\x02\x01\x00")
+        expected = Integer(0)
+        self.assertEqual(result, expected)
+
 
 class TestString(unittest.TestCase):
 

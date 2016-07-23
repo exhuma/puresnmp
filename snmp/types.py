@@ -114,17 +114,24 @@ class Integer:
         if data[0] != Integer.HEADER:
             raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
                              data[0])
-        if data[1] != 1:
-            raise NotImplementedError("Integers with a byte-length bigger than "
-                                      "one have so far been never encountered. "
-                                      "Haven't looked into their decoding yet")
-        return Integer(data[2])
+        value = data[2:2+data[1]]
+        return Integer(int.from_bytes(value, 'big'))
 
     def __init__(self, value):
         self.value = value
 
     def __bytes__(self):
-        return bytes([self.HEADER, 0x01] + [self.value])
+        if self.value == 0:
+            octets = [0]
+        else:
+            remainder = self.value
+            octets = []
+            while remainder:
+                octet = remainder & 0b11111111
+                remainder = remainder >> 8
+                octets.append(octet)
+            octets.reverse()
+        return bytes([self.HEADER, len(octets)] + octets)
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
