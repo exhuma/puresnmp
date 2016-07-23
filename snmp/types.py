@@ -1,6 +1,27 @@
 NULL = b'\x05\x00'
 
 
+def consume(data):
+    type = data[0]
+    offset = 2 + data[1]
+    chunk = data[0:data[1]+2]
+
+    # TODO: The following branches could be automated using the "HEADER"
+    # variable from each class.
+    if type == 0x02:
+        value = Integer.from_bytes(chunk)
+    elif type == 0x04:
+        value = String.from_bytes(chunk)
+    elif type == 0x30:
+        value = List.from_bytes(chunk)
+    elif type == 0x05:
+        value = None
+    else:
+        raise ValueError('Unknown type header: 0x%02x' % type)
+
+    return value, data[offset:]
+
+
 class Type:
 
     @staticmethod
@@ -42,6 +63,20 @@ class List(Type):
 
     HEADER = 0x30
 
+    @staticmethod
+    def from_bytes(data):
+        if data[0] != List.HEADER:
+            raise ValueError('Invalid type header! Expected 0x30, got 0x%02x' %
+                             data[0])
+        content = data[2:2+data[1]]
+        output = []
+        while content:
+            value, content = consume(content)
+            if value is None:
+                break
+            output.append(value)
+        return List(*output)
+
     def __init__(self, *items):
         self.items = items
 
@@ -50,6 +85,13 @@ class List(Type):
         output = b''.join(output)
         length = len(output)
         return bytes([List.HEADER, length]) + output + NULL
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.items == other.items
+
+    def __repr__(self):
+        item_repr = [repr(item) for item in self.items]
+        return 'List(%s)' % ', '.join(item_repr)
 
 
 class Integer:

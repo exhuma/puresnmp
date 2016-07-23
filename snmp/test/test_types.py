@@ -90,5 +90,40 @@ class TestList(unittest.TestCase):
         )
         self.assertEqual(result, expected)
 
-    def test_decoding(self):
-        self.skipTest('TODO')
+    def test_decoding_simple(self):
+        result = List.from_bytes(
+            b'\x30\x0d'
+            b'\x02\x01\x01'
+            b'\x02\x01\x02'
+            b'\x04\x03foo'
+            b'\x05\x00'
+        )
+        expected = List(
+            Integer(1),
+            Integer(2),
+            String('foo'),
+        )
+        self.assertEqual(result, expected)
+
+    def test_decoding_recursive(self):
+        result = List.from_bytes(
+            b'\x30\x17'
+            b'\x02\x01\x01'
+            b'\x02\x01\x02'
+            b'\x04\x03foo'
+            b'\x30\x08'
+            b'\x02\x01\x01'
+            b'\x02\x01\x02'
+            b'\x05\x00'
+            b'\x05\x00'
+        )
+        expected = List(
+            Integer(1),
+            Integer(2),
+            String('foo'),
+            List(
+                Integer(1),
+                Integer(2),
+            )
+        )
+        self.assertEqual(result, expected)
