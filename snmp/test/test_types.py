@@ -9,7 +9,7 @@ class TestOid(unittest.TestCase):
         super().setUp()
         self.maxDiff = None
 
-    def test_simple(self):
+    def test_simple_encoding(self):
         """
         A simple OID with no identifier above 127
         """
@@ -21,7 +21,7 @@ class TestOid(unittest.TestCase):
 
 class TestInteger(unittest.TestCase):
 
-    def test_simple(self):
+    def test_encoding(self):
         value = Integer(100)
         result = bytes(value)
         expected = b'\x02\x01\x64'
@@ -35,7 +35,7 @@ class TestInteger(unittest.TestCase):
 
 class TestString(unittest.TestCase):
 
-    def test_simple(self):
+    def test_encoding(self):
         value = String('hello')
         result = bytes(value)
         expected = b'\x04\x05hello'
@@ -44,7 +44,7 @@ class TestString(unittest.TestCase):
 
 class TestList(unittest.TestCase):
 
-    def test_simple(self):
+    def test_encoding(self):
         value = List(
             String('hello'),
             Oid(1, 3, 6),

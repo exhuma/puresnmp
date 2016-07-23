@@ -80,6 +80,3 @@ class Oid(Type):
 
     def __bytes__(self):
         return bytes([self.HEADER, self.length] + self.identifiers)
-
-
-
