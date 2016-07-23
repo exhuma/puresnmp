@@ -18,6 +18,26 @@ class TestOid(unittest.TestCase):
         expected = b'\x06\x05\x2b\x06\x01\x02\x01'
         self.assertEqual(result, expected)
 
+    def test_simple_decoding(self):
+        """
+        A simple OID with no identifier above 127
+        """
+        self.skipTest('TODO')
+
+    def test_multibyte_encoding(self):
+        """
+        If a sub-identifier has a value bigger than 127, the encoding becomes a
+        bit weird. The sub-identifiers are split into multiple sub-identifiers.
+        """
+        self.skipTest('TODO')
+
+    def test_multibyte_decoding(self):
+        """
+        If a sub-identifier has a value bigger than 127, the decoding becomes a
+        bit weird. The sub-identifiers are split into multiple sub-identifiers.
+        """
+        self.skipTest('TODO')
+
 
 class TestInteger(unittest.TestCase):
 
@@ -41,6 +61,9 @@ class TestString(unittest.TestCase):
         expected = b'\x04\x05hello'
         self.assertEqual(result, expected)
 
+    def test_decoding(self):
+        self.skipTest('TODO')
+
 
 class TestList(unittest.TestCase):
 
@@ -62,3 +85,6 @@ class TestList(unittest.TestCase):
             bytes([0x05, 0x00])  # NULL (end of list)
         )
         self.assertEqual(result, expected)
+
+    def test_decoding(self):
+        self.skipTest('TODO')
