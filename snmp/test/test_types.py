@@ -31,14 +31,29 @@ class TestOid(unittest.TestCase):
         If a sub-identifier has a value bigger than 127, the encoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        self.skipTest('TODO')
+        oid = Oid(1, 3, 6, 8072)
+        result = bytes(oid)
+        expected = b'\x06\x04\x2b\x06\xbf\x08'
+        self.assertEqual(result, expected)
 
     def test_multibyte_decoding(self):
         """
         If a sub-identifier has a value bigger than 127, the decoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        self.skipTest('TODO')
+        expected = Oid(1, 3, 6, 8072)
+        result = Oid.from_bytes(b'\x06\x04\x2b\x06\xbf\x08')
+        self.assertEqual(result, expected)
+
+    def test_encode_large_value(self):
+        """
+        OID sub-identifiers larger than 127 must be split up.
+
+        See https://en.wikipedia.org/wiki/Variable-length_quantity
+        """
+        result = Oid.encode_large_value(106903)
+        expected = [0b10000110, 0b11000011, 0b00010111]
+        self.assertEqual(result, expected)
 
 
 class TestInteger(unittest.TestCase):

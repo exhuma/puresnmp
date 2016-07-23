@@ -155,6 +155,18 @@ class Oid(Type):
         return total
 
     @staticmethod
+    def encode_large_value(value):
+        if value <= 127:
+            return [value]
+        output = [value & 0b1111111]
+        value = value >> 7
+        while value:
+            output.append(value & 0b1111111 | 0b10000000)
+            value = value >> 7
+        output.reverse()
+        return output
+
+    @staticmethod
     def from_bytes(data):
         if data[0] != Oid.HEADER:
             raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
@@ -189,8 +201,19 @@ class Oid(Type):
         first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
         first_output = (40*first) + second
 
+        # Values above 127 need a special encoding. They get split up into
+        # multiple positions.
+        exploded_high_values = []
+        for char in rest:
+            if char > 127:
+                exploded_high_values.extend(Oid.encode_large_value(char))
+            else:
+                exploded_high_values.append(char)
+
         self.identifiers = identifiers
-        self.__collapsed_identifiers = [first_output] + list(rest)
+        self.__collapsed_identifiers = [first_output]
+        for subidentifier in rest:
+            self.__collapsed_identifiers.extend(Oid.encode_large_value(subidentifier))
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
