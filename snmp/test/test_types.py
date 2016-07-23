@@ -22,7 +22,9 @@ class TestOid(unittest.TestCase):
         """
         A simple OID with no identifier above 127
         """
-        self.skipTest('TODO')
+        expected = Oid(1, 3, 6, 1, 2, 1)
+        result = Oid.from_bytes(b'\x06\x05\x2b\x06\x01\x02\x01')
+        self.assertEqual(result, expected)
 
     def test_multibyte_encoding(self):
         """
