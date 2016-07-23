@@ -64,7 +64,9 @@ class TestString(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_decoding(self):
-        self.skipTest('TODO')
+        result = String.from_bytes(b'\x04\x05hello')
+        expected = String('hello')
+        self.assertEqual(result, expected)
 
 
 class TestList(unittest.TestCase):

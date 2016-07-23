@@ -15,6 +15,14 @@ class String(Type):
 
     HEADER = 0x04
 
+    @staticmethod
+    def from_bytes(data):
+        if data[0] != String.HEADER:
+            raise ValueError('Invalid type header! Expected 0x04, got 0x%02x' %
+                             data[0])
+        raw_content = data[2:2+data[1]]
+        return String(raw_content.decode('ascii'))
+
     def __init__(self, value):
         self.value = value
         self.length = len(value)
@@ -22,6 +30,12 @@ class String(Type):
     def __bytes__(self):
         return (bytes([String.HEADER, self.length]) +
                 self.value.encode('ascii'))
+
+    def __repr__(self):
+        return 'String(%r)' % self.value
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.value == other.value
 
 
 class List(Type):
