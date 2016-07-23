@@ -27,6 +27,11 @@ class TestInteger(unittest.TestCase):
         expected = b'\x02\x01\x64'
         self.assertEqual(result, expected)
 
+    def test_decoding(self):
+        result = Integer.from_bytes(b'\x02\x01\x0a')
+        expected = Integer(10)
+        self.assertEqual(result, expected)
+
 
 class TestString(unittest.TestCase):
 

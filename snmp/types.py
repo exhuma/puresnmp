@@ -3,6 +3,10 @@ NULL = b'\x05\x00'
 
 class Type:
 
+    @staticmethod
+    def from_bytes(data):
+        raise NotImplementedError('Not yet implemented')
+
     def __bytes__(self):
         raise NotImplementedError('Not yet implemented')
 
@@ -37,11 +41,28 @@ class List(Type):
 class Integer:
     HEADER = 0x02
 
+    @staticmethod
+    def from_bytes(data):
+        if data[0] != Integer.HEADER:
+            raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
+                             data[0])
+        if data[1] != 1:
+            raise NotImplementedError("Integers with a byte-length bigger than "
+                                      "one have so far been never encountered. "
+                                      "Haven't looked into their decoding yet")
+        return Integer(data[2])
+
     def __init__(self, value):
         self.value = value
 
     def __bytes__(self):
         return bytes([self.HEADER, 0x01] + [self.value])
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.value == other.value
+
+    def __repr__(self):
+        return 'Integer(%r)' % self.value
 
 
 class Oid(Type):
