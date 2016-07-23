@@ -1,6 +1,18 @@
 NULL = b'\x05\x00'
 
 
+def encode_length(value):
+    """
+    The "length" field must be specially encoded for values above 127.
+
+    See https://en.wikipedia.org/wiki/X.690#Length_octets
+    """
+    if value & 0b10000000:
+        raise NotImplementedError('Length values above 127 are not yet '
+                                  'implemented!')
+    return value
+
+
 def consume(data):
     type = data[0]
     offset = 2 + data[1]
@@ -46,7 +58,7 @@ class String(Type):
 
     def __init__(self, value):
         self.value = value
-        self.length = len(value)
+        self.length = encode_length(len(value))
 
     def __bytes__(self):
         return (bytes([String.HEADER, self.length]) +
@@ -83,7 +95,7 @@ class List(Type):
     def __bytes__(self):
         output = [bytes(item) for item in self.items]
         output = b''.join(output)
-        length = len(output)
+        length = encode_length(len(output))
         return bytes([List.HEADER, length]) + output + NULL
 
     def __eq__(self, other):
@@ -179,7 +191,7 @@ class Oid(Type):
 
         self.identifiers = identifiers
         self.__collapsed_identifiers = [first_output] + list(rest)
-        self.length = len(self.__collapsed_identifiers)
+        self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
         return bytes([self.HEADER, self.length] + self.__collapsed_identifiers)
