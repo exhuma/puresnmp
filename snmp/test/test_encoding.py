@@ -13,6 +13,15 @@ from ..marshal import (
 )
 
 
+def comparable(bytes):
+    """
+    Helper function to make byte-array output more readable in failed test
+    assertions.
+    """
+    readables = ['%02x' % v for v in bytes]
+    return ' '.join(readables)
+
+
 class TestEncoding(unittest.TestCase):
 
     def setUp(self):
@@ -42,7 +51,8 @@ class TestEncoding(unittest.TestCase):
             oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0)
         )
         result = bytes(packet)
-        self.assertEqual(result, expected)
+
+        self.assertEqual(comparable(result), comparable(expected))
 
     def test_get_response(self):
         data = (b"\x30\x33\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63"
