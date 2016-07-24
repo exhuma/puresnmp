@@ -2,6 +2,7 @@ from .types import (
     Integer,
     List,
     Oid,
+    Raw,
     String,
 )
 
