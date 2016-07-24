@@ -1,6 +1,16 @@
 import unittest
 
-from ..marshal import unmarshal, Version, Pdu, marshal, List, String, Integer, Oid
+from ..marshal import (
+    GetRequest,
+    Integer,
+    List,
+    Oid,
+    Pdu,
+    String,
+    Version,
+    marshal,
+    unmarshal,
+)
 
 
 class TestEncoding(unittest.TestCase):
@@ -11,7 +21,7 @@ class TestEncoding(unittest.TestCase):
 
     def test_get_request(self):
         expected = (b"\x30"  # ASN.1 Header
-                    b"\x29"  # PDU length
+                    b"\x27"  # PDU length
                     b"\x02\x01\x01"  # SNMP Version
                     b"\x04\x06\x70\x75\x62\x6c\x69\x63"  # community ("public")
                     b"\xa0\x1c"  # PDU Type
@@ -19,24 +29,19 @@ class TestEncoding(unittest.TestCase):
                     b"\x02\x01\x00"  # Error Type
                     b"\x02\x01\x00"  # Error Index
                     b"\x30"  # Variable Type (List)
-                    b"\x0e"  # Length
-                    b"\x30"  # Variable Type (List)
                     b"\x0c"  # Length
+                    b"\x30"  # Variable Type (List)
+                    b"\x0a"  # Length
                     b"\x06"  # Variable Type (OID)
                     b"\x08"  # Length
                     b"\x2b\x06\x01\x02\x01\x01\x02\x00"  # Value
-                    b"\x05\x00")  # NULL (end of list)
-        data = {
-            'length': 0x29,
-            'version': Version.V2C,  # integer (0x02) of length 1 (0x01)
-            'community': 'public',  # string (0x04) of length 6 (0x06)
-            'pdu_type': Pdu.GET_REQUEST,
-            'request_id': int('720b8c3f', 16),
-            'error_code': 0,
-            'error_index': 0,
-            'oid': '1.3.6.1.2.1.1.2.0'
-        }
-        result = marshal(data)
+                    )
+        packet = GetRequest(
+            version=Version.V2C,
+            community='public',
+            oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0)
+        )
+        result = bytes(packet)
         self.assertEqual(result, expected)
 
     def test_get_response(self):
