@@ -30,7 +30,7 @@ class TestEncoding(unittest.TestCase):
 
     def test_get_request(self):
         expected = (b"\x30"  # ASN.1 Header
-                    b"\x27"  # PDU length
+                    b"\x29"  # PDU length
                     b"\x02\x01\x01"  # SNMP Version
                     b"\x04\x06\x70\x75\x62\x6c\x69\x63"  # community ("public")
                     b"\xa0\x1c"  # PDU Type
@@ -38,13 +38,15 @@ class TestEncoding(unittest.TestCase):
                     b"\x02\x01\x00"  # Error Type
                     b"\x02\x01\x00"  # Error Index
                     b"\x30"  # Variable Type (List)
-                    b"\x0c"  # Length
+                    b"\x0e"  # Length
                     b"\x30"  # Variable Type (List)
-                    b"\x0a"  # Length
+                    b"\x0c"  # Length
                     b"\x06"  # Variable Type (OID)
                     b"\x08"  # Length
                     b"\x2b\x06\x01\x02\x01\x01\x02\x00"  # Value
+                    b"\x05\x00"  # NULL
                     )
+
         packet = GetRequest(
             version=Version.V2C,
             community='public',

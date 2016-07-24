@@ -1,6 +1,7 @@
 from .types import (
     Integer,
     List,
+    Null,
     Oid,
     Raw,
     String,
@@ -34,9 +35,10 @@ class GetRequest(Pdu):
             Integer(0),
             List(
                 List(
-                    self.oid
+                    self.oid,
+                    Null(),
                 )
-            )
+            ),
         ))
         return output
 

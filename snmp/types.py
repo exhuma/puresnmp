@@ -1,6 +1,3 @@
-NULL = b'\x05\x00'
-
-
 def encode_length(value):
     """
     The "length" field must be specially encoded for values above 127.
@@ -42,6 +39,29 @@ class Type:
 
     def __bytes__(self):
         raise NotImplementedError('Not yet implemented')
+
+
+class Null(Type):
+    HEADER = 0x05
+
+    @staticmethod
+    def from_bytes(data):
+        if data[0] != Null.HEADER:
+            raise ValueError('Invalid type header! Expected 0x05, got 0x%02x' %
+                             data[0])
+        if data[1] != 0:
+            raise ValueError('Unexpected NULL value. Lenght should be 0, it '
+                             'was %d' % data[1])
+        return Null()
+
+    def __bytes__(self):
+        return b'\x05\x00'
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __repr__(self):
+        return 'Null()'
 
 
 class String(Type):
