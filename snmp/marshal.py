@@ -12,7 +12,7 @@ class Version:
 
 
 class Pdu:
-    GET_REQUEST = 0x0a
+    GET_REQUEST = 0xa0
     GET_RESPONSE = 0xa2
 
 
