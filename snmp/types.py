@@ -270,3 +270,32 @@ class Raw(Type):
 
     def __bytes__(self):
         return bytes(self.octets)
+
+
+class GetRequest(Type):
+    HEADER = 0xa0
+
+    def __init__(self, oid):
+        from time import time
+        self.request_id = int(time() * 1000000)  # TODO check if this is good enough. My gut tells me "no"!
+        self.oid = oid
+
+    def __bytes__(self):
+        data = [
+            Integer(self.request_id),
+            Integer(0),
+            Integer(0),
+            List(
+                List(
+                    self.oid,
+                    Null(),
+                )
+            )
+        ]
+        payload = b''.join([bytes(chunk) for chunk in data])
+        output = bytes([self.HEADER, len(payload)]) + payload
+        return output
+
+
+class GetResponse(Type):
+    pass

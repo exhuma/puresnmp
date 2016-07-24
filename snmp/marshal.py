@@ -1,4 +1,6 @@
 from .types import (
+    GetRequest,
+    GetResponse,
     Integer,
     List,
     Null,
@@ -14,33 +16,7 @@ class Version:
 
 
 class Pdu:
-    GET_REQUEST = 0xa0
     GET_RESPONSE = 0xa2
-
-
-class GetRequest(Pdu):
-
-    def __init__(self, version, community, oid):
-        self.version = version
-        self.community = community
-        self.oid = oid
-
-    def __bytes__(self):
-        output = bytes(List(
-            Integer(self.version),  # SNMP Version
-            String(self.community),  # SNMP Community
-            Raw(self.GET_REQUEST, 0x1c),  # Request Type
-            Integer(1913359423),  # request-id  XXX hard-coded value!
-            Integer(0),
-            Integer(0),
-            List(
-                List(
-                    self.oid,
-                    Null(),
-                )
-            ),
-        ))
-        return output
 
 
 def decode_first_byte(char):
