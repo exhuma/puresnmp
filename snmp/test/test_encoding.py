@@ -2,6 +2,7 @@ import unittest
 
 from ..marshal import (
     GetRequest,
+    GetResponse,
     Integer,
     List,
     Oid,
@@ -59,7 +60,6 @@ class TestEncoding(unittest.TestCase):
         self.assertEqual(comparable(result), comparable(expected))
 
     def test_get_response(self):
-        self.skipTest('TODO')
         data = (b"\x30\x33\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63"
                 b"\xa2\x26"
                 b"\x02\x04\x72\x0b\x8c\x3f"
@@ -68,11 +68,13 @@ class TestEncoding(unittest.TestCase):
                 b"\x30\x16"
                 b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
                 b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a")
-        result = GetResponse.from_bytes(data)
-        expected = GetResponse(
-            version=Version.V2C,
-            community='public',
-            oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0),
-            value=Oid(1, 3, 6, 1, 4, 1, 8072, 3, 2, 10)
+        result = List.from_bytes(data)
+        expected = List(
+            Integer(Version.V2C),
+            String('public'),
+            GetResponse(
+                Integer(1913359423),  # request-id
+                Oid(1, 3, 6, 1, 4, 1, 8072, 3, 2, 10)
+            )
         )
         self.assertEqual(result, expected)

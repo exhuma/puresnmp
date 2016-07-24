@@ -1,3 +1,5 @@
+from .exc import SnmpError
+
 def encode_length(value):
     """
     The "length" field must be specially encoded for values above 127.
@@ -25,6 +27,10 @@ def consume(data):
         value = List.from_bytes(chunk)
     elif type == 0x05:
         value = None
+    elif type == 0xa2:
+        value = GetResponse.from_bytes(chunk)
+    elif type == 0x06:
+        value = Oid.from_bytes(chunk)
     else:
         raise ValueError('Unknown type header: 0x%02x' % type)
 
@@ -298,4 +304,38 @@ class GetRequest(Type):
 
 
 class GetResponse(Type):
-    pass
+    HEADER = 0xa2
+
+    def __init__(self, request_id, value):
+        self.request_id = request_id
+        self.value = value
+
+    @staticmethod
+    def from_bytes(data):
+        if data[0] != GetResponse.HEADER:
+            raise ValueError('Invalid type header! Expected 0xa2, got 0x%02x' %
+                             data[0])
+        expected_length = data[1]
+        data = data[2:]
+        if len(data) != expected_length:
+            raise ValueError('Corrupt packet: Unexpected length for GET '
+                             'response! Expected 0x%02x but got 0x%02x' % (
+                                 expected_length, len(data)))
+        request_id, data = consume(data)
+        error_code, data = consume(data)
+        error_index, data = consume(data)
+        if error_code.value:
+            raise SnmpError('Error packet received!')  # Add detail.
+        values, data = consume(data)
+        return GetResponse(
+            request_id,
+            values.items[0].items[1]
+        )
+
+    def __repr__(self):
+        return 'GetResponse(%r, %r)' % (self.request_id, self.value)
+
+    def __eq__(self, other):
+        return (type(other) == type(self) and
+                self.request_id == other.request_id and
+                self.value == other.value)
