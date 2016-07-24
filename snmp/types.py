@@ -96,7 +96,7 @@ class List(Type):
         output = [bytes(item) for item in self.items]
         output = b''.join(output)
         length = encode_length(len(output))
-        return bytes([List.HEADER, length]) + output + NULL
+        return bytes([List.HEADER, length]) + output
 
     def __eq__(self, other):
         return type(self) == type(other) and self.items == other.items

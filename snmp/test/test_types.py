@@ -122,8 +122,7 @@ class TestList(unittest.TestCase):
             ]) +
             bytes(String('hello')) +
             bytes(Oid(1, 3, 6)) +
-            bytes(Integer(100)) +
-            bytes([0x05, 0x00])  # NULL (end of list)
+            bytes(Integer(100))
         )
         self.assertEqual(result, expected)
 
@@ -133,7 +132,6 @@ class TestList(unittest.TestCase):
             b'\x02\x01\x01'
             b'\x02\x01\x02'
             b'\x04\x03foo'
-            b'\x05\x00'
         )
         expected = List(
             Integer(1),
@@ -151,8 +149,6 @@ class TestList(unittest.TestCase):
             b'\x30\x08'
             b'\x02\x01\x01'
             b'\x02\x01\x02'
-            b'\x05\x00'
-            b'\x05\x00'
         )
         expected = List(
             Integer(1),
