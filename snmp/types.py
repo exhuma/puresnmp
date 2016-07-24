@@ -1,3 +1,7 @@
+"""
+See X690: https://en.wikipedia.org/wiki/X.690
+"""
+
 from .exc import SnmpError
 
 def encode_length(value):
@@ -14,8 +18,8 @@ def encode_length(value):
 
 def consume(data):
     type = data[0]
-    offset = 2 + data[1]
-    chunk = data[0:data[1]+2]
+    length, remainder = consume_length(data[1:])
+    chunk = data[:length+2]
 
     # TODO: The following branches could be automated using the "HEADER"
     # variable from each class.
@@ -34,7 +38,27 @@ def consume(data):
     else:
         raise ValueError('Unknown type header: 0x%02x' % type)
 
-    return value, data[offset:]
+    return value, remainder[length:]
+
+
+def consume_length(data):
+    if data[0] == 0b11111111:
+        # reserved
+        raise NotImplementedError('This is a reserved case in X690')
+    elif data[0] & 0b10000000 == 0:
+        # definite short form
+        output = int.from_bytes([data[0]], 'big')
+        data = data[1:]
+    elif data[0] ^ 0b10000000 == 0:
+        # indefinite form
+        raise NotImplementedError('Indefinite lenghts are not yet implemented!')
+    else:
+        # definite long form
+        num_octets = int.from_bytes([data[0] ^ 0b10000000], 'big')
+        value_octets = data[1:1+num_octets]
+        output = int.from_bytes(value_octets, 'big')
+        data = data[num_octets + 1:]
+    return output, data
 
 
 class Type:
@@ -79,8 +103,8 @@ class String(Type):
         if data[0] != String.HEADER:
             raise ValueError('Invalid type header! Expected 0x04, got 0x%02x' %
                              data[0])
-        raw_content = data[2:2+data[1]]
-        return String(raw_content.decode('ascii'))
+        length, data = consume_length(data[1:])
+        return String(data.decode('ascii'))
 
     def __init__(self, value):
         self.value = value
@@ -106,7 +130,7 @@ class List(Type):
         if data[0] != List.HEADER:
             raise ValueError('Invalid type header! Expected 0x30, got 0x%02x' %
                              data[0])
-        content = data[2:2+data[1]]
+        length, content = consume_length(data[1:])
         output = []
         while content:
             value, content = consume(content)
@@ -140,7 +164,7 @@ class Integer:
         if data[0] != Integer.HEADER:
             raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
                              data[0])
-        value = data[2:2+data[1]]
+        length, value = consume_length(data[1:])
         return Integer(int.from_bytes(value, 'big'))
 
     def __init__(self, value):
@@ -205,7 +229,7 @@ class Oid(Type):
             raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
                              data[0])
 
-        identifiers = data[2:2+data[1]]
+        length, identifiers = consume_length(data[1:])
         # unpack the first byte into first and second sub-identifiers.
         first, second = identifiers[0] // 40, identifiers[0] % 40
         output = [first, second]
@@ -315,8 +339,7 @@ class GetResponse(Type):
         if data[0] != GetResponse.HEADER:
             raise ValueError('Invalid type header! Expected 0xa2, got 0x%02x' %
                              data[0])
-        expected_length = data[1]
-        data = data[2:]
+        expected_length, data = consume_length(data[1:])
         if len(data) != expected_length:
             raise ValueError('Corrupt packet: Unexpected length for GET '
                              'response! Expected 0x%02x but got 0x%02x' % (

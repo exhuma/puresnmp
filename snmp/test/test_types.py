@@ -1,6 +1,7 @@
 import unittest
 
 from ..marshal import Oid, List, Integer, String
+from ..types import consume_length
 
 
 class TestOid(unittest.TestCase):
@@ -160,3 +161,28 @@ class TestList(unittest.TestCase):
             )
         )
         self.assertEqual(result, expected)
+
+
+class TestBasics(unittest.TestCase):
+
+    def test_length_short(self):
+        data = b'\x05'
+        expected = 5
+        result, data = consume_length(data)
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b'')
+
+    def test_length_long(self):
+        data = bytes([0b10000010, 0b00000001, 0b10110011])
+        expected = 435
+        result, data = consume_length(data)
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b'')
+
+    def test_indefinite(self):
+        with self.assertRaises(NotImplementedError):
+            consume_length(bytes([0b10000000]))
+
+    def test_reserved(self):
+        with self.assertRaises(NotImplementedError):
+            consume_length(bytes([0b11111111]))
