@@ -1,17 +1,15 @@
 import unittest
 
-from ..marshal import (
+from ..x690.types import (
     GetRequest,
     GetResponse,
     Integer,
     List,
     Oid,
-    Pdu,
     String,
-    Version,
-    marshal,
-    unmarshal,
 )
+
+from ..const import Version
 
 
 def comparable(bytes):

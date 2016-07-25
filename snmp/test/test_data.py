@@ -1,13 +1,14 @@
 from os.path import dirname, join
 import unittest
 
-from ..marshal import (
+from ..x690.types import (
     GetResponse,
     Integer,
     List,
     String,
-    Version,
 )
+
+from ..const import Version
 
 
 DATA_DIR = join(dirname(__file__), 'data')
