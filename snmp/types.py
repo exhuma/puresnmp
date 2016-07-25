@@ -21,7 +21,7 @@ def consume(data):
     length, remainder = consume_length(data[1:])
     chunk = data[:length+2]
 
-    # TODO: The following branches could be automated using the "HEADER"
+    # TODO: The following branches could be automated using the "TAG"
     # variable from each class.
     if type == 0x02:
         value = Integer.from_bytes(chunk)
@@ -72,11 +72,11 @@ class Type:
 
 
 class Null(Type):
-    HEADER = 0x05
+    TAG = 0x05
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != Null.HEADER:
+        if data[0] != Null.TAG:
             raise ValueError('Invalid type header! Expected 0x05, got 0x%02x' %
                              data[0])
         if data[1] != 0:
@@ -96,11 +96,11 @@ class Null(Type):
 
 class String(Type):
 
-    HEADER = 0x04
+    TAG = 0x04
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != String.HEADER:
+        if data[0] != String.TAG:
             raise ValueError('Invalid type header! Expected 0x04, got 0x%02x' %
                              data[0])
         length, data = consume_length(data[1:])
@@ -111,7 +111,7 @@ class String(Type):
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return (bytes([String.HEADER, self.length]) +
+        return (bytes([String.TAG, self.length]) +
                 self.value.encode('ascii'))
 
     def __repr__(self):
@@ -123,11 +123,11 @@ class String(Type):
 
 class List(Type):
 
-    HEADER = 0x30
+    TAG = 0x30
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != List.HEADER:
+        if data[0] != List.TAG:
             raise ValueError('Invalid type header! Expected 0x30, got 0x%02x' %
                              data[0])
         length, content = consume_length(data[1:])
@@ -146,7 +146,7 @@ class List(Type):
         output = [bytes(item) for item in self.items]
         output = b''.join(output)
         length = encode_length(len(output))
-        return bytes([List.HEADER, length]) + output
+        return bytes([List.TAG, length]) + output
 
     def __eq__(self, other):
         return type(self) == type(other) and self.items == other.items
@@ -157,11 +157,11 @@ class List(Type):
 
 
 class Integer:
-    HEADER = 0x02
+    TAG = 0x02
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != Integer.HEADER:
+        if data[0] != Integer.TAG:
             raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
                              data[0])
         length, value = consume_length(data[1:])
@@ -181,7 +181,7 @@ class Integer:
                 remainder = remainder >> 8
                 octets.append(octet)
             octets.reverse()
-        return bytes([self.HEADER, len(octets)] + octets)
+        return bytes([self.TAG, len(octets)] + octets)
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
@@ -192,7 +192,7 @@ class Integer:
 
 class Oid(Type):
 
-    HEADER = 0x06
+    TAG = 0x06
 
     @staticmethod
     def decode_large_value(current_char, stream):
@@ -225,7 +225,7 @@ class Oid(Type):
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != Oid.HEADER:
+        if data[0] != Oid.TAG:
             raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
                              data[0])
 
@@ -274,7 +274,7 @@ class Oid(Type):
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
-        return bytes([self.HEADER, self.length] + self.__collapsed_identifiers)
+        return bytes([self.TAG, self.length] + self.__collapsed_identifiers)
 
     def __repr__(self):
         return 'Oid(%r)' % (self.identifiers, )
@@ -303,7 +303,7 @@ class Raw(Type):
 
 
 class GetRequest(Type):
-    HEADER = 0xa0
+    TAG = 0xa0
 
     def __init__(self, oid):
         from time import time
@@ -323,12 +323,12 @@ class GetRequest(Type):
             )
         ]
         payload = b''.join([bytes(chunk) for chunk in data])
-        output = bytes([self.HEADER, len(payload)]) + payload
+        output = bytes([self.TAG, len(payload)]) + payload
         return output
 
 
 class GetResponse(Type):
-    HEADER = 0xa2
+    TAG = 0xa2
 
     def __init__(self, request_id, value):
         self.request_id = request_id
@@ -336,7 +336,7 @@ class GetResponse(Type):
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != GetResponse.HEADER:
+        if data[0] != GetResponse.TAG:
             raise ValueError('Invalid type header! Expected 0xa2, got 0x%02x' %
                              data[0])
         expected_length, data = consume_length(data[1:])

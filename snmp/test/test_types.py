@@ -118,7 +118,7 @@ class TestList(unittest.TestCase):
         result = bytes(value)
         expected = (
             bytes([
-                List.HEADER,
+                List.TAG,
                 14,  # Expected length (note that an OID drops one byte)
             ]) +
             bytes(String('hello')) +
