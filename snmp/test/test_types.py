@@ -1,7 +1,7 @@
 import unittest
 
 from ..marshal import Oid, List, Integer, String
-from ..types import consume_length
+from ..x690.types import consume_length
 
 
 class TestOid(unittest.TestCase):

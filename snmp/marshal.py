@@ -1,4 +1,4 @@
-from .types import (
+from .x690.types import (
     GetRequest,
     GetResponse,
     Integer,

@@ -2,19 +2,8 @@
 See X690: https://en.wikipedia.org/wiki/X.690
 """
 
-from .exc import SnmpError
-
-def encode_length(value):
-    """
-    The "length" field must be specially encoded for values above 127.
-
-    See https://en.wikipedia.org/wiki/X.690#Length_octets
-    """
-    if value & 0b10000000:
-        raise NotImplementedError('Length values above 127 are not yet '
-                                  'implemented!')
-    return value
-
+from ..exc import SnmpError
+from .util import consume_length, encode_length
 
 def consume(data):
     type = data[0]
@@ -39,26 +28,6 @@ def consume(data):
         raise ValueError('Unknown type header: 0x%02x' % type)
 
     return value, remainder[length:]
-
-
-def consume_length(data):
-    if data[0] == 0b11111111:
-        # reserved
-        raise NotImplementedError('This is a reserved case in X690')
-    elif data[0] & 0b10000000 == 0:
-        # definite short form
-        output = int.from_bytes([data[0]], 'big')
-        data = data[1:]
-    elif data[0] ^ 0b10000000 == 0:
-        # indefinite form
-        raise NotImplementedError('Indefinite lenghts are not yet implemented!')
-    else:
-        # definite long form
-        num_octets = int.from_bytes([data[0] ^ 0b10000000], 'big')
-        value_octets = data[1:1+num_octets]
-        output = int.from_bytes(value_octets, 'big')
-        data = data[num_octets + 1:]
-    return output, data
 
 
 class Type:
