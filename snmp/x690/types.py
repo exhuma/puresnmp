@@ -51,6 +51,10 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
 
 
 def consume(data):
+    """
+    Inspects the next value in the data chunk. Returns the value and the
+    remaining octets.
+    """
     type = TypeInfo.from_bytes(data[0])
     length, remainder = consume_length(data[1:])
     chunk = data[:length+2]
