@@ -5,8 +5,17 @@ from ..x690.types import (
     List,
     Oid,
     String,
+    TypeInfo,
     consume_length,
 )
+
+
+def make_identifier_test(octet, expected_class, expected_pc, expected_value):
+    def fun(self):
+        result = TypeInfo.from_bytes(octet)
+        expected = TypeInfo(expected_class, expected_pc, expected_value)
+        self.assertEqual(result, expected)
+    return fun
 
 
 class TestOid(unittest.TestCase):
@@ -191,3 +200,27 @@ class TestBasics(unittest.TestCase):
     def test_reserved(self):
         with self.assertRaises(NotImplementedError):
             consume_length(bytes([0b11111111]))
+
+    test_type_info_univ_prim = make_identifier_test(
+        0b00000010, TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b00010)
+
+    test_type_info_univ_const = make_identifier_test(
+        0b00100010, TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b00010)
+
+    test_type_info_app_prim = make_identifier_test(
+        0b01000010, TypeInfo.APPLICATION, TypeInfo.PRIMITIVE, 0b00010)
+
+    test_type_info_app_const = make_identifier_test(
+        0b01100010, TypeInfo.APPLICATION, TypeInfo.CONSTRUCTED, 0b00010)
+
+    test_type_info_ctx_prim = make_identifier_test(
+        0b10000010, TypeInfo.CONTEXT, TypeInfo.PRIMITIVE, 0b00010)
+
+    test_type_info_ctx_const = make_identifier_test(
+        0b10100010, TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, 0b00010)
+
+    test_type_info_prv_prim = make_identifier_test(
+        0b11000010, TypeInfo.PRIVATE, TypeInfo.PRIMITIVE, 0b00010)
+
+    test_type_info_prv_const = make_identifier_test(
+        0b11100010, TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b00010)
