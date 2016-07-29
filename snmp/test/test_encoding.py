@@ -56,7 +56,7 @@ class TestEncoding(ByteTester):
         )
         result = bytes(packet)
 
-        self.assertEqual(comparable(result), comparable(expected))
+        self.assertBytesEqual(result, expected)
 
     def test_get_response(self):
         data = (b"\x30\x33\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63"

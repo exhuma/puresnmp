@@ -25,13 +25,13 @@ class TestBoolean(ByteTester):
         value = Boolean(False)
         result = bytes(value)
         expected = b'\x01\x01\x00'
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_encoding_true(self):
         value = Boolean(True)
         result = bytes(value)
         expected = b'\x01\x01\x01'
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_decoding_false(self):
         result = Boolean.from_bytes(b'\x01\x01\x00')
@@ -70,7 +70,7 @@ class TestOid(ByteTester):
         oid = Oid(1, 3, 6, 1, 2, 1)
         result = bytes(oid)
         expected = b'\x06\x05\x2b\x06\x01\x02\x01'
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_simple_decoding(self):
         """
@@ -88,7 +88,7 @@ class TestOid(ByteTester):
         oid = Oid(1, 3, 6, 8072)
         result = bytes(oid)
         expected = b'\x06\x04\x2b\x06\xbf\x08'
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_multibyte_decoding(self):
         """
@@ -126,7 +126,7 @@ class TestInteger(ByteTester):
         value = Integer(100)
         result = bytes(value)
         expected = b'\x02\x01\x64'
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_decoding(self):
         result = Integer.from_bytes(b'\x02\x01\x0a')
@@ -137,7 +137,7 @@ class TestInteger(ByteTester):
         value = Integer(1913359423)
         result = bytes(value)
         expected = b"\x02\x04\x72\x0b\x8c\x3f"
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_decoding_large_value(self):
         result = Integer.from_bytes(b"\x02\x04\x72\x0b\x8c\x3f")
@@ -148,7 +148,7 @@ class TestInteger(ByteTester):
         value = Integer(0)
         result = bytes(value)
         expected = b"\x02\x01\x00"
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_decoding_zero(self):
         result = Integer.from_bytes(b"\x02\x01\x00")
@@ -167,7 +167,7 @@ class TestString(ByteTester):
         value = String('hello')
         result = bytes(value)
         expected = b'\x04\x05hello'
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_decoding(self):
         result = String.from_bytes(b'\x04\x05hello')
@@ -198,7 +198,7 @@ class TestSequence(ByteTester):
             bytes(Oid(1, 3, 6)) +
             bytes(Integer(100))
         )
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_decoding_simple(self):
         result = Sequence.from_bytes(
@@ -272,7 +272,7 @@ class TestBasics(ByteTester):
     def test_encode_length_long(self):
         expected = bytes([0b10000001, 0b11001001])
         result = encode_length(201)
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_encode_length_longer(self):
         expected = bytes([0b10000010, 0b00101110, 0b00000001])
