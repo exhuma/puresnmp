@@ -10,6 +10,7 @@ from ..x690.types import (
 )
 
 from ..const import Version
+from . import ByteTester
 
 
 def comparable(bytes):
@@ -21,7 +22,7 @@ def comparable(bytes):
     return ' '.join(readables)
 
 
-class TestEncoding(unittest.TestCase):
+class TestEncoding(ByteTester):
 
     def setUp(self):
         super().setUp()

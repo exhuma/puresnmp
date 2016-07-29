@@ -9,10 +9,16 @@ class ByteTester(unittest.TestCase):
         if a != b:
             comparisons = []
             for offset, (char_a, char_b) in enumerate(zip(a, b)):
+                comp, marker = ('==', '') if char_a == char_b else ('!=', '>>')
+
                 comparisons.append(
-                    "Offset {:4d}: {:08b} {} {:08b}".format(
+                    "{4:<3} Offset {0:4d}: "
+                    "0b{1:08b} {2} 0b{3:08b} | "
+                    "{1:3d} {2} {3:3d} | "
+                    "0x{1:03x} {2} 0x{3:03x}".format(
                         offset,
                         char_a,
-                        '==' if char_a == char_b else '!=',
-                        char_b))
-            raise AssertionError('\n' + '\n'.join(comparisons))
+                        comp,
+                        char_b,
+                        marker))
+            raise AssertionError('Bytes differ!\n' + '\n'.join(comparisons))
