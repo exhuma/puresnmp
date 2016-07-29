@@ -1,4 +1,3 @@
-from os.path import dirname, join
 import unittest
 
 from ..x690.types import (
@@ -8,21 +7,8 @@ from ..x690.types import (
     String,
 )
 
+from . import readbytes
 from ..const import Version
-
-
-DATA_DIR = join(dirname(__file__), 'data')
-
-
-def readbytes(filename):
-    with open(join(DATA_DIR, filename)) as fp:
-        lines = fp.readlines()
-    without_ascii = [line[:50] for line in lines]
-    str_bytes = []
-    for line in without_ascii:
-        str_bytes.extend(line.split())
-    values = [int(char, 16) for char in str_bytes]
-    return bytes(values)
 
 
 class TestResponses(unittest.TestCase):
