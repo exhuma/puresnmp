@@ -104,7 +104,7 @@ class Boolean(Type):
             raise ValueError('Invalid type header! Expected 0x01, got 0x%02x' %
                              data[0])
         if data[1] != 1:
-            raise ValueError('Unexpected NULL value. Lenght should be 1, it '
+            raise ValueError('Unexpected Boolean value. Lenght should be 1, it '
                              'was %d' % data[1])
         return Boolean(data[2] != 0)
 
