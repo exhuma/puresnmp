@@ -306,6 +306,14 @@ class Oid(Type):
 
         return Oid(*output)
 
+    @staticmethod
+    def from_string(value):
+        """
+        Create an OID from a string
+        """
+        identifiers = [int(ident, 10) for ident in value.split('.')]
+        return Oid(*identifiers)
+
     def __init__(self, *identifiers):
         # If the user hands in an iterable, instead of positional arguments,
         # make sure we unpack it

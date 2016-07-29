@@ -109,6 +109,11 @@ class TestOid(ByteTester):
         expected = [0b10000110, 0b11000011, 0b00010111]
         self.assertEqual(result, expected)
 
+    def test_fromstring(self):
+        result = Oid.from_string('1.2.3')
+        expected = Oid(1, 2, 3)
+        self.assertEqual(result, expected)
+
     def test_pythonize(self):
         result = Oid(1, 2, 3).pythonize()
         expected = '1.2.3'
