@@ -91,8 +91,11 @@ class Type:
     def __bytes__(self):
         raise NotImplementedError('Not yet implemented')
 
+    def pythonize(self):
+        return self.value
 
-class Boolean:
+
+class Boolean(Type):
     TAG = 0x01
 
     @staticmethod
@@ -167,6 +170,12 @@ class String(Type):
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
 
+    def pythonize(self):
+        """
+        Convert this object in an appropriate python object
+        """
+        return self.value
+
 
 class Sequence(Type):
 
@@ -202,8 +211,11 @@ class Sequence(Type):
         item_repr = [repr(item) for item in self.items]
         return 'Sequence(%s)' % ', '.join(item_repr)
 
+    def pythonize(self):
+        return [obj.pythonize() for obj in self.items]
 
-class Integer:
+
+class Integer(Type):
     TAG = 0x02
 
     @staticmethod
@@ -330,6 +342,9 @@ class Oid(Type):
     def __eq__(self, other):
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
+
+    def pythonize(self):
+        return '.'.join([str(_) for _ in self.identifiers])
 
 
 class Raw(Type):

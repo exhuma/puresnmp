@@ -51,6 +51,11 @@ class TestBoolean(ByteTester):
         expected = Boolean(True)
         self.assertEqual(result, expected)
 
+    def test_pythonize(self):
+        result = Boolean(True).pythonize()
+        expected = True
+        self.assertEqual(result, expected)
+
 
 class TestOid(ByteTester):
 
@@ -104,6 +109,11 @@ class TestOid(ByteTester):
         expected = [0b10000110, 0b11000011, 0b00010111]
         self.assertEqual(result, expected)
 
+    def test_pythonize(self):
+        result = Oid(1, 2, 3).pythonize()
+        expected = '1.2.3'
+        self.assertEqual(result, expected)
+
 
 class TestInteger(ByteTester):
 
@@ -140,6 +150,11 @@ class TestInteger(ByteTester):
         expected = Integer(0)
         self.assertEqual(result, expected)
 
+    def test_pythonize(self):
+        result = Integer(1).pythonize()
+        expected = 1
+        self.assertEqual(result, expected)
+
 
 class TestString(ByteTester):
 
@@ -152,6 +167,11 @@ class TestString(ByteTester):
     def test_decoding(self):
         result = String.from_bytes(b'\x04\x05hello')
         expected = String('hello')
+        self.assertEqual(result, expected)
+
+    def test_pythonize(self):
+        result = String("hello").pythonize()
+        expected = "hello"
         self.assertEqual(result, expected)
 
 
@@ -208,6 +228,11 @@ class TestSequence(ByteTester):
                 Integer(2),
             )
         )
+        self.assertEqual(result, expected)
+
+    def test_pythonize(self):
+        result = Sequence(Integer(1), Sequence(String('123'))).pythonize()
+        expected = [1, ["123"]]
         self.assertEqual(result, expected)
 
 
