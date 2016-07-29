@@ -7,6 +7,7 @@ from ..x690.types import (
     String,
     TypeInfo,
     consume_length,
+    encode_length,
 )
 
 
@@ -179,48 +180,70 @@ class TestList(unittest.TestCase):
 
 class TestBasics(unittest.TestCase):
 
-    def test_length_short(self):
+    def test_decode_length_short(self):
         data = b'\x05'
         expected = 5
         result, data = consume_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(data, b'')
 
-    def test_length_long(self):
+    def test_decode_length_long(self):
         data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
         result, data = consume_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(data, b'')
 
-    def test_indefinite(self):
+    def test_decode_length_indefinite(self):
         with self.assertRaises(NotImplementedError):
             consume_length(bytes([0b10000000]))
 
-    def test_reserved(self):
+    def test_decode_length_reserved(self):
         with self.assertRaises(NotImplementedError):
             consume_length(bytes([0b11111111]))
 
-    test_type_info_univ_prim = make_identifier_test(
+    def test_encode_length_short(self):
+        expected = bytes([0b00100110])
+        result = encode_length(38)
+        self.assertEqual(result, expected)
+
+    def test_encode_length_long(self):
+        expected = bytes([0b10000001, 0b11001001])
+        result = encode_length(201)
+        self.assertEqual(result, expected)
+
+    def test_encode_length_longer(self):
+        expected = bytes([0b10000001, 0b11001001])
+        result = encode_length(302)
+        self.assertEqual(result, expected)
+
+    def test_encode_length_indefinite(self):
+        self.skipTest('TODO: encode_length needs an additional arg for this!')
+
+    test_identifier_univ_prim = make_identifier_test(
         0b00000010, TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b00010)
 
-    test_type_info_univ_const = make_identifier_test(
+    test_identifier_univ_const = make_identifier_test(
         0b00100010, TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b00010)
 
-    test_type_info_app_prim = make_identifier_test(
+    test_identifier_app_prim = make_identifier_test(
         0b01000010, TypeInfo.APPLICATION, TypeInfo.PRIMITIVE, 0b00010)
 
-    test_type_info_app_const = make_identifier_test(
+    test_identifier_app_const = make_identifier_test(
         0b01100010, TypeInfo.APPLICATION, TypeInfo.CONSTRUCTED, 0b00010)
 
-    test_type_info_ctx_prim = make_identifier_test(
+    test_identifier_ctx_prim = make_identifier_test(
         0b10000010, TypeInfo.CONTEXT, TypeInfo.PRIMITIVE, 0b00010)
 
-    test_type_info_ctx_const = make_identifier_test(
+    test_identifier_ctx_const = make_identifier_test(
         0b10100010, TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, 0b00010)
 
-    test_type_info_prv_prim = make_identifier_test(
+    test_identifier_prv_prim = make_identifier_test(
         0b11000010, TypeInfo.PRIVATE, TypeInfo.PRIMITIVE, 0b00010)
 
-    test_type_info_prv_const = make_identifier_test(
+    test_identifier_prv_const = make_identifier_test(
         0b11100010, TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b00010)
+
+    def test_identifier_long(self):
+        with self.assertRaises(NotImplementedError):
+            TypeInfo.from_bytes(0b11111111)

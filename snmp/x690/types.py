@@ -19,6 +19,9 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
 
     @staticmethod
     def from_bytes(data):
+        if data == 0b11111111:
+            raise NotImplementedError('Long identifier types are not yet '
+                                      'implemented')
         cls_hint = (data & 0b11000000) >> 6
         pc_hint = (data & 0b00100000) >> 5
         value = data & 0b00011111
@@ -129,7 +132,7 @@ class String(Type):
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return (bytes([String.TAG, self.length]) +
+        return (bytes([String.TAG]) + self.length +
                 self.value.encode('ascii'))
 
     def __repr__(self):
@@ -164,7 +167,7 @@ class List(Type):
         output = [bytes(item) for item in self.items]
         output = b''.join(output)
         length = encode_length(len(output))
-        return bytes([List.TAG, length]) + output
+        return bytes([List.TAG]) + length + output
 
     def __eq__(self, other):
         return type(self) == type(other) and self.items == other.items
@@ -292,7 +295,8 @@ class Oid(Type):
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
-        return bytes([self.TAG, self.length] + self.__collapsed_identifiers)
+        return bytes([self.TAG]) + self.length + bytes(
+            self.__collapsed_identifiers)
 
     def __repr__(self):
         return 'Oid(%r)' % (self.identifiers, )
