@@ -10,6 +10,8 @@ from ..x690.types import (
     encode_length,
 )
 
+from . import ByteTester
+
 
 def make_identifier_test(octet, expected_class, expected_pc, expected_value):
     def fun(self):
@@ -19,7 +21,7 @@ def make_identifier_test(octet, expected_class, expected_pc, expected_value):
     return fun
 
 
-class TestOid(unittest.TestCase):
+class TestOid(ByteTester):
 
     def setUp(self):
         super().setUp()
@@ -72,7 +74,7 @@ class TestOid(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestInteger(unittest.TestCase):
+class TestInteger(ByteTester):
 
     def test_encoding(self):
         value = Integer(100)
@@ -108,7 +110,7 @@ class TestInteger(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestString(unittest.TestCase):
+class TestString(ByteTester):
 
     def test_encoding(self):
         value = String('hello')
@@ -122,7 +124,7 @@ class TestString(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestList(unittest.TestCase):
+class TestList(ByteTester):
 
     def test_encoding(self):
         value = List(
@@ -178,8 +180,7 @@ class TestList(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestBasics(unittest.TestCase):
-
+class TestBasics(ByteTester):
     def test_decode_length_short(self):
         data = b'\x05'
         expected = 5
