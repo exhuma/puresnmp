@@ -18,7 +18,7 @@ class ByteTester(unittest.TestCase):
                     "{4:<3} Offset {0:4d}: "
                     "0b{1:08b} {2} 0b{3:08b} | "
                     "{1:3d} {2} {3:3d} | "
-                    "0x{1:03x} {2} 0x{3:03x}".format(
+                    "0x{1:02x} {2} 0x{3:02x}".format(
                         offset,
                         char_a,
                         comp,
