@@ -1,6 +1,5 @@
-import unittest
-
 from ..x690.types import (
+    Boolean,
     Integer,
     List,
     Oid,
@@ -18,6 +17,39 @@ def make_identifier_test(octet, expected_class, expected_pc, expected_value):
         expected = TypeInfo(expected_class, expected_pc, expected_value)
         self.assertEqual(result, expected)
     return fun
+
+
+class TestBoolean(ByteTester):
+
+    def test_encoding_false(self):
+        value = Boolean(False)
+        result = bytes(value)
+        expected = b'\x01\x01\x00'
+        self.assertEqual(result, expected)
+
+    def test_encoding_true(self):
+        value = Boolean(True)
+        result = bytes(value)
+        expected = b'\x01\x01\x01'
+        self.assertEqual(result, expected)
+
+    def test_decoding_false(self):
+        result = Boolean.from_bytes(b'\x01\x01\x00')
+        expected = Boolean(False)
+        self.assertEqual(result, expected)
+
+    def test_decoding_true(self):
+        result = Boolean.from_bytes(b'\x01\x01\x01')
+        expected = Boolean(True)
+        self.assertEqual(result, expected)
+
+        result = Boolean.from_bytes(b'\x01\x01\x02')
+        expected = Boolean(True)
+        self.assertEqual(result, expected)
+
+        result = Boolean.from_bytes(b'\x01\x01\xff')
+        expected = Boolean(True)
+        self.assertEqual(result, expected)
 
 
 class TestOid(ByteTester):

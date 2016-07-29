@@ -92,6 +92,32 @@ class Type:
         raise NotImplementedError('Not yet implemented')
 
 
+class Boolean:
+    TAG = 0x01
+
+    @staticmethod
+    def from_bytes(data):
+        if data[0] != Boolean.TAG:
+            raise ValueError('Invalid type header! Expected 0x01, got 0x%02x' %
+                             data[0])
+        if data[1] != 1:
+            raise ValueError('Unexpected NULL value. Lenght should be 1, it '
+                             'was %d' % data[1])
+        return Boolean(data[2] != 0)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __bytes__(self):
+        return bytes([1, 1, int(self.value)])
+
+    def __repr__(self):
+        return 'Boolean(%r)' % bool(self.value)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.value == other.value
+
+
 class Null(Type):
     TAG = 0x05
 
