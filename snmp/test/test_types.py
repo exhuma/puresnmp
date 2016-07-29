@@ -1,8 +1,8 @@
 from ..x690.types import (
     Boolean,
     Integer,
-    List,
     Oid,
+    Sequence,
     String,
     TypeInfo,
 )
@@ -155,10 +155,10 @@ class TestString(ByteTester):
         self.assertEqual(result, expected)
 
 
-class TestList(ByteTester):
+class TestSequence(ByteTester):
 
     def test_encoding(self):
-        value = List(
+        value = Sequence(
             String('hello'),
             Oid(1, 3, 6),
             Integer(100)
@@ -166,7 +166,7 @@ class TestList(ByteTester):
         result = bytes(value)
         expected = (
             bytes([
-                List.TAG,
+                Sequence.TAG,
                 14,  # Expected length (note that an OID drops one byte)
             ]) +
             bytes(String('hello')) +
@@ -176,13 +176,13 @@ class TestList(ByteTester):
         self.assertEqual(result, expected)
 
     def test_decoding_simple(self):
-        result = List.from_bytes(
+        result = Sequence.from_bytes(
             b'\x30\x0d'
             b'\x02\x01\x01'
             b'\x02\x01\x02'
             b'\x04\x03foo'
         )
-        expected = List(
+        expected = Sequence(
             Integer(1),
             Integer(2),
             String('foo'),
@@ -190,7 +190,7 @@ class TestList(ByteTester):
         self.assertEqual(result, expected)
 
     def test_decoding_recursive(self):
-        result = List.from_bytes(
+        result = Sequence.from_bytes(
             b'\x30\x17'
             b'\x02\x01\x01'
             b'\x02\x01\x02'
@@ -199,11 +199,11 @@ class TestList(ByteTester):
             b'\x02\x01\x01'
             b'\x02\x01\x02'
         )
-        expected = List(
+        expected = Sequence(
             Integer(1),
             Integer(2),
             String('foo'),
-            List(
+            Sequence(
                 Integer(1),
                 Integer(2),
             )

@@ -4,7 +4,7 @@ import unittest
 from ..x690.types import (
     GetResponse,
     Integer,
-    List,
+    Sequence,
     String,
 )
 
@@ -29,8 +29,8 @@ class TestResponses(unittest.TestCase):
 
     def test_get_sysdescr_01(self):
         data = readbytes('get_sysdescr_01.hex')
-        result = List.from_bytes(data)
-        expected = List(
+        result = Sequence.from_bytes(data)
+        expected = Sequence(
             Integer(Version.V2C),
             String('public'),
             GetResponse(

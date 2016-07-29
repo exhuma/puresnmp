@@ -4,8 +4,8 @@ from ..x690.types import (
     GetRequest,
     GetResponse,
     Integer,
-    List,
     Oid,
+    Sequence,
     String,
 )
 
@@ -36,9 +36,9 @@ class TestEncoding(unittest.TestCase):
                     b"\x02\x04\x72\x0b\x8c\x3f"  # Request ID
                     b"\x02\x01\x00"  # Error Type
                     b"\x02\x01\x00"  # Error Index
-                    b"\x30"  # Variable Type (List)
+                    b"\x30"  # Variable Type (Sequence)
                     b"\x0e"  # Length
-                    b"\x30"  # Variable Type (List)
+                    b"\x30"  # Variable Type (Sequence)
                     b"\x0c"  # Length
                     b"\x06"  # Variable Type (OID)
                     b"\x08"  # Length
@@ -48,7 +48,7 @@ class TestEncoding(unittest.TestCase):
 
         request = GetRequest(oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0))
         request.request_id = 1913359423
-        packet = List(
+        packet = Sequence(
             Integer(Version.V2C),
             String('public'),
             request
@@ -66,8 +66,8 @@ class TestEncoding(unittest.TestCase):
                 b"\x30\x16"
                 b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
                 b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a")
-        result = List.from_bytes(data)
-        expected = List(
+        result = Sequence.from_bytes(data)
+        expected = Sequence(
             Integer(Version.V2C),
             String('public'),
             GetResponse(

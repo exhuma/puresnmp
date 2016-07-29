@@ -69,7 +69,7 @@ def consume(data):
     elif type == 0x04:
         value = String.from_bytes(chunk)
     elif type == 0x30:
-        value = List.from_bytes(chunk)
+        value = Sequence.from_bytes(chunk)
     elif type == 0x05:
         value = None
     elif type == 0xa2:
@@ -168,13 +168,13 @@ class String(Type):
         return type(self) == type(other) and self.value == other.value
 
 
-class List(Type):
+class Sequence(Type):
 
     TAG = 0x30
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != List.TAG:
+        if data[0] != Sequence.TAG:
             raise ValueError('Invalid type header! Expected 0x30, got 0x%02x' %
                              data[0])
         length, content = consume_length(data[1:])
@@ -184,7 +184,7 @@ class List(Type):
             if value is None:
                 break
             output.append(value)
-        return List(*output)
+        return Sequence(*output)
 
     def __init__(self, *items):
         self.items = items
@@ -193,14 +193,14 @@ class List(Type):
         output = [bytes(item) for item in self.items]
         output = b''.join(output)
         length = encode_length(len(output))
-        return bytes([List.TAG]) + length + output
+        return bytes([Sequence.TAG]) + length + output
 
     def __eq__(self, other):
         return type(self) == type(other) and self.items == other.items
 
     def __repr__(self):
         item_repr = [repr(item) for item in self.items]
-        return 'List(%s)' % ', '.join(item_repr)
+        return 'Sequence(%s)' % ', '.join(item_repr)
 
 
 class Integer:
@@ -363,8 +363,8 @@ class GetRequest(Type):
             Integer(self.request_id),
             Integer(0),
             Integer(0),
-            List(
-                List(
+            Sequence(
+                Sequence(
                     self.oid,
                     Null(),
                 )
