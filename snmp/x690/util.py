@@ -1,3 +1,6 @@
+class Length:
+    INDEFINITE = "indefinite"
+
 def encode_length(value):
     """
     The "length" field must be specially encoded for values above 127.
@@ -14,6 +17,9 @@ def encode_length(value):
 
     See also: https://en.wikipedia.org/wiki/X.690#Length_octets
     """
+    if value == Length.INDEFINITE:
+        return bytes([0b10000000])
+
     if value < 127:
         return bytes([value])
 

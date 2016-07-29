@@ -6,9 +6,8 @@ from ..x690.types import (
     Oid,
     String,
     TypeInfo,
-    consume_length,
-    encode_length,
 )
+from ..x690.util import Length, consume_length, encode_length
 
 from . import ByteTester
 
@@ -214,12 +213,14 @@ class TestBasics(ByteTester):
         self.assertEqual(result, expected)
 
     def test_encode_length_longer(self):
-        expected = bytes([0b10000001, 0b11001001])
+        expected = bytes([0b10000010, 0b00101110, 0b00000001])
         result = encode_length(302)
-        self.assertEqual(result, expected)
+        self.assertBytesEqual(result, expected)
 
     def test_encode_length_indefinite(self):
-        self.skipTest('TODO: encode_length needs an additional arg for this!')
+        expected = bytes([0b10000000])
+        result = encode_length(Length.INDEFINITE)
+        self.assertBytesEqual(result, expected)
 
     test_identifier_univ_prim = make_identifier_test(
         0b00000010, TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b00010)
