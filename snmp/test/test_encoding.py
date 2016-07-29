@@ -47,8 +47,8 @@ class TestEncoding(ByteTester):
                     b"\x05\x00"  # NULL
                     )
 
-        request = GetRequest(oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0))
-        request.request_id = 1913359423
+        request = GetRequest(oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0),
+                             request_id=1913359423)
         packet = Sequence(
             Integer(Version.V2C),
             String('public'),

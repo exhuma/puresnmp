@@ -376,9 +376,8 @@ class Raw(Type):
 class GetRequest(Type):
     TAG = 0xa0
 
-    def __init__(self, oid):
-        from time import time
-        self.request_id = int(time() * 1000000)  # TODO check if this is good enough. My gut tells me "no"!
+    def __init__(self, oid, request_id):
+        self.request_id = request_id
         self.oid = oid
 
     def __bytes__(self):
