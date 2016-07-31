@@ -4,6 +4,9 @@ import unittest
 
 DATA_DIR = join(dirname(__file__), 'data')
 
+__unittest = True  # <- This disables stack traces in unittest output for
+                   # everything in this module.
+
 
 class ByteTester(unittest.TestCase):
     def assertBytesEqual(self, a, b):
