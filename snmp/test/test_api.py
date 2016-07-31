@@ -20,13 +20,13 @@ class TestApi(unittest.TestCase):
         """
         Test the call arguments of "get"
         """
-        from snmp.x690.types import Integer, String, GetRequest, Sequence, Oid
+        from snmp.x690.types import Integer, OctetString, GetRequest, Sequence, ObjectIdentifier
         from snmp.const import Version
         data = readbytes('get_sysdescr_01.hex')  # any dump would do
         packet = Sequence(
             Integer(Version.V2C),
-            String('public'),
-            GetRequest(Oid(1, 2, 3), request_id=0)
+            OctetString('public'),
+            GetRequest(ObjectIdentifier(1, 2, 3), request_id=0)
         )
         with patch('snmp.send') as mck, patch('snmp.get_request_id') as mck2:
             mck2.return_value = 0

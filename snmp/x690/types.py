@@ -75,6 +75,21 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
             return super().__eq__(other)
 
 
+class Registry(type):
+
+    __registry = {}
+
+    def __new__(cls, name, parents, dict_):
+        new_cls = super(Registry, cls).__new__(cls, name, parents, dict_)
+        if hasattr(new_cls, 'TAG'):
+            Registry.__registry[(new_cls.TYPECLASS, new_cls.TAG)] = new_cls
+        return new_cls
+
+    @staticmethod
+    def get(typeclass, typeid):
+        return Registry.__registry[(typeclass, typeid)]
+
+
 def consume(data):
     """
     Inspects the next value in the data chunk. Returns the value and the
@@ -89,7 +104,7 @@ def consume(data):
     if type == 0x02:
         value = Integer.from_bytes(chunk)
     elif type == 0x04:
-        value = String.from_bytes(chunk)
+        value = OctetString.from_bytes(chunk)
     elif type == 0x30:
         value = Sequence.from_bytes(chunk)
     elif type == 0x05:
@@ -97,20 +112,24 @@ def consume(data):
     elif type == 0xa2:
         value = GetResponse.from_bytes(chunk)
     elif type == 0x06:
-        value = Oid.from_bytes(chunk)
+        value = ObjectIdentifier.from_bytes(chunk)
     else:
         raise ValueError('Unknown type header: %r' % type._raw_value)
 
     return value, remainder[length:]
 
 
-class Type:
+class Type(metaclass=Registry):
+    TYPECLASS = TypeInfo.UNIVERSAL
 
     @classmethod
     def validate(cls, data):
-        if data[0] != cls.TAG:
+        tinfo = TypeInfo.from_bytes(data[0])
+        if tinfo.cls != TypeInfo.UNIVERSAL or tinfo.tag != cls.TAG:
             raise ValueError('Invalid type header! '
-                             'Expected 0x%02x, got 0x%02x' % (cls.TAG, data[0]))
+                             'Expected "universal" tag '
+                             'with ID 0x%02x, got ID 0x%02x' % (
+                                 cls.TAG, data[0]))
 
     @classmethod
     def from_bytes(cls, data):
@@ -194,24 +213,24 @@ class Null(Type):
         return 'Null()'
 
 
-class String(Type):
+class OctetString(Type):
 
     TAG = 0x04
 
     @classmethod
     def decode(cls, data):
-        return String(data.decode('ascii'))
+        return cls(data.decode('ascii'))
 
     def __init__(self, value):
         self.value = value
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return (bytes([String.TAG]) + self.length +
+        return (bytes([OctetString.TAG]) + self.length +
                 self.value.encode('ascii'))
 
     def __repr__(self):
-        return 'String(%r)' % self.value
+        return 'OctetString(%r)' % self.value
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
@@ -224,7 +243,7 @@ class String(Type):
 
 
 class Sequence(Type):
-    TAG = 0x30
+    TAG = 0x10
 
     @classmethod
     def decode(cls, data):
@@ -243,7 +262,8 @@ class Sequence(Type):
         output = [bytes(item) for item in self.items]
         output = b''.join(output)
         length = encode_length(len(output))
-        return bytes([Sequence.TAG]) + length + output
+        tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, Sequence.TAG)
+        return bytes(tinfo) + length + output
 
     def __eq__(self, other):
         return type(self) == type(other) and self.items == other.items
@@ -286,7 +306,7 @@ class Integer(Type):
         return 'Integer(%r)' % self.value
 
 
-class Oid(Type):
+class ObjectIdentifier(Type):
     TAG = 0x06
 
     @staticmethod
@@ -330,12 +350,13 @@ class Oid(Type):
             # Each node can only contain values from 0-127. Other values need to
             # be combined.
             if char > 127:
-                collapsed_value = Oid.decode_large_value(char, remaining)
+                collapsed_value = ObjectIdentifier.decode_large_value(
+                    char, remaining)
                 output.append(collapsed_value)
                 continue
             output.append(char)
 
-        return Oid(*output)
+        return ObjectIdentifier(*output)
 
     @staticmethod
     def from_string(value):
@@ -343,7 +364,7 @@ class Oid(Type):
         Create an OID from a string
         """
         identifiers = [int(ident, 10) for ident in value.split('.')]
-        return Oid(*identifiers)
+        return ObjectIdentifier(*identifiers)
 
     def __init__(self, *identifiers):
         # If the user hands in an iterable, instead of positional arguments,
@@ -361,14 +382,16 @@ class Oid(Type):
         exploded_high_values = []
         for char in rest:
             if char > 127:
-                exploded_high_values.extend(Oid.encode_large_value(char))
+                exploded_high_values.extend(
+                    ObjectIdentifier.encode_large_value(char))
             else:
                 exploded_high_values.append(char)
 
         self.identifiers = identifiers
         self.__collapsed_identifiers = [first_output]
         for subidentifier in rest:
-            self.__collapsed_identifiers.extend(Oid.encode_large_value(subidentifier))
+            self.__collapsed_identifiers.extend(
+                ObjectIdentifier.encode_large_value(subidentifier))
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
@@ -376,7 +399,7 @@ class Oid(Type):
             self.__collapsed_identifiers)
 
     def __repr__(self):
-        return 'Oid(%r)' % (self.identifiers, )
+        return 'ObjectIdentifier(%r)' % (self.identifiers, )
 
     def __eq__(self, other):
         return (type(self) == type(other) and
@@ -384,6 +407,90 @@ class Oid(Type):
 
     def pythonize(self):
         return '.'.join([str(_) for _ in self.identifiers])
+
+
+class ObjectDescriptor(Type):
+    TAG = 0x07
+
+
+class External(Type):
+    TAG = 0x08
+
+
+class Real(Type):
+    TAG = 0x09
+
+
+class Enumerated(Type):
+    TAG = 0x0a
+
+
+class EmbeddedPdv(Type):
+    TAG = 0x0b
+
+
+class Utf8String(Type):
+    TAG = 0x0c
+
+
+class RelativeOid(Type):
+    TAG = 0x0d
+
+
+class Set(Type):
+    TAG = 0x11
+
+
+class NumericString(Type):
+    TAG = 0x12
+
+
+class PrintableString(Type):
+    TAG = 0x13
+
+
+class T61String(Type):
+    TAG = 0x14
+
+
+class VideotexString(Type):
+    TAG = 0x15
+
+
+class IA5String(Type):
+    TAG = 0x16
+
+
+class UtcTime(Type):
+    TAG = 0x17
+
+
+class GeneralizedTime(Type):
+    TAG = 0x18
+
+
+class GraphicString(Type):
+    TAG = 0x19
+
+
+class VisibleString(Type):
+    TAG = 0x1a
+
+
+class GeneralString(Type):
+    TAG = 0x1b
+
+
+class UniversalString(Type):
+    TAG = 0x1c
+
+
+class CharacterString(Type):
+    TAG = 0x1d
+
+
+class BmpString(Type):
+    TAG = 0x1e
 
 
 class Raw(Type):
@@ -404,8 +511,28 @@ class Raw(Type):
         return bytes(self.octets)
 
 
-class GetRequest(Type):
-    TAG = 0xa0
+class EOC(Type):
+    TAG = 0x00
+
+
+class BitString(Type):
+    TAG = 0x03
+
+
+class RequestResponsePacket(Type):
+
+    @classmethod
+    def validate(cls, data):
+        tinfo = TypeInfo.from_bytes(data[0])
+        if tinfo.cls != TypeInfo.CONTEXT or tinfo.tag != cls.TAG:
+            raise ValueError(
+                'Invalid type header! '
+                'Expected "context" tag with ID 0x%02x, '
+                'got ID 0x%02x' % (cls.TAG, data[0]))
+
+
+class GetRequest(RequestResponsePacket):
+    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
 
     def __init__(self, oid, request_id):
         self.request_id = request_id
@@ -424,12 +551,14 @@ class GetRequest(Type):
             )
         ]
         payload = b''.join([bytes(chunk) for chunk in data])
-        output = bytes([self.TAG, len(payload)]) + payload
-        return output
+
+        tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
+        length = encode_length(len(payload))
+        return bytes(tinfo) + length + payload
 
 
-class GetResponse(Type):
-    TAG = 0xa2
+class GetResponse(RequestResponsePacket):
+    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
 
     def __init__(self, request_id, value):
         self.request_id = request_id

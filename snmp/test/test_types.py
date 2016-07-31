@@ -1,22 +1,14 @@
 from ..x690.types import (
     Boolean,
     Integer,
-    Oid,
+    ObjectIdentifier,
+    OctetString,
     Sequence,
-    String,
     TypeInfo,
 )
 from ..x690.util import Length, consume_length, encode_length
 
 from . import ByteTester
-
-
-def make_identifier_test(octet, expected_class, expected_pc, expected_value):
-    def fun(self):
-        result = TypeInfo.from_bytes(octet)
-        expected = TypeInfo(expected_class, expected_pc, expected_value)
-        self.assertEqual(result, expected)
-    return fun
 
 
 class TestBoolean(ByteTester):
@@ -57,7 +49,7 @@ class TestBoolean(ByteTester):
         self.assertEqual(result, expected)
 
 
-class TestOid(ByteTester):
+class TestObjectIdentifier(ByteTester):
 
     def setUp(self):
         super().setUp()
@@ -67,7 +59,7 @@ class TestOid(ByteTester):
         """
         A simple OID with no identifier above 127
         """
-        oid = Oid(1, 3, 6, 1, 2, 1)
+        oid = ObjectIdentifier(1, 3, 6, 1, 2, 1)
         result = bytes(oid)
         expected = b'\x06\x05\x2b\x06\x01\x02\x01'
         self.assertBytesEqual(result, expected)
@@ -76,8 +68,8 @@ class TestOid(ByteTester):
         """
         A simple OID with no identifier above 127
         """
-        expected = Oid(1, 3, 6, 1, 2, 1)
-        result = Oid.from_bytes(b'\x06\x05\x2b\x06\x01\x02\x01')
+        expected = ObjectIdentifier(1, 3, 6, 1, 2, 1)
+        result = ObjectIdentifier.from_bytes(b'\x06\x05\x2b\x06\x01\x02\x01')
         self.assertEqual(result, expected)
 
     def test_multibyte_encoding(self):
@@ -85,7 +77,7 @@ class TestOid(ByteTester):
         If a sub-identifier has a value bigger than 127, the encoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        oid = Oid(1, 3, 6, 8072)
+        oid = ObjectIdentifier(1, 3, 6, 8072)
         result = bytes(oid)
         expected = b'\x06\x04\x2b\x06\xbf\x08'
         self.assertBytesEqual(result, expected)
@@ -95,8 +87,8 @@ class TestOid(ByteTester):
         If a sub-identifier has a value bigger than 127, the decoding becomes a
         bit weird. The sub-identifiers are split into multiple sub-identifiers.
         """
-        expected = Oid(1, 3, 6, 8072)
-        result = Oid.from_bytes(b'\x06\x04\x2b\x06\xbf\x08')
+        expected = ObjectIdentifier(1, 3, 6, 8072)
+        result = ObjectIdentifier.from_bytes(b'\x06\x04\x2b\x06\xbf\x08')
         self.assertEqual(result, expected)
 
     def test_encode_large_value(self):
@@ -105,17 +97,17 @@ class TestOid(ByteTester):
 
         See https://en.wikipedia.org/wiki/Variable-length_quantity
         """
-        result = Oid.encode_large_value(106903)
+        result = ObjectIdentifier.encode_large_value(106903)
         expected = [0b10000110, 0b11000011, 0b00010111]
         self.assertEqual(result, expected)
 
     def test_fromstring(self):
-        result = Oid.from_string('1.2.3')
-        expected = Oid(1, 2, 3)
+        result = ObjectIdentifier.from_string('1.2.3')
+        expected = ObjectIdentifier(1, 2, 3)
         self.assertEqual(result, expected)
 
     def test_pythonize(self):
-        result = Oid(1, 2, 3).pythonize()
+        result = ObjectIdentifier(1, 2, 3).pythonize()
         expected = '1.2.3'
         self.assertEqual(result, expected)
 
@@ -164,18 +156,18 @@ class TestInteger(ByteTester):
 class TestString(ByteTester):
 
     def test_encoding(self):
-        value = String('hello')
+        value = OctetString('hello')
         result = bytes(value)
         expected = b'\x04\x05hello'
         self.assertBytesEqual(result, expected)
 
     def test_decoding(self):
-        result = String.from_bytes(b'\x04\x05hello')
-        expected = String('hello')
+        result = OctetString.from_bytes(b'\x04\x05hello')
+        expected = OctetString('hello')
         self.assertEqual(result, expected)
 
     def test_pythonize(self):
-        result = String("hello").pythonize()
+        result = OctetString("hello").pythonize()
         expected = "hello"
         self.assertEqual(result, expected)
 
@@ -184,18 +176,18 @@ class TestSequence(ByteTester):
 
     def test_encoding(self):
         value = Sequence(
-            String('hello'),
-            Oid(1, 3, 6),
+            OctetString('hello'),
+            ObjectIdentifier(1, 3, 6),
             Integer(100)
         )
         result = bytes(value)
         expected = (
             bytes([
-                Sequence.TAG,
+                0x30,
                 14,  # Expected length (note that an OID drops one byte)
             ]) +
-            bytes(String('hello')) +
-            bytes(Oid(1, 3, 6)) +
+            bytes(OctetString('hello')) +
+            bytes(ObjectIdentifier(1, 3, 6)) +
             bytes(Integer(100))
         )
         self.assertBytesEqual(result, expected)
@@ -210,7 +202,7 @@ class TestSequence(ByteTester):
         expected = Sequence(
             Integer(1),
             Integer(2),
-            String('foo'),
+            OctetString('foo'),
         )
         self.assertEqual(result, expected)
 
@@ -227,7 +219,7 @@ class TestSequence(ByteTester):
         expected = Sequence(
             Integer(1),
             Integer(2),
-            String('foo'),
+            OctetString('foo'),
             Sequence(
                 Integer(1),
                 Integer(2),
@@ -236,7 +228,7 @@ class TestSequence(ByteTester):
         self.assertEqual(result, expected)
 
     def test_pythonize(self):
-        result = Sequence(Integer(1), Sequence(String('123'))).pythonize()
+        result = Sequence(Integer(1), Sequence(OctetString('123'))).pythonize()
         expected = [1, ["123"]]
         self.assertEqual(result, expected)
 
@@ -283,30 +275,6 @@ class TestBasics(ByteTester):
         expected = bytes([0b10000000])
         result = encode_length(Length.INDEFINITE)
         self.assertBytesEqual(result, expected)
-
-    test_identifier_univ_prim = make_identifier_test(
-        0b00000010, TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b00010)
-
-    test_identifier_univ_const = make_identifier_test(
-        0b00100010, TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b00010)
-
-    test_identifier_app_prim = make_identifier_test(
-        0b01000010, TypeInfo.APPLICATION, TypeInfo.PRIMITIVE, 0b00010)
-
-    test_identifier_app_const = make_identifier_test(
-        0b01100010, TypeInfo.APPLICATION, TypeInfo.CONSTRUCTED, 0b00010)
-
-    test_identifier_ctx_prim = make_identifier_test(
-        0b10000010, TypeInfo.CONTEXT, TypeInfo.PRIMITIVE, 0b00010)
-
-    test_identifier_ctx_const = make_identifier_test(
-        0b10100010, TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, 0b00010)
-
-    test_identifier_prv_prim = make_identifier_test(
-        0b11000010, TypeInfo.PRIVATE, TypeInfo.PRIMITIVE, 0b00010)
-
-    test_identifier_prv_const = make_identifier_test(
-        0b11100010, TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b00010)
 
     def test_identifier_long(self):
         with self.assertRaises(NotImplementedError):

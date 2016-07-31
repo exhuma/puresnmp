@@ -1,9 +1,9 @@
 from .x690.types import (
     GetRequest,
     Integer,
-    Oid,
+    ObjectIdentifier,
+    OctetString,
     Sequence,
-    String,
 )
 from .const import Version
 from .transport import send, get_request_id
@@ -12,11 +12,11 @@ from .transport import send, get_request_id
 def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
         port: int=161):
 
-    oid = Oid.from_string(oid)
+    oid = ObjectIdentifier.from_string(oid)
 
     packet = Sequence(
         Integer(version),
-        String('public'),
+        OctetString('public'),
         GetRequest(oid, request_id=get_request_id())
     )
 

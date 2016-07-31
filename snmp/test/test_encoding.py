@@ -1,12 +1,10 @@
-import unittest
-
 from ..x690.types import (
     GetRequest,
     GetResponse,
     Integer,
-    Oid,
+    ObjectIdentifier,
+    OctetString,
     Sequence,
-    String,
 )
 
 from ..const import Version
@@ -47,11 +45,11 @@ class TestEncoding(ByteTester):
                     b"\x05\x00"  # NULL
                     )
 
-        request = GetRequest(oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0),
+        request = GetRequest(oid=ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0),
                              request_id=1913359423)
         packet = Sequence(
             Integer(Version.V2C),
-            String('public'),
+            OctetString('public'),
             request
         )
         result = bytes(packet)
@@ -70,10 +68,10 @@ class TestEncoding(ByteTester):
         result = Sequence.from_bytes(data)
         expected = Sequence(
             Integer(Version.V2C),
-            String('public'),
+            OctetString('public'),
             GetResponse(
                 Integer(1913359423),  # request-id
-                Oid(1, 3, 6, 1, 4, 1, 8072, 3, 2, 10)
+                ObjectIdentifier(1, 3, 6, 1, 4, 1, 8072, 3, 2, 10)
             )
         )
         self.assertEqual(result, expected)
