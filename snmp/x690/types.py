@@ -544,8 +544,9 @@ class GetRequest(RequestResponsePacket):
 class GetResponse(RequestResponsePacket):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
 
-    def __init__(self, request_id, value):
+    def __init__(self, request_id, oid, value):
         self.request_id = request_id
+        self.oid = oid
         self.value = value
 
     @classmethod
@@ -554,17 +555,24 @@ class GetResponse(RequestResponsePacket):
         error_code, data = consume(data)
         error_index, data = consume(data)
         if error_code.value:
-            raise SnmpError('Error packet received!')  # Add detail.
+            raise SnmpError('Error packet received!')  # TODO Add detail.
         values, data = consume(data)
         return GetResponse(
             request_id,
+            values.items[0].items[0],
             values.items[0].items[1]
         )
 
     def __repr__(self):
-        return 'GetResponse(%r, %r)' % (self.request_id, self.value)
+        return 'GetResponse(%r, %r, %r)' % (
+            self.request_id, self.oid, self.value)
 
     def __eq__(self, other):
         return (type(other) == type(self) and
                 self.request_id == other.request_id and
+                self.oid == other.oid and
                 self.value == other.value)
+
+
+class GetNextRequest(GetRequest):
+    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa1)

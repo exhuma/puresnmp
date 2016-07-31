@@ -16,6 +16,9 @@ docker
 References
 ----------
 
+GetNextPDU (and others) explained:
+    https://tools.ietf.org/html/rfc1157#section-4.1.3
+
 Page 11 shows a PDU example
     https://tools.ietf.org/html/rfc1592
 

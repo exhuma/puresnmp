@@ -3,8 +3,9 @@ import unittest
 from ..x690.types import (
     GetResponse,
     Integer,
-    Sequence,
+    ObjectIdentifier,
     OctetString,
+    Sequence,
 )
 
 from . import readbytes
@@ -21,6 +22,7 @@ class TestResponses(unittest.TestCase):
             OctetString('public'),
             GetResponse(
                 Integer(3262242864),  # request-id
+                ObjectIdentifier.from_string('1.3.6.1.2.1.1.1.0'),
                 OctetString('Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu '
                             'SMP Fri Jun 24 10:09:13 UTC 2016 x86_64')
             )

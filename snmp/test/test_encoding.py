@@ -5,10 +5,11 @@ from ..x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
+    GetNextRequest,
 )
 
 from ..const import Version
-from . import ByteTester
+from . import ByteTester, readbytes
 
 
 def comparable(bytes):
@@ -20,7 +21,7 @@ def comparable(bytes):
     return ' '.join(readables)
 
 
-class TestEncoding(ByteTester):
+class TestGet(ByteTester):
 
     def setUp(self):
         super().setUp()
@@ -71,7 +72,30 @@ class TestEncoding(ByteTester):
             OctetString('public'),
             GetResponse(
                 Integer(1913359423),  # request-id
+                ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0),
                 ObjectIdentifier(1, 3, 6, 1, 4, 1, 8072, 3, 2, 10)
             )
         )
         self.assertEqual(result, expected)
+
+
+class TestWalk(ByteTester):
+    """
+    Tests related to normal SNMP walks. Responses for walks are the same as for
+    GETs, so we only need to cover the requests.
+    """
+
+    def test_request(self):
+        expected = readbytes('walk_dot.hex')
+        self.fail('TODO')
+
+        request = GetNextRequest(oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0),
+                                 request_id=1913359423)
+        packet = Sequence(
+            Integer(Version.V2C),
+            String('public'),
+            request
+        )
+        result = bytes(packet)
+
+        self.assertBytesEqual(result, expected)
