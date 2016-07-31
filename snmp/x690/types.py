@@ -114,7 +114,7 @@ class Type(metaclass=Registry):
     @classmethod
     def validate(cls, data):
         tinfo = TypeInfo.from_bytes(data[0])
-        if tinfo.cls != TypeInfo.UNIVERSAL or tinfo.tag != cls.TAG:
+        if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
             raise ValueError('Invalid type header! '
                              'Expected "universal" tag '
                              'with ID 0x%02x, got ID 0x%02x' % (
