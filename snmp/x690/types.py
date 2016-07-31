@@ -84,8 +84,34 @@ def consume(data):
 
 class Type:
 
-    @staticmethod
-    def from_bytes(data):
+    @classmethod
+    def validate(cls, data):
+        if data[0] != cls.TAG:
+            raise ValueError('Invalid type header! '
+                             'Expected 0x%02x, got 0x%02x' % (cls.TAG, data[0]))
+
+    @classmethod
+    def from_bytes(cls, data):
+        """
+        Given a bytes object, this method reads the type information and length
+        and uses it to convert the bytes representation into a python object.
+        """
+        cls.validate(data)
+        expected_length, data = consume_length(data[1:])
+        if len(data) != expected_length:
+            raise ValueError('Corrupt packet: Unexpected length for GET '
+                             'response! Expected 0x%02x but got 0x%02x' % (
+                                 expected_length, len(data)))
+
+        return cls.decode(data)
+
+    @classmethod
+    def decode(cls, data):
+        """
+        This method takes a bytes object which contains the raw content octets
+        of the object. That means, the octets *without* the type information and
+        length.
+        """
         raise NotImplementedError('Not yet implemented')
 
     def __bytes__(self):
@@ -99,14 +125,15 @@ class Boolean(Type):
     TAG = 0x01
 
     @staticmethod
-    def from_bytes(data):
-        if data[0] != Boolean.TAG:
-            raise ValueError('Invalid type header! Expected 0x01, got 0x%02x' %
-                             data[0])
+    def decode(data):
+        return Boolean(data != b'\x00')
+
+    @classmethod
+    def validate(cls, data):
+        super().validate(data)
         if data[1] != 1:
             raise ValueError('Unexpected Boolean value. Lenght should be 1, it '
                              'was %d' % data[1])
-        return Boolean(data[2] != 0)
 
     def __init__(self, value):
         self.value = value
@@ -124,14 +151,15 @@ class Boolean(Type):
 class Null(Type):
     TAG = 0x05
 
-    @staticmethod
-    def from_bytes(data):
-        if data[0] != Null.TAG:
-            raise ValueError('Invalid type header! Expected 0x05, got 0x%02x' %
-                             data[0])
+    @classmethod
+    def validate(cls, data):
+        super().validate(data)
         if data[1] != 0:
             raise ValueError('Unexpected NULL value. Lenght should be 0, it '
                              'was %d' % data[1])
+
+    @classmethod
+    def decode(data):
         return Null()
 
     def __bytes__(self):
@@ -148,12 +176,8 @@ class String(Type):
 
     TAG = 0x04
 
-    @staticmethod
-    def from_bytes(data):
-        if data[0] != String.TAG:
-            raise ValueError('Invalid type header! Expected 0x04, got 0x%02x' %
-                             data[0])
-        length, data = consume_length(data[1:])
+    @classmethod
+    def decode(cls, data):
         return String(data.decode('ascii'))
 
     def __init__(self, value):
@@ -178,18 +202,13 @@ class String(Type):
 
 
 class Sequence(Type):
-
     TAG = 0x30
 
-    @staticmethod
-    def from_bytes(data):
-        if data[0] != Sequence.TAG:
-            raise ValueError('Invalid type header! Expected 0x30, got 0x%02x' %
-                             data[0])
-        length, content = consume_length(data[1:])
+    @classmethod
+    def decode(cls, data):
         output = []
-        while content:
-            value, content = consume(content)
+        while data:
+            value, data = consume(data)
             if value is None:
                 break
             output.append(value)
@@ -218,13 +237,9 @@ class Sequence(Type):
 class Integer(Type):
     TAG = 0x02
 
-    @staticmethod
-    def from_bytes(data):
-        if data[0] != Integer.TAG:
-            raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
-                             data[0])
-        length, value = consume_length(data[1:])
-        return Integer(int.from_bytes(value, 'big'))
+    @classmethod
+    def decode(cls, data):
+        return Integer(int.from_bytes(data, 'big'))
 
     def __init__(self, value):
         self.value = value
@@ -250,7 +265,6 @@ class Integer(Type):
 
 
 class Oid(Type):
-
     TAG = 0x06
 
     @staticmethod
@@ -282,18 +296,13 @@ class Oid(Type):
         output.reverse()
         return output
 
-    @staticmethod
-    def from_bytes(data):
-        if data[0] != Oid.TAG:
-            raise ValueError('Invalid type header! Expected 0x02, got 0x%02x' %
-                             data[0])
-
-        length, identifiers = consume_length(data[1:])
+    @classmethod
+    def decode(cls, data):
         # unpack the first byte into first and second sub-identifiers.
-        first, second = identifiers[0] // 40, identifiers[0] % 40
+        first, second = data[0] // 40, data[0] % 40
         output = [first, second]
 
-        remaining = iter(identifiers[1:])
+        remaining = iter(data[1:])
 
         for char in remaining:
             # Each node can only contain values from 0-127. Other values need to
@@ -404,16 +413,8 @@ class GetResponse(Type):
         self.request_id = request_id
         self.value = value
 
-    @staticmethod
-    def from_bytes(data):
-        if data[0] != GetResponse.TAG:
-            raise ValueError('Invalid type header! Expected 0xa2, got 0x%02x' %
-                             data[0])
-        expected_length, data = consume_length(data[1:])
-        if len(data) != expected_length:
-            raise ValueError('Corrupt packet: Unexpected length for GET '
-                             'response! Expected 0x%02x but got 0x%02x' % (
-                                 expected_length, len(data)))
+    @classmethod
+    def decode(cls, data):
         request_id, data = consume(data)
         error_code, data = consume(data)
         error_index, data = consume(data)

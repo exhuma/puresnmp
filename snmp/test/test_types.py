@@ -202,7 +202,7 @@ class TestSequence(ByteTester):
 
     def test_decoding_simple(self):
         result = Sequence.from_bytes(
-            b'\x30\x0d'
+            b'\x30\x0b'
             b'\x02\x01\x01'
             b'\x02\x01\x02'
             b'\x04\x03foo'
@@ -216,11 +216,11 @@ class TestSequence(ByteTester):
 
     def test_decoding_recursive(self):
         result = Sequence.from_bytes(
-            b'\x30\x17'
+            b'\x30\x13'
             b'\x02\x01\x01'
             b'\x02\x01\x02'
             b'\x04\x03foo'
-            b'\x30\x08'
+            b'\x30\x06'
             b'\x02\x01\x01'
             b'\x02\x01\x02'
         )
