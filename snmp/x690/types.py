@@ -96,26 +96,10 @@ def consume(data):
     remaining octets.
     """
     type = TypeInfo.from_bytes(data[0])
+    cls = Registry.get(type.cls, type.tag)
     length, remainder = consume_length(data[1:])
     chunk = data[:length+2]
-
-    # TODO: The following branches could be automated using the "TAG"
-    # variable from each class.
-    if type == 0x02:
-        value = Integer.from_bytes(chunk)
-    elif type == 0x04:
-        value = OctetString.from_bytes(chunk)
-    elif type == 0x30:
-        value = Sequence.from_bytes(chunk)
-    elif type == 0x05:
-        value = None
-    elif type == 0xa2:
-        value = GetResponse.from_bytes(chunk)
-    elif type == 0x06:
-        value = ObjectIdentifier.from_bytes(chunk)
-    else:
-        raise ValueError('Unknown type header: %r' % type._raw_value)
-
+    value = cls.from_bytes(chunk)
     return value, remainder[length:]
 
 
