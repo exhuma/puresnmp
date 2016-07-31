@@ -1,36 +1,22 @@
-from os.path import dirname, join
 import unittest
 
 from ..x690.types import (
     GetResponse,
     Integer,
-    List,
+    Sequence,
     String,
 )
 
+from . import readbytes
 from ..const import Version
-
-
-DATA_DIR = join(dirname(__file__), 'data')
-
-
-def readbytes(filename):
-    with open(join(DATA_DIR, filename)) as fp:
-        lines = fp.readlines()
-    without_ascii = [line[:50] for line in lines]
-    str_bytes = []
-    for line in without_ascii:
-        str_bytes.extend(line.split())
-    values = [int(char, 16) for char in str_bytes]
-    return bytes(values)
 
 
 class TestResponses(unittest.TestCase):
 
     def test_get_sysdescr_01(self):
         data = readbytes('get_sysdescr_01.hex')
-        result = List.from_bytes(data)
-        expected = List(
+        result = Sequence.from_bytes(data)
+        expected = Sequence(
             Integer(Version.V2C),
             String('public'),
             GetResponse(

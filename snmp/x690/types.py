@@ -19,6 +19,9 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
 
     @staticmethod
     def from_bytes(data):
+        if data == 0b11111111:
+            raise NotImplementedError('Long identifier types are not yet '
+                                      'implemented')
         cls_hint = (data & 0b11000000) >> 6
         pc_hint = (data & 0b00100000) >> 5
         value = data & 0b00011111
@@ -66,7 +69,7 @@ def consume(data):
     elif type == 0x04:
         value = String.from_bytes(chunk)
     elif type == 0x30:
-        value = List.from_bytes(chunk)
+        value = Sequence.from_bytes(chunk)
     elif type == 0x05:
         value = None
     elif type == 0xa2:
@@ -87,6 +90,35 @@ class Type:
 
     def __bytes__(self):
         raise NotImplementedError('Not yet implemented')
+
+    def pythonize(self):
+        return self.value
+
+
+class Boolean(Type):
+    TAG = 0x01
+
+    @staticmethod
+    def from_bytes(data):
+        if data[0] != Boolean.TAG:
+            raise ValueError('Invalid type header! Expected 0x01, got 0x%02x' %
+                             data[0])
+        if data[1] != 1:
+            raise ValueError('Unexpected Boolean value. Lenght should be 1, it '
+                             'was %d' % data[1])
+        return Boolean(data[2] != 0)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __bytes__(self):
+        return bytes([1, 1, int(self.value)])
+
+    def __repr__(self):
+        return 'Boolean(%r)' % bool(self.value)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.value == other.value
 
 
 class Null(Type):
@@ -129,7 +161,7 @@ class String(Type):
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return (bytes([String.TAG, self.length]) +
+        return (bytes([String.TAG]) + self.length +
                 self.value.encode('ascii'))
 
     def __repr__(self):
@@ -138,14 +170,20 @@ class String(Type):
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
 
+    def pythonize(self):
+        """
+        Convert this object in an appropriate python object
+        """
+        return self.value
 
-class List(Type):
+
+class Sequence(Type):
 
     TAG = 0x30
 
     @staticmethod
     def from_bytes(data):
-        if data[0] != List.TAG:
+        if data[0] != Sequence.TAG:
             raise ValueError('Invalid type header! Expected 0x30, got 0x%02x' %
                              data[0])
         length, content = consume_length(data[1:])
@@ -155,7 +193,7 @@ class List(Type):
             if value is None:
                 break
             output.append(value)
-        return List(*output)
+        return Sequence(*output)
 
     def __init__(self, *items):
         self.items = items
@@ -164,17 +202,20 @@ class List(Type):
         output = [bytes(item) for item in self.items]
         output = b''.join(output)
         length = encode_length(len(output))
-        return bytes([List.TAG, length]) + output
+        return bytes([Sequence.TAG]) + length + output
 
     def __eq__(self, other):
         return type(self) == type(other) and self.items == other.items
 
     def __repr__(self):
         item_repr = [repr(item) for item in self.items]
-        return 'List(%s)' % ', '.join(item_repr)
+        return 'Sequence(%s)' % ', '.join(item_repr)
+
+    def pythonize(self):
+        return [obj.pythonize() for obj in self.items]
 
 
-class Integer:
+class Integer(Type):
     TAG = 0x02
 
     @staticmethod
@@ -265,6 +306,14 @@ class Oid(Type):
 
         return Oid(*output)
 
+    @staticmethod
+    def from_string(value):
+        """
+        Create an OID from a string
+        """
+        identifiers = [int(ident, 10) for ident in value.split('.')]
+        return Oid(*identifiers)
+
     def __init__(self, *identifiers):
         # If the user hands in an iterable, instead of positional arguments,
         # make sure we unpack it
@@ -292,7 +341,8 @@ class Oid(Type):
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
-        return bytes([self.TAG, self.length] + self.__collapsed_identifiers)
+        return bytes([self.TAG]) + self.length + bytes(
+            self.__collapsed_identifiers)
 
     def __repr__(self):
         return 'Oid(%r)' % (self.identifiers, )
@@ -300,6 +350,9 @@ class Oid(Type):
     def __eq__(self, other):
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
+
+    def pythonize(self):
+        return '.'.join([str(_) for _ in self.identifiers])
 
 
 class Raw(Type):
@@ -323,9 +376,8 @@ class Raw(Type):
 class GetRequest(Type):
     TAG = 0xa0
 
-    def __init__(self, oid):
-        from time import time
-        self.request_id = int(time() * 1000000)  # TODO check if this is good enough. My gut tells me "no"!
+    def __init__(self, oid, request_id):
+        self.request_id = request_id
         self.oid = oid
 
     def __bytes__(self):
@@ -333,8 +385,8 @@ class GetRequest(Type):
             Integer(self.request_id),
             Integer(0),
             Integer(0),
-            List(
-                List(
+            Sequence(
+                Sequence(
                     self.oid,
                     Null(),
                 )
