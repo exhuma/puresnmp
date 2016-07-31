@@ -44,6 +44,28 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
         instance._raw_value = data
         return instance
 
+    def __bytes__(self):
+        if self.cls == TypeInfo.UNIVERSAL:
+            cls = 0b00
+        elif self.cls == TypeInfo.APPLICATION:
+            cls = 0b01
+        elif self.cls == TypeInfo.CONTEXT:
+            cls = 0b10
+        elif self.cls == TypeInfo.PRIVATE:
+            cls = 0b11
+        else:
+            raise ValueError('Unexpected class for type info')
+
+        if self.pc == TypeInfo.CONSTRUCTED:
+            pc = 0b01
+        elif self.pc == TypeInfo.PRIMITIVE:
+            pc = 0b00
+        else:
+            raise ValueError('Unexpected primitive/constructed for type info')
+
+        output = cls << 6 | pc << 5 | self.tag
+        return bytes([output])
+
     def __eq__(self, other):
         if isinstance(other, int):
             return self._raw_value == other
