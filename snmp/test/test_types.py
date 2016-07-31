@@ -168,7 +168,7 @@ class TestString(ByteTester):
 
     def test_pythonize(self):
         result = OctetString("hello").pythonize()
-        expected = "hello"
+        expected = b"hello"
         self.assertEqual(result, expected)
 
 
@@ -229,7 +229,7 @@ class TestSequence(ByteTester):
 
     def test_pythonize(self):
         result = Sequence(Integer(1), Sequence(OctetString('123'))).pythonize()
-        expected = [1, ["123"]]
+        expected = [1, [b"123"]]
         self.assertEqual(result, expected)
 
 

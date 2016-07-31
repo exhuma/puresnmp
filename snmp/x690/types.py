@@ -198,20 +198,21 @@ class Null(Type):
 
 
 class OctetString(Type):
-
     TAG = 0x04
 
     @classmethod
     def decode(cls, data):
-        return cls(data.decode('ascii'))
+        return cls(data)
 
     def __init__(self, value):
-        self.value = value
+        if isinstance(value, str):
+            self.value = value.encode('ascii')
+        else:
+            self.value = value
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return (bytes([OctetString.TAG]) + self.length +
-                self.value.encode('ascii'))
+        return (bytes([OctetString.TAG]) + self.length + self.value)
 
     def __repr__(self):
         return 'OctetString(%r)' % self.value

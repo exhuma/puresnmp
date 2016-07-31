@@ -36,8 +36,8 @@ class TestApi(unittest.TestCase):
 
     def test_get_string(self):
         data = readbytes('get_sysdescr_01.hex')
-        expected = ('Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
-                    'Fri Jun 24 10:09:13 UTC 2016 x86_64')
+        expected = (b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
+                    b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
         with patch('snmp.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
