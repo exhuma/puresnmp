@@ -96,7 +96,12 @@ def consume(data):
     remaining octets.
     """
     type = TypeInfo.from_bytes(data[0])
-    cls = Registry.get(type.cls, type.tag)
+    try:
+        cls = Registry.get(type.cls, type.tag)
+    except KeyError as exc:
+        # Add context information
+        raise KeyError('No class found for byte 0x%02x (%s)' % (
+            data[0], exc))
     length, remainder = consume_length(data[1:])
     chunk = data[:length+2]
     value = cls.from_bytes(chunk)
@@ -124,9 +129,9 @@ class Type(metaclass=Registry):
         cls.validate(data)
         expected_length, data = consume_length(data[1:])
         if len(data) != expected_length:
-            raise ValueError('Corrupt packet: Unexpected length for GET '
-                             'response! Expected 0x%02x but got 0x%02x' % (
-                                 expected_length, len(data)))
+            raise ValueError('Corrupt packet: Unexpected length for %s '
+                             'Expected 0x%02x but got 0x%02x' % (
+                                 cls, expected_length, len(data)))
 
         return cls.decode(data)
 
@@ -137,7 +142,7 @@ class Type(metaclass=Registry):
         of the object. That means, the octets *without* the type information and
         length.
         """
-        raise NotImplementedError('Not yet implemented')
+        raise NotImplementedError('Decoding is not yet implemented on %s' % cls)
 
     def __bytes__(self):
         raise NotImplementedError('Not yet implemented')
