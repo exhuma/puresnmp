@@ -277,7 +277,7 @@ class Integer(Type):
 
     @classmethod
     def decode(cls, data):
-        return Integer(int.from_bytes(data, 'big'))
+        return cls(int.from_bytes(data, 'big'))
 
     def __init__(self, value):
         self.value = value
@@ -293,13 +293,14 @@ class Integer(Type):
                 remainder = remainder >> 8
                 octets.append(octet)
             octets.reverse()
-        return bytes([self.TAG, len(octets)] + octets)
+        tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
+        return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
 
     def __repr__(self):
-        return 'Integer(%r)' % self.value
+        return '%s(%r)' % (self.__class__.__name__, self.value)
 
 
 class ObjectIdentifier(Type):
@@ -517,6 +518,19 @@ class EOC(Type):
 class BitString(Type):
     TAG = 0x03
 
+
+# --- SMI
+
+class TimeTicks(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x03
+
+class Gauge(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x02
+
+
+# --- Requests
 
 class RequestResponsePacket(Type):
 
