@@ -253,6 +253,13 @@ class TestBasics(ByteTester):
         self.assertEqual(result, expected)
         self.assertEqual(data, b'')
 
+    def test_decode_length_longer(self):
+        data = bytes([0x81, 0xa4])
+        expected = 164
+        result, data = consume_length(data)
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b'')
+
     def test_decode_length_indefinite(self):
         with self.assertRaises(NotImplementedError):
             consume_length(bytes([0b10000000]))
@@ -274,6 +281,11 @@ class TestBasics(ByteTester):
     def test_encode_length_longer(self):
         expected = bytes([0b10000010, 0b00101110, 0b00000001])
         result = encode_length(302)
+        self.assertBytesEqual(result, expected)
+
+    def test_encode_length_longer_2(self):
+        expected = bytes([0x81, 0xa4])
+        result = encode_length(164)
         self.assertBytesEqual(result, expected)
 
     def test_encode_length_indefinite(self):
