@@ -53,5 +53,7 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
         response = send(ip, port, bytes(packet))
         ores = Sequence.from_bytes(response)
+        if not ores.items[2].value:  # TODO This index access is ugly!
+            raise StopIteration('End of content')
         response_object = ores.items[2]
         retrieved_oid = response_object.oid

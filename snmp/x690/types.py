@@ -95,6 +95,8 @@ def consume(data):
     Inspects the next value in the data chunk. Returns the value and the
     remaining octets.
     """
+    if not data:
+        return None, b''
     type = TypeInfo.from_bytes(data[0])
     try:
         cls = Registry.get(type.cls, type.tag)
@@ -129,6 +131,8 @@ class Type(metaclass=Registry):
         """
         cls.validate(data)
         expected_length, data = consume_length(data[1:])
+        if not data:
+            return None
         if len(data) != expected_length:
             raise ValueError('Corrupt packet: Unexpected length for %s '
                              'Expected 0x%02x but got 0x%02x' % (
@@ -567,10 +571,18 @@ class GetResponse(RequestResponsePacket):
         if error_code.value:
             raise SnmpError('Error packet received!')  # TODO Add detail.
         values, data = consume(data)
+
+        # TODO the following index fiddling is ugly!
+        if len(values.items[0].items) == 1:
+            # empty result
+            value = None
+        else:
+            value = values.items[0].items[1]
+
         return GetResponse(
             request_id,
             values.items[0].items[0],
-            values.items[0].items[1]
+            value,
         )
 
     def __repr__(self):
