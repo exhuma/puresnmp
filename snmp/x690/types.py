@@ -103,7 +103,8 @@ def consume(data):
         raise KeyError('No class found for byte 0x%02x (%s)' % (
             data[0], exc))
     length, remainder = consume_length(data[1:])
-    chunk = data[:length+2]
+    offset = len(data) - len(remainder)  # how many octets are used to encode the length
+    chunk = data[:length+offset]
     value = cls.from_bytes(chunk)
     return value, remainder[length:]
 
