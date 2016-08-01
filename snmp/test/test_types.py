@@ -111,6 +111,11 @@ class TestObjectIdentifier(ByteTester):
         expected = '1.2.3'
         self.assertEqual(result, expected)
 
+    def test_str(self):
+        result = str(ObjectIdentifier(1, 2, 3))
+        expected = '1.2.3'
+        self.assertEqual(result, expected)
+
 
 class TestInteger(ByteTester):
 

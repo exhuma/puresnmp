@@ -389,6 +389,9 @@ class ObjectIdentifier(Type):
         return bytes([self.TAG]) + self.length + bytes(
             self.__collapsed_identifiers)
 
+    def __str__(self):
+        return '.'.join([str(_) for _ in self.identifiers])
+
     def __repr__(self):
         return 'ObjectIdentifier(%r)' % (self.identifiers, )
 
