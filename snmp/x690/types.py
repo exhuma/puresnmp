@@ -577,6 +577,10 @@ class GetRequest(RequestResponsePacket):
         length = encode_length(len(payload))
         return bytes(tinfo) + length + payload
 
+    def __repr__(self):
+        return '%s(%r, %r)' % (
+            self.__class__.__name__, self.request_id, self.oid)
+
 
 class GetResponse(RequestResponsePacket):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
