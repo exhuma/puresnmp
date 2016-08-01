@@ -116,6 +116,19 @@ class TestObjectIdentifier(ByteTester):
         expected = '1.2.3'
         self.assertEqual(result, expected)
 
+    def test_encode_root(self):
+        result = bytes(ObjectIdentifier(1))
+        expected = b'\x06\x01\x01'
+        self.assertBytesEqual(result, expected)
+
+    def test_construct_root_from_string(self):
+        """
+        Using "." to denote the root OID is common. We should allow this.
+        """
+        result = ObjectIdentifier.from_string('.')
+        expected = ObjectIdentifier(1)
+        self.assertEqual(result, expected)
+
 
 class TestInteger(ByteTester):
 

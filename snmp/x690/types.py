@@ -360,6 +360,10 @@ class ObjectIdentifier(Type):
         """
         Create an OID from a string
         """
+
+        if value == '.':
+            return ObjectIdentifier(1)
+
         identifiers = [int(ident, 10) for ident in value.split('.')]
         return ObjectIdentifier(*identifiers)
 
@@ -369,10 +373,14 @@ class ObjectIdentifier(Type):
         if len(identifiers) == 1 and not isinstance(identifiers[0], int):
             identifiers = identifiers[0]
 
-        # The first two bytes are collapsed according to X.690
-        # See https://en.wikipedia.org/wiki/X.690#BER_encoding
-        first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
-        first_output = (40*first) + second
+        if len(identifiers) > 1:
+            # The first two bytes are collapsed according to X.690
+            # See https://en.wikipedia.org/wiki/X.690#BER_encoding
+            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
+            first_output = (40*first) + second
+        else:
+            first_output = 1
+            rest = []
 
         # Values above 127 need a special encoding. They get split up into
         # multiple positions.
