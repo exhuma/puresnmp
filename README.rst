@@ -30,3 +30,6 @@ PDU Packet Structure
 
 MSDN Help
     https://msdn.microsoft.com/en-us/library/bb540809(v=vs.85).aspx
+
+ASCII Representation of some PDUs:
+    http://www.opencircuits.com/SNMP_MIB_Implementation
