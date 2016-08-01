@@ -1,5 +1,9 @@
+from binascii import hexlify, unhexlify
+
+
 class Length:
     INDEFINITE = "indefinite"
+
 
 def encode_length(value):
     """
@@ -51,3 +55,32 @@ def consume_length(data):
         output = int.from_bytes(value_octets, 'big')
         data = data[num_octets + 1:]
     return output, data
+
+
+def visible_octets(data: bytes) -> str:
+    """
+    Returns a geek-friendly output of a bytes object.
+    """
+    hexed = hexlify(data).decode('ascii')
+    tuples = [''.join((a, b)) for a, b in zip(hexed[::2], hexed[1::2])]
+    line = []
+    output = []
+    ascii = []
+    for idx, octet in enumerate(tuples):
+        line.append(octet)
+        # only use printable characters in ascii output
+        ascii.append(octet if 32 <= int(octet, 16) < 127 else '2e')
+        if (idx+1) % 8 == 0:
+            line.append('')
+        if (idx+1) % 8 == 0 and (idx+1) % 16 == 0:
+            raw_ascii = unhexlify(''.join(ascii))
+            raw_ascii = raw_ascii.replace(b'\\n z', b'.')
+            ascii = []
+            output.append('%-50s %s' % (' '.join(line),
+                                        raw_ascii.decode('ascii')))
+            line = []
+    raw_ascii = unhexlify(''.join(ascii))
+    raw_ascii = raw_ascii.replace(b'\\n z', b'.')
+    output.append('%-50s %s' % (' '.join(line), raw_ascii.decode('ascii')))
+    line = []
+    return '\n'.join(output)
