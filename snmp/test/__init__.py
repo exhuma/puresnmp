@@ -49,7 +49,10 @@ class ByteTester(unittest.TestCase):
                         char_bd,
                         char_bh,
                         marker))
-            raise AssertionError('Bytes differ!\n' + '\n'.join(comparisons))
+            raise AssertionError('Bytes differ!\n' +
+                                 'type(a)=%s, type(b)=%s\n' % (type(a), type(b)) +
+                                 '\nIndividual bytes:\n' +
+                                 '\n'.join(comparisons))
 
 
 def readbytes(filename):

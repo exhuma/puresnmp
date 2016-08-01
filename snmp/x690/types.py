@@ -134,8 +134,9 @@ class Type(metaclass=Registry):
         if not data:
             return None
         if len(data) != expected_length:
-            raise ValueError('Corrupt packet: Unexpected length for %s '
-                             'Expected 0x%02x but got 0x%02x' % (
+            raise ValueError('Corrupt packet: Unexpected length for {0} '
+                             'Expected {1} (0x{1:02x}) '
+                             'but got {2} (0x{2:02x})'.format(
                                  cls, expected_length, len(data)))
 
         return cls.decode(data)
