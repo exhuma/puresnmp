@@ -6,74 +6,7 @@ from collections import namedtuple
 from itertools import zip_longest
 
 from ..exc import SnmpError
-from .util import consume_length, encode_length
-
-
-class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
-
-    UNIVERSAL = 'universal'
-    APPLICATION = 'application'
-    CONTEXT = 'context'
-    PRIVATE = 'private'
-    PRIMITIVE = 'primitive'
-    CONSTRUCTED = 'constructed'
-
-    @staticmethod
-    def from_bytes(data):
-        if data == 0b11111111:
-            raise NotImplementedError('Long identifier types are not yet '
-                                      'implemented')
-        cls_hint = (data & 0b11000000) >> 6
-        pc_hint = (data & 0b00100000) >> 5
-        value = data & 0b00011111
-
-        if cls_hint == 0b00:
-            cls = TypeInfo.UNIVERSAL
-        elif cls_hint == 0b01:
-            cls = TypeInfo.APPLICATION
-        elif cls_hint == 0b10:
-            cls = TypeInfo.CONTEXT
-        elif cls_hint == 0b11:
-            cls = TypeInfo.PRIVATE
-        else:
-            raise ValueError('Unexpected value %r for type class' % bin(
-                cls_hint))
-
-        pc = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
-
-        instance = TypeInfo(cls, pc, value)
-        instance._raw_value = data
-        return instance
-
-    def __bytes__(self):
-        if self.cls == TypeInfo.UNIVERSAL:
-            cls = 0b00
-        elif self.cls == TypeInfo.APPLICATION:
-            cls = 0b01
-        elif self.cls == TypeInfo.CONTEXT:
-            cls = 0b10
-        elif self.cls == TypeInfo.PRIVATE:
-            cls = 0b11
-        else:
-            raise ValueError('Unexpected class for type info')
-
-        if self.pc == TypeInfo.CONSTRUCTED:
-            pc = 0b01
-        elif self.pc == TypeInfo.PRIMITIVE:
-            pc = 0b00
-        else:
-            raise ValueError('Unexpected primitive/constructed for type info')
-
-        output = cls << 6 | pc << 5 | self.tag
-        return bytes([output])
-
-    def __eq__(self, other):
-        if isinstance(other, int):
-            return self._raw_value == other
-        elif isinstance(self, int):
-            return self == other._raw_value
-        else:
-            return super().__eq__(other)
+from .util import decode_length, encode_length, TypeInfo
 
 
 class Registry(type):
@@ -105,7 +38,7 @@ def consume(data):
         # Add context information
         raise KeyError('No class found for byte 0x%02x (%s)' % (
             data[0], exc))
-    length, remainder = consume_length(data[1:])
+    length, remainder = decode_length(data[1:])
     offset = len(data) - len(remainder)  # how many octets are used to encode the length
     chunk = data[:length+offset]
     value = cls.from_bytes(chunk)
@@ -131,7 +64,7 @@ class Type(metaclass=Registry):
         and uses it to convert the bytes representation into a python object.
         """
         cls.validate(data)
-        expected_length, data = consume_length(data[1:])
+        expected_length, data = decode_length(data[1:])
         if not data:
             return None
         if len(data) != expected_length:
@@ -560,17 +493,6 @@ class EOC(Type):
 
 class BitString(Type):
     TAG = 0x03
-
-
-# --- SMI
-
-class TimeTicks(Integer):
-    TYPECLASS = TypeInfo.APPLICATION
-    TAG = 0x03
-
-class Gauge(Integer):
-    TYPECLASS = TypeInfo.APPLICATION
-    TAG = 0x02
 
 
 # --- Requests

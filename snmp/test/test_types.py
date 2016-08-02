@@ -4,9 +4,8 @@ from ..x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
-    TypeInfo,
 )
-from ..x690.util import Length, consume_length, encode_length
+from ..x690.util import Length, decode_length, encode_length, TypeInfo
 
 from . import ByteTester
 
@@ -290,31 +289,31 @@ class TestBasics(ByteTester):
     def test_decode_length_short(self):
         data = b'\x05'
         expected = 5
-        result, data = consume_length(data)
+        result, data = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(data, b'')
 
     def test_decode_length_long(self):
         data = bytes([0b10000010, 0b00000001, 0b10110011])
         expected = 435
-        result, data = consume_length(data)
+        result, data = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(data, b'')
 
     def test_decode_length_longer(self):
         data = bytes([0x81, 0xa4])
         expected = 164
-        result, data = consume_length(data)
+        result, data = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(data, b'')
 
     def test_decode_length_indefinite(self):
         with self.assertRaises(NotImplementedError):
-            consume_length(bytes([0b10000000]))
+            decode_length(bytes([0b10000000]))
 
     def test_decode_length_reserved(self):
         with self.assertRaises(NotImplementedError):
-            consume_length(bytes([0b11111111]))
+            decode_length(bytes([0b11111111]))
 
     def test_encode_length_short(self):
         expected = bytes([0b00100110])

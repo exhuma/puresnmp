@@ -1,4 +1,72 @@
 from binascii import hexlify, unhexlify
+from collections import namedtuple
+
+
+class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
+
+    UNIVERSAL = 'universal'
+    APPLICATION = 'application'
+    CONTEXT = 'context'
+    PRIVATE = 'private'
+    PRIMITIVE = 'primitive'
+    CONSTRUCTED = 'constructed'
+
+    @staticmethod
+    def from_bytes(data):
+        if data == 0b11111111:
+            raise NotImplementedError('Long identifier types are not yet '
+                                      'implemented')
+        cls_hint = (data & 0b11000000) >> 6
+        pc_hint = (data & 0b00100000) >> 5
+        value = data & 0b00011111
+
+        if cls_hint == 0b00:
+            cls = TypeInfo.UNIVERSAL
+        elif cls_hint == 0b01:
+            cls = TypeInfo.APPLICATION
+        elif cls_hint == 0b10:
+            cls = TypeInfo.CONTEXT
+        elif cls_hint == 0b11:
+            cls = TypeInfo.PRIVATE
+        else:
+            raise ValueError('Unexpected value %r for type class' % bin(
+                cls_hint))
+
+        pc = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
+
+        instance = TypeInfo(cls, pc, value)
+        instance._raw_value = data
+        return instance
+
+    def __bytes__(self):
+        if self.cls == TypeInfo.UNIVERSAL:
+            cls = 0b00
+        elif self.cls == TypeInfo.APPLICATION:
+            cls = 0b01
+        elif self.cls == TypeInfo.CONTEXT:
+            cls = 0b10
+        elif self.cls == TypeInfo.PRIVATE:
+            cls = 0b11
+        else:
+            raise ValueError('Unexpected class for type info')
+
+        if self.pc == TypeInfo.CONSTRUCTED:
+            pc = 0b01
+        elif self.pc == TypeInfo.PRIMITIVE:
+            pc = 0b00
+        else:
+            raise ValueError('Unexpected primitive/constructed for type info')
+
+        output = cls << 6 | pc << 5 | self.tag
+        return bytes([output])
+
+    def __eq__(self, other):
+        if isinstance(other, int):
+            return self._raw_value == other
+        elif isinstance(self, int):
+            return self == other._raw_value
+        else:
+            return super().__eq__(other)
 
 
 class Length:
@@ -37,7 +105,7 @@ def encode_length(value):
     return bytes(output)
 
 
-def consume_length(data):
+def decode_length(data):
     if data[0] == 0b11111111:
         # reserved
         raise NotImplementedError('This is a reserved case in X690')

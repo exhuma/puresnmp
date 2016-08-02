@@ -1,6 +1,6 @@
 from . import ByteTester
 
-from ..x690 import types as t
+from .. import types as t
 
 
 class TestTimeTicks(ByteTester):
