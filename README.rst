@@ -33,3 +33,6 @@ MSDN Help
 
 ASCII Representation of some PDUs:
     http://www.opencircuits.com/SNMP_MIB_Implementation
+
+Variable Length Quantity (encoding large numbers)
+    https://en.wikipedia.org/wiki/Variable-length_quantity
