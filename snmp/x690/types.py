@@ -3,6 +3,7 @@ See X690: https://en.wikipedia.org/wiki/X.690
 """
 
 from collections import namedtuple
+from itertools import zip_longest
 
 from ..exc import SnmpError
 from .util import consume_length, encode_length
@@ -412,6 +413,40 @@ class ObjectIdentifier(Type):
     def __eq__(self, other):
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
+
+    def __contains__(self, other):
+        """
+        Check if one OID is a child of another.
+
+        TODO: This has been written in the middle of the night! It's messy...
+        """
+        a, b = other.identifiers, self.identifiers
+
+        # if both have the same amount of identifiers, check for equality
+        if len(a) == len(b):
+            return a == b
+
+        # if "self" is longer than "other", self cannot be "in" other
+        if len(b) > len(a):
+            return False
+
+        # For all other cases:
+        #   1. zero-fill
+        #   2. drop identical items from the front (leaving us with "tail")
+        #   3. compare both tails
+        zipped = zip_longest(a, b, fillvalue=None)
+        tail = []
+        for tmp_a, tmp_b in zipped:
+            if tmp_a == tmp_b and not tail:
+                continue
+            tail.append((tmp_a, tmp_b))
+
+        unzipped_a, unzipped_b = zip(*tail)
+        if all([x is None for x in unzipped_b]):
+            return True
+
+        return unzipped_a < unzipped_b
+
 
     def pythonize(self):
         return '.'.join([str(_) for _ in self.identifiers])
