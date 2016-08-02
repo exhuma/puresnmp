@@ -87,15 +87,14 @@ class TestWalk(ByteTester):
 
     def test_request(self):
         expected = readbytes('walk_dot.hex')
-        self.fail('TODO')
 
-        request = GetNextRequest(oid=Oid(1, 3, 6, 1, 2, 1, 1, 2, 0),
-                                 request_id=1913359423)
+        request = GetNextRequest(
+            oid=ObjectIdentifier(1),
+            request_id=499509692)
         packet = Sequence(
             Integer(Version.V2C),
-            String('public'),
+            OctetString('public'),
             request
         )
         result = bytes(packet)
-
         self.assertBytesEqual(result, expected)
