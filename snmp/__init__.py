@@ -46,7 +46,7 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     if retrieved_oid not in oid:
         return
     while retrieved_oid:
-        yield response_object.value
+        yield response_object.oid, response_object.value
         packet = Sequence(
             Integer(version),
             OctetString('public'),
