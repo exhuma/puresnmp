@@ -45,8 +45,12 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     response_object = ores.items[2]
 
     retrieved_oid = response_object.oid
-    if retrieved_oid not in oid:
+    if retrieved_oid not in oid or retrieved_oid == oid:
+        # the second test checks if we got the same OID back as we requested.
+        # This usually points to an error (even if the error-code is not always
+        # set!)
         return
+
     while retrieved_oid:
         yield response_object.oid, response_object.value
         packet = Sequence(
@@ -57,9 +61,12 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
         response = send(ip, port, bytes(packet))
         ores = Sequence.from_bytes(response)
-        if not ores.items[2].value:  # TODO This index access is ugly!
-            return
         response_object = ores.items[2]
+        if retrieved_oid == response_object.oid:
+            # If we got the same OID as the last request, we're likely finished.
+            # Not all devices set an appropriate error-code as defined in the
+            # RFC1157 Section 4.1.3, but at least guarantee this.
+            return
         retrieved_oid = response_object.oid
         if retrieved_oid not in oid:
             return
