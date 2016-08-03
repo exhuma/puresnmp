@@ -9,7 +9,7 @@ to use.
 from unittest.mock import patch
 import unittest
 
-from snmp import get
+from puresnmp import get
 
 from . import readbytes
 
@@ -20,15 +20,15 @@ class TestApi(unittest.TestCase):
         """
         Test the call arguments of "get"
         """
-        from snmp.x690.types import Integer, OctetString, GetRequest, Sequence, ObjectIdentifier
-        from snmp.const import Version
+        from puresnmp.x690.types import Integer, OctetString, GetRequest, Sequence, ObjectIdentifier
+        from puresnmp.const import Version
         data = readbytes('get_sysdescr_01.hex')  # any dump would do
         packet = Sequence(
             Integer(Version.V2C),
             OctetString('public'),
             GetRequest(ObjectIdentifier(1, 2, 3), request_id=0)
         )
-        with patch('snmp.send') as mck, patch('snmp.get_request_id') as mck2:
+        with patch('puresnmp.send') as mck, patch('puresnmp.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
             get('::1', 'public', '1.2.3')
@@ -38,7 +38,7 @@ class TestApi(unittest.TestCase):
         data = readbytes('get_sysdescr_01.hex')
         expected = (b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
                     b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
-        with patch('snmp.send') as mck:
+        with patch('puresnmp.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
@@ -46,7 +46,7 @@ class TestApi(unittest.TestCase):
     def test_get_oid(self):
         data = readbytes('get_sysoid_01.hex')
         expected = ('1.3.6.1.4.1.8072.3.2.10')
-        with patch('snmp.send') as mck:
+        with patch('puresnmp.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)

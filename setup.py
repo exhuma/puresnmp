@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = open('snmp/version.txt').read().strip()
+VERSION = open('puresnmp/version.txt').read().strip()
 
 setup(
     name="puresnmp",
