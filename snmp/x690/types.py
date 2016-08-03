@@ -32,16 +32,15 @@ def pop_tlv(data):
     if not data:
         return None, b''
     type = TypeInfo.from_bytes(data[0])
-    try:
-        cls = Registry.get(type.cls, type.tag)
-    except KeyError as exc:
-        # Add context information
-        raise KeyError('No class found for byte 0x%02x (%s)' % (
-            data[0], exc))
     length, remainder = decode_length(data[1:])
     offset = len(data) - len(remainder)  # how many octets are used to encode the length
     chunk = data[:length+offset]
-    value = cls.from_bytes(chunk)
+    try:
+        cls = Registry.get(type.cls, type.tag)
+        value = cls.from_bytes(chunk)
+    except KeyError as exc:
+        # Add context information
+        value = NonASN1Type(data[0], chunk)
     return value, remainder[length:]
 
 
@@ -88,6 +87,34 @@ class Type(metaclass=Registry):
         raise NotImplementedError('Not yet implemented')
 
     def pythonize(self):
+        return self.value
+
+
+class NonASN1Type(Type):
+    """
+    A fallback type for anything not in ASN.1
+    """
+
+    def __init__(self, tag, value):
+        self.value = value
+        self.tag = tag
+        self.length = encode_length(len(value))
+
+    def __bytes__(self):
+        return (bytes([self.tag]) + self.length + self.value)
+
+    def __repr__(self):
+        return 'NonASN1Type(%r, %r)' % (self.tag, self.value)
+
+    def __eq__(self, other):
+        return (type(self) == type(other) and
+                self.value == other.value and
+                self.tag == other.tag)
+
+    def pythonize(self):
+        """
+        Convert this object in an appropriate python object
+        """
         return self.value
 
 
@@ -493,6 +520,38 @@ class EOC(Type):
 
 class BitString(Type):
     TAG = 0x03
+
+
+# -- SMI Types
+
+class IpAddress(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x00
+
+
+class Gauge(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x01
+
+
+class Gauge(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x02
+
+
+class TimeTicks(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x03
+
+
+class Opaque(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x04
+
+
+class NsapAddress(Integer):
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x05
 
 
 # --- Requests
