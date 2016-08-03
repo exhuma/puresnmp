@@ -17,7 +17,7 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
     packet = Sequence(
         Integer(version),
-        OctetString('public'),
+        OctetString(community),
         GetRequest(oid, request_id=get_request_id())
     )
 
@@ -34,7 +34,7 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
     packet = Sequence(
         Integer(version),
-        OctetString('public'),
+        OctetString(community),
         GetNextRequest(oid, request_id=get_request_id())
     )
 
@@ -49,7 +49,7 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
         yield response_object.oid, response_object.value
         packet = Sequence(
             Integer(version),
-            OctetString('public'),
+            OctetString(community),
             GetNextRequest(retrieved_oid, request_id=get_request_id())
         )
 

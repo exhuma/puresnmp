@@ -31,7 +31,7 @@ class TestApi(unittest.TestCase):
         with patch('snmp.send') as mck, patch('snmp.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
-            get('::1', 'private', '1.2.3')
+            get('::1', 'public', '1.2.3')
             mck.assert_called_with('::1', 161, bytes(packet))
 
     def test_get_string(self):
