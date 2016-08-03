@@ -1,10 +1,12 @@
 from .x690.types import (
-    GetNextRequest,
-    GetRequest,
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
+)
+from .types import (
+    GetNextRequest,
+    GetRequest,
 )
 from .const import Version
 from .transport import send, get_request_id

@@ -1,11 +1,13 @@
 from ..x690.types import (
-    GetRequest,
-    GetResponse,
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
+)
+from ..types import (
     GetNextRequest,
+    GetRequest,
+    GetResponse,
 )
 
 from ..const import Version

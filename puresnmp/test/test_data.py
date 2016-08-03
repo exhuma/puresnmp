@@ -1,11 +1,13 @@
 import unittest
 
 from ..x690.types import (
-    GetResponse,
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
+)
+from ..types import (
+    GetResponse,
 )
 
 from . import readbytes

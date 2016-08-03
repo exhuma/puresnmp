@@ -20,7 +20,8 @@ class TestApi(unittest.TestCase):
         """
         Test the call arguments of "get"
         """
-        from puresnmp.x690.types import Integer, OctetString, GetRequest, Sequence, ObjectIdentifier
+        from puresnmp.x690.types import Integer, OctetString, Sequence, ObjectIdentifier
+        from puresnmp.types import GetRequest
         from puresnmp.const import Version
         data = readbytes('get_sysdescr_01.hex')  # any dump would do
         packet = Sequence(
