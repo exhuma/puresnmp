@@ -19,4 +19,4 @@ def send(ip: str, port: int, packet: bytes) -> bytes:
 
 def get_request_id():
     from time import time
-    return int(time() * 1000000)  # TODO check if this is good enough. My gut tells me "no"!
+    return int(time())  # TODO check if this is good enough. My gut tells me "no"!
