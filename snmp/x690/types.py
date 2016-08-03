@@ -24,7 +24,7 @@ class Registry(type):
         return Registry.__registry[(typeclass, typeid)]
 
 
-def consume(data):
+def pop_tlv(data):
     """
     Inspects the next value in the data chunk. Returns the value and the
     remaining octets.
@@ -179,7 +179,7 @@ class Sequence(Type):
     def decode(cls, data):
         output = []
         while data:
-            value, data = consume(data)
+            value, data = pop_tlv(data)
             if value is None:
                 break
             output.append(value)
@@ -549,12 +549,12 @@ class GetResponse(RequestResponsePacket):
 
     @classmethod
     def decode(cls, data):
-        request_id, data = consume(data)
-        error_code, data = consume(data)
-        error_index, data = consume(data)
+        request_id, data = pop_tlv(data)
+        error_code, data = pop_tlv(data)
+        error_index, data = pop_tlv(data)
         if error_code.value:
             raise SnmpError('Error packet received!')  # TODO Add detail.
-        values, data = consume(data)
+        values, data = pop_tlv(data)
 
         # TODO the following index fiddling is ugly!
         if len(values.items[0].items) == 1:
