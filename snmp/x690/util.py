@@ -1,8 +1,27 @@
+"""
+Core/low-level x690 functions and data structures
+"""
+
+
 from binascii import hexlify, unhexlify
 from collections import namedtuple
+from typing import Tuple
 
 
 class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
+    """
+    Decoded structure for an x690 "type" octet. The structure contains 3 fields:
+
+    cls
+        The typeclass (either TypeInfo.UNIVERSAL, TypeInfo.APPLICATION,
+        TypeInfo.CONTEXT or TypeInfo.CONSTRUCTED)
+
+    pc
+        Whether the value is TypeInfo.CONSTRUCTED or TypeInfo.PRIMITIVE
+
+    tag
+        The actual type identifier.
+    """
 
     UNIVERSAL = 'universal'
     APPLICATION = 'application'
@@ -12,7 +31,12 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
     CONSTRUCTED = 'constructed'
 
     @staticmethod
-    def from_bytes(data):
+    def from_bytes(data: int) -> "TypeInfo":
+        """
+        Given one octet, extract the separate fields and return a TypeInfo
+        instance.
+        """
+        # pylint: disable=protected-access
         if data == 0b11111111:
             raise NotImplementedError('Long identifier types are not yet '
                                       'implemented')
@@ -39,6 +63,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
         return instance
 
     def __bytes__(self):
+        # pylint: disable=invalid-name
         if self.cls == TypeInfo.UNIVERSAL:
             cls = 0b00
         elif self.cls == TypeInfo.APPLICATION:
@@ -70,6 +95,9 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
 
 
 class Length:
+    """
+    A simple "namespace" to avoid magic values for indefinite lengths.
+    """
     INDEFINITE = "indefinite"
 
 
@@ -105,7 +133,16 @@ def encode_length(value):
     return bytes(output)
 
 
-def decode_length(data):
+def decode_length(data: bytes) -> Tuple[int, bytes]:
+    """
+    Given a bytes object, which starts with the length information of a TLV
+    value, returns the length and the remaining bytes. So, given a TLV value,
+    this function takes the "LV" part as input, parses the length information
+    and returns the remaining "V" part (including any subsequent bytes).
+
+    TODO: Upon rereading this, I wonder if it would not make more sense to take
+          the complete TLV content as input.
+    """
     if data[0] == 0b11111111:
         # reserved
         raise NotImplementedError('This is a reserved case in X690')
@@ -127,7 +164,13 @@ def decode_length(data):
 
 def visible_octets(data: bytes) -> str:
     """
-    Returns a geek-friendly output of a bytes object.
+    Returns a geek-friendly (hexdump)  output of a bytes object.
+
+    Developer note:
+        This is not super performant. But it's not something that's supposed to
+        be run during normal operations (mostly for testing and debugging).  So
+        performance should not be an issue, and this is more readable than
+        existing solutions.
     """
     hexed = hexlify(data).decode('ascii')
     tuples = [''.join((a, b)) for a, b in zip(hexed[::2], hexed[1::2])]

@@ -1,3 +1,5 @@
+# pylint: disable=missing-docstring
+
 from ..x690.types import (
     Boolean,
     Integer,
@@ -129,36 +131,43 @@ class TestObjectIdentifier(ByteTester):
         self.assertEqual(result, expected)
 
     def test_containment_a(self):
+        # pylint: disable=invalid-name
         a = ObjectIdentifier.from_string('1.2.3.4')
         b = ObjectIdentifier.from_string('1.2.3')
         self.assertTrue(a in b)
 
     def test_containment_b(self):
+        # pylint: disable=invalid-name
         a = ObjectIdentifier.from_string('1.2.3.4')
         b = ObjectIdentifier.from_string('1.2.3.4')
         self.assertTrue(a in b)
 
     def test_containment_c(self):
+        # pylint: disable=invalid-name
         a = ObjectIdentifier.from_string('1.3.6.1.2.1.1.1.0')
         b = ObjectIdentifier.from_string('1.3.6.1.2.1')
         self.assertTrue(a in b)
 
     def test_non_containment_a(self):
+        # pylint: disable=invalid-name
         a = ObjectIdentifier.from_string('1.2.3')
         b = ObjectIdentifier.from_string('1.2.3.4')
         self.assertFalse(a in b)
 
     def test_non_containment_b(self):
+        # pylint: disable=invalid-name
         a = ObjectIdentifier.from_string('1.2.3.5')
         b = ObjectIdentifier.from_string('1.2.3.4')
         self.assertFalse(a in b)
 
     def test_non_containment_c(self):
+        # pylint: disable=invalid-name
         a = ObjectIdentifier.from_string('1.2.3.4')
         b = ObjectIdentifier.from_string('1.2.3.5')
         self.assertFalse(a in b)
 
     def test_non_containment_d(self):
+        # pylint: disable=invalid-name
         a = ObjectIdentifier.from_string('1.3.6.1.2.1.25.1.1.0')
         b = ObjectIdentifier.from_string('1.3.6.1.2.1.1.9')
         self.assertFalse(a in b)
