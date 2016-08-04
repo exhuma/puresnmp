@@ -39,7 +39,7 @@ class NsapAddress(Integer):
 
 # --- Requests / Responses
 
-class RequestResponsePacket(Type):
+class SnmpMessage(Type):
 
     @classmethod
     def validate(cls, data):
@@ -49,45 +49,6 @@ class RequestResponsePacket(Type):
                 'Invalid type header! '
                 'Expected "context" tag with ID 0x%02x, '
                 'got ID 0x%02x' % (cls.TAG, data[0]))
-
-
-class GetRequest(RequestResponsePacket):
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
-
-    def __init__(self, oid, request_id):
-        self.request_id = request_id
-        self.oid = oid
-
-    def __bytes__(self):
-        data = [
-            Integer(self.request_id),
-            Integer(0),
-            Integer(0),
-            Sequence(
-                Sequence(
-                    self.oid,
-                    Null(),
-                )
-            )
-        ]
-        payload = b''.join([bytes(chunk) for chunk in data])
-
-        tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
-        length = encode_length(len(payload))
-        return bytes(tinfo) + length + payload
-
-    def __repr__(self):
-        return '%s(%r, %r)' % (
-            self.__class__.__name__, self.request_id, self.oid)
-
-
-class GetResponse(RequestResponsePacket):
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
-
-    def __init__(self, request_id, oid, value):
-        self.request_id = request_id
-        self.oid = oid
-        self.value = value
 
     @classmethod
     def decode(cls, data):
@@ -105,11 +66,49 @@ class GetResponse(RequestResponsePacket):
         else:
             value = values.items[0].items[1]
 
-        return GetResponse(
+        return cls(
             request_id,
             values.items[0].items[0],
             value,
         )
+
+    def __init__(self, request_id, oid, value):
+        self.request_id = request_id
+        self.oid = oid
+        self.value = value
+
+
+class GetRequest(SnmpMessage):
+    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
+
+    def __bytes__(self):
+        data = [
+            Integer(self.request_id),
+            Integer(0),
+            Integer(0),
+            Sequence(
+                Sequence(
+                    self.oid,
+                    self.value,
+                )
+            )
+        ]
+        payload = b''.join([bytes(chunk) for chunk in data])
+
+        tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
+        length = encode_length(len(payload))
+        return bytes(tinfo) + length + payload
+
+    def __repr__(self):
+        return '%s(%r, %r)' % (
+            self.__class__.__name__, self.request_id, self.oid)
+
+    def __init__(self, oid, request_id):
+        super().__init__(request_id, oid, Null())
+
+
+class GetResponse(SnmpMessage):
+    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
 
     def __repr__(self):
         return 'GetResponse(%r, %r, %r)' % (
