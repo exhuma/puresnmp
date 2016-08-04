@@ -100,6 +100,17 @@ class SnmpMessage(Type):
         length = encode_length(len(payload))
         return bytes(tinfo) + length + payload
 
+    def __repr__(self):
+        return '%s(%r, %r, %r)' % (
+            self.__class__.__name__,
+            self.request_id, self.oid, self.value)
+
+    def __eq__(self, other):
+        return (type(other) == type(self) and
+                self.request_id == other.request_id and
+                self.oid == other.oid and
+                self.value == other.value)
+
 
 class GetRequest(SnmpMessage):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
@@ -114,16 +125,6 @@ class GetRequest(SnmpMessage):
 
 class GetResponse(SnmpMessage):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
-
-    def __repr__(self):
-        return 'GetResponse(%r, %r, %r)' % (
-            self.request_id, self.oid, self.value)
-
-    def __eq__(self, other):
-        return (type(other) == type(self) and
-                self.request_id == other.request_id and
-                self.oid == other.oid and
-                self.value == other.value)
 
 
 class GetNextRequest(GetRequest):
