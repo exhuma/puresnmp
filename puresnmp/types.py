@@ -70,22 +70,23 @@ class SnmpMessage(Type):
             request_id,
             values.items[0].items[0],
             value,
+            error_code,
+            error_index
         )
 
-    def __init__(self, request_id, oid, value):
+    def __init__(self, request_id, oid, value,
+                 error_status=0, error_index=0):
         self.request_id = request_id
         self.oid = oid
         self.value = value
-
-
-class GetRequest(SnmpMessage):
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
+        self.error_status = error_status
+        self.error_index = error_index
 
     def __bytes__(self):
         data = [
             Integer(self.request_id),
-            Integer(0),
-            Integer(0),
+            Integer(self.error_status),
+            Integer(self.error_index),
             Sequence(
                 Sequence(
                     self.oid,
@@ -98,6 +99,10 @@ class GetRequest(SnmpMessage):
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
         return bytes(tinfo) + length + payload
+
+
+class GetRequest(SnmpMessage):
+    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
 
     def __repr__(self):
         return '%s(%r, %r)' % (
@@ -123,3 +128,7 @@ class GetResponse(SnmpMessage):
 
 class GetNextRequest(GetRequest):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa1)
+
+
+class SetRequest(SnmpMessage):
+    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa3)

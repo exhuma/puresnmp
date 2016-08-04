@@ -8,6 +8,7 @@ from ..types import (
     GetNextRequest,
     GetRequest,
     GetResponse,
+    SetRequest,
 )
 
 from ..const import Version
@@ -93,6 +94,24 @@ class TestWalk(ByteTester):
         request = GetNextRequest(
             oid=ObjectIdentifier(1),
             request_id=499509692)
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            request
+        )
+        result = bytes(packet)
+        self.assertBytesEqual(result, expected)
+
+
+class TestSet(ByteTester):
+
+    def test_request(self):
+        expected = readbytes('set_request.hex')
+
+        request = SetRequest(
+            request_id=499509692,
+            oid=ObjectIdentifier(1),
+            value=Integer(10))
         packet = Sequence(
             Integer(Version.V2C),
             OctetString('public'),
