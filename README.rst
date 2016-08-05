@@ -36,3 +36,6 @@ ASCII Representation of some PDUs:
 
 Variable Length Quantity (encoding large numbers)
     https://en.wikipedia.org/wiki/Variable-length_quantity
+
+Settable SNMP Values
+    http://tomsalmon.eu/2012/02/net-snmp-writeable-attributes/
