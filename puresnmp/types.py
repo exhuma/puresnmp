@@ -7,6 +7,16 @@ from .x690.types import Integer, Type, Sequence, Null, pop_tlv, encode_length
 from .x690.util import TypeInfo
 
 
+ERROR_MESSAGES = {
+    0: '(noError)',
+    1: '(tooBig)',
+    2: '(noSuchName)',
+    3: '(badValue)',
+    4: '(readOnly)',
+    5: '(genErr)',
+}
+
+
 class IpAddress(Integer):
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x00
@@ -56,7 +66,10 @@ class SnmpMessage(Type):
         error_code, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
         if error_code.value:
-            raise SnmpError('Error packet received!')  # TODO Add detail.
+            msg = ERROR_MESSAGES.get(error_code.value,
+                                     'Unknown Error: %s' % error_code.value)
+            # TODO Add detail from the error_index.
+            raise SnmpError('Error packet received: %s!' % msg)
         values, data = pop_tlv(data)
 
         # TODO the following index fiddling is ugly!
