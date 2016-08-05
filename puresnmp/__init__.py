@@ -1,12 +1,19 @@
+"""
+This module contains the high-level functions to access the library. Care is
+taken to make this as pythonic as possible and hide as many of the gory
+implementations as possible.
+"""
 from .x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
+    Type,
 )
 from .types import (
     GetNextRequest,
     GetRequest,
+    SetRequest,
 )
 from .const import Version
 from .transport import send, get_request_id
@@ -70,3 +77,22 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
         retrieved_oid = response_object.oid
         if retrieved_oid not in oid:
             return
+
+
+def set(ip: str, community: str, oid: str, value: Type,
+        version: bytes=Version.V2C, port: int=161):
+
+    if not isinstance(value, Type):
+        raise TypeError('SNMP requires typing information. The value for a '
+                        '"set" request must be an instance of "Type"!')
+
+    oid = ObjectIdentifier.from_string(oid)
+
+    request = SetRequest(get_request_id(), oid, value)
+    packet = Sequence(Integer(version),
+                      OctetString(community),
+                      request)
+    response = send(ip, port, bytes(packet))
+    ores = Sequence.from_bytes(response)
+    result = ores.items[2].value
+    return result.pythonize()
