@@ -307,6 +307,15 @@ class TestSequence(ByteTester):
         ]
         self.assertEqual(result, expected)
 
+    def test_indexing(self):
+        data = Sequence(
+            Integer(1),
+            OctetString(b'foo')
+        )
+        result = data[1]
+        expected = OctetString(b'foo')
+        self.assertEqual(result, expected)
+
 
 class TestBasics(ByteTester):
     def test_decode_length_short(self):

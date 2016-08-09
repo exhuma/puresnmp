@@ -230,6 +230,9 @@ class Sequence(Type):
     def __iter__(self):
         return iter(self.items)
 
+    def __getitem__(self, idx):
+        return self.items[idx]
+
     def pythonize(self):
         return [obj.pythonize() for obj in self]
 
