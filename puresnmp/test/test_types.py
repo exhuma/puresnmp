@@ -293,6 +293,20 @@ class TestSequence(ByteTester):
         expected = [1, [b"123"]]
         self.assertEqual(result, expected)
 
+    def test_iteration(self):
+        data = Sequence(
+            Integer(1),
+            Sequence(OctetString('123')),
+            OctetString(b'foo')
+        )
+        result = [item for item in data]
+        expected = [
+            Integer(1),
+            Sequence(OctetString('123')),
+            OctetString(b'foo')
+        ]
+        self.assertEqual(result, expected)
+
 
 class TestBasics(ByteTester):
     def test_decode_length_short(self):

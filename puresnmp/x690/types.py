@@ -227,6 +227,9 @@ class Sequence(Type):
         item_repr = [repr(item) for item in self.items]
         return 'Sequence(%s)' % ', '.join(item_repr)
 
+    def __iter__(self):
+        return iter(self.items)
+
     def pythonize(self):
         return [obj.pythonize() for obj in self.items]
 
