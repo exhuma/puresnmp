@@ -27,7 +27,7 @@ class TestApi(unittest.TestCase):
         packet = Sequence(
             Integer(Version.V2C),
             OctetString('public'),
-            GetRequest(ObjectIdentifier(1, 2, 3), request_id=0)
+            GetRequest(0, ObjectIdentifier(1, 2, 3))
         )
         with patch('puresnmp.send') as mck, patch('puresnmp.get_request_id') as mck2:
             mck2.return_value = 0

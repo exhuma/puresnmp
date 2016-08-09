@@ -10,6 +10,7 @@ from .x690.types import (
     Sequence,
     Type,
 )
+from .exc import SnmpError
 from .types import (
     GetNextRequest,
     GetRequest,
@@ -27,13 +28,17 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     packet = Sequence(
         Integer(version),
         OctetString(community),
-        GetRequest(oid, request_id=get_request_id())
+        GetRequest(get_request_id(), oid)
     )
 
     response = send(ip, port, bytes(packet))
     ores = Sequence.from_bytes(response)
-    result = ores.items[2].value
-    return result.pythonize()
+    varbinds = ores.items[2].varbinds
+    if len(varbinds) != 1:
+        raise SnmpError('Unexpected response. Expected 1 varbind, but got %s!' %
+                        len(varbinds))
+    value = varbinds[0].value
+    return value.pythonize()
 
 
 def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,

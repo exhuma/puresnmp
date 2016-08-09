@@ -2,6 +2,8 @@
 SMI Types / Structure types which are not defined in ASN.1
 """
 
+from collections import namedtuple
+
 from .exc import SnmpError
 from .x690.types import Integer, Type, Sequence, Null, pop_tlv, encode_length
 from .x690.util import TypeInfo
@@ -15,6 +17,8 @@ ERROR_MESSAGES = {
     4: '(readOnly)',
     5: '(genErr)',
 }
+
+VarBind = namedtuple('VarBind', 'oid, value')
 
 
 class IpAddress(Integer):
@@ -72,40 +76,32 @@ class SnmpMessage(Type):
             raise SnmpError('Error packet received: %s!' % msg)
         values, data = pop_tlv(data)
 
-        # TODO the following index fiddling is ugly!
-        if len(values.items[0].items) == 1:
-            # empty result
-            value = None
-        else:
-            value = values.items[0].items[1]
+        varbinds = [VarBind(*encoded_varbind.items)
+                    for encoded_varbind in values.items]
 
         return cls(
             request_id,
-            values.items[0].items[0],
-            value,
-            error_code,
+            varbinds,
+            error_code,  # TODO rename to "error_status"
             error_index
         )
 
-    def __init__(self, request_id, oid, value,
-                 error_status=0, error_index=0):
+    def __init__(self, request_id, varbinds, error_status=0, error_index=0):
         self.request_id = request_id
-        self.oid = oid
-        self.value = value
+        if isinstance(varbinds, tuple):
+            self.varbinds = [varbinds]
+        else:
+            self.varbinds = varbinds
         self.error_status = error_status
         self.error_index = error_index
 
     def __bytes__(self):
+        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
         data = [
             Integer(self.request_id),
             Integer(self.error_status),
             Integer(self.error_index),
-            Sequence(
-                Sequence(
-                    self.oid,
-                    self.value,
-                )
-            )
+            Sequence(*wrapped_varbinds)
         ]
         payload = b''.join([bytes(chunk) for chunk in data])
 
@@ -114,15 +110,14 @@ class SnmpMessage(Type):
         return bytes(tinfo) + length + payload
 
     def __repr__(self):
-        return '%s(%r, %r, %r)' % (
+        return '%s(%r, %r)' % (
             self.__class__.__name__,
-            self.request_id, self.oid, self.value)
+            self.request_id, self.varbinds)
 
     def __eq__(self, other):
         return (type(other) == type(self) and
                 self.request_id == other.request_id and
-                self.oid == other.oid and
-                self.value == other.value)
+                self.varbinds == other.varbinds)
 
 
 class GetRequest(SnmpMessage):
@@ -130,10 +125,10 @@ class GetRequest(SnmpMessage):
 
     def __repr__(self):
         return '%s(%r, %r)' % (
-            self.__class__.__name__, self.request_id, self.oid)
+            self.__class__.__name__, self.request_id, self.varbinds)
 
-    def __init__(self, oid, request_id):
-        super().__init__(request_id, oid, Null())
+    def __init__(self, request_id, *oids):
+        super().__init__(request_id, [VarBind(oid, Null()) for oid in oids])
 
 
 class GetResponse(SnmpMessage):
