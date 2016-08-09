@@ -33,7 +33,7 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
     response = send(ip, port, bytes(packet))
     ores = Sequence.from_bytes(response)
-    varbinds = ores.items[2].varbinds
+    varbinds = ores[2].varbinds
     if len(varbinds) != 1:
         raise SnmpError('Unexpected response. Expected 1 varbind, but got %s!' %
                         len(varbinds))
@@ -54,7 +54,7 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
     response = send(ip, port, bytes(packet))
     ores = Sequence.from_bytes(response)
-    response_object = ores.items[2]
+    response_object = ores[2]
 
     retrieved_oid = response_object.oid
     if retrieved_oid not in oid or retrieved_oid == oid:
@@ -73,7 +73,7 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
         response = send(ip, port, bytes(packet))
         ores = Sequence.from_bytes(response)
-        response_object = ores.items[2]
+        response_object = ores[2]
         if retrieved_oid == response_object.oid:
             # If we got the same OID as the last request, we're likely finished.
             # Not all devices set an appropriate error-code as defined in the
@@ -99,5 +99,5 @@ def set(ip: str, community: str, oid: str, value: Type,
                       request)
     response = send(ip, port, bytes(packet))
     ores = Sequence.from_bytes(response)
-    result = ores.items[2].value
+    result = ores[2].value
     return result.pythonize()
