@@ -49,14 +49,15 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     packet = Sequence(
         Integer(version),
         OctetString(community),
-        GetNextRequest(oid, request_id=get_request_id())
+        GetNextRequest(get_request_id(), oid)
     )
 
     response = send(ip, port, bytes(packet))
     ores = Sequence.from_bytes(response)
     response_object = ores[2]
+    first_varbind = response_object.varbinds[0]  # TODO handle multiple varbinds
 
-    retrieved_oid = response_object.oid
+    retrieved_oid = first_varbind.oid
     if retrieved_oid not in oid or retrieved_oid == oid:
         # the second test checks if we got the same OID back as we requested.
         # This usually points to an error (even if the error-code is not always
@@ -64,22 +65,23 @@ def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
         return
 
     while retrieved_oid:
-        yield response_object.oid, response_object.value
+        yield first_varbind.oid, first_varbind.value
         packet = Sequence(
             Integer(version),
             OctetString(community),
-            GetNextRequest(retrieved_oid, request_id=get_request_id())
+            GetNextRequest(get_request_id(), retrieved_oid)
         )
 
         response = send(ip, port, bytes(packet))
         ores = Sequence.from_bytes(response)
         response_object = ores[2]
-        if retrieved_oid == response_object.oid:
+        first_varbind = response_object.varbinds[0]  # TODO handle multiple varbinds
+        if retrieved_oid == first_varbind.oid:
             # If we got the same OID as the last request, we're likely finished.
             # Not all devices set an appropriate error-code as defined in the
             # RFC1157 Section 4.1.3, but at least guarantee this.
             return
-        retrieved_oid = response_object.oid
+        retrieved_oid = first_varbind.oid
         if retrieved_oid not in oid:
             return
 
