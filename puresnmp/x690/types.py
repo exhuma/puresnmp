@@ -357,11 +357,12 @@ class ObjectIdentifier(Type):
             else:
                 exploded_high_values.append(char)
 
-        self.identifiers = identifiers
-        self.__collapsed_identifiers = [first_output]
+        self.identifiers = tuple(identifiers)
+        collapsed_identifiers = [first_output]
         for subidentifier in rest:
-            self.__collapsed_identifiers.extend(
+            collapsed_identifiers.extend(
                 ObjectIdentifier.encode_large_value(subidentifier))
+        self.__collapsed_identifiers = tuple(collapsed_identifiers)
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
@@ -411,6 +412,8 @@ class ObjectIdentifier(Type):
 
         return unzipped_a < unzipped_b
 
+    def __hash__(self):
+        return hash(self.identifiers)
 
     def pythonize(self):
         return '.'.join([str(_) for _ in self.identifiers])
