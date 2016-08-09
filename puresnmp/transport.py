@@ -5,7 +5,13 @@ This module mainly exist to enable a "seam" for mocking/patching out during
 testing.
 """
 import socket
+import logging
 from ipaddress import ip_address
+
+from .exc import Timeout
+
+LOG = logging.getLogger(__name__)
+RETRIES = 3
 
 
 def send(ip: str, port: int, packet: bytes) -> bytes:
@@ -14,7 +20,15 @@ def send(ip: str, port: int, packet: bytes) -> bytes:
     sock = socket.socket(address_family, socket.SOCK_DGRAM)
 
     sock.sendto(packet, (ip, port))
-    response = sock.recv(4096)
+    for x in range(RETRIES):
+        try:
+            response = sock.recv(4096)
+            break
+        except socket.timeout:
+            LOG.error('Timeout')  # TODO add detail
+            continue
+    else:
+        raise Timeout("Max of %d retries reached" % RETRIES)
     sock.close()
     return response
 
