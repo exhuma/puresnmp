@@ -59,8 +59,14 @@ def readbytes(filename):
     with open(join(DATA_DIR, filename)) as fp:
         lines = fp.readlines()
     without_ascii = [line[:50] for line in lines]
+
     str_bytes = []
     for line in without_ascii:
+        # if the content contains a ":" character, it contains the byte offset
+        # in the beginning. This is the case for libsnmp command output using
+        # the "-d" switch. We need to remove the offset
+        if ':' in line:
+            line = line.split(':')[1]
         str_bytes.extend(line.split())
     values = [int(char, 16) for char in str_bytes]
     return bytes(values)
