@@ -214,7 +214,7 @@ class Sequence(Type):
         self.items = items
 
     def __bytes__(self):
-        output = [bytes(item) for item in self.items]
+        output = [bytes(item) for item in self]
         output = b''.join(output)
         length = encode_length(len(output))
         tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, Sequence.TAG)
@@ -224,14 +224,14 @@ class Sequence(Type):
         return type(self) == type(other) and self.items == other.items
 
     def __repr__(self):
-        item_repr = [repr(item) for item in self.items]
+        item_repr = [repr(item) for item in self]
         return 'Sequence(%s)' % ', '.join(item_repr)
 
     def __iter__(self):
         return iter(self.items)
 
     def pythonize(self):
-        return [obj.pythonize() for obj in self.items]
+        return [obj.pythonize() for obj in self]
 
 
 class Integer(Type):

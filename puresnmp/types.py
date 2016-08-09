@@ -76,8 +76,7 @@ class SnmpMessage(Type):
             raise SnmpError('Error packet received: %s!' % msg)
         values, data = pop_tlv(data)
 
-        varbinds = [VarBind(*encoded_varbind.items)
-                    for encoded_varbind in values.items]
+        varbinds = [VarBind(*encoded_varbind) for encoded_varbind in values]
 
         return cls(
             request_id,
