@@ -87,12 +87,12 @@ class SnmpMessage(Type):
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
         self.request_id = request_id
+        self.error_status = error_status
+        self.error_index = error_index
         if isinstance(varbinds, tuple):
             self.varbinds = [varbinds]
         else:
             self.varbinds = varbinds
-        self.error_status = error_status
-        self.error_index = error_index
 
     def __bytes__(self):
         wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
@@ -118,6 +118,18 @@ class SnmpMessage(Type):
                 self.request_id == other.request_id and
                 self.varbinds == other.varbinds)
 
+    def pretty(self):
+        lines = [
+            self.__class__.__name__,
+            '    Request ID: %s' % self.request_id,
+            '    Error Status: %s' % self.error_status,
+            '    Error Index: %s' % self.error_index,
+            '    Varbinds: ',
+        ]
+        for bind in self.varbinds:
+            lines.append('        %s: %s' % (bind.oid, bind.value))
+
+        return '\n'.join(lines)
 
 class GetRequest(SnmpMessage):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
