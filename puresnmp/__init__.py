@@ -41,15 +41,13 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     return value.pythonize()
 
 
-def walk(ip: str, community: str, oid: str, version: bytes=Version.V2C,
+def walk(ip: str, community: str, oids, version: bytes=Version.V2C,
          port: int=161):
-
-    oid = ObjectIdentifier.from_string(oid)
 
     packet = Sequence(
         Integer(version),
         OctetString(community),
-        GetNextRequest(get_request_id(), oid)
+        GetNextRequest(get_request_id(), *oids)
     )
 
     response = send(ip, port, bytes(packet))
