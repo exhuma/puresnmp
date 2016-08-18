@@ -61,6 +61,8 @@ class Type(metaclass=Registry):
         Given a bytes object, this method reads the type information and length
         and uses it to convert the bytes representation into a python object.
         """
+
+        from .util import visible_octets
         cls.validate(data)
         expected_length, data = decode_length(data[1:])
         if not data:

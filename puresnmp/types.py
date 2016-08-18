@@ -5,7 +5,7 @@ SMI Types / Structure types which are not defined in ASN.1
 from collections import namedtuple
 
 from .exc import SnmpError
-from .x690.types import Integer, Type, Sequence, Null, pop_tlv, encode_length
+from .x690.types import Integer, Type, Sequence, Null, pop_tlv, encode_length, ObjectIdentifier
 from .x690.util import TypeInfo
 
 
@@ -131,6 +131,7 @@ class SnmpMessage(Type):
 
         return '\n'.join(lines)
 
+
 class GetRequest(SnmpMessage):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
 
@@ -139,7 +140,14 @@ class GetRequest(SnmpMessage):
             self.__class__.__name__, self.request_id, self.varbinds)
 
     def __init__(self, request_id, *oids):
-        super().__init__(request_id, [VarBind(oid, Null()) for oid in oids])
+        wrapped_oids = []
+        for oid in oids:
+            if isinstance(oid, str):
+                wrapped_oids.append(ObjectIdentifier.from_string(oid))
+            else:
+                wrapped_oids.append(oid)
+        super().__init__(request_id, [VarBind(oid, Null())
+                                      for oid in wrapped_oids])
 
 
 class GetResponse(SnmpMessage):

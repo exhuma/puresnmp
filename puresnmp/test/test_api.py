@@ -6,10 +6,13 @@ to use.
 """
 
 
+from collections import OrderedDict
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get
+from puresnmp import get, walk
+from puresnmp.types import Gauge, VarBind
+from puresnmp.x690.types import ObjectIdentifier
 
 from . import readbytes
 
@@ -51,3 +54,45 @@ class TestApi(unittest.TestCase):
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
+
+    def test_walk(self):
+        request_1 = readbytes('walk_request_1.hex')
+        response_1 = readbytes('walk_response_1.hex')
+        request_2 = readbytes('walk_request_2.hex')
+        response_2 = readbytes('walk_response_2.hex')
+        request_3 = readbytes('walk_request_3.hex')
+        response_3 = readbytes('walk_response_3.hex')
+
+        num_call = 0
+
+        def mocked_responses(*args, **kwargs):
+            nonlocal num_call
+            num_call += 1
+            if num_call == 1:
+                return response_1
+            elif num_call == 2:
+                return response_2
+            elif num_call == 3:
+                return response_3
+            else:
+                raise AssertionError('Expected no more than 3 calls!')
+
+        expected = [VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'),
+            Gauge(10000000)
+        ), VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'),
+            Gauge(4294967295)
+        )]
+
+        with patch('puresnmp.send') as mck:
+            mck.side_effect = mocked_responses
+            result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
+        self.assertEqual(result, expected)
+
+    def test_multi_walk(self):
+        self.skipTest('According to the spec a "walk" with multiple OIDs '
+                      'should be possible')  # TODO
+
+    def test_set(self):
+        self.skipTest('TODO')

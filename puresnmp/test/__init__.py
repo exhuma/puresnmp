@@ -58,7 +58,9 @@ class ByteTester(unittest.TestCase):
 def readbytes(filename):
     with open(join(DATA_DIR, filename)) as fp:
         lines = fp.readlines()
-    without_ascii = [line[:50] for line in lines]
+
+    ascii_position = 56 if ':' in lines[0] else 50
+    without_ascii = [line[:ascii_position] for line in lines]
 
     str_bytes = []
     for line in without_ascii:

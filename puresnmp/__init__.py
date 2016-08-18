@@ -5,6 +5,7 @@ implementations as possible.
 """
 from .x690.types import (
     Integer,
+    Null,
     ObjectIdentifier,
     OctetString,
     Sequence,
@@ -15,6 +16,7 @@ from .types import (
     GetNextRequest,
     GetRequest,
     SetRequest,
+    VarBind,
 )
 from .const import Version
 from .transport import send, get_request_id
@@ -41,47 +43,44 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     return value.pythonize()
 
 
-def walk(ip: str, community: str, oids, version: bytes=Version.V2C,
-         port: int=161):
-
+def _walk_internal(ip, community, oid, version, port):
+    request = GetNextRequest(get_request_id(), oid)
     packet = Sequence(
         Integer(version),
         OctetString(community),
-        GetNextRequest(get_request_id(), *oids)
+        request
     )
-
     response = send(ip, port, bytes(packet))
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
-    first_varbind = response_object.varbinds[0]  # TODO handle multiple varbinds
+    return response_object
 
-    retrieved_oid = first_varbind.oid
-    if retrieved_oid not in oid or retrieved_oid == oid:
-        # the second test checks if we got the same OID back as we requested.
-        # This usually points to an error (even if the error-code is not always
-        # set!)
-        return
 
+def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
+         port: int=161):
+
+    response_object = _walk_internal(ip, community, oid, version, port)
+
+    if len(response_object.varbinds) > 1:
+        raise SnmpError('Unepexted response. Expected one varbind but got more')
+
+    retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+    retrieved_oid = retrieved_oids[0]
+    previously_retrieved_oid = None
     while retrieved_oid:
-        yield first_varbind.oid, first_varbind.value
-        packet = Sequence(
-            Integer(version),
-            OctetString(community),
-            GetNextRequest(get_request_id(), retrieved_oid)
-        )
+        for bind in response_object.varbinds:
+            yield bind
 
-        response = send(ip, port, bytes(packet))
-        raw_response = Sequence.from_bytes(response)
-        response_object = raw_response[2]
-        first_varbind = response_object.varbinds[0]  # TODO handle multiple varbinds
-        if retrieved_oid == first_varbind.oid:
-            # If we got the same OID as the last request, we're likely finished.
-            # Not all devices set an appropriate error-code as defined in the
-            # RFC1157 Section 4.1.3, but at least guarantee this.
+        response_object = _walk_internal(ip, community, retrieved_oid,
+                                         version, port)
+        retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+        retrieved_oid = retrieved_oids[0]
+
+        # ending condition (check if we need to stop the walk)
+        if ObjectIdentifier.from_string(retrieved_oid) not in ObjectIdentifier.from_string(oid) or retrieved_oid == previously_retrieved_oid:
             return
-        retrieved_oid = first_varbind.oid
-        if retrieved_oid not in oid:
-            return
+
+        previously_retrieved_oid = retrieved_oid
 
 
 def set(ip: str, community: str, oid: str, value: Type,
