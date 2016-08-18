@@ -29,7 +29,7 @@ def pop_tlv(data):
     remaining octets.
     """
     if not data:
-        return None, b''
+        return Null(), b''
     type = TypeInfo.from_bytes(data[0])
     length, remainder = decode_length(data[1:])
     offset = len(data) - len(remainder)  # how many octets are used to encode the length
@@ -64,7 +64,7 @@ class Type(metaclass=Registry):
         cls.validate(data)
         expected_length, data = decode_length(data[1:])
         if not data:
-            return None
+            return Null()
         if len(data) != expected_length:
             raise ValueError('Corrupt packet: Unexpected length for {0} '
                              'Expected {1} (0x{1:02x}) '
