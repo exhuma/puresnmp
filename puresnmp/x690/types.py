@@ -400,6 +400,7 @@ class ObjectIdentifier(Type):
         Check if one OID is a child of another.
 
         TODO: This has been written in the middle of the night! It's messy...
+        TODO: is a simple str(self).startswith(str(other)) not enough?
         """
         a, b = other.identifiers, self.identifiers
 
