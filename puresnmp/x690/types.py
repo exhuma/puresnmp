@@ -87,6 +87,14 @@ class Type(metaclass=Registry):
     def pythonize(self):
         return self.value
 
+    def pretty(self):
+        """
+        Returns a readable representation (possibly multiline) of the value.
+
+        By default this simply returns the string representation. But more
+        complex values may override this.
+        """
+        return str(self)
 
 class NonASN1Type(Type):
     """
@@ -236,6 +244,14 @@ class Sequence(Type):
     def pythonize(self):
         return [obj.pythonize() for obj in self]
 
+    def pretty(self):
+        """
+        Overrides Type.pretty
+        """
+        lines = [self.__class__.__name__]
+        for item in self.items:
+            lines.append('   %s' % item.pretty())
+        return '\n'.join(lines)
 
 class Integer(Type):
     TAG = 0x02
