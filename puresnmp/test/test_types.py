@@ -172,6 +172,12 @@ class TestObjectIdentifier(ByteTester):
         b = ObjectIdentifier.from_string('1.3.6.1.2.1.1.9')
         self.assertFalse(a in b)
 
+    def test_non_containment_e(self):
+        # pylint: disable=invalid-name
+        a = ObjectIdentifier.from_string('1.3.6.1.2.13')
+        b = ObjectIdentifier.from_string('1.3.6.1.2.1')
+        self.assertFalse(a in b)
+
 
 class TestInteger(ByteTester):
 
