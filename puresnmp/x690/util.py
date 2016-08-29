@@ -5,7 +5,7 @@ Core/low-level x690 functions and data structures
 
 from binascii import hexlify, unhexlify
 from collections import namedtuple
-from typing import Tuple
+from typing import Tuple, Union
 
 
 class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
@@ -31,11 +31,13 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
     CONSTRUCTED = 'constructed'
 
     @staticmethod
-    def from_bytes(data: int) -> "TypeInfo":
+    def from_bytes(data: Union[int, bytes]) -> "TypeInfo":
         """
         Given one octet, extract the separate fields and return a TypeInfo
         instance.
         """
+        if isinstance(data, bytes):
+            data = int.from_bytes(data, 'big')
         # pylint: disable=protected-access
         if data == 0b11111111:
             raise NotImplementedError('Long identifier types are not yet '
@@ -53,8 +55,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
         elif cls_hint == 0b11:
             cls = TypeInfo.PRIVATE
         else:
-            raise ValueError('Unexpected value %r for type class' % bin(
-                cls_hint))
+            pass  # Impossible case (2 bits can only have 4 combinations).
 
         pc = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
 
@@ -86,12 +87,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
         return bytes([output])
 
     def __eq__(self, other):
-        if isinstance(other, int):
-            return self._raw_value == other
-        elif isinstance(self, int):
-            return self == other._raw_value
-        else:
-            return super().__eq__(other)
+        return super().__eq__(other)
 
 
 class Length:
