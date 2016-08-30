@@ -3,6 +3,7 @@ from ..x690.util import (
     TypeInfo,
     decode_length,
     encode_length,
+    visible_octets,
 )
 from . import ByteTester
 
@@ -213,3 +214,41 @@ class TestLengthOctets(ByteTester):
     def test_decode_length_reserved(self):
         with self.assertRaises(NotImplementedError):
             decode_length(bytes([0b11111111]))
+
+
+class TestHelpers(ByteTester):
+
+    def test_visible_octets_minimal(self):
+        result = visible_octets(bytes([0b00000000, 0b01010101]))
+        expected = '00 55                                              .U'
+        self.assertEqual(result, expected)
+
+    def test_visible_octets_double_space(self):
+        """
+        Test that we have a double space after 8 octets for better readability
+        """
+        result = visible_octets(bytes([
+            0b00000000,
+            0b01010101,
+            0b00000000,
+            0b01010101,
+            0b00000000,
+            0b01010101,
+            0b00000000,
+            0b01010101,
+            0b01010101,
+        ]))
+        expected = ('00 55 00 55 00 55 00 55  55                        '
+                    '.U.U.U.UU')
+        self.assertEqual(result, expected)
+
+    def test_visible_octets_multiline(self):
+        """
+        If we have more than 16 octets, we need to go to a new line.
+        """
+        result = visible_octets(bytes([0b00000000, 0b01010101] * 9))
+        expected = ('00 55 00 55 00 55 00 55  00 55 00 55 00 55 00 55   '
+                    '.U.U.U.U.U.U.U.U\n'
+                    '00 55                                              '
+                    '.U')
+        self.assertEqual(result, expected)
