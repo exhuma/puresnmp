@@ -1,5 +1,8 @@
 from ..x690.util import (
+    Length,
     TypeInfo,
+    decode_length,
+    encode_length,
 )
 from . import ByteTester
 
@@ -106,7 +109,7 @@ class TestTypeInfoEncoding(ByteTester):
         self.assertEqual(result, expected)
 
 
-class TestTypeInfoUtility(ByteTester):
+class TestTypeInfoClass(ByteTester):
     """
     Tests various "implied" functionality of TypeInfo objects.
     """
@@ -138,3 +141,75 @@ class TestTypeInfoUtility(ByteTester):
         expected = bytes([0b11111110])
         result = bytes(TypeInfo.from_bytes(expected))
         self.assertEqual(result, expected)
+
+    def test_impossible_class(self):
+        instance = TypeInfo(10, 100, 1000)
+        with self.assertRaisesRegexp(ValueError, 'class'):
+            bytes(instance)
+
+    def test_impossible_pc(self):
+        instance = TypeInfo(TypeInfo.APPLICATION, 100, 1000)
+        with self.assertRaisesRegexp(ValueError, 'primitive/constructed'):
+            bytes(instance)
+
+
+class TestLengthOctets(ByteTester):
+
+    def test_encode_length_short(self):
+        expected = bytes([0b00100110])
+        result = encode_length(38)
+        self.assertEqual(result, expected)
+
+    def test_encode_length_long(self):
+        expected = bytes([0b10000001, 0b11001001])
+        result = encode_length(201)
+        self.assertBytesEqual(result, expected)
+
+    def test_encode_length_longer(self):
+        expected = bytes([0b10000010, 0b00101110, 0b00000001])
+        result = encode_length(302)
+        self.assertBytesEqual(result, expected)
+
+    def test_encode_length_longer_2(self):
+        expected = bytes([0x81, 0xa4])
+        result = encode_length(164)
+        self.assertBytesEqual(result, expected)
+
+    def test_encode_length_indefinite(self):
+        expected = bytes([0b10000000])
+        result = encode_length(Length.INDEFINITE)
+        self.assertBytesEqual(result, expected)
+
+    def test_identifier_long(self):
+        with self.assertRaises(NotImplementedError):
+            TypeInfo.from_bytes(0b11111111)
+        self.skipTest('Not yet implemented')  # TODO implement
+
+    def test_decode_length_short(self):
+        data = b'\x05'
+        expected = 5
+        result, data = decode_length(data)
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b'')
+
+    def test_decode_length_long(self):
+        data = bytes([0b10000010, 0b00000001, 0b10110011])
+        expected = 435
+        result, data = decode_length(data)
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b'')
+
+    def test_decode_length_longer(self):
+        data = bytes([0x81, 0xa4])
+        expected = 164
+        result, data = decode_length(data)
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b'')
+
+    def test_decode_length_indefinite(self):
+        with self.assertRaises(NotImplementedError):
+            decode_length(bytes([0b10000000]))
+
+    def test_decode_length_reserved(self):
+        with self.assertRaises(NotImplementedError):
+            decode_length(bytes([0b11111111]))
