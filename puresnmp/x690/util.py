@@ -165,7 +165,7 @@ def visible_octets(data: bytes) -> str:
     Developer note:
         This is not super performant. But it's not something that's supposed to
         be run during normal operations (mostly for testing and debugging).  So
-        performance should not be an issue, and this is more readable than
+        performance should not be an issue, and this is less obfuscated than
         existing solutions.
     """
     hexed = hexlify(data).decode('ascii')
