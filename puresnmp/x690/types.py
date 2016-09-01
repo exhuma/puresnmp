@@ -2,7 +2,6 @@
 See X690: https://en.wikipedia.org/wiki/X.690
 """
 
-from collections import namedtuple
 from itertools import zip_longest
 
 from .util import decode_length, encode_length, TypeInfo
@@ -32,12 +31,14 @@ def pop_tlv(data):
         return Null(), b''
     type = TypeInfo.from_bytes(data[0])
     length, remainder = decode_length(data[1:])
-    offset = len(data) - len(remainder)  # how many octets are used to encode the length
+
+    # determine how many octets are used to encode the length!
+    offset = len(data) - len(remainder)
     chunk = data[:length+offset]
     try:
         cls = Registry.get(type.cls, type.tag)
         value = cls.from_bytes(chunk)
-    except KeyError as exc:
+    except KeyError:
         # Add context information
         value = NonASN1Type(data[0], chunk)
     return value, remainder[length:]
@@ -62,7 +63,6 @@ class Type(metaclass=Registry):
         and uses it to convert the bytes representation into a python object.
         """
 
-        from .util import visible_octets
         cls.validate(data)
         expected_length, data = decode_length(data[1:])
         if not data:
@@ -97,6 +97,7 @@ class Type(metaclass=Registry):
         complex values may override this.
         """
         return str(self)
+
 
 class NonASN1Type(Type):
     """
@@ -255,6 +256,7 @@ class Sequence(Type):
             lines.append('   %s' % item.pretty())
         return '\n'.join(lines)
 
+
 class Integer(Type):
     TAG = 0x02
 
@@ -359,7 +361,7 @@ class ObjectIdentifier(Type):
         if len(identifiers) > 1:
             # The first two bytes are collapsed according to X.690
             # See https://en.wikipedia.org/wiki/X.690#BER_encoding
-            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
+            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]  # NOQA
             first_output = (40*first) + second
         else:
             first_output = 1
@@ -546,5 +548,3 @@ class EOC(Type):
 
 class BitString(Type):
     TAG = 0x03
-
-
