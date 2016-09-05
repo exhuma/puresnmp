@@ -1,0 +1,4 @@
+[run]
+omit =
+    # Don't check for coverage in unit-tests
+    puresnmp/test/*
