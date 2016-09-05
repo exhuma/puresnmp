@@ -365,6 +365,10 @@ class TestNonASN1Type(ByteTester):
         expected = b'\x99\x01\x0a'
         self.assertEqual(result, expected)
 
+    def test_decoding_corrupt_length(self):
+        with self.assertRaisesRegexp(ValueError, 'length'):
+            NonASN1Type.from_bytes(b'\x99\x02\x0a')
+
 
 class TestAllTypes(ByteTester):
     """
