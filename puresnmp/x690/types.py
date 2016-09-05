@@ -260,7 +260,7 @@ class Sequence(Type):
     def pythonize(self):
         return [obj.pythonize() for obj in self]
 
-    def pretty(self):
+    def pretty(self):  # pragma: no cover
         """
         Overrides Type.pretty
         """

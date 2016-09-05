@@ -85,7 +85,7 @@ class SnmpMessage(Type):
                 self.request_id == other.request_id and
                 self.varbinds == other.varbinds)
 
-    def pretty(self):
+    def pretty(self):  # pragma: no cover
         lines = [
             self.__class__.__name__,
             '    Request ID: %s' % self.request_id,
