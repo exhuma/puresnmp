@@ -1,3 +1,4 @@
+from ..exc import SnmpError
 from ..x690.types import (
     Integer,
     ObjectIdentifier,
@@ -85,6 +86,30 @@ class TestGet(ByteTester):
             )
         )
         self.assertEqual(result, expected)
+
+    def test_get_response_error(self):
+        data = (b"\x30\x33\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63"
+                b"\xa2\x26"
+                b"\x02\x04\x72\x0b\x8c\x3f"
+                b"\x02\x01\x01\x02\x01\x02"
+                b"\x30\x18"
+                b"\x30\x16"
+                b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
+                b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a")
+        with self.assertRaisesRegexp(SnmpError, 'tooBig'):
+            Sequence.from_bytes(data)
+
+    def test_get_repr(self):
+        oid = ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0)
+        request = GetRequest(
+            1913359423,
+            oid,
+        )
+        result = repr(request)
+        self.assertTrue(result.startswith('GetRequest'),
+                        'repr must start with the class name')
+        self.assertIn('1913359423', result, 'repr must contain the request ID')
+        self.assertIn(repr(oid), result, 'repr must contain the request OID')
 
     def test_multiget_request(self):
         expected = readbytes('multiget.hex')
