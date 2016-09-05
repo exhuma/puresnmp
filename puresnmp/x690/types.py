@@ -76,7 +76,7 @@ class Type(metaclass=Registry):
         return cls.decode(data)
 
     @classmethod
-    def decode(cls, data):
+    def decode(cls, data):  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
         of the object. That means, the octets *without* the type information and
@@ -84,7 +84,7 @@ class Type(metaclass=Registry):
         """
         raise NotImplementedError('Decoding is not yet implemented on %s' % cls)
 
-    def __bytes__(self):
+    def __bytes__(self):  # pragma: no cover
         raise NotImplementedError('Not yet implemented')
 
     def __repr__(self):
@@ -93,7 +93,7 @@ class Type(metaclass=Registry):
     def pythonize(self):
         return self.value
 
-    def pretty(self):
+    def pretty(self):  # pragma: no cover
         """
         Returns a readable representation (possibly multiline) of the value.
 
