@@ -387,3 +387,7 @@ class TestAllTypes(ByteTester):
         result = Type.from_bytes(b'')
         expected = Null()
         self.assertEqual(result, expected)
+
+    def test_corrupt_length(self):
+        with self.assertRaisesRegexp(ValueError, 'length'):
+            Integer.from_bytes(b'\x02\x01\x01\x01')
