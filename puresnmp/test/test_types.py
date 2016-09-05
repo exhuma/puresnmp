@@ -3,9 +3,13 @@
 from ..x690.types import (
     Boolean,
     Integer,
+    NonASN1Type,
+    Null,
     ObjectIdentifier,
     OctetString,
     Sequence,
+    Type,
+    pop_tlv,
 )
 from ..x690.util import Length, decode_length, encode_length, TypeInfo
 
@@ -178,6 +182,11 @@ class TestObjectIdentifier(ByteTester):
         b = ObjectIdentifier.from_string('1.3.6.1.2.1')
         self.assertFalse(a in b)
 
+    def test_create_by_iterable(self):
+        result = ObjectIdentifier(['1', '2', '3'])
+        expected = ObjectIdentifier(1, 2, 3)
+        self.assertEqual(result, expected)
+
 
 class TestInteger(ByteTester):
 
@@ -320,4 +329,61 @@ class TestSequence(ByteTester):
         )
         result = data[1]
         expected = OctetString(b'foo')
+        self.assertEqual(result, expected)
+
+
+class TestNull(ByteTester):
+
+    def test_null_is_false(self):
+        """
+        The Null type should be considered as falsy.
+        """
+        self.assertFalse(Null())
+
+    def test_validate_true(self):
+        Null.validate(b'\x05\x00')
+
+    def test_validate_false(self):
+        with self.assertRaises(ValueError):
+            Null.validate(b'\x05\x01')
+
+
+class TestNonASN1Type(ByteTester):
+
+    def test_null_from_bytes(self):
+        result = NonASN1Type.from_bytes(b'')
+        expected = Null()
+        self.assertEqual(result, expected)
+
+
+class TestAllTypes(ByteTester):
+    """
+    Tests which are valid for all types
+    """
+
+    def test_tlv_null(self):
+        result = pop_tlv(b'')
+        expected = (Null(), b'')
+        self.assertEqual(result, expected)
+
+    def test_tlv_simple(self):
+        result = pop_tlv(bytes([2, 1, 0]))
+        expected = (Integer(0), b'')
+        self.assertEqual(result, expected)
+
+    def test_tlv_unknown_type(self):
+        result = pop_tlv(bytes([254, 1, 0]))
+        expected = (NonASN1Type(254, b'\x00'), b'')
+        self.assertEqual(result, expected)
+        self.assertEqual(result[0].tag, 254)
+        self.assertEqual(result[0].length, 1)
+        self.assertEqual(result[0].value, b'\x00')
+
+    def test_validation_wrong_typeclass(self):
+        with self.assertRaises(ValueError):
+            Integer.validate(bytes([0b00111110]))
+
+    def test_null_from_bytes(self):
+        result = Type.from_bytes(b'')
+        expected = Null()
         self.assertEqual(result, expected)

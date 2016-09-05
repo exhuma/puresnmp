@@ -24,8 +24,8 @@ class Registry(type):
 
 def pop_tlv(data):
     """
-    Inspects the next value in the data chunk. Returns the value and the
-    remaining octets.
+    Given a stream of octets, inspects and parsed the next octet. It returns the
+    value and the remaining octets.
     """
     if not data:
         return Null(), b''
@@ -40,7 +40,7 @@ def pop_tlv(data):
         value = cls.from_bytes(chunk)
     except KeyError:
         # Add context information
-        value = NonASN1Type(data[0], chunk)
+        value = NonASN1Type.from_bytes(chunk)
     return value, remainder[length:]
 
 
@@ -52,9 +52,10 @@ class Type(metaclass=Registry):
         tinfo = TypeInfo.from_bytes(data[0])
         if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
             raise ValueError('Invalid type header! '
-                             'Expected "universal" tag '
-                             'with ID 0x%02x, got ID 0x%02x' % (
-                                 cls.TAG, data[0]))
+                             'Expected a %s class with tag '
+                             'ID 0x%02x, but got a %s class with '
+                             'tag ID 0x%02x' % (
+                                 cls.TYPECLASS, cls.TAG, tinfo.cls, data[0]))
 
     @classmethod
     def from_bytes(cls, data):
@@ -63,10 +64,10 @@ class Type(metaclass=Registry):
         and uses it to convert the bytes representation into a python object.
         """
 
-        cls.validate(data)
-        expected_length, data = decode_length(data[1:])
         if not data:
             return Null()
+        cls.validate(data)
+        expected_length, data = decode_length(data[1:])
         if len(data) != expected_length:
             raise ValueError('Corrupt packet: Unexpected length for {0} '
                              'Expected {1} (0x{1:02x}) '
@@ -107,7 +108,7 @@ class NonASN1Type(Type):
     def __init__(self, tag, value):
         self.value = value
         self.tag = tag
-        self.length = encode_length(len(value))
+        self.length = len(value)
 
     def __bytes__(self):
         return (bytes([self.tag]) + self.length + self.value)
@@ -119,6 +120,24 @@ class NonASN1Type(Type):
         return (type(self) == type(other) and
                 self.value == other.value and
                 self.tag == other.tag)
+
+    @staticmethod
+    def from_bytes(data):
+        """
+        Overrides typical conversion by removing type validation. As, by
+        definition this class is used for unknown types, we cannot validate
+        them.
+        """
+        if not data:
+            return Null()
+        tag = data[0]
+        expected_length, data = decode_length(data[1:])
+        if len(data) != expected_length:
+            raise ValueError('Corrupt packet: Unexpected length for {0} '
+                             'Expected {1} (0x{1:02x}) '
+                             'but got {2} (0x{2:02x})'.format(
+                                 NonASN1Type, expected_length, len(data)))
+        return NonASN1Type(tag, data)
 
     def pythonize(self):
         """
@@ -176,6 +195,9 @@ class Null(Type):
 
     def __repr__(self):
         return 'Null()'
+
+    def __bool__(self):
+        return False
 
 
 class OctetString(Type):
@@ -356,7 +378,7 @@ class ObjectIdentifier(Type):
         # If the user hands in an iterable, instead of positional arguments,
         # make sure we unpack it
         if len(identifiers) == 1 and not isinstance(identifiers[0], int):
-            identifiers = identifiers[0]
+            identifiers = [int(ident) for ident in identifiers[0]]
 
         if len(identifiers) > 1:
             # The first two bytes are collapsed according to X.690
