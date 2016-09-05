@@ -114,7 +114,7 @@ class NonASN1Type(Type):
         self.length = len(value)
 
     def __bytes__(self):
-        return (bytes([self.tag]) + self.length + self.value)
+        return bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self):
         return 'NonASN1Type(%r, %r)' % (self.tag, self.value)

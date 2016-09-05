@@ -355,6 +355,16 @@ class TestNonASN1Type(ByteTester):
         expected = Null()
         self.assertEqual(result, expected)
 
+    def test_decoding(self):
+        result, _ = pop_tlv(b'\x99\x01\x0a')
+        expected = NonASN1Type(0x99, b'\x0a')
+        self.assertEqual(result, expected)
+
+    def test_encoding(self):
+        result = bytes(NonASN1Type(0x99, b'\x0a'))
+        expected = b'\x99\x01\x0a'
+        self.assertEqual(result, expected)
+
 
 class TestAllTypes(ByteTester):
     """
