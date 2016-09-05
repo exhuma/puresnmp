@@ -4,7 +4,7 @@ from ..x690.types import (
     OctetString,
     Sequence,
 )
-from ..types import (
+from ..pdu import (
     GetNextRequest,
     GetRequest,
     GetResponse,

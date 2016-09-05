@@ -12,7 +12,7 @@ from .x690.types import (
     Type,
 )
 from .exc import SnmpError
-from .types import (
+from .pdu import (
     GetNextRequest,
     GetRequest,
     SetRequest,
