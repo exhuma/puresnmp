@@ -29,15 +29,7 @@ ERROR_MESSAGES = {
 
 
 class SnmpMessage(Type):
-
-    @classmethod
-    def validate(cls, data):
-        tinfo = TypeInfo.from_bytes(data[0])
-        if tinfo.cls != TypeInfo.CONTEXT or tinfo.tag != cls.TAG:
-            raise ValueError(
-                'Invalid type header! '
-                'Expected "context" tag with ID 0x%02x, '
-                'got ID 0x%02x' % (cls.TAG, data[0]))
+    TYPECLASS = TypeInfo.CONTEXT
 
     @classmethod
     def decode(cls, data):
@@ -109,10 +101,6 @@ class SnmpMessage(Type):
 
 class GetRequest(SnmpMessage):
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
-
-    def __repr__(self):
-        return '%s(%r, %r)' % (
-            self.__class__.__name__, self.request_id, self.varbinds)
 
     def __init__(self, request_id, *oids):
         wrapped_oids = []

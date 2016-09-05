@@ -87,6 +87,9 @@ class Type(metaclass=Registry):
     def __bytes__(self):
         raise NotImplementedError('Not yet implemented')
 
+    def __repr__(self):
+        return '%s(%r)' % (self.__class__.__name__, self.value)
+
     def pythonize(self):
         return self.value
 
@@ -139,12 +142,6 @@ class NonASN1Type(Type):
                                  NonASN1Type, expected_length, len(data)))
         return NonASN1Type(tag, data)
 
-    def pythonize(self):
-        """
-        Convert this object in an appropriate python object
-        """
-        return self.value
-
 
 class Boolean(Type):
     TAG = 0x01
@@ -165,9 +162,6 @@ class Boolean(Type):
 
     def __bytes__(self):
         return bytes([1, 1, int(self.value)])
-
-    def __repr__(self):
-        return 'Boolean(%r)' % bool(self.value)
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
@@ -216,9 +210,6 @@ class OctetString(Type):
 
     def __bytes__(self):
         return (bytes([OctetString.TAG]) + self.length + self.value)
-
-    def __repr__(self):
-        return 'OctetString(%r)' % self.value
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
@@ -305,9 +296,6 @@ class Integer(Type):
 
     def __eq__(self, other):
         return type(self) == type(other) and self.value == other.value
-
-    def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self.value)
 
 
 class ObjectIdentifier(Type):
