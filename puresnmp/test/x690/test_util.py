@@ -1,11 +1,11 @@
-from ..x690.util import (
+from ...x690.util import (
     Length,
     TypeInfo,
     decode_length,
     encode_length,
     visible_octets,
 )
-from . import ByteTester
+from .. import ByteTester
 
 
 class TestTypeInfoDecoding(ByteTester):

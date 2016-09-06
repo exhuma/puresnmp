@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring
 
-from ..x690.types import (
+from ...x690.types import (
     Boolean,
     Integer,
     NonASN1Type,
@@ -11,9 +11,9 @@ from ..x690.types import (
     Type,
     pop_tlv,
 )
-from ..x690.util import Length, decode_length, encode_length, TypeInfo
+from ...x690.util import Length, decode_length, encode_length, TypeInfo
 
-from . import ByteTester
+from .. import ByteTester
 
 
 class TestBoolean(ByteTester):
