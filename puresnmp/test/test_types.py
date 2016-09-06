@@ -347,6 +347,11 @@ class TestNull(ByteTester):
         with self.assertRaises(ValueError):
             Null.validate(b'\x05\x01')
 
+    def test_encoding(self):
+        result = bytes(Null())
+        expected = b'\x05\x00'
+        self.assertEqual(result, expected)
+
 
 class TestNonASN1Type(ByteTester):
 
