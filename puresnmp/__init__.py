@@ -92,11 +92,15 @@ def set(ip: str, community: str, oid: str, value: Type,
 
     oid = ObjectIdentifier.from_string(oid)
 
-    request = SetRequest(get_request_id(), oid, value)
+    request = SetRequest(get_request_id(), [VarBind(oid, value)])
     packet = Sequence(Integer(version),
                       OctetString(community),
                       request)
     response = send(ip, port, bytes(packet))
     raw_response = Sequence.from_bytes(response)
-    result = raw_response[2].value
-    return result.pythonize()
+    varbinds = raw_response[2].varbinds
+    if len(varbinds) != 1:
+        raise SnmpError('Unexpected response. Expected 1 varbind, but got %s!' %
+                        len(varbinds))
+    value = varbinds[0].value
+    return value.pythonize()

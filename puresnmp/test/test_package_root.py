@@ -10,11 +10,11 @@ from collections import OrderedDict
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get, walk
+from puresnmp import get, walk, set
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import VarBind
 from puresnmp.types import Gauge
-from puresnmp.x690.types import ObjectIdentifier
+from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString
 
 from . import readbytes
 
@@ -116,5 +116,29 @@ class TestApi(unittest.TestCase):
             with self.assertRaisesRegexp(SnmpError, 'varbind'):
                 next(walk('::1', 'private', '1.2.3'))
 
+    def test_set_without_type(self):
+        """
+        As we need typing information, we have to hand in an instance of
+        supported types (a subclass of puresnmp.x690.Type).
+        """
+        with patch('puresnmp.send'):
+            with self.assertRaisesRegexp(TypeError, 'Type'):
+                set('::1', 'private', '1.2.3', 12)
+
     def test_set(self):
-        self.skipTest('TODO')
+        data = readbytes('set_response.hex')
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            set('::1', 'private', '1.3.6.1.2.1.1.4.0',
+                OctetString(b'hello@world.com'))
+
+    def test_set_multiple_varbind(self):
+        """
+        SET responses should only contain one varbind.
+        """
+        data = readbytes('set_response_multiple.hex')
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            with self.assertRaisesRegexp(SnmpError, 'varbind'):
+                set('::1', 'private', '1.3.6.1.2.1.1.4.0',
+                    OctetString(b'hello@world.com'))
