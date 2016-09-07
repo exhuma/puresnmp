@@ -1,6 +1,11 @@
 """
 Model for SNMP PDUs (Request/Response messages)
 """
+
+# TODO: Add a method to wrap a message in a full packet (including SNMP version
+#       and community). This can then replace some duplicated code in
+#       "puresnmp.get", "puresnmp.walk" & co.
+
 from collections import namedtuple
 
 from .exc import SnmpError
