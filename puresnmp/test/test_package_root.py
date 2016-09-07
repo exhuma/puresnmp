@@ -11,6 +11,7 @@ from unittest.mock import patch
 import unittest
 
 from puresnmp import get, walk
+from puresnmp.exc import SnmpError
 from puresnmp.pdu import VarBind
 from puresnmp.types import Gauge
 from puresnmp.x690.types import ObjectIdentifier
@@ -55,6 +56,16 @@ class TestApi(unittest.TestCase):
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
+
+    def test_get_multiple_return_binds(self):
+        """
+        A "GET" response should only return one varbind.
+        """
+        data = readbytes('get_sysoid_01_error.hex')
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            with self.assertRaisesRegexp(SnmpError, 'varbind'):
+                get('::1', 'private', '1.2.3')
 
     def test_walk(self):
         request_1 = readbytes('walk_request_1.hex')
