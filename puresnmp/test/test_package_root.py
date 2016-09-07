@@ -106,5 +106,15 @@ class TestApi(unittest.TestCase):
         self.skipTest('According to the spec a "walk" with multiple OIDs '
                       'should be possible')  # TODO
 
+    def test_walk_multiple_return_binds(self):
+        """
+        A "WALK" response should only return one varbind.
+        """
+        data = readbytes('get_sysoid_01_error.hex')
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            with self.assertRaisesRegexp(SnmpError, 'varbind'):
+                next(walk('::1', 'private', '1.2.3'))
+
     def test_set(self):
         self.skipTest('TODO')
