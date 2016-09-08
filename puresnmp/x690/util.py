@@ -36,6 +36,8 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         Given one octet, extract the separate fields and return a TypeInfo
         instance.
         """
+        # pylint: disable=attribute-defined-outside-init
+
         if isinstance(data, bytes):
             data = int.from_bytes(data, 'big')
         # pylint: disable=protected-access
@@ -94,6 +96,8 @@ class Length:
     """
     A simple "namespace" to avoid magic values for indefinite lengths.
     """
+    # pylint: disable=too-few-public-methods
+
     INDEFINITE = "indefinite"
 
 
@@ -172,21 +176,21 @@ def visible_octets(data: bytes) -> str:
     tuples = [''.join((a, b)) for a, b in zip(hexed[::2], hexed[1::2])]
     line = []
     output = []
-    ascii = []
+    ascii_column = []
     for idx, octet in enumerate(tuples):
         line.append(octet)
         # only use printable characters in ascii output
-        ascii.append(octet if 32 <= int(octet, 16) < 127 else '2e')
+        ascii_column.append(octet if 32 <= int(octet, 16) < 127 else '2e')
         if (idx+1) % 8 == 0:
             line.append('')
         if (idx+1) % 8 == 0 and (idx+1) % 16 == 0:
-            raw_ascii = unhexlify(''.join(ascii))
+            raw_ascii = unhexlify(''.join(ascii_column))
             raw_ascii = raw_ascii.replace(b'\\n z', b'.')
-            ascii = []
+            ascii_column = []
             output.append('%-50s %s' % (' '.join(line),
                                         raw_ascii.decode('ascii')))
             line = []
-    raw_ascii = unhexlify(''.join(ascii))
+    raw_ascii = unhexlify(''.join(ascii_column))
     raw_ascii = raw_ascii.replace(b'\\n z', b'.')
     output.append('%-50s %s' % (' '.join(line), raw_ascii.decode('ascii')))
     line = []

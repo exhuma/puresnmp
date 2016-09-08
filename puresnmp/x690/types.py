@@ -1,6 +1,7 @@
 """
 See X690: https://en.wikipedia.org/wiki/X.690
 """
+# pylint: disable=abstract-method, missing-docstring
 
 from itertools import zip_longest
 
@@ -11,8 +12,8 @@ class Registry(type):
 
     __registry = {}
 
-    def __new__(cls, name, parents, dict_):
-        new_cls = super(Registry, cls).__new__(cls, name, parents, dict_)
+    def __new__(mcs, name, parents, dict_):
+        new_cls = super(Registry, mcs).__new__(mcs, name, parents, dict_)
         if hasattr(new_cls, 'TAG'):
             Registry.__registry[(new_cls.TYPECLASS, new_cls.TAG)] = new_cls
         return new_cls
@@ -29,14 +30,14 @@ def pop_tlv(data):
     """
     if not data:
         return Null(), b''
-    type = TypeInfo.from_bytes(data[0])
+    type_ = TypeInfo.from_bytes(data[0])
     length, remainder = decode_length(data[1:])
 
     # determine how many octets are used to encode the length!
     offset = len(data) - len(remainder)
     chunk = data[:length+offset]
     try:
-        cls = Registry.get(type.cls, type.tag)
+        cls = Registry.get(type_.cls, type_.tag)
         value = cls.from_bytes(chunk)
     except KeyError:
         # Add context information
@@ -46,6 +47,7 @@ def pop_tlv(data):
 
 class Type(metaclass=Registry):
     TYPECLASS = TypeInfo.UNIVERSAL
+    TAG = 0
 
     @classmethod
     def validate(cls, data):
@@ -88,9 +90,11 @@ class Type(metaclass=Registry):
         raise NotImplementedError('Not yet implemented')
 
     def __repr__(self):
+        # pylint: disable=no-member
         return '%s(%r)' % (self.__class__.__name__, self.value)
 
     def pythonize(self):
+        # pylint: disable=no-member
         return self.value
 
     def pretty(self):  # pragma: no cover
@@ -120,6 +124,7 @@ class NonASN1Type(Type):
         return 'NonASN1Type(%r, %r)' % (self.tag, self.value)
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return (type(self) == type(other) and
                 self.value == other.value and
                 self.tag == other.tag)
@@ -164,6 +169,7 @@ class Boolean(Type):
         return bytes([1, 1, int(self.value)])
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.value == other.value
 
 
@@ -185,6 +191,7 @@ class Null(Type):
         return b'\x05\x00'
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other)
 
     def __repr__(self):
@@ -209,9 +216,10 @@ class OctetString(Type):
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return (bytes([OctetString.TAG]) + self.length + self.value)
+        return bytes([OctetString.TAG]) + self.length + self.value
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.value == other.value
 
     def pythonize(self):
@@ -243,6 +251,7 @@ class Sequence(Type):
         return bytes(tinfo) + length + output
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.items == other.items
 
     def __repr__(self):
@@ -293,6 +302,7 @@ class Integer(Type):
         return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.value == other.value
 
 
@@ -404,6 +414,7 @@ class ObjectIdentifier(Type):
         return 'ObjectIdentifier(%r)' % (self.identifiers, )
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
 
@@ -413,6 +424,7 @@ class ObjectIdentifier(Type):
 
         TODO: This has been written in the middle of the night! It's messy...
         """
+        # pylint: disable=invalid-name
 
         a, b = other.identifiers, self.identifiers
 

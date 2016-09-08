@@ -24,6 +24,9 @@ from .transport import send, get_request_id
 
 def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
         port: int=161):
+    """
+    Executes a simple SNMP GET request and returns a pure Python data structure.
+    """
 
     oid = ObjectIdentifier.from_string(oid)
 
@@ -44,6 +47,9 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
 
 
 def _walk_internal(ip, community, oid, version, port):
+    """
+    Executes a single SNMP GETNEXT request (used inside *walk*).
+    """
     request = GetNextRequest(get_request_id(), oid)
     packet = Sequence(
         Integer(version),
@@ -58,6 +64,10 @@ def _walk_internal(ip, community, oid, version, port):
 
 def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
          port: int=161):
+    """
+    Executes a sequence of SNMP GETNEXT requests and returns an iterator over
+    :py:class:`~puresnmp.pdu.VarBind` instances.
+    """
 
     response_object = _walk_internal(ip, community, oid, version, port)
 
@@ -66,7 +76,7 @@ def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
 
     retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
     retrieved_oid = retrieved_oids[0]
-    previously_retrieved_oid = None
+    prev_retrieved_oid = None
     while retrieved_oid:
         for bind in response_object.varbinds:
             yield bind
@@ -77,14 +87,20 @@ def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
         retrieved_oid = retrieved_oids[0]
 
         # ending condition (check if we need to stop the walk)
-        if ObjectIdentifier.from_string(retrieved_oid) not in ObjectIdentifier.from_string(oid) or retrieved_oid == previously_retrieved_oid:
+        retrieved_oid_ = ObjectIdentifier.from_string(retrieved_oid)
+        oid_ = ObjectIdentifier.from_string(oid)
+        if retrieved_oid_ not in oid_ or retrieved_oid == prev_retrieved_oid:
             return
 
-        previously_retrieved_oid = retrieved_oid
+        prev_retrieved_oid = retrieved_oid
 
 
 def set(ip: str, community: str, oid: str, value: Type,
         version: bytes=Version.V2C, port: int=161):
+    """
+    Executes a simple SNMP SET request. The result is returned as pure Python
+    data structure.
+    """
 
     if not isinstance(value, Type):
         raise TypeError('SNMP requires typing information. The value for a '

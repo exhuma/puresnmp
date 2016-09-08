@@ -34,6 +34,9 @@ ERROR_MESSAGES = {
 
 
 class SnmpMessage(Type):
+    """
+    The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
+    """
     TYPECLASS = TypeInfo.CONTEXT
 
     @classmethod
@@ -86,6 +89,7 @@ class SnmpMessage(Type):
             self.request_id, self.varbinds)
 
     def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
         return (type(other) == type(self) and
                 self.request_id == other.request_id and
                 self.varbinds == other.varbinds)
@@ -105,6 +109,9 @@ class SnmpMessage(Type):
 
 
 class GetRequest(SnmpMessage):
+    """
+    Represents an SNMP Get Request.
+    """
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
 
     def __init__(self, request_id, *oids):
@@ -119,12 +126,22 @@ class GetRequest(SnmpMessage):
 
 
 class GetResponse(SnmpMessage):
+    """
+    Represents an SNMP basic response (this may be returned for other requests
+    than GET as well).
+    """
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
 
 
 class GetNextRequest(GetRequest):
+    """
+    Represents an SNMP GetNext Request.
+    """
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa1)
 
 
 class SetRequest(SnmpMessage):
+    """
+    Represents an SNMP SET Request.
+    """
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa3)
