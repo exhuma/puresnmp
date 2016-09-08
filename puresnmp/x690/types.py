@@ -532,24 +532,6 @@ class BmpString(Type):
     TAG = 0x1e
 
 
-class Raw(Type):
-    """
-    This type is used to encapsulate raw bytes. This can be used if no specific
-    type exists (yet).
-    """
-
-    @staticmethod
-    def from_bytes(data):
-        octets = [int.from_bytes(char) for char in data]
-        return Raw(*octets)
-
-    def __init__(self, *octets):
-        self.octets = octets
-
-    def __bytes__(self):
-        return bytes(self.octets)
-
-
 class EOC(Type):
     TAG = 0x00
 
