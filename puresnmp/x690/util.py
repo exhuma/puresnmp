@@ -8,7 +8,7 @@ from collections import namedtuple
 from typing import Tuple, Union
 
 
-class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
+class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     """
     Decoded structure for an x690 "type" octet. The structure contains 3 fields:
 
@@ -16,7 +16,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
         The typeclass (either TypeInfo.UNIVERSAL, TypeInfo.APPLICATION,
         TypeInfo.CONTEXT or TypeInfo.CONSTRUCTED)
 
-    pc
+    priv_const
         Whether the value is TypeInfo.CONSTRUCTED or TypeInfo.PRIMITIVE
 
     tag
@@ -57,9 +57,9 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
         else:
             pass  # Impossible case (2 bits can only have 4 combinations).
 
-        pc = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
+        priv_const = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
 
-        instance = TypeInfo(cls, pc, value)
+        instance = TypeInfo(cls, priv_const, value)
         instance._raw_value = data
         return instance
 
@@ -76,14 +76,14 @@ class TypeInfo(namedtuple('TypeInfo', 'cls pc tag')):
         else:
             raise ValueError('Unexpected class for type info')
 
-        if self.pc == TypeInfo.CONSTRUCTED:
-            pc = 0b01
-        elif self.pc == TypeInfo.PRIMITIVE:
-            pc = 0b00
+        if self.priv_const == TypeInfo.CONSTRUCTED:
+            priv_const = 0b01
+        elif self.priv_const == TypeInfo.PRIMITIVE:
+            priv_const = 0b00
         else:
             raise ValueError('Unexpected primitive/constructed for type info')
 
-        output = cls << 6 | pc << 5 | self.tag
+        output = cls << 6 | priv_const << 5 | self.tag
         return bytes([output])
 
     def __eq__(self, other):

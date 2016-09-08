@@ -356,6 +356,7 @@ class TestSequence(ByteTester):
         expected = 'Sequence(Integer(10))'
         self.assertEqual(result, expected)
 
+
 class TestNull(ByteTester):
 
     def test_null_is_false(self):
