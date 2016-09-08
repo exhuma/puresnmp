@@ -154,7 +154,7 @@ class Boolean(Type):
     def validate(cls, data):
         super().validate(data)
         if data[1] != 1:
-            raise ValueError('Unexpected Boolean value. Lenght should be 1, it '
+            raise ValueError('Unexpected Boolean value. Length should be 1, it '
                              'was %d' % data[1])
 
     def __init__(self, value):
@@ -178,7 +178,7 @@ class Null(Type):
                              'was %d' % data[1])
 
     @classmethod
-    def decode(data):
+    def decode(cls, data):
         return Null()
 
     def __bytes__(self):
@@ -229,8 +229,6 @@ class Sequence(Type):
         output = []
         while data:
             value, data = pop_tlv(data)
-            if value is None:
-                break
             output.append(value)
         return Sequence(*output)
 

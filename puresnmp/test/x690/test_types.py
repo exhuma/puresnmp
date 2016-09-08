@@ -53,6 +53,13 @@ class TestBoolean(ByteTester):
         expected = True
         self.assertEqual(result, expected)
 
+    def test_validate_too_long(self):
+        """
+        Validate what happens when there are too many bytes.
+        """
+        with self.assertRaisesRegexp(ValueError, 'Length'):
+            Boolean.validate(b'\x01\x00\x00')
+
 
 class TestObjectIdentifier(ByteTester):
 
@@ -185,6 +192,19 @@ class TestObjectIdentifier(ByteTester):
     def test_create_by_iterable(self):
         result = ObjectIdentifier(['1', '2', '3'])
         expected = ObjectIdentifier(1, 2, 3)
+        self.assertEqual(result, expected)
+
+    def test_repr(self):
+        result = repr(ObjectIdentifier(['1', '2', '3']))
+        expected = 'ObjectIdentifier((1, 2, 3))'
+        self.assertEqual(result, expected)
+
+    def test_hash(self):
+        """
+        Test hash function and that it makes sense.
+        """
+        result = hash(ObjectIdentifier(['1', '2', '3']))
+        expected = hash(ObjectIdentifier(1, 2, 3))
         self.assertEqual(result, expected)
 
 
@@ -331,6 +351,10 @@ class TestSequence(ByteTester):
         expected = OctetString(b'foo')
         self.assertEqual(result, expected)
 
+    def test_repr(self):
+        result = repr(Sequence(Integer(10)))
+        expected = 'Sequence(Integer(10))'
+        self.assertEqual(result, expected)
 
 class TestNull(ByteTester):
 
@@ -350,6 +374,16 @@ class TestNull(ByteTester):
     def test_encoding(self):
         result = bytes(Null())
         expected = b'\x05\x00'
+        self.assertEqual(result, expected)
+
+    def test_decode_null(self):
+        expected = Null()
+        result = Null.decode('\x05\x00\x00')
+        self.assertEqual(result, expected)
+
+    def test_repr(self):
+        expected = 'Null()'
+        result = repr(Null())
         self.assertEqual(result, expected)
 
 
@@ -373,6 +407,11 @@ class TestNonASN1Type(ByteTester):
     def test_decoding_corrupt_length(self):
         with self.assertRaisesRegexp(ValueError, 'length'):
             NonASN1Type.from_bytes(b'\x99\x02\x0a')
+
+    def test_repr(self):
+        result = repr(NonASN1Type(99, b'abc'))
+        expected = "NonASN1Type(99, b'abc')"
+        self.assertEqual(result, expected)
 
 
 class TestAllTypes(ByteTester):
@@ -410,3 +449,10 @@ class TestAllTypes(ByteTester):
     def test_corrupt_length(self):
         with self.assertRaisesRegexp(ValueError, 'length'):
             Integer.from_bytes(b'\x02\x01\x01\x01')
+
+    def test_repr(self):
+        obj = Type()
+        obj.value = 10
+        result = repr(obj)
+        expected = 'Type(10)'
+        self.assertEqual(result, expected)
