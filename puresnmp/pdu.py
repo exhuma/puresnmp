@@ -8,7 +8,7 @@ Model for SNMP PDUs (Request/Response messages)
 
 from collections import namedtuple
 
-from .exc import SnmpError
+from .exc import SnmpError, EmptyMessage, NoSuchOID
 from .x690.types import (
     Integer,
     Null,
@@ -41,6 +41,8 @@ class SnmpMessage(Type):
 
     @classmethod
     def decode(cls, data):
+        if not data:
+            raise EmptyMessage('No data to decode!')
         request_id, data = pop_tlv(data)
         error_code, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
@@ -131,6 +133,14 @@ class GetResponse(SnmpMessage):
     than GET as well).
     """
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
+
+
+    @classmethod
+    def decode(cls, data):
+        try:
+            return super().decode(data)
+        except EmptyMessage as exc:
+            raise NoSuchOID('Nothing found at the given OID')
 
 
 class GetNextRequest(GetRequest):

@@ -14,6 +14,21 @@ class SnmpError(Exception):
     pass
 
 
+class EmptyMessage(SnmpError):
+    """
+    Raised when trying to decode an SNMP-Message with no content.
+    """
+    pass
+
+
+class NoSuchOID(SnmpError):
+    """
+    Exception which is raised when accessing an OID which does not exist on the
+    device.
+    """
+    pass
+
+
 class Timeout(socket.timeout):
     """
     Wrapper for network timeouts.

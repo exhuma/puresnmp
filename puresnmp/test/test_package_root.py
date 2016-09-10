@@ -11,7 +11,7 @@ from unittest.mock import patch
 import unittest
 
 from puresnmp import get, walk, set
-from puresnmp.exc import SnmpError
+from puresnmp.exc import SnmpError, NoSuchOID
 from puresnmp.pdu import VarBind
 from puresnmp.types import Gauge
 from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString
@@ -65,6 +65,17 @@ class TestApi(unittest.TestCase):
         with patch('puresnmp.send') as mck:
             mck.return_value = data
             with self.assertRaisesRegexp(SnmpError, 'varbind'):
+                get('::1', 'private', '1.2.3')
+
+    def test_get_non_existing_oid(self):
+        """
+        A "GET" response on a non-existing OID should raise an appropriate
+        exception.
+        """
+        data = readbytes('get_non_existing.hex')
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            with self.assertRaises(NoSuchOID):
                 get('::1', 'private', '1.2.3')
 
     def test_walk(self):
