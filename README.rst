@@ -13,10 +13,13 @@ Why
     SNMP in itself is simple and well defined. A bit convoluted, but simple.
     MIB parsing however complicates the code-base and is *technically* not
     required. They add typing information and variables and give names to OIDs.
+    All existing libraries have a direct or indirect dependency on libsnmp.
+    With all the advantages and disadvantages.
 
-    The aim of this project is to focus on SNMP in itself. Instead of
-    implementing ASN.1 parsing, the SNMP related ASN.1 information is
-    hard-coded (keeping in mind that all that's hard-coded is well defined).
+    The aim of this project is to focus on SNMP in itself and provide a very
+    simple API. Instead of implementing ASN.1 parsing, the SNMP related ASN.1
+    and X.690 information is hard-coded (keeping in mind that all that's
+    hard-coded is well defined).
 
     It is of course possible to *wrap* this package in another package adding
     MIB parsing and processing. This is, and will be however **out of the scope
