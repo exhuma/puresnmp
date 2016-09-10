@@ -37,7 +37,7 @@ Installation
 
 ::
 
-    pip install https://github.com/exhuma/puresnmp
+    pip install https://github.com/exhuma/puresnmp/archive/develop.zip
 
 
 Example Usage
