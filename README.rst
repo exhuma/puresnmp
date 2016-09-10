@@ -38,13 +38,22 @@ Status of the Project
 The project is currently in "alpha" state. Meaning, it has been tested only by
 me on a limited infrastructure and not all planned features are implemented.
 
-Tests included:
+Implemented Features
+~~~~~~~~~~~~~~~~~~~~
+
+* SNMP v2c GET
+* SNMP v2c WALK
+* SNMP v2c SET
+
+Tests executed on
+~~~~~~~~~~~~~~~~~
 
 * A docker maching running ``snmpd`` (the Dockerfile can be found in the
   ``docker`` folder).
 * An Alcatel 7750SR12 box.
 
-Missing Features:
+Missing Features
+~~~~~~~~~~~~~~~~
 
 * SNMP Bulk GET support
 * SNMP operations with multiple OIDs (multiple "var-mappings").
