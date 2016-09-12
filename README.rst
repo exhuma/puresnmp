@@ -1,13 +1,16 @@
 SNMP
 ====
 
+.. image:: https://travis-ci.org/exhuma/puresnmp.svg?branch=develop
+    :target: https://travis-ci.org/exhuma/puresnmp
+
 
 Quick Info
 ----------
 
 What
-    A pure Python implementation of SNMP without any external dependencies
-    (neither MIBs or libsnmp).
+    A pure Python implementation for Python 3.3+ of SNMP without any external
+    dependencies (neither MIBs or libsnmp).
 
 Why
     SNMP in itself is simple and well defined. A bit convoluted, but simple.
