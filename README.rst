@@ -5,6 +5,10 @@
     :target: http://puresnmp.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
+.. image:: https://img.shields.io/badge/repository-github-green.svg?style=flat
+    :target: https://github.com/exhuma/puresnmp
+    :alt: Github Project
+
 .. note::
 
     The development is currently considered as *alpha*! There is no official
