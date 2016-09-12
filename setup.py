@@ -12,6 +12,7 @@ setup(
     license="BSD",
     include_package_data=True,
     install_requires=[
+        'typing',
     ],
     extras_require={
         'dev': [],
