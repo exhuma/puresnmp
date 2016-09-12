@@ -24,7 +24,7 @@ Testing Bytes for Equality
 
 To get a bit more helpful output when compariing bytes a custom assertion
 method is implemented in the ByteTester class. The method is called
-py:meth:`puresnmp.test.ByteTester.assertBytesEqual` and will list a couple of
+:py:meth:`puresnmp.test.ByteTester.assertBytesEqual` and will list a couple of
 helpful columns, comparing each byte.
 
 
