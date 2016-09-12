@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 RETRIES = 3
 
 
-def send(ip: str, port: int, packet: bytes) -> bytes:  # pragma: no cover
+def send(ip: str, port: int, packet: bytes, timeout: int = 2) -> bytes:  # pragma: no cover
     """
     Opens a TCP connection to *ip:port*, sends a packet with *bytes* and returns
     the raw bytes as returned from the remote host.
@@ -35,7 +35,8 @@ def send(ip: str, port: int, packet: bytes) -> bytes:  # pragma: no cover
         address_family = socket.AF_INET6
 
     sock = socket.socket(address_family, socket.SOCK_DGRAM)
-
+    sock.settimeout(timeout)
+    
     sock.sendto(packet, (ip, port))
     for _ in range(RETRIES):
         try:
