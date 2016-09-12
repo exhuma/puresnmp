@@ -1,6 +1,9 @@
 .. image:: https://travis-ci.org/exhuma/puresnmp.svg?branch=develop
     :target: https://travis-ci.org/exhuma/puresnmp
 
+.. image:: https://readthedocs.org/projects/puresnmp/badge/?version=latest
+    :target: http://puresnmp.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 .. note::
 
