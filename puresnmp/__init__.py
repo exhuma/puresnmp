@@ -27,7 +27,7 @@ class SnmpClient(object):
     SNMP client object used to send SNMP requests to target devices.
     """
 
-    def __init__(self, community: str, version: bytes=Version.V2C, port: int=161, timeout: int=2):
+    def __init__(self, community: str="public", version: bytes=Version.V2C, port: int=161, timeout: int=2):
         self.community = community
         self.version = version
         self.port = port
