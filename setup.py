@@ -9,7 +9,7 @@ setup(
     long_description=open("README.rst").read(),
     author="Michel Albert",
     author_email="michel@albert.lu",
-    license="BSD",
+    license="MIT",
     include_package_data=True,
     install_requires=[
         'typing',
