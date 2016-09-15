@@ -10,7 +10,7 @@ from collections import OrderedDict
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get, walk, set
+from puresnmp import get, walk, set, multiget
 from puresnmp.exc import SnmpError, NoSuchOID
 from puresnmp.pdu import VarBind
 from puresnmp.types import Gauge
@@ -113,10 +113,6 @@ class TestApi(unittest.TestCase):
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
 
-    def test_multi_walk(self):
-        self.skipTest('According to the spec a "walk" with multiple OIDs '
-                      'should be possible')  # TODO
-
     def test_walk_multiple_return_binds(self):
         """
         A "WALK" response should only return one varbind.
@@ -153,3 +149,20 @@ class TestApi(unittest.TestCase):
             with self.assertRaisesRegexp(SnmpError, 'varbind'):
                 set('::1', 'private', '1.3.6.1.2.1.1.4.0',
                     OctetString(b'hello@world.com'))
+
+    def test_multiget(self):
+        data = readbytes('multiget_response.hex')
+        expected = ['1.3.6.1.4.1.8072.3.2.10',
+                    b"Linux 7fbf2f0c363d 4.4.0-28-generic #47-Ubuntu SMP Fri "
+                    b"Jun 24 10:09:13 UTC 2016 x86_64"]
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            result = multiget('::1', 'private', [
+                '1.3.6.1.2.1.1.2.0',
+                '1.3.6.1.2.1.1.1.0',
+            ])
+        self.assertEqual(result, expected)
+
+    def test_multi_walk(self):
+        self.skipTest('According to the spec a "walk" with multiple OIDs '
+                      'should be possible')  # TODO

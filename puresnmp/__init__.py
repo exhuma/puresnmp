@@ -3,6 +3,8 @@ This module contains the high-level functions to access the library. Care is
 taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
 """
+from typing import List
+
 from .x690.types import (
     Integer,
     Null,
@@ -44,6 +46,29 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
                         len(varbinds))
     value = varbinds[0].value
     return value.pythonize()
+
+
+def multiget(ip: str, community: str, oids: List[str],
+             version: bytes=Version.V2C, port: int=161):
+    """
+    Executes an SNMP GET request with multiple OIDs and returns a list of pure
+    Python objects. The order of the output items is the same order as the OIDs
+    given as arguments.
+    """
+
+    oids = [ObjectIdentifier.from_string(oid) for oid in oids]
+
+    packet = Sequence(
+        Integer(version),
+        OctetString(community),
+        GetRequest(get_request_id(), *oids)
+    )
+
+    response = send(ip, port, bytes(packet))
+    raw_response = Sequence.from_bytes(response)
+
+    output = [value.pythonize() for _, value in raw_response[2].varbinds]
+    return output
 
 
 def _walk_internal(ip, community, oid, version, port):
