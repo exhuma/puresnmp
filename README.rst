@@ -59,55 +59,10 @@ Installation
     pip install https://github.com/exhuma/puresnmp/archive/develop.zip
 
 
-Example Usage
--------------
 
-SNMP Get
-~~~~~~~~
+Examples
+--------
 
-.. code-block:: python
+See `the official documentation cookbook`_.
 
-    from puresnmp import get
-
-    IP = "::1"
-    COMMUNITY = 'private'
-    OID = '1.3.6.1.2.1.1.9.1'
-
-    result = get(IP, COMMUNITY, OID)
-
-    print('''Get Result:
-        Type: %s
-        repr: %r
-        str: %s
-        ''' % (type(result), result, result))
-
-
-SNMP Walk
-~~~~~~~~~
-
-.. code-block:: python
-
-    from puresnmp import walk
-
-    IP = "::1"
-    COMMUNITY = 'private'
-    OID = '1.3.6.1.2.1.1.9.1'
-
-    for row in walk(IP, COMMUNITY, OID):
-        print('%s: %r' % row)
-
-
-SNMP Set
-~~~~~~~~
-
-.. code-block:: python
-
-    from puresnmp import set
-    from puresnmp.x690.types import OctetString
-
-    IP = "::1"
-    COMMUNITY = 'private'
-    OID = '1.3.6.1.2.1.1.4.0'
-
-    result = set(IP, COMMUNITY, OID, OctetString(b'I am contact'))
-    print(result)
+.. _the official documentation cookbook: http://puresnmp.readthedocs.io/en/latest/?badge=latest
