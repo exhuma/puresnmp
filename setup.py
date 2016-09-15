@@ -16,7 +16,7 @@ setup(
     ],
     extras_require={
         'dev': [],
-        'test': ['pytest-xdist', 'pytest']
+        'test': ['pytest-xdist', 'pytest', 'pytest-coverage']
     },
     packages=find_packages(exclude=["tests.*", "tests"]),
 )
