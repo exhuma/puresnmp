@@ -26,7 +26,7 @@ Python Code
 
     from puresnmp import get
 
-    IP = "::1"
+    IP = "127.0.0.1"
     COMMUNITY = 'private'
     OID = '1.3.6.1.2.1.1.2.0'
 
@@ -60,7 +60,7 @@ Python Code
 
     from puresnmp import walk
 
-    IP = "::1"
+    IP = "127.0.0.1"
     COMMUNITY = 'private'
     OID = '1.3.6.1.2.1.1.9.1'
 
@@ -116,7 +116,7 @@ Python Code
     from puresnmp import set
     from puresnmp.x690.types import OctetString
 
-    IP = "::1"
+    IP = "127.0.0.1"
     COMMUNITY = 'private'
     OID = '1.3.6.1.2.1.1.4.0'
 
