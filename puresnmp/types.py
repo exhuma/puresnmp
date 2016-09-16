@@ -2,6 +2,8 @@
 SMI Types / Structure types which are not defined in ASN.1
 """
 
+# pylint: disable=missing-docstring
+
 from .x690.types import Integer
 from .x690.util import TypeInfo
 

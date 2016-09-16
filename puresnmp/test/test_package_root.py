@@ -6,15 +6,15 @@ to use.
 """
 
 
-from collections import OrderedDict
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get, walk, set
+from puresnmp import get, walk, set, multiget, multiwalk, multiset
+from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
-from puresnmp.pdu import VarBind
+from puresnmp.pdu import GetRequest, VarBind
 from puresnmp.types import Gauge
-from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString
+from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString, Sequence
 
 from . import readbytes
 
@@ -25,16 +25,14 @@ class TestApi(unittest.TestCase):
         """
         Test the call arguments of "get"
         """
-        from puresnmp.x690.types import Integer, OctetString, Sequence, ObjectIdentifier
-        from puresnmp.pdu import GetRequest
-        from puresnmp.const import Version
         data = readbytes('get_sysdescr_01.hex')  # any dump would do
         packet = Sequence(
             Integer(Version.V2C),
             OctetString('public'),
             GetRequest(0, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.send') as mck, patch('puresnmp.get_request_id') as mck2:
+        with patch('puresnmp.send') as mck, \
+                patch('puresnmp.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
             get('::1', 'public', '1.2.3')
@@ -79,11 +77,8 @@ class TestApi(unittest.TestCase):
                 get('::1', 'private', '1.2.3')
 
     def test_walk(self):
-        request_1 = readbytes('walk_request_1.hex')
         response_1 = readbytes('walk_response_1.hex')
-        request_2 = readbytes('walk_request_2.hex')
         response_2 = readbytes('walk_response_2.hex')
-        request_3 = readbytes('walk_request_3.hex')
         response_3 = readbytes('walk_response_3.hex')
 
         num_call = 0
@@ -112,10 +107,6 @@ class TestApi(unittest.TestCase):
             mck.side_effect = mocked_responses
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
-
-    def test_multi_walk(self):
-        self.skipTest('According to the spec a "walk" with multiple OIDs '
-                      'should be possible')  # TODO
 
     def test_walk_multiple_return_binds(self):
         """
@@ -153,3 +144,75 @@ class TestApi(unittest.TestCase):
             with self.assertRaisesRegexp(SnmpError, 'varbind'):
                 set('::1', 'private', '1.3.6.1.2.1.1.4.0',
                     OctetString(b'hello@world.com'))
+
+    def test_multiget(self):
+        data = readbytes('multiget_response.hex')
+        expected = ['1.3.6.1.4.1.8072.3.2.10',
+                    b"Linux 7fbf2f0c363d 4.4.0-28-generic #47-Ubuntu SMP Fri "
+                    b"Jun 24 10:09:13 UTC 2016 x86_64"]
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            result = multiget('::1', 'private', [
+                '1.3.6.1.2.1.1.2.0',
+                '1.3.6.1.2.1.1.1.0',
+            ])
+        self.assertEqual(result, expected)
+
+    def test_multi_walk(self):
+        response_1 = readbytes('multiwalk_response_1.hex')
+        response_2 = readbytes('multiwalk_response_2.hex')
+        response_3 = readbytes('multiwalk_response_3.hex')
+
+        num_call = 0
+
+        def mocked_responses(*args, **kwargs):
+            nonlocal num_call
+            num_call += 1
+            if num_call == 1:
+                return response_1
+            elif num_call == 2:
+                return response_2
+            elif num_call == 3:
+                return response_3
+            else:
+                raise AssertionError('Expected no more than 3 calls!')
+
+        expected = [VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'),
+            Integer(1)
+        ), VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
+            OctetString(b'lo')
+        ), VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'),
+            Integer(78)
+        ), VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
+            OctetString(b'eth0')
+        )]
+
+        with patch('puresnmp.send') as mck:
+            mck.side_effect = mocked_responses
+            result = list(multiwalk('::1', 'public', [
+                '1.3.6.1.2.1.2.2.1.1',
+                '1.3.6.1.2.1.2.2.1.2'
+            ]))
+        self.assertEqual(result, expected)
+
+    def test_multiset(self):
+        """
+        Test setting multiple OIDs at once.
+
+        In this case we use the same OID twice as this was the only writable OID
+        I exposed in my test. The test may look bizarre having the same ID
+        twice, but it does it's job.
+        """
+        data = readbytes('multiset_response.hex')
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            result = multiset('::1', 'private', [
+                ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
+                ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
+            ])
+        expected = {'1.3.6.1.2.1.1.4.0': b'hello@world.com'}
+        self.assertEqual(result, expected)

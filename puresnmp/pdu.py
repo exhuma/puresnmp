@@ -140,7 +140,7 @@ class GetResponse(SnmpMessage):
         try:
             return super().decode(data)
         except EmptyMessage as exc:
-            raise NoSuchOID('Nothing found at the given OID')
+            raise NoSuchOID('Nothing found at the given OID (%s)' % exc)
 
 
 class GetNextRequest(GetRequest):
