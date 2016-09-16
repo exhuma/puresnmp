@@ -212,7 +212,10 @@ class TestApi(unittest.TestCase):
             mck.return_value = data
             result = multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
-                ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
+                ('1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
             ])
-        expected = {'1.3.6.1.2.1.1.4.0': b'hello@world.com'}
+        expected = {
+            '1.3.6.1.2.1.1.4.0': b'hello@world.com',
+            '1.3.6.1.2.1.1.5.0': b'hello@world.com'
+        }
         self.assertEqual(result, expected)
