@@ -9,7 +9,7 @@ to use.
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get, walk, set, multiget, multiwalk
+from puresnmp import get, walk, set, multiget, multiwalk, multiset
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
 from puresnmp.pdu import GetRequest, VarBind
@@ -197,4 +197,22 @@ class TestApi(unittest.TestCase):
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
             ]))
+        self.assertEqual(result, expected)
+
+    def test_multiset(self):
+        """
+        Test setting multiple OIDs at once.
+
+        In this case we use the same OID twice as this was the only writable OID
+        I exposed in my test. The test may look bizarre having the same ID
+        twice, but it does it's job.
+        """
+        data = readbytes('multiset_response.hex')
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            result = multiset('::1', 'private', [
+                ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
+                ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
+            ])
+        expected = {'1.3.6.1.2.1.1.4.0': b'hello@world.com'}
         self.assertEqual(result, expected)

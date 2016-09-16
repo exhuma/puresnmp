@@ -3,7 +3,7 @@ This module contains the high-level functions to access the library. Care is
 taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
 """
-from typing import List
+from typing import List, Tuple
 
 from .x690.types import (
     Integer,
@@ -194,3 +194,25 @@ def set(ip: str, community: str, oid: str, value: Type,
                         len(varbinds))
     value = varbinds[0].value
     return value.pythonize()
+
+
+def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
+             version: bytes=Version.V2C, port: int=161):
+    """
+    Executes an SNMP SET request on multiple OIDs. The result is returned as
+    pure Python data structure.
+    """
+
+    binds = [VarBind(ObjectIdentifier.from_string(k), v)
+             for k, v in mappings]
+
+    request = SetRequest(get_request_id(), binds)
+    packet = Sequence(Integer(version),
+                      OctetString(community),
+                      request)
+    response = send(ip, port, bytes(packet))
+    raw_response = Sequence.from_bytes(response)
+    output = {
+        str(oid): value.pythonize() for oid, value in raw_response[2].varbinds
+    }
+    return output
