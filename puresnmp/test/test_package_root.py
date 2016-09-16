@@ -6,15 +6,15 @@ to use.
 """
 
 
-from collections import OrderedDict
-from unittest.mock import patch, call
+from unittest.mock import patch
 import unittest
 
 from puresnmp import get, walk, set, multiget, multiwalk
+from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
-from puresnmp.pdu import VarBind
+from puresnmp.pdu import GetRequest, VarBind
 from puresnmp.types import Gauge
-from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString
+from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString, Sequence
 
 from . import readbytes
 
@@ -25,16 +25,14 @@ class TestApi(unittest.TestCase):
         """
         Test the call arguments of "get"
         """
-        from puresnmp.x690.types import Integer, OctetString, Sequence, ObjectIdentifier
-        from puresnmp.pdu import GetRequest
-        from puresnmp.const import Version
         data = readbytes('get_sysdescr_01.hex')  # any dump would do
         packet = Sequence(
             Integer(Version.V2C),
             OctetString('public'),
             GetRequest(0, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.send') as mck, patch('puresnmp.get_request_id') as mck2:
+        with patch('puresnmp.send') as mck, \
+                patch('puresnmp.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
             get('::1', 'public', '1.2.3')
@@ -79,11 +77,8 @@ class TestApi(unittest.TestCase):
                 get('::1', 'private', '1.2.3')
 
     def test_walk(self):
-        request_1 = readbytes('walk_request_1.hex')
         response_1 = readbytes('walk_response_1.hex')
-        request_2 = readbytes('walk_request_2.hex')
         response_2 = readbytes('walk_response_2.hex')
-        request_3 = readbytes('walk_request_3.hex')
         response_3 = readbytes('walk_response_3.hex')
 
         num_call = 0

@@ -7,7 +7,6 @@ from typing import List
 
 from .x690.types import (
     Integer,
-    Null,
     ObjectIdentifier,
     OctetString,
     Sequence,
@@ -88,6 +87,9 @@ def _walk_internal(ip, community, oid, version, port):
 
 
 def _multiwalk_internal(ip, community, oids, version, port):
+    """
+    Function to send a single multi-oid GETNEXT request.
+    """
     # TODO This can be merged with _walk_internal
     request = GetNextRequest(get_request_id(), *oids)
     packet = Sequence(
@@ -156,8 +158,10 @@ def multiwalk(ip: str, community: str, oids: List[str],
         retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
 
         # ending condition (check if we need to stop the walk)
-        retrieved_oids_ = [ObjectIdentifier.from_string(_) for _ in retrieved_oids]
-        requested_oids = [ObjectIdentifier.from_string(_) for _ in oids]
+        retrieved_oids_ = [ObjectIdentifier.from_string(_)
+                           for _ in retrieved_oids]
+        requested_oids = [ObjectIdentifier.from_string(_)
+                          for _ in oids]
         contained_oids = [a in b for a, b in zip(retrieved_oids_, requested_oids)]
         if not all(contained_oids) or retrieved_oids == prev_retrieved_oids:
             return
