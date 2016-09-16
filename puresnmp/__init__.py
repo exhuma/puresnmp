@@ -57,7 +57,7 @@ def multiget(ip: str, community: str, oids: List[str],
     return output
 
 
-def _walk_internal(ip, community, oid, version, port):
+def getnext(ip, community, oid, version, port):
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
     """
@@ -70,14 +70,17 @@ def _walk_internal(ip, community, oid, version, port):
     response = send(ip, port, bytes(packet))
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
-    return response_object
+    if len(response_object.varbinds) != 1:
+        raise SnmpError('Invalid response! Expected exactly 1 varbind, '
+                        'but got %d' % len(response_object.varbinds))
+    return response_object.varbinds[0]
 
 
 def _multiwalk_internal(ip, community, oids, version, port):
     """
     Function to send a single multi-oid GETNEXT request.
     """
-    # TODO This can be merged with _walk_internal
+    # TODO This can be merged with getnext
     request = GetNextRequest(get_request_id(), *oids)
     packet = Sequence(
         Integer(version),
@@ -97,27 +100,18 @@ def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
     :py:class:`~puresnmp.pdu.VarBind` instances.
     """
 
-    response_object = _walk_internal(ip, community, oid, version, port)
-
-    if len(response_object.varbinds) > 1:
-        raise SnmpError('Unepexted response. Expected one varbind but got more')
-
-    retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
-    retrieved_oid = retrieved_oids[0]
+    varbind = getnext(ip, community, oid, version, port)
+    retrieved_oid = str(varbind.oid)
     prev_retrieved_oid = None
     while retrieved_oid:
-        for bind in response_object.varbinds:
-            yield bind
+        yield varbind
 
-        response_object = _walk_internal(ip, community, retrieved_oid,
-                                         version, port)
-        retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
-        retrieved_oid = retrieved_oids[0]
+        varbind = getnext(ip, community, retrieved_oid, version, port)
+        retrieved_oid = str(varbind.oid)
 
         # ending condition (check if we need to stop the walk)
-        retrieved_oid_ = ObjectIdentifier.from_string(retrieved_oid)
         oid_ = ObjectIdentifier.from_string(oid)
-        if retrieved_oid_ not in oid_ or retrieved_oid == prev_retrieved_oid:
+        if varbind.oid not in oid_ or retrieved_oid == prev_retrieved_oid:
             return
 
         prev_retrieved_oid = retrieved_oid
