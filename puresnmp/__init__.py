@@ -28,23 +28,7 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     """
     Executes a simple SNMP GET request and returns a pure Python data structure.
     """
-
-    oid = ObjectIdentifier.from_string(oid)
-
-    packet = Sequence(
-        Integer(version),
-        OctetString(community),
-        GetRequest(get_request_id(), oid)
-    )
-
-    response = send(ip, port, bytes(packet))
-    raw_response = Sequence.from_bytes(response)
-    varbinds = raw_response[2].varbinds
-    if len(varbinds) != 1:
-        raise SnmpError('Unexpected response. Expected 1 varbind, but got %s!' %
-                        len(varbinds))
-    value = varbinds[0].value
-    return value.pythonize()
+    return multiget(ip, community, [oid], version, port)[0]
 
 
 def multiget(ip: str, community: str, oids: List[str],
@@ -67,6 +51,9 @@ def multiget(ip: str, community: str, oids: List[str],
     raw_response = Sequence.from_bytes(response)
 
     output = [value.pythonize() for _, value in raw_response[2].varbinds]
+    if len(output) != len(oids):
+        raise SnmpError('Unexpected response. Expected %d varbind, '
+                        'but got %d!' % (len(oids), len(output)))
     return output
 
 
