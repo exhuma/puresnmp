@@ -61,22 +61,10 @@ def getnext(ip, community, oid, version, port):
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
     """
-    request = GetNextRequest(get_request_id(), oid)
-    packet = Sequence(
-        Integer(version),
-        OctetString(community),
-        request
-    )
-    response = send(ip, port, bytes(packet))
-    raw_response = Sequence.from_bytes(response)
-    response_object = raw_response[2]
-    if len(response_object.varbinds) != 1:
-        raise SnmpError('Invalid response! Expected exactly 1 varbind, '
-                        'but got %d' % len(response_object.varbinds))
-    return response_object.varbinds[0]
+    return multigetnext(ip, community, [oid], version, port)[0]
 
 
-def _multiwalk_internal(ip, community, oids, version, port):
+def multigetnext(ip, community, oids, version, port):
     """
     Function to send a single multi-oid GETNEXT request.
     """
@@ -90,7 +78,10 @@ def _multiwalk_internal(ip, community, oids, version, port):
     response = send(ip, port, bytes(packet))
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
-    return response_object
+    if len(response_object.varbinds) != len(oids):
+        raise SnmpError('Invalid response! Expected exactly %d varbind, '
+                        'but got %d' % (len(oids), len(response_object.varbinds)))
+    return response_object.varbinds
 
 
 def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
@@ -126,17 +117,17 @@ def multiwalk(ip: str, community: str, oids: List[str],
 
     # TODO: This should be mergeable with the simple "walk" function.
 
-    response_object = _multiwalk_internal(ip, community, oids, version, port)
+    varbinds = multigetnext(ip, community, oids, version, port)
 
-    retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+    retrieved_oids = [str(bind.oid) for bind in varbinds]
     prev_retrieved_oids = []
     while retrieved_oids:
-        for bind in response_object.varbinds:
+        for bind in varbinds:
             yield bind
 
-        response_object = _multiwalk_internal(ip, community, retrieved_oids,
-                                              version, port)
-        retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+        varbinds = multigetnext(ip, community, retrieved_oids,
+                                       version, port)
+        retrieved_oids = [str(bind.oid) for bind in varbinds]
 
         # ending condition (check if we need to stop the walk)
         retrieved_oids_ = [ObjectIdentifier.from_string(_)
