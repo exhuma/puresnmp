@@ -176,32 +176,21 @@ def set(ip: str, community: str, oid: str, value: Type,
     data structure.
     """
 
-    if not isinstance(value, Type):
-        raise TypeError('SNMP requires typing information. The value for a '
-                        '"set" request must be an instance of "Type"!')
-
-    oid = ObjectIdentifier.from_string(oid)
-
-    request = SetRequest(get_request_id(), [VarBind(oid, value)])
-    packet = Sequence(Integer(version),
-                      OctetString(community),
-                      request)
-    response = send(ip, port, bytes(packet))
-    raw_response = Sequence.from_bytes(response)
-    varbinds = raw_response[2].varbinds
-    if len(varbinds) != 1:
-        raise SnmpError('Unexpected response. Expected 1 varbind, but got %s!' %
-                        len(varbinds))
-    value = varbinds[0].value
-    return value.pythonize()
+    result = multiset(ip, community, [(oid, value)], version, port)
+    return result[oid]
 
 
 def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
              version: bytes=Version.V2C, port: int=161):
     """
+
     Executes an SNMP SET request on multiple OIDs. The result is returned as
     pure Python data structure.
     """
+
+    if any([not isinstance(v, Type) for k, v in mappings]):
+        raise TypeError('SNMP requires typing information. The value for a '
+                        '"set" request must be an instance of "Type"!')
 
     binds = [VarBind(ObjectIdentifier.from_string(k), v)
              for k, v in mappings]
@@ -215,4 +204,7 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
     output = {
         str(oid): value.pythonize() for oid, value in raw_response[2].varbinds
     }
+    if len(output) != len(mappings):
+        raise SnmpError('Unexpected response. Expected %d varbinds, '
+                        'but got %d!' % (len(mappings), len(output)))
     return output
