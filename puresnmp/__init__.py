@@ -28,23 +28,7 @@ def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
     """
     Executes a simple SNMP GET request and returns a pure Python data structure.
     """
-
-    oid = ObjectIdentifier.from_string(oid)
-
-    packet = Sequence(
-        Integer(version),
-        OctetString(community),
-        GetRequest(get_request_id(), oid)
-    )
-
-    response = send(ip, port, bytes(packet))
-    raw_response = Sequence.from_bytes(response)
-    varbinds = raw_response[2].varbinds
-    if len(varbinds) != 1:
-        raise SnmpError('Unexpected response. Expected 1 varbind, but got %s!' %
-                        len(varbinds))
-    value = varbinds[0].value
-    return value.pythonize()
+    return multiget(ip, community, [oid], version, port)[0]
 
 
 def multiget(ip: str, community: str, oids: List[str],
@@ -67,30 +51,24 @@ def multiget(ip: str, community: str, oids: List[str],
     raw_response = Sequence.from_bytes(response)
 
     output = [value.pythonize() for _, value in raw_response[2].varbinds]
+    if len(output) != len(oids):
+        raise SnmpError('Unexpected response. Expected %d varbind, '
+                        'but got %d!' % (len(oids), len(output)))
     return output
 
 
-def _walk_internal(ip, community, oid, version, port):
+def getnext(ip, community, oid, version, port):
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
     """
-    request = GetNextRequest(get_request_id(), oid)
-    packet = Sequence(
-        Integer(version),
-        OctetString(community),
-        request
-    )
-    response = send(ip, port, bytes(packet))
-    raw_response = Sequence.from_bytes(response)
-    response_object = raw_response[2]
-    return response_object
+    return multigetnext(ip, community, [oid], version, port)[0]
 
 
-def _multiwalk_internal(ip, community, oids, version, port):
+def multigetnext(ip, community, oids, version, port):
     """
     Function to send a single multi-oid GETNEXT request.
     """
-    # TODO This can be merged with _walk_internal
+    # TODO This can be merged with getnext
     request = GetNextRequest(get_request_id(), *oids)
     packet = Sequence(
         Integer(version),
@@ -100,7 +78,11 @@ def _multiwalk_internal(ip, community, oids, version, port):
     response = send(ip, port, bytes(packet))
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
-    return response_object
+    if len(response_object.varbinds) != len(oids):
+        raise SnmpError(
+            'Invalid response! Expected exactly %d varbind, '
+            'but got %d' % (len(oids), len(response_object.varbinds)))
+    return response_object.varbinds
 
 
 def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
@@ -110,30 +92,7 @@ def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
     :py:class:`~puresnmp.pdu.VarBind` instances.
     """
 
-    response_object = _walk_internal(ip, community, oid, version, port)
-
-    if len(response_object.varbinds) > 1:
-        raise SnmpError('Unepexted response. Expected one varbind but got more')
-
-    retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
-    retrieved_oid = retrieved_oids[0]
-    prev_retrieved_oid = None
-    while retrieved_oid:
-        for bind in response_object.varbinds:
-            yield bind
-
-        response_object = _walk_internal(ip, community, retrieved_oid,
-                                         version, port)
-        retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
-        retrieved_oid = retrieved_oids[0]
-
-        # ending condition (check if we need to stop the walk)
-        retrieved_oid_ = ObjectIdentifier.from_string(retrieved_oid)
-        oid_ = ObjectIdentifier.from_string(oid)
-        if retrieved_oid_ not in oid_ or retrieved_oid == prev_retrieved_oid:
-            return
-
-        prev_retrieved_oid = retrieved_oid
+    return multiwalk(ip, community, [oid], version, port)
 
 
 def multiwalk(ip: str, community: str, oids: List[str],
@@ -145,24 +104,25 @@ def multiwalk(ip: str, community: str, oids: List[str],
 
     # TODO: This should be mergeable with the simple "walk" function.
 
-    response_object = _multiwalk_internal(ip, community, oids, version, port)
+    varbinds = multigetnext(ip, community, oids, version, port)
 
-    retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+    retrieved_oids = [str(bind.oid) for bind in varbinds]
     prev_retrieved_oids = []
     while retrieved_oids:
-        for bind in response_object.varbinds:
+        for bind in varbinds:
             yield bind
 
-        response_object = _multiwalk_internal(ip, community, retrieved_oids,
-                                              version, port)
-        retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+        varbinds = multigetnext(ip, community, retrieved_oids,
+                                version, port)
+        retrieved_oids = [str(bind.oid) for bind in varbinds]
 
         # ending condition (check if we need to stop the walk)
         retrieved_oids_ = [ObjectIdentifier.from_string(_)
                            for _ in retrieved_oids]
         requested_oids = [ObjectIdentifier.from_string(_)
                           for _ in oids]
-        contained_oids = [a in b for a, b in zip(retrieved_oids_, requested_oids)]
+        contained_oids = [
+            a in b for a, b in zip(retrieved_oids_, requested_oids)]
         if not all(contained_oids) or retrieved_oids == prev_retrieved_oids:
             return
 
@@ -176,32 +136,21 @@ def set(ip: str, community: str, oid: str, value: Type,
     data structure.
     """
 
-    if not isinstance(value, Type):
-        raise TypeError('SNMP requires typing information. The value for a '
-                        '"set" request must be an instance of "Type"!')
-
-    oid = ObjectIdentifier.from_string(oid)
-
-    request = SetRequest(get_request_id(), [VarBind(oid, value)])
-    packet = Sequence(Integer(version),
-                      OctetString(community),
-                      request)
-    response = send(ip, port, bytes(packet))
-    raw_response = Sequence.from_bytes(response)
-    varbinds = raw_response[2].varbinds
-    if len(varbinds) != 1:
-        raise SnmpError('Unexpected response. Expected 1 varbind, but got %s!' %
-                        len(varbinds))
-    value = varbinds[0].value
-    return value.pythonize()
+    result = multiset(ip, community, [(oid, value)], version, port)
+    return result[oid]
 
 
 def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
              version: bytes=Version.V2C, port: int=161):
     """
+
     Executes an SNMP SET request on multiple OIDs. The result is returned as
     pure Python data structure.
     """
+
+    if any([not isinstance(v, Type) for k, v in mappings]):
+        raise TypeError('SNMP requires typing information. The value for a '
+                        '"set" request must be an instance of "Type"!')
 
     binds = [VarBind(ObjectIdentifier.from_string(k), v)
              for k, v in mappings]
@@ -215,4 +164,7 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
     output = {
         str(oid): value.pythonize() for oid, value in raw_response[2].varbinds
     }
+    if len(output) != len(mappings):
+        raise SnmpError('Unexpected response. Expected %d varbinds, '
+                        'but got %d!' % (len(mappings), len(output)))
     return output

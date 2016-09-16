@@ -203,9 +203,8 @@ class TestApi(unittest.TestCase):
         """
         Test setting multiple OIDs at once.
 
-        In this case we use the same OID twice as this was the only writable OID
-        I exposed in my test. The test may look bizarre having the same ID
-        twice, but it does it's job.
+        NOTE: The OID '1.3.6.1.2.1.1.5.0' below is manually edited for
+              unit-testing. It probably has a different type in the real world!
         """
         data = readbytes('multiset_response.hex')
         with patch('puresnmp.send') as mck:
@@ -216,6 +215,6 @@ class TestApi(unittest.TestCase):
             ])
         expected = {
             '1.3.6.1.2.1.1.4.0': b'hello@world.com',
-            '1.3.6.1.2.1.1.5.0': b'hello@world.com'
+            '1.3.6.1.2.1.1.5.0': b'hello@world.com',
         }
         self.assertEqual(result, expected)
