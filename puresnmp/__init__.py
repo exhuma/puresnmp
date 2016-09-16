@@ -91,21 +91,7 @@ def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
     :py:class:`~puresnmp.pdu.VarBind` instances.
     """
 
-    varbind = getnext(ip, community, oid, version, port)
-    retrieved_oid = str(varbind.oid)
-    prev_retrieved_oid = None
-    while retrieved_oid:
-        yield varbind
-
-        varbind = getnext(ip, community, retrieved_oid, version, port)
-        retrieved_oid = str(varbind.oid)
-
-        # ending condition (check if we need to stop the walk)
-        oid_ = ObjectIdentifier.from_string(oid)
-        if varbind.oid not in oid_ or retrieved_oid == prev_retrieved_oid:
-            return
-
-        prev_retrieved_oid = retrieved_oid
+    return multiwalk(ip, community, [oid], version, port)
 
 
 def multiwalk(ip: str, community: str, oids: List[str],
@@ -126,7 +112,7 @@ def multiwalk(ip: str, community: str, oids: List[str],
             yield bind
 
         varbinds = multigetnext(ip, community, retrieved_oids,
-                                       version, port)
+                                version, port)
         retrieved_oids = [str(bind.oid) for bind in varbinds]
 
         # ending condition (check if we need to stop the walk)
@@ -134,7 +120,8 @@ def multiwalk(ip: str, community: str, oids: List[str],
                            for _ in retrieved_oids]
         requested_oids = [ObjectIdentifier.from_string(_)
                           for _ in oids]
-        contained_oids = [a in b for a, b in zip(retrieved_oids_, requested_oids)]
+        contained_oids = [
+            a in b for a, b in zip(retrieved_oids_, requested_oids)]
         if not all(contained_oids) or retrieved_oids == prev_retrieved_oids:
             return
 
