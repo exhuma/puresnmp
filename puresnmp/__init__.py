@@ -87,6 +87,20 @@ def _walk_internal(ip, community, oid, version, port):
     return response_object
 
 
+def _multiwalk_internal(ip, community, oids, version, port):
+    # TODO This can be merged with _walk_internal
+    request = GetNextRequest(get_request_id(), *oids)
+    packet = Sequence(
+        Integer(version),
+        OctetString(community),
+        request
+    )
+    response = send(ip, port, bytes(packet))
+    raw_response = Sequence.from_bytes(response)
+    response_object = raw_response[2]
+    return response_object
+
+
 def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
          port: int=161):
     """
@@ -118,6 +132,37 @@ def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
             return
 
         prev_retrieved_oid = retrieved_oid
+
+
+def multiwalk(ip: str, community: str, oids: List[str],
+              version: bytes=Version.V2C, port: int=161):
+    """
+    Executes a sequence of SNMP GETNEXT requests and returns an iterator over
+    :py:class:`~puresnmp.pdu.VarBind` instances.
+    """
+
+    # TODO: This should be mergeable with the simple "walk" function.
+
+    response_object = _multiwalk_internal(ip, community, oids, version, port)
+
+    retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+    prev_retrieved_oids = []
+    while retrieved_oids:
+        for bind in response_object.varbinds:
+            yield bind
+
+        response_object = _multiwalk_internal(ip, community, retrieved_oids,
+                                              version, port)
+        retrieved_oids = [str(bind.oid) for bind in response_object.varbinds]
+
+        # ending condition (check if we need to stop the walk)
+        retrieved_oids_ = [ObjectIdentifier.from_string(_) for _ in retrieved_oids]
+        requested_oids = [ObjectIdentifier.from_string(_) for _ in oids]
+        contained_oids = [a in b for a, b in zip(retrieved_oids_, requested_oids)]
+        if not all(contained_oids) or retrieved_oids == prev_retrieved_oids:
+            return
+
+        prev_retrieved_oids = retrieved_oids
 
 
 def set(ip: str, community: str, oid: str, value: Type,

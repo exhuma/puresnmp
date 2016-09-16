@@ -7,10 +7,10 @@ to use.
 
 
 from collections import OrderedDict
-from unittest.mock import patch
+from unittest.mock import patch, call
 import unittest
 
-from puresnmp import get, walk, set, multiget
+from puresnmp import get, walk, set, multiget, multiwalk
 from puresnmp.exc import SnmpError, NoSuchOID
 from puresnmp.pdu import VarBind
 from puresnmp.types import Gauge
@@ -164,5 +164,42 @@ class TestApi(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_multi_walk(self):
-        self.skipTest('According to the spec a "walk" with multiple OIDs '
-                      'should be possible')  # TODO
+        response_1 = readbytes('multiwalk_response_1.hex')
+        response_2 = readbytes('multiwalk_response_2.hex')
+        response_3 = readbytes('multiwalk_response_3.hex')
+
+        num_call = 0
+
+        def mocked_responses(*args, **kwargs):
+            nonlocal num_call
+            num_call += 1
+            if num_call == 1:
+                return response_1
+            elif num_call == 2:
+                return response_2
+            elif num_call == 3:
+                return response_3
+            else:
+                raise AssertionError('Expected no more than 3 calls!')
+
+        expected = [VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'),
+            Integer(1)
+        ), VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
+            OctetString(b'lo')
+        ), VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'),
+            Integer(78)
+        ), VarBind(
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
+            OctetString(b'eth0')
+        )]
+
+        with patch('puresnmp.send') as mck:
+            mck.side_effect = mocked_responses
+            result = list(multiwalk('::1', 'public', [
+                '1.3.6.1.2.1.2.2.1.1',
+                '1.3.6.1.2.1.2.2.1.2'
+            ]))
+        self.assertEqual(result, expected)
