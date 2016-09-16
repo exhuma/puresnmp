@@ -79,8 +79,9 @@ def multigetnext(ip, community, oids, version, port):
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
-        raise SnmpError('Invalid response! Expected exactly %d varbind, '
-                        'but got %d' % (len(oids), len(response_object.varbinds)))
+        raise SnmpError(
+            'Invalid response! Expected exactly %d varbind, '
+            'but got %d' % (len(oids), len(response_object.varbinds)))
     return response_object.varbinds
 
 
