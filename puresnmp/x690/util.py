@@ -1,11 +1,9 @@
 """
 Core/low-level x690 functions and data structures
 """
-
-
 from binascii import hexlify, unhexlify
 from collections import namedtuple
-from typing import Tuple, Union
+from typing import Tuple, Union, List, Any
 
 
 class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
@@ -195,3 +193,61 @@ def visible_octets(data: bytes) -> str:
     output.append('%-50s %s' % (' '.join(line), raw_ascii.decode('ascii')))
     line = []
     return '\n'.join(output)
+
+
+def tablify(varbinds: List[Tuple[Any, Any]], num_base_nodes: int=0) -> list:
+    """
+    Converts a list of varbinds into a table-like structure. *num_base_nodes*
+    can be used for table which row-ids consist of multiple OID tree nodes. By
+    default, the last node is considered the row ID, and the second-last is the
+    column ID.
+
+    The output should *not* be considered ordered in any way. If you need it
+    sorted, you mus sort it after retrieving the table from this function!
+
+    Each element of the output is a dictionary where each key is the column
+    index. By default the index ``0`` represents the row ID.
+
+    Example::
+
+        >>> data = [
+        >>>     (ObjectIdentifier.from_string('1.2.1.1'), 'row 1 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.1.2'), 'row 2 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.1'), 'row 1 col 2'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.2'), 'row 2 col 2'),
+        >>> ]
+        >>> tablify(data)
+        [
+            {'0': '1', '1': 'row 1 col 1', '2': 'row 1 col 2'},
+            {'0': '2', '1': 'row 2 col 1', '2': 'row 2 col 2'},
+        ]
+
+
+    Example with longer row ids (using the *first* two as table identifiers)::
+
+        >>> data = [
+        >>>     (ObjectIdentifier.from_string('1.2.1.5.10'), 'row 5.10 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.1.6.10'), 'row 6.10 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.5.10'), 'row 5.10 col 2'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.6.10'), 'row 6.10 col 2'),
+        >>> ]
+        >>> tablify(data, num_base_nodes=2)
+        [
+            {'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'},
+            {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
+        ]
+    """
+    rows = {}
+    for oid, value in varbinds:
+        if num_base_nodes:
+            tail = oid.identifiers[num_base_nodes:]
+            col_id, row_id = tail[0], tail[1:]
+            row_id = '.'.join([str(node) for node in row_id])
+        else:
+            col_id, row_id = str(oid.identifiers[-2]), str(oid.identifiers[-1])
+        tmp = {
+            '0': row_id,
+        }
+        row = rows.setdefault(row_id, tmp)
+        row[str(col_id)] = value
+    return list(rows.values())
