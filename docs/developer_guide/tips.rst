@@ -1,6 +1,8 @@
 Development Tips
 ================
 
+.. _determining-types:
+
 Determining Type Bytes
 ----------------------
 

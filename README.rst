@@ -1,3 +1,14 @@
+.. ---------------------------------------------------------------------------
+.. This file is part of the documentation source code for puresnmp. It should
+.. be readable as-is, but all cross-references are resolved only in the
+.. official documentation. It is therefore highly recommended to head over to
+.. http://puresnmp.readthedocs.io for a better reading experience!
+.. If there's no access to the internet, the source of the documentation can be
+.. found in the "docs" folder!
+.. ---------------------------------------------------------------------------
+
+
+
 .. image:: https://travis-ci.org/exhuma/puresnmp.svg?branch=develop
     :target: https://travis-ci.org/exhuma/puresnmp
 
@@ -20,6 +31,16 @@
     Obviously bugs may exist. The library is still very young!
 
 ----
+
+
+TL;DR
+-----
+
+Jump right in with the :ref:`cookbook`.
+
+
+----
+
 
 Quick Info
 ----------
@@ -63,6 +84,4 @@ Installation
 Examples
 --------
 
-See `the official documentation cookbook`_.
-
-.. _the official documentation cookbook: http://puresnmp.readthedocs.io/en/latest/?badge=latest
+See the :ref:`cookbook`.

@@ -8,7 +8,7 @@ Implemented Features
 --------------------
 
 * SNMP v2c GET
-* SNMP v2c WALK
+* SNMP v2c WALK (and, implicitly GETNEXT as well)
 * SNMP v2c SET
 
 Tests executed on
@@ -23,7 +23,6 @@ Missing Features
 
 These features are planned but not yet implemented. In order of priority:
 
-* SNMP operations with multiple OIDs (multiple "var-mappings").
 * SNMP Table Support without MIBs.
 * SNMP Bulk GET support
 * SNMPv3.
