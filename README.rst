@@ -1,13 +1,4 @@
-.. ---------------------------------------------------------------------------
-.. This file is part of the documentation source code for puresnmp. It should
-.. be readable as-is, but all cross-references are resolved only in the
-.. official documentation. It is therefore highly recommended to head over to
-.. http://puresnmp.readthedocs.io for a better reading experience!
-.. If there's no access to the internet, the source of the documentation can be
-.. found in the "docs" folder!
-.. ---------------------------------------------------------------------------
-
-
+.. >>> Shields >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 .. image:: https://travis-ci.org/exhuma/puresnmp.svg?branch=develop
     :target: https://travis-ci.org/exhuma/puresnmp
@@ -19,6 +10,8 @@
 .. image:: https://img.shields.io/badge/repository-github-green.svg?style=flat
     :target: https://github.com/exhuma/puresnmp
     :alt: Github Project
+
+.. <<< Shields <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 .. note::
 
@@ -36,8 +29,7 @@
 TL;DR
 -----
 
-Jump right in with the :ref:`cookbook`.
-
+Jump right in with the `cookbook`_
 
 ----
 
@@ -84,4 +76,6 @@ Installation
 Examples
 --------
 
-See the :ref:`cookbook`.
+See the `cookbook`_.
+
+.. _cookbook: http://puresnmp.readthedocs.io/en/latest/cookbook.html
