@@ -16,6 +16,7 @@ Contents
    design_decisions
    references
    developer_guide/index
+   glossary
 
 
 Indices and tables

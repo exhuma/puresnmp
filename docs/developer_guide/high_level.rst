@@ -3,7 +3,7 @@ High-Level Overview
 
 The package is internally split into a few broad categories:
 
-* X.690
+* :term:`X.690`
 * SNMP
 * Networking Code
 * Type Registry
@@ -14,19 +14,17 @@ X.690
 
 See :py:mod:`puresnmp.x690`
 
-X.690 is the core standard on which SNMP is based. X.690 already defines a lot
-of the core types (f.ex.: :py:class:`~puresnmp.x690.types.ObjectIdentifier`,
-:py:class:`~puresnmp.x690.types.Integer` and the like).
-
-This module is were most of the marshalling/unmarshalling from/to bytes happens.
+This part of the package deals with the :term:`X.690` standard for byte
+encodings (using BER in the case of SNMP). It is the place were most of the
+marshalling/unmarshalling from/to bytes happens.
 
 
 SNMP
 ----
 
-SNMP build on top of X.690 and defines a couple of higher-level concepts like
-"PDUs" (:py:class:`~puresnmp.pdu.GetRequest` and friends), and adds more types
-(:py:class:`~puresnmp.types.IpAddress`, ...)
+SNMP build on top of :term:`X.690` and defines a couple of higher-level
+concepts like "PDUs" (:py:class:`~puresnmp.pdu.GetRequest` and friends), and
+adds more types (:py:class:`~puresnmp.types.IpAddress`, ...)
 
 
 Talking to the Network
@@ -45,9 +43,9 @@ The Registry
 All known types inherit directly or indirectly from
 :py:class:`puresnmp.x690.types.Type`. By doing so, the classes get read into a
 "registry" (found at :py:class:`puresnmp.x690.types.Registry`). This class
-provides the mechanism to map X.690 type information (which is encoded in the
-first bytes of a :term:`TLV` value) to Python classes. To properly detect the
-types, the class *must* define two class-level variables:
+provides the mechanism to map :term:`X.690` type information (which is encoded
+in the first bytes of a :term:`TLV` value) to Python classes. To properly
+detect the types, the class *must* define two class-level variables:
 
 ``TAG``
     The actual type identifier.
@@ -61,7 +59,7 @@ types, the class *must* define two class-level variables:
 
 .. note::
 
-    x.690 makes the difference between the 4 major typeclasses and each
+    :term:`X.690` makes the difference between the 4 major typeclasses and each
     typclass has its separate type identifiers (named "tags" in puresnmp). On
     the network these values are merged into one byte. So sniffing the network
     you will see ``b'\x30'`` for a "Sequence" type. But this value, what you
@@ -70,8 +68,8 @@ types, the class *must* define two class-level variables:
     byte!
 
     This makes debugging a bit iffy... The type information is documented in
-    X.690 as ``0x10`` for a *Sequence* but you don't see this on the net!
-    ``0x10`` is also what's defined in
+    :term:`X.690` as ``0x10`` for a *Sequence* but you don't see this on the
+    net!  ``0x10`` is also what's defined in
     :py:const:`puresnmp.x690.types.Sequence.TAG`!  This gives parity between
     the official documentation and the source-code.
 

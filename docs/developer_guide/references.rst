@@ -4,6 +4,9 @@ References
 This document contains various references which were helpful in the development
 of this library.
 
+X.690
+    https://www.itu.int/rec/T-REC-X.690/en
+
 GetNextPDU (and others) explained:
     https://tools.ietf.org/html/rfc1157#section-4.1.3
 
