@@ -9,6 +9,7 @@ setup(
     long_description=open("README.rst").read(),
     author="Michel Albert",
     author_email="michel@albert.lu",
+    provides=['puresnmp'],
     license="MIT",
     include_package_data=True,
     install_requires=[
@@ -19,4 +20,18 @@ setup(
         'test': ['pytest-xdist', 'pytest', 'pytest-coverage']
     },
     packages=find_packages(exclude=["tests.*", "tests"]),
+    url="https://github.com/exhuma/puresnmp",
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only',
+        'Topic :: System :: Networking',
+        'Topic :: System :: Networking :: Monitoring',
+        'Topic :: System :: Systems Administration',
+    ]
 )
