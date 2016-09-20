@@ -27,5 +27,4 @@ These features are planned but not yet implemented. In order of priority:
 * SNMP Bulk GET support
 * SNMPv3.
 
-If you want to help move the project forward, please see the "CONTRIBUTING.rst"
-file.
+If you want to help move the project forward, please see :ref:`contributing`.

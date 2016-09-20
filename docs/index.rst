@@ -14,7 +14,7 @@ Contents
    cookbook
    status
    design_decisions
-   references
+   contributing
    developer_guide/index
    glossary
 

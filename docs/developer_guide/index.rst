@@ -11,9 +11,9 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   high_level.rst
-   tips.rst
-   references.rst
+   high_level
+   tips
+   references
 
 
 API
