@@ -12,6 +12,7 @@ from .x690.types import (
     Sequence,
     Type,
 )
+from .x690.util import tablify
 from .exc import SnmpError
 from .pdu import (
     GetNextRequest,
@@ -168,3 +169,20 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
         raise SnmpError('Unexpected response. Expected %d varbinds, '
                         'but got %d!' % (len(mappings), len(output)))
     return output
+
+
+def table(ip: str, community: str, oid: str, port: int=161,
+          num_base_nodes: int=0):
+    """
+    Run a series of GETNEXT requests on an OID and construct a table from the
+    result.
+
+    The table is a row of dicts. The key of each dict is the row ID. By default
+    that is the **last** node of the OID tree.
+
+    If the rows are identified by multiple nodes, you need to secify the base by
+    setting *walk* to a non-zero value.
+    """
+    tmp = walk(ip, community, oid, port=port)
+    as_table = tablify(tmp, num_base_nodes=num_base_nodes)
+    return as_table
