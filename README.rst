@@ -50,8 +50,8 @@ Why
 
     The aim of this project is to focus on SNMP in itself and provide a very
     simple API. Instead of implementing ASN.1 parsing, the SNMP related ASN.1
-    and :term:`X.690` information is hard-coded (keeping in mind that all
-    that's hard-coded is well defined).
+    and X.690 information is hard-coded (keeping in mind that all that's
+    hard-coded is well defined).
 
     It is of course possible to *wrap* this package in another package adding
     MIB parsing and processing. This is, and will be however **out of the scope
