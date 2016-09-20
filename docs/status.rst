@@ -23,7 +23,6 @@ Missing Features
 
 These features are planned but not yet implemented. In order of priority:
 
-* SNMP Table Support without MIBs.
 * SNMP Bulk GET support
 * SNMPv3.
 
