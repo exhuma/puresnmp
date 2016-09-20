@@ -69,7 +69,6 @@ def multigetnext(ip, community, oids, version, port):
     """
     Function to send a single multi-oid GETNEXT request.
     """
-    # TODO This can be merged with getnext
     request = GetNextRequest(get_request_id(), *oids)
     packet = Sequence(
         Integer(version),
@@ -102,8 +101,6 @@ def multiwalk(ip: str, community: str, oids: List[str],
     Executes a sequence of SNMP GETNEXT requests and returns an iterator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
     """
-
-    # TODO: This should be mergeable with the simple "walk" function.
 
     varbinds = multigetnext(ip, community, oids, version, port)
 
