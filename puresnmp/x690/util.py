@@ -6,6 +6,8 @@ from collections import namedtuple
 from typing import Tuple, Union, List, Any
 
 
+LengthValue = namedtuple('LengthValue', 'length value')
+
 class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     """
     Decoded structure for an x690 "type" octet. The structure contains 3 fields:
@@ -157,7 +159,7 @@ def decode_length(data: bytes) -> Tuple[int, bytes]:
         value_octets = data[1:1+num_octets]
         output = int.from_bytes(value_octets, 'big')
         data = data[num_octets + 1:]
-    return output, data
+    return LengthValue(output, data)
 
 
 def visible_octets(data: bytes) -> str:
