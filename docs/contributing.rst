@@ -57,7 +57,7 @@ Auditing (Security, Implementation & Performance)
 
 * Is everything I do with SNMP correct? Is my handling of the bytes sent and
   read from the network compliant with the SNMP standard?
-* Any security concerns (really no my domain of expertise)?
+* Any security concerns (really not my domain of expertise)?
 * Are there performance gains to be gained somewhere?
 
 
