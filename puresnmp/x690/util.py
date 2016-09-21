@@ -5,6 +5,8 @@ from binascii import hexlify, unhexlify
 from collections import namedtuple
 from typing import Tuple, Union, List, Any
 
+from ..const import Length
+
 
 LengthValue = namedtuple('LengthValue', 'length value')
 
@@ -98,15 +100,6 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
 
     def __eq__(self, other):
         return super().__eq__(other)
-
-
-class Length:
-    """
-    A simple "namespace" to avoid magic values for indefinite lengths.
-    """
-    # pylint: disable=too-few-public-methods
-
-    INDEFINITE = "indefinite"
 
 
 def encode_length(value):
