@@ -1,5 +1,5 @@
 """
-Core/low-level x690 functions and data structures
+Utility functions for working with the X.690 and related standards.
 """
 from binascii import hexlify, unhexlify
 from collections import namedtuple
@@ -10,14 +10,19 @@ LengthValue = namedtuple('LengthValue', 'length value')
 
 class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     """
-    Decoded structure for an x690 "type" octet. The structure contains 3 fields:
+    Decoded structure for an X.690 "type" octet. Example::
+
+        >>> TypeInfo.from_bytes(b'\\x30')
+        TypeInfo(cls='universal', priv_const='constructed', tag=16)
+
+    The structure contains 3 fields:
 
     cls
-        The typeclass (either TypeInfo.UNIVERSAL, TypeInfo.APPLICATION,
-        TypeInfo.CONTEXT or TypeInfo.CONSTRUCTED)
+        The typeclass (either :py:attr:`~.UNIVERSAL`, :py:attr:`~.APPLICATION`,
+        :py:attr:`~.CONTEXT` or :py:attr:`~.CONSTRUCTED`)
 
     priv_const
-        Whether the value is TypeInfo.CONSTRUCTED or TypeInfo.PRIMITIVE
+        Whether the value is :py:attr:`~.CONSTRUCTED` or :py:attr:`~.PRIMITIVE`
 
     tag
         The actual type identifier.
@@ -34,7 +39,10 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     def from_bytes(data: Union[int, bytes]) -> "TypeInfo":
         """
         Given one octet, extract the separate fields and return a TypeInfo
-        instance.
+        instance::
+
+            >>> TypeInfo.from_bytes(b'\\x30')
+            TypeInfo(cls='universal', priv_const='constructed', tag=16)
         """
         # pylint: disable=attribute-defined-outside-init
 
@@ -104,7 +112,7 @@ class Length:
 def encode_length(value):
     """
     The "length" field must be specially encoded for values above 127.
-    Additionally, from X.690:
+    Additionally, from :term:`X.690`:
 
         8.1.3.2 A sender shall:
 
@@ -116,6 +124,13 @@ def encode_length(value):
                constructed and is not all immediately available.
 
     See also: https://en.wikipedia.org/wiki/X.690#Length_octets
+
+    Example::
+
+        >>> encode_length(16)    # no need for special encoding.
+        b'\\x10'
+        >>> encode_length(200)   # > 127, needs to be specially encoded.
+        b'\\x81\\xc8'
     """
     if value == Length.INDEFINITE:
         return bytes([0b10000000])
@@ -133,12 +148,28 @@ def encode_length(value):
     return bytes(output)
 
 
-def decode_length(data: bytes) -> Tuple[int, bytes]:
+def decode_length(data: bytes) -> LengthValue:
     """
     Given a bytes object, which starts with the length information of a TLV
-    value, returns the length and the remaining bytes. So, given a TLV value,
-    this function takes the "LV" part as input, parses the length information
-    and returns the remaining "V" part (including any subsequent bytes).
+    value, returns a namedtuple with the length and the remaining bytes. So,
+    given a TLV value, this function takes the "LV" part as input, parses the
+    length information and returns the length plus the remaining "V" part
+    (including any subsequent bytes).
+
+    For values which are longer than 127 bytes, the length must be encoded into
+    an unknown amount of "length" bytes. This function reads as many bytes as
+    needed for the length. The return value contains the parsed length in number
+    of bytes, and the remaining data bytes which follow the length bytes.
+
+    Examples::
+
+        >>> # length > 127, consume multiple length bytes
+        >>> decode_length(b'\\x81\\xc8...')
+        LengthValue(length=200, value=b'...')
+
+        >>> # length <= 127, consume one length byte
+        >>> decode_length(b'\\x10...')
+        LengthValue(length=16, value=b'...')
 
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
@@ -171,6 +202,15 @@ def visible_octets(data: bytes) -> str:
         be run during normal operations (mostly for testing and debugging).  So
         performance should not be an issue, and this is less obfuscated than
         existing solutions.
+
+    Example::
+
+        >>> from os import urandom
+        >>> print(visible_octets(urandom(40)))
+        99 1f 56 a9 25 50 f7 9b  95 7e ff 80 16 14 88 c5   ..V.%P...~......
+        f3 b4 83 d4 89 b2 34 b4  71 4e 5a 69 aa 9f 1d f8   ......4.qNZi....
+        1d 33 f9 8e f1 b9 12 e9                            .3......
+
     """
     hexed = hexlify(data).decode('ascii')
     tuples = [''.join((a, b)) for a, b in zip(hexed[::2], hexed[1::2])]
