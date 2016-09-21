@@ -24,16 +24,14 @@ from .const import Version
 from .transport import send, get_request_id
 
 
-def get(ip: str, community: str, oid: str, version: bytes=Version.V2C,
-        port: int=161):
+def get(ip: str, community: str, oid: str, port: int=161):
     """
     Executes a simple SNMP GET request and returns a pure Python data structure.
     """
-    return multiget(ip, community, [oid], version, port)[0]
+    return multiget(ip, community, [oid], port)[0]
 
 
-def multiget(ip: str, community: str, oids: List[str],
-             version: bytes=Version.V2C, port: int=161):
+def multiget(ip: str, community: str, oids: List[str], port: int=161):
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -43,7 +41,7 @@ def multiget(ip: str, community: str, oids: List[str],
     oids = [ObjectIdentifier.from_string(oid) for oid in oids]
 
     packet = Sequence(
-        Integer(version),
+        Integer(Version.V2C),
         OctetString(community),
         GetRequest(get_request_id(), *oids)
     )
@@ -58,20 +56,20 @@ def multiget(ip: str, community: str, oids: List[str],
     return output
 
 
-def getnext(ip, community, oid, version, port):
+def getnext(ip, community, oid, port):
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
     """
-    return multigetnext(ip, community, [oid], version, port)[0]
+    return multigetnext(ip, community, [oid], port)[0]
 
 
-def multigetnext(ip, community, oids, version, port):
+def multigetnext(ip, community, oids, port=161):
     """
     Function to send a single multi-oid GETNEXT request.
     """
     request = GetNextRequest(get_request_id(), *oids)
     packet = Sequence(
-        Integer(version),
+        Integer(Version.V2C),
         OctetString(community),
         request
     )
@@ -85,24 +83,22 @@ def multigetnext(ip, community, oids, version, port):
     return response_object.varbinds
 
 
-def walk(ip: str, community: str, oid, version: bytes=Version.V2C,
-         port: int=161):
+def walk(ip: str, community: str, oid, port: int=161):
     """
     Executes a sequence of SNMP GETNEXT requests and returns an iterator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
     """
 
-    return multiwalk(ip, community, [oid], version, port)
+    return multiwalk(ip, community, [oid], port)
 
 
-def multiwalk(ip: str, community: str, oids: List[str],
-              version: bytes=Version.V2C, port: int=161):
+def multiwalk(ip: str, community: str, oids: List[str], port: int=161):
     """
     Executes a sequence of SNMP GETNEXT requests and returns an iterator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
     """
 
-    varbinds = multigetnext(ip, community, oids, version, port)
+    varbinds = multigetnext(ip, community, oids, port)
 
     retrieved_oids = [str(bind.oid) for bind in varbinds]
     prev_retrieved_oids = []
@@ -110,8 +106,7 @@ def multiwalk(ip: str, community: str, oids: List[str],
         for bind in varbinds:
             yield bind
 
-        varbinds = multigetnext(ip, community, retrieved_oids,
-                                version, port)
+        varbinds = multigetnext(ip, community, retrieved_oids, port)
         retrieved_oids = [str(bind.oid) for bind in varbinds]
 
         # ending condition (check if we need to stop the walk)
@@ -127,19 +122,18 @@ def multiwalk(ip: str, community: str, oids: List[str],
         prev_retrieved_oids = retrieved_oids
 
 
-def set(ip: str, community: str, oid: str, value: Type,
-        version: bytes=Version.V2C, port: int=161):
+def set(ip: str, community: str, oid: str, value: Type, port: int=161):
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
     data structure.
     """
 
-    result = multiset(ip, community, [(oid, value)], version, port)
+    result = multiset(ip, community, [(oid, value)], port)
     return result[oid]
 
 
 def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
-             version: bytes=Version.V2C, port: int=161):
+             port: int=161):
     """
 
     Executes an SNMP SET request on multiple OIDs. The result is returned as
@@ -154,7 +148,7 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
              for k, v in mappings]
 
     request = SetRequest(get_request_id(), binds)
-    packet = Sequence(Integer(version),
+    packet = Sequence(Integer(Version.V2C),
                       OctetString(community),
                       request)
     response = send(ip, port, bytes(packet))
