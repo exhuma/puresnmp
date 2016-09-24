@@ -104,8 +104,9 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
 
 def encode_length(value):
     """
-    The "length" field must be specially encoded for values above 127.
-    Additionally, from :term:`X.690`:
+    This function encodes the length of a variable into bytes conforming to the
+    rules defined in :term:`X.690`: The "length" field must be specially encoded
+    for values above 127.  Additionally, from :term:`X.690`:
 
         8.1.3.2 A sender shall:
 
@@ -235,10 +236,16 @@ def tablify(varbinds: List[Tuple[Any, Any]], num_base_nodes: int=0) -> list:
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
     default, the last node is considered the row ID, and the second-last is the
-    column ID.
+    column ID. Example:
+
+    By default, for the table-cell at OID ``1.2.3.4.5``, ``4`` is the column
+    index and ``5`` is the row index.
+
+    Using ``num_base_nodes=2`` this changes, in that ``3`` becomes the column
+    index, and ``4.5`` becomes the row index.
 
     The output should *not* be considered ordered in any way. If you need it
-    sorted, you mus sort it after retrieving the table from this function!
+    sorted, you must sort it after retrieving the table from this function!
 
     Each element of the output is a dictionary where each key is the column
     index. By default the index ``0`` represents the row ID.

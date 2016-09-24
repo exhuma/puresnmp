@@ -7,6 +7,9 @@ of this library.
 X.690
     https://www.itu.int/rec/T-REC-X.690/en
 
+List & Type identifiers of SMI types
+    https://tools.ietf.org/html/rfc1155#section-6
+
 GetNextPDU (and others) explained:
     https://tools.ietf.org/html/rfc1157#section-4.1.3
 

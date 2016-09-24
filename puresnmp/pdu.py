@@ -1,5 +1,10 @@
 """
-Model for SNMP PDUs (Request/Response messages)
+Model for SNMP PDUs (Request/Response messages).
+
+PDUs all have a common structure, which is handled in the
+:py:class:`~.SnmpMessage` class. The different (basic) PDU types only differ in
+their type identifier header (f.ex. ``b'\\xa0'`` for a
+:py:class:`~.GetRequest`).
 """
 
 # TODO: Add a method to wrap a message in a full packet (including SNMP version
@@ -41,6 +46,13 @@ class SnmpMessage(Type):
 
     @classmethod
     def decode(cls, data):
+        """
+        This method takes a :py:class:`bytes` object and converts it to
+        an application object. This is callable from each subclass of
+        :py:class:`~.SnmpMessage`.
+        """
+        # TODO (advanced): recent tests revealed that this is *not symmetric*
+        # with __bytes__ of this class. This should be ensured!
         if not data:
             raise EmptyMessage('No data to decode!')
         request_id, data = pop_tlv(data)
@@ -96,7 +108,10 @@ class SnmpMessage(Type):
                 self.request_id == other.request_id and
                 self.varbinds == other.varbinds)
 
-    def pretty(self):  # pragma: no cover
+    def pretty(self) -> str:  # pragma: no cover
+        """
+        Returns a "prettified" string representing the SNMP message.
+        """
         lines = [
             self.__class__.__name__,
             '    Request ID: %s' % self.request_id,
@@ -134,9 +149,12 @@ class GetResponse(SnmpMessage):
     """
     TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
 
-
     @classmethod
     def decode(cls, data):
+        """
+        Try decoding the response. If nothing was returned (the message was
+        empty), raise a :py:exc:`~puresnmp.exc.NoSuchOID` exception.
+        """
         try:
             return super().decode(data)
         except EmptyMessage as exc:

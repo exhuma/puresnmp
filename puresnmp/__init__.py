@@ -27,6 +27,11 @@ from .transport import send, get_request_id
 def get(ip: str, community: str, oid: str, port: int=161):
     """
     Executes a simple SNMP GET request and returns a pure Python data structure.
+
+    Example::
+
+        >>> get('192.168.1.1', 'private', '1.2.3.4')
+        'non-functional example'
     """
     return multiget(ip, community, [oid], port)[0]
 
@@ -36,6 +41,11 @@ def multiget(ip: str, community: str, oids: List[str], port: int=161):
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
     given as arguments.
+
+    Example::
+
+        >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
+        ['non-functional example', 'second value']
     """
 
     oids = [ObjectIdentifier.from_string(oid) for oid in oids]
@@ -59,6 +69,11 @@ def multiget(ip: str, community: str, oids: List[str], port: int=161):
 def getnext(ip, community, oid, port):
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
+
+    Example::
+
+        >>> getnext('192.168.1.1', 'private', '1.2.3')
+        VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
     """
     return multigetnext(ip, community, [oid], port)[0]
 
@@ -66,6 +81,17 @@ def getnext(ip, community, oid, port):
 def multigetnext(ip, community, oids, port=161):
     """
     Function to send a single multi-oid GETNEXT request.
+
+    The request sends one packet to the remote host requesting the value of the
+    OIDs following one or more given OIDs.
+
+    Example::
+
+        >>> multigetnext('192.168.1.1', 'private', ['1.2.3', '1.2.4'])
+        [
+            VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example'),
+            VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
+        ]
     """
     request = GetNextRequest(get_request_id(), *oids)
     packet = Sequence(
@@ -85,8 +111,22 @@ def multigetnext(ip, community, oids, port=161):
 
 def walk(ip: str, community: str, oid, port: int=161):
     """
-    Executes a sequence of SNMP GETNEXT requests and returns an iterator over
+    Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
+
+    The generator stops when hitting an OID which is *not* a sub-node of the
+    given start OID or at the end of the tree (whichever comes first).
+
+    Example::
+
+        >>> walk('127.0.0.1', 'private', '1.3.6.1.2.1.1')
+        <generator object multiwalk at 0x7fa2f775cf68>
+
+        >>> from pprint import pprint
+        >>> pprint(list(walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')))
+        [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=Integer(24)),
+         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=OctetString(b'\\x02B\\xef\\x14@\\xf5')),
+         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=NonASN1Type(64, b'\\xac\\x11\\x00\\x01'))]
     """
 
     return multiwalk(ip, community, [oid], port)
@@ -94,8 +134,17 @@ def walk(ip: str, community: str, oid, port: int=161):
 
 def multiwalk(ip: str, community: str, oids: List[str], port: int=161):
     """
-    Executes a sequence of SNMP GETNEXT requests and returns an iterator over
+    Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
+
+    This is the same as :py:func:`~.walk` except that it is capable of iterating
+    over multiple OIDs at the same time.
+
+    Example::
+
+        >>> walk('127.0.0.1', 'private', ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
+        <generator object multiwalk at 0x7fa2f775cf68>
+
     """
 
     varbinds = multigetnext(ip, community, oids, port)
@@ -125,7 +174,14 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161):
 def set(ip: str, community: str, oid: str, value: Type, port: int=161):
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
-    data structure.
+    data structure. The value must be a subclass of
+    :py:class:`~puresnmp.x690.types.Type`.
+
+    Example::
+
+        >>> set('127.0.0.1', 'private', '1.3.6.1.2.1.1.4.0',
+        ...     OctetString(b'I am contact'))
+        b'I am contact'
     """
 
     result = multiset(ip, community, [(oid, value)], port)
@@ -138,6 +194,12 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
 
     Executes an SNMP SET request on multiple OIDs. The result is returned as
     pure Python data structure.
+
+    Fake Example::
+
+        >>> multiset('127.0.0.1', 'private', [('1.2.3', OctetString(b'foo')),
+        ...                                   ('2.3.4', OctetString(b'bar'))])
+        {'1.2.3': b'foo', '2.3.4': b'bar'}
     """
 
     if any([not isinstance(v, Type) for k, v in mappings]):

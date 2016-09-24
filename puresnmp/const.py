@@ -1,11 +1,13 @@
 """
-This file contains various values used in the SNMP standard.
+This file contains various values used to avoid magic numbers and strings in the
+application.
 """
+# pylint: disable=too-few-public-methods
 
 
 class Version:
     """
-    Class to "hide" magic values.
+    The SNMP Version identifier. This is used in the SNMP :term:`PDU`.
     """
 
     V2C = 0x01
@@ -16,6 +18,5 @@ class Length:
     """
     A simple "namespace" to avoid magic values for indefinite lengths.
     """
-    # pylint: disable=too-few-public-methods
 
     INDEFINITE = "indefinite"

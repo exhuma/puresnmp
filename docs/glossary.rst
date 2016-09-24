@@ -15,3 +15,7 @@ Glossary
     TLV
         Type Length Value (See
         https://en.wikipedia.org/wiki/Type-length-value)
+
+    PDU
+        A Protocol Data Unit. A logical packet exchanged between client and
+        server.

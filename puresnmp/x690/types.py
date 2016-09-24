@@ -1,5 +1,39 @@
 """
-See X690: https://en.wikipedia.org/wiki/X.690
+Overview
+========
+
+This module contains the encoding/decoding logic for data types as defined in
+:term:`X.690`.
+
+Each type is made available via a :py:class:`~.Registry` and can be retrieved
+via :py:meth:`~.Registry.get`.
+
+Additionally, given a :py:class:`bytes` object, the :py:func:`~.pop_tlv`
+function can be used to parse theat bytes object and return a typed instance
+from it. See :py:func:`~.pop_tlv` for details about it's behaviour!
+
+.. note::
+    The individual type classes in this module do not contain any additional
+    documentation. The bulk of this module is documented in :py:class:`~.Type`
+    and :py:class:`~.Registry`.
+
+    For the rest, the type classes simply define the type identifier tag.
+
+Supporting Additional Classes
+=============================
+
+Just by subclassing :py:class:`~.Type` and setting correct ``TAG`` and
+``TYPECLASS`` values, most of the basic functionality will be covered by the
+superclass. Type detection, and addition to the registry is automatic.
+Subclassing is enough.
+
+By default, a new type which does not override any methods will have it's value
+reported as bytes objects. You may want to override at least
+:py:meth:`~.Type.pythonize` to expose the value to users of the library as pure
+Python objects.
+
+Depending on type, you may also want to override certain methods. See
+:py:class:`~.Sequence` and :py:class:`~.Integer` for more complex examples.
 """
 # pylint: disable=abstract-method, missing-docstring
 
@@ -25,9 +59,23 @@ class Registry(type):
 
 def pop_tlv(data):
     """
-    Given a stream of octets, inspects and parsed the next octet. It returns the
-    value and the remaining octets.
+    Given a :py:class:`bytes` object, inspects and parses the first octets (as
+    many as required) to determine variable type (and corresponding Python
+    class), and length. The class is then used to parse the *first* object in
+    ``data``.  *data* itself will not be modified. Instead, a new modified copy
+    of *data* is returned alongside the parsed object. This new object is the
+    remainder after popping off the first object.
+
+    Example::
+
+        >>> data = b'\\x02\\x01\\x05\\x11'
+        >>> pop_tlv(data)
+        (Integer(5), b'\\x11')
+
+    Note that in the example above, ``\\x11`` is the remainder of the bytes
+    object after popping of the integer object.
     """
+    # TODO: This function should be moved to another module (util maybe?).
     if not data:
         return Null(), b''
     type_ = TypeInfo.from_bytes(data[0])
@@ -46,11 +94,19 @@ def pop_tlv(data):
 
 
 class Type(metaclass=Registry):
+    """
+    The superclass for all supported types.
+    """
     TYPECLASS = TypeInfo.UNIVERSAL
     TAG = 0
 
     @classmethod
     def validate(cls, data):
+        """
+        Given a bytes object, checks if the given class *cls* supports decoding
+        this object. If not, raises a ValueError.
+        """
+        # TODO: Making this function return a boolean instead of raising an exception would make the code potentially more readable.
         tinfo = TypeInfo.from_bytes(data[0])
         if tinfo.cls != cls.TYPECLASS or tinfo.tag != cls.TAG:
             raise ValueError('Invalid type header! '
@@ -83,10 +139,16 @@ class Type(metaclass=Registry):
         This method takes a bytes object which contains the raw content octets
         of the object. That means, the octets *without* the type information and
         length.
+
+        This function must be overridden by the concrete subclasses.
         """
         raise NotImplementedError('Decoding is not yet implemented on %s' % cls)
 
     def __bytes__(self):  # pragma: no cover
+        """
+        Convert this instance into a bytes object. This must be implemented by
+        subclasses.
+        """
         raise NotImplementedError('Not yet implemented')
 
     def __repr__(self):
@@ -94,6 +156,9 @@ class Type(metaclass=Registry):
         return '%s(%r)' % (self.__class__.__name__, self.value)
 
     def pythonize(self):
+        """
+        Convert this instance to an appropriate pure Python object.
+        """
         # pylint: disable=no-member
         return self.value
 
@@ -109,8 +174,18 @@ class Type(metaclass=Registry):
 
 class NonASN1Type(Type):
     """
-    A fallback type for anything not in ASN.1
+    A fallback type for anything not in X.690.
+
+    Instances of this class contain the raw information as parsed from the
+    bytes as the following attributes:
+
+    * ``value``: The value without leading metadata (as bytes value)
+    * ``tag``: The *unparsed* "tag". This is the type ID as defined in the
+      reference document. See :py:class:`~puresnmp.x690.util.TypeInfo` for
+      details.
+    * ``length``: The length of the value.
     """
+    # TODO: Rename this class to UnknownType
 
     def __init__(self, tag, value):
         self.value = value
@@ -230,6 +305,10 @@ class OctetString(Type):
 
 
 class Sequence(Type):
+    """
+    Represents an X.690 sequence type. Instances of this class are iterable and
+    indexable.
+    """
     TAG = 0x10
 
     @classmethod
@@ -269,7 +348,7 @@ class Sequence(Type):
 
     def pretty(self):  # pragma: no cover
         """
-        Overrides Type.pretty
+        Overrides :py:meth:`.Type.pretty`
         """
         lines = [self.__class__.__name__]
         for item in self.items:
@@ -291,6 +370,7 @@ class Integer(Type):
         if self.value == 0:
             octets = [0]
         else:
+            # Split long integers into multiple octets.
             remainder = self.value
             octets = []
             while remainder:
@@ -307,6 +387,18 @@ class Integer(Type):
 
 
 class ObjectIdentifier(Type):
+    """
+    Represents an OID.
+
+    Instances of this class support containment checks to determine if one OID
+    is a sub-item of another::
+
+        >>> ObjectIdentifier(1, 2, 3, 4, 5) in ObjectIdentifier(1, 2, 3)
+        True
+
+        >>> ObjectIdentifier(1, 2, 4, 5, 6) in ObjectIdentifier(1, 2, 3)
+        False
+    """
     TAG = 0x06
 
     @staticmethod
@@ -328,6 +420,9 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def encode_large_value(value):
+        """
+        Inverse function of :py:meth:`~.ObjectIdentifier.decode_large_value`
+        """
         if value <= 127:
             return [value]
         output = [value & 0b1111111]

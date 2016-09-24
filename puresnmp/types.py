@@ -1,5 +1,9 @@
 """
-SMI Types / Structure types which are not defined in ASN.1
+SMI Types / Structure types which are not defined in :term:`X.690`.
+
+See `RFC 1155 section 3.2.3`_ for a description of the types.
+
+.. _RFC 1155 section 3.2.3: https://tools.ietf.org/html/rfc1155#section-3.2.3
 """
 
 # pylint: disable=missing-docstring
