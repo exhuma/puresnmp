@@ -6,9 +6,10 @@ Cookbook
 .. note:: Note on Types
 
     In the current version, some types internal to SNMP and :term:`X.690` are
-    abstracted away. But not all of them yet. One goal of the library is to act
-    as a border between pure Python code and SNMP internals. It is not always
-    possible to hide the type information. Especially on ``SET`` requests.
+    abstracted away. But not all of them yet (see :ref:`type_tree`). One goal
+    of the library is to act as a border between pure Python code and SNMP
+    internals. It is not always possible to hide the type information.
+    Especially on ``SET`` requests.
 
     "Hiding" these types while still retaining access to them if needed, is a
     work in progress!
@@ -109,6 +110,9 @@ Output
 
 SNMP Set
 --------
+
+.. note:: 
+    For a list of available/implemented types, see :ref:`type_tree`
 
 Python Code
 ~~~~~~~~~~~

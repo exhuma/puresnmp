@@ -53,3 +53,40 @@ class Opaque(Integer):
 class NsapAddress(Integer):
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x05
+
+
+def _walk_subclasses(cls, indent=0):
+    if cls.__module__ == '__main__':
+        modname = 'puresnmp.types'
+    else:
+        modname = cls.__module__
+
+    cname = '.'.join([modname, cls.__qualname__])
+    ref = ':py:class:`%s`' % cname
+
+    print('\n', '   ' * indent, '* ', ref)
+    for subclass in sorted(cls.__subclasses__(), key=lambda x: x.__name__):
+        _walk_subclasses(subclass, indent + 1)
+
+
+def main():
+    """
+    Entrypoint for::
+
+        python -m puresnmp.types
+
+    This will output a RST formatted document containing the available types.
+    This function was written to generate a documentation page with the
+    available types.
+    """
+    from .x690.types import Type
+    print('.. _type_tree:\n')
+    print('Type Tree')
+    print('=========\n')
+    _walk_subclasses(Type)
+    return 0
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())
