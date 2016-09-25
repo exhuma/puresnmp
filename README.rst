@@ -13,16 +13,6 @@
 
 .. <<< Shields <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-.. note::
-
-    The development is currently considered as *alpha*! There is no official
-    release on pypi yet, but the library is already usable. The main API may
-    change, but it already feels solid.
-
-    The library can be directly installed via ``pip`` (see below).
-
-    Obviously bugs may exist. The library is still very young!
-
 ----
 
 
