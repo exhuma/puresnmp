@@ -1,9 +1,6 @@
 Status of the Project
 =====================
 
-The project is currently in "alpha" state. Meaning, it has been tested only by
-me on a limited infrastructure and not all planned features are implemented.
-
 Implemented Features
 --------------------
 
