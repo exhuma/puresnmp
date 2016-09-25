@@ -19,8 +19,9 @@ setup(
         'dev': [],
         'test': ['pytest-xdist', 'pytest', 'pytest-coverage']
     },
-    packages=find_packages(exclude=["tests.*", "tests"]),
+    packages=find_packages(exclude=["tests.*", "tests", "docs"]),
     url="https://github.com/exhuma/puresnmp",
+    keywords="networking snmp",
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
