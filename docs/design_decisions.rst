@@ -4,22 +4,23 @@ Design Decisions
 MIBs & ASN.1
 ------------
 
-The library does not depend on an ASN.1 library, nor does it parse MIBs.
-Everything that's defined in ASN.1 notation which is pertinent to SNMP has been
-hardcoded into the library.
+The library does not depend on an :term:`ASN.1` library, nor does it parse
+:term:`MIBs`.  Everything that's defined in :term:`ASN.1` notation which is
+pertinent to SNMP has been hardcoded into the library.
 
 Rationale:
 
 This started off as a proof of concept that it was doable to drop these
 dependencies. They complicate the code-base and are not really necessary. It is
-unlikely that SNMP will change in such a fundamental level that the ASN.1
-definitions would need to change. If this happens, these changes can be made to
-the code without parsing an ASN.1 document.
+unlikely that SNMP will change in such a fundamental level that the
+:term:`ASN.1` definitions would need to change. If this happens, these changes
+can be made to the code without parsing an :term:`ASN.1` document.
 
-MIBs, which are also written in ASN.1 notation, are also not necessary for SNMP
-in its lowest level. MIBs can be considered as "syntactic sugar" for SNMP
-users. It is not impossible though to wrap this library in another library and
-add MIB handling. This is however out of scope of this project.
+:term:`MIBs`, which are also written in :term:`ASN.1` notation, are also not
+necessary for SNMP in its lowest level. :term:`MIBs` can be considered as
+"syntactic sugar" for SNMP users. It is not impossible though to wrap this
+library in another library and add :term:`MIB` handling. This is however out of
+scope of this project.
 
 
 libsnmp
