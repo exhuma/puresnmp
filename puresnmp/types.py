@@ -44,7 +44,7 @@ class TimeTicks(Integer):
     TAG = 0x03
 
 
-class Opaque(Integer):
+class Opaque(OctetString):
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x04
 
