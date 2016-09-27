@@ -9,7 +9,6 @@ from ...x690.types import (
     Type,
     pop_tlv,
 )
-from ...x690.util import Length, decode_length, encode_length, TypeInfo
 
 from .. import ByteTester
 
