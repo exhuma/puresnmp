@@ -8,15 +8,14 @@ See `RFC 1155 section 3.2.3`_ for a description of the types.
 
 # pylint: disable=missing-docstring
 
-from .x690.types import Integer
+from .x690.types import Integer, OctetString
 from .x690.util import TypeInfo
 
 
-class IpAddress(Integer):
+class IpAddress(OctetString):
     """
     SNMP Type for IP Addresses
     """
-    # TODO: should this really inherit from Integer? Might need a test-case!
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x00
 
