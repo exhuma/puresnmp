@@ -55,6 +55,14 @@ class NsapAddress(Integer):
     TAG = 0x05
 
 
+class Counter64(Integer):
+    """
+    As defined in RFC 2578
+    """
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x06
+
+
 def _walk_subclasses(cls, indent=0):
     if cls.__module__ == '__main__':
         modname = 'puresnmp.types'
