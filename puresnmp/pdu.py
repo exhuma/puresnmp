@@ -142,7 +142,7 @@ class GetRequest(SnmpMessage):
     """
     Represents an SNMP Get Request.
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
+    TAG = 0
 
     def __init__(self, request_id, *oids):
         wrapped_oids = []
@@ -160,7 +160,7 @@ class GetResponse(SnmpMessage):
     Represents an SNMP basic response (this may be returned for other requests
     than GET as well).
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
+    TAG = 2
 
     @classmethod
     def decode(cls, data):
@@ -178,11 +178,11 @@ class GetNextRequest(GetRequest):
     """
     Represents an SNMP GetNext Request.
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa1)
+    TAG = 1
 
 
 class SetRequest(SnmpMessage):
     """
     Represents an SNMP SET Request.
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa3)
+    TAG = 3
