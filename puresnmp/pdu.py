@@ -69,11 +69,11 @@ class SnmpMessage(Type):
         if not data:
             raise EmptyMessage('No data to decode!')
         request_id, data = pop_tlv(data)
-        error_code, data = pop_tlv(data)
+        error_status, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
-        if error_code.value:
-            msg = ERROR_MESSAGES.get(error_code.value,
-                                     'Unknown Error: %s' % error_code.value)
+        if error_status.value:
+            msg = ERROR_MESSAGES.get(error_status.value,
+                                     'Unknown Error: %s' % error_status.value)
             # TODO Add detail from the error_index.
             raise SnmpError('Error packet received: %s!' % msg)
         values, data = pop_tlv(data)
@@ -83,7 +83,7 @@ class SnmpMessage(Type):
         return cls(
             request_id,
             varbinds,
-            error_code,  # TODO rename to "error_status"
+            error_status,
             error_index
         )
 
