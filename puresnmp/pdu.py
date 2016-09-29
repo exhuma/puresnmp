@@ -28,6 +28,9 @@ from .x690.util import TypeInfo
 
 VarBind = namedtuple('VarBind', 'oid, value')
 
+# TODO (trivial) raise an error if more than MAX_VARBINDS are used in a request.
+MAX_VARBINDS = 2147483647  # Defined in RFC 3416
+
 ERROR_MESSAGES = {
     0: '(noError)',
     1: '(tooBig)',
@@ -55,6 +58,7 @@ class SnmpMessage(Type):
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
+    # TODO (trivial): Rename this class to "PDU" (to align with RFC3416)
     TYPECLASS = TypeInfo.CONTEXT
 
     @classmethod

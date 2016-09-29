@@ -9,6 +9,7 @@ hard to test.
 """
 
 # TODO (beginner, no-dev): Ignore this file from coverage without adding "pragma: no cover" to each function.
+# TODO (trivial): Emit a warning (using 'warnings') if the data packet is larger than the current MTU (see RFC 3416)
 
 import socket
 import logging
