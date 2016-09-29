@@ -1,1 +1,5 @@
-See docs/contributing.rst
+From docs/contributing.rst:
+
+----
+
+.. include:: docs/contributing.rst
