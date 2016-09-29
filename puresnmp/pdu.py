@@ -28,6 +28,9 @@ from .x690.util import TypeInfo
 
 VarBind = namedtuple('VarBind', 'oid, value')
 
+# TODO (trivial) raise an error if more than MAX_VARBINDS are used in a request.
+MAX_VARBINDS = 2147483647  # Defined in RFC 3416
+
 ERROR_MESSAGES = {
     0: '(noError)',
     1: '(tooBig)',
@@ -35,6 +38,19 @@ ERROR_MESSAGES = {
     3: '(badValue)',
     4: '(readOnly)',
     5: '(genErr)',
+    6: '(noAccess)',
+    7: '(wrongType)',
+    8: '(wrongLength)',
+    9: '(wrongEncoding)',
+    10: '(wrongValue)',
+    11: '(noCreation)',
+    12: '(inconsistentValue)',
+    13: '(resourceUnavailable)',
+    14: '(commitFailed)',
+    15: '(undoFailed)',
+    16: '(authorizationError)',
+    17: '(notWritable)',
+    18: '(inconsistentName)'
 }
 
 
@@ -42,6 +58,7 @@ class SnmpMessage(Type):
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
+    # TODO (trivial): Rename this class to "PDU" (to align with RFC3416)
     TYPECLASS = TypeInfo.CONTEXT
 
     @classmethod
@@ -56,11 +73,11 @@ class SnmpMessage(Type):
         if not data:
             raise EmptyMessage('No data to decode!')
         request_id, data = pop_tlv(data)
-        error_code, data = pop_tlv(data)
+        error_status, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
-        if error_code.value:
-            msg = ERROR_MESSAGES.get(error_code.value,
-                                     'Unknown Error: %s' % error_code.value)
+        if error_status.value:
+            msg = ERROR_MESSAGES.get(error_status.value,
+                                     'Unknown Error: %s' % error_status.value)
             # TODO Add detail from the error_index.
             raise SnmpError('Error packet received: %s!' % msg)
         values, data = pop_tlv(data)
@@ -70,7 +87,7 @@ class SnmpMessage(Type):
         return cls(
             request_id,
             varbinds,
-            error_code,  # TODO rename to "error_status"
+            error_status,
             error_index
         )
 
@@ -129,7 +146,7 @@ class GetRequest(SnmpMessage):
     """
     Represents an SNMP Get Request.
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa0)
+    TAG = 0
 
     def __init__(self, request_id, *oids):
         wrapped_oids = []
@@ -147,7 +164,7 @@ class GetResponse(SnmpMessage):
     Represents an SNMP basic response (this may be returned for other requests
     than GET as well).
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa2)
+    TAG = 2
 
     @classmethod
     def decode(cls, data):
@@ -165,11 +182,11 @@ class GetNextRequest(GetRequest):
     """
     Represents an SNMP GetNext Request.
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa1)
+    TAG = 1
 
 
 class SetRequest(SnmpMessage):
     """
     Represents an SNMP SET Request.
     """
-    TYPECLASS, _, TAG = TypeInfo.from_bytes(0xa3)
+    TAG = 3
