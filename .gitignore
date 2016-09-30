@@ -88,6 +88,3 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
-/docs/developer_guide/api/
-docs/typetree.rst
