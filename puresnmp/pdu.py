@@ -190,3 +190,86 @@ class SetRequest(SnmpMessage):
     Represents an SNMP SET Request.
     """
     TAG = 3
+
+
+class BulkGetRequest(Type):
+    """
+    Represents a SNMP GetBulk request
+    """
+    TYPECLASS = TypeInfo.CONTEXT
+    TAG = 5
+
+    @classmethod
+    def decode(cls, data):
+        """
+        This method takes a :py:class:`bytes` object and converts it to
+        an application object.
+        """
+        # TODO (advanced): recent tests revealed that this is *not symmetric*
+        # with __bytes__ of this class. This should be ensured!
+        if not data:
+            raise EmptyMessage('No data to decode!')
+        request_id, data = pop_tlv(data)
+        non_repeaters, data = pop_tlv(data)
+        max_repeaters, data = pop_tlv(data)
+        values, data = pop_tlv(data)
+
+        oids = [str(*oid) for oid, _ in values]
+
+        return cls(
+            request_id,
+            non_repeaters,
+            max_repeaters,
+            *oids
+        )
+
+    def __init__(self, request_id, non_repeaters, max_repeaters, *oids):
+        self.request_id = request_id
+        self.non_repeaters = non_repeaters
+        self.max_repeaters = max_repeaters
+        self.varbinds = []
+        for oid in oids:
+            self.varbinds.append(VarBind(oid, Null()))
+
+    def __bytes__(self):
+        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
+        data = [
+            Integer(self.request_id),
+            Integer(self.non_repeaters),
+            Integer(self.max_repeaters),
+            Sequence(*wrapped_varbinds)
+        ]
+        payload = b''.join([bytes(chunk) for chunk in data])
+
+        tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
+        length = encode_length(len(payload))
+        return bytes(tinfo) + length + payload
+
+    def __repr__(self):
+        return '%s(%r, %r)' % (
+            self.__class__.__name__,
+            self.request_id, self.varbinds)
+
+    def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
+        return (type(other) == type(self) and
+                self.request_id == other.request_id and
+                self.non_repeaters == other.non_repeaters and
+                self.max_repeaters == other.max_repeaters and
+                self.varbinds == other.varbinds)
+
+    def pretty(self) -> str:  # pragma: no cover
+        """
+        Returns a "prettified" string representing the SNMP message.
+        """
+        lines = [
+            self.__class__.__name__,
+            '    Request ID: %s' % self.request_id,
+            '    Non Repeaters: %s' % self.non_repeaters,
+            '    Max Repeaters: %s' % self.max_repeaters,
+            '    Varbinds: ',
+        ]
+        for bind in self.varbinds:
+            lines.append('        %s: %s' % (bind.oid, bind.value))
+
+        return '\n'.join(lines)
