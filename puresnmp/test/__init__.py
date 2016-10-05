@@ -13,6 +13,9 @@ class ByteTester(unittest.TestCase):
         """
         Helper method to compare bytes with more helpful output.
         """
+        if not isinstance(a, bytes) or not isinstance(b, bytes):
+            raise ValueError('assertBytesEqual requires two bytes objects!')
+
         if a != b:
             comparisons = []
             for offset, (char_a, char_b) in enumerate(zip_longest(a, b)):
