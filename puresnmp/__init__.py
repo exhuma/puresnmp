@@ -3,6 +3,7 @@ This module contains the high-level functions to access the library. Care is
 taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
 """
+from collections import OrderedDict, namedtuple
 from typing import List, Tuple
 
 from .x690.types import (
@@ -15,6 +16,7 @@ from .x690.types import (
 from .x690.util import tablify
 from .exc import SnmpError
 from .pdu import (
+    BulkGetRequest,
     GetNextRequest,
     GetRequest,
     SetRequest,
@@ -22,6 +24,9 @@ from .pdu import (
 )
 from .const import Version
 from .transport import send, get_request_id
+
+
+BulkResult = namedtuple('BulkResult', 'scalars listing')
 
 
 def get(ip: str, community: str, oid: str, port: int=161):
@@ -222,6 +227,116 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
         raise SnmpError('Unexpected response. Expected %d varbinds, '
                         'but got %d!' % (len(mappings), len(output)))
     return output
+
+
+def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
+            port=161):
+    """
+    Runs a "bulk" get operation and returns a :py:class:`~.BulkResult` instance.
+    This contains both a mapping for the scalar variables (the "non-repeaters")
+    and an OrderedDict instance containing the remaining list (the "repeaters").
+
+    The OrderedDict is ordered the same way as the SNMP response (whatever the
+    remote device returns).
+
+    This operation can retrieve both single/scalar values *and* lists of values
+    ("repeating values") in one single request. You can for example retrieve the
+    hostname (a scalar value), the list of interfaces (a repeating value) and
+    the list of physical entities (another repeating value) in one single
+    request.
+
+    Note that this behaves like a **getnext** request for scalar values! So you
+    will receive the value of the OID which is *immediately following* the OID
+    you specified for both scalar and repeating values!
+
+    :param scalar_oids: contains the OIDs that should be fetched as single
+        value.
+    :param repeating_oids: contains the OIDs that should be fetched as list.
+    :param max_list_size: defines the max length of each list.
+
+    Example::
+
+        >>> ip = '192.168.1.1'
+        >>> community = 'private'
+        >>> result = bulkget(ip,
+        ...                  community,
+        ...                  scalar_oids=['1.3.6.1.2.1.1.1',
+        ...                               '1.3.6.1.2.1.1.2'],
+        ...                  repeating_oids=['1.3.6.1.2.1.3.1',
+        ...                                  '1.3.6.1.2.1.5.1'],
+        ...                  max_list_size=10)
+        BulkResult(
+            scalars={'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
+                     '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
+                                          b'generic #47-Ubuntu SMP Fri Jun 24 '
+                                          b'10:09:13 UTC 2016 x86_64'},
+            listing=OrderedDict([
+                ('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1', 10),
+                ('1.3.6.1.2.1.5.1.0', b'\x01'),
+                ('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1', b'\x02B\x8e>\x9ee'),
+                ('1.3.6.1.2.1.5.2.0', b'\x00'),
+                ('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1', b'\xac\x11\x00\x01'),
+                ('1.3.6.1.2.1.5.3.0', b'\x00'),
+                ('1.3.6.1.2.1.4.1.0', 1),
+                ('1.3.6.1.2.1.5.4.0', b'\x01'),
+                ('1.3.6.1.2.1.4.3.0', b'\x00\xb1'),
+                ('1.3.6.1.2.1.5.5.0', b'\x00'),
+                ('1.3.6.1.2.1.4.4.0', b'\x00'),
+                ('1.3.6.1.2.1.5.6.0', b'\x00'),
+                ('1.3.6.1.2.1.4.5.0', b'\x00'),
+                ('1.3.6.1.2.1.5.7.0', b'\x00'),
+                ('1.3.6.1.2.1.4.6.0', b'\x00'),
+                ('1.3.6.1.2.1.5.8.0', b'\x00'),
+                ('1.3.6.1.2.1.4.7.0', b'\x00'),
+                ('1.3.6.1.2.1.5.9.0', b'\x00'),
+                ('1.3.6.1.2.1.4.8.0', b'\x00'),
+                ('1.3.6.1.2.1.5.10.0', b'\x00')]))
+    """
+
+    scalar_oids = scalar_oids or []  # protect against empty values
+    repeating_oids = repeating_oids or []  # protect against empty values
+
+    oids = [
+        ObjectIdentifier.from_string(oid) for oid in scalar_oids
+    ] + [
+        ObjectIdentifier.from_string(oid) for oid in repeating_oids
+    ]
+
+    non_repeaters = len(scalar_oids)
+
+    packet = Sequence(
+        Integer(Version.V2C),
+        OctetString(community),
+        BulkGetRequest(get_request_id(), non_repeaters, max_list_size, *oids)
+    )
+
+    response = send(ip, port, bytes(packet))
+    raw_response = Sequence.from_bytes(response)
+
+    # See RFC=3416 for details of the following calculation
+    n = min(non_repeaters, len(oids))
+    m = max_list_size
+    r = max(len(oids) - n, 0)
+    expected_max_varbinds = n + (m * r)
+
+    if len(raw_response[2].varbinds) > expected_max_varbinds:
+        raise SnmpError('Unexpected response. Expected no more than %d '
+                        'varbinds, but got %d!' % (
+                            expected_max_varbinds, len(oids)))
+
+    # cut off the scalar OIDs from the listing(s)
+    scalar_tmp = raw_response[2].varbinds[0:len(scalar_oids)]
+    repeating_tmp = raw_response[2].varbinds[len(scalar_oids):]
+
+    # prepare output for scalar OIDs
+    scalar_out = {str(oid): value.pythonize() for oid, value in scalar_tmp}
+
+    # prepare output for listing
+    repeating_out = OrderedDict()
+    for oid, value in repeating_tmp:
+        repeating_out[str(oid)] = value.pythonize()
+
+    return BulkResult(scalar_out, repeating_out)
 
 
 def table(ip: str, community: str, oid: str, port: int=161,
