@@ -137,7 +137,8 @@ def walk(ip: str, community: str, oid, port: int=161):
     return multiwalk(ip, community, [oid], port)
 
 
-def multiwalk(ip: str, community: str, oids: List[str], port: int=161):
+def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
+              fetcher=multigetnext):
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -152,7 +153,7 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161):
 
     """
 
-    varbinds = multigetnext(ip, community, oids, port)
+    varbinds = fetcher(ip, community, oids, port)
 
     retrieved_oids = [str(bind.oid) for bind in varbinds]
     prev_retrieved_oids = []
@@ -160,7 +161,7 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161):
         for bind in varbinds:
             yield bind
 
-        varbinds = multigetnext(ip, community, retrieved_oids, port)
+        varbinds = fetcher(ip, community, retrieved_oids, port)
         retrieved_oids = [str(bind.oid) for bind in varbinds]
 
         # ending condition (check if we need to stop the walk)
