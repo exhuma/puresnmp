@@ -3,6 +3,12 @@ This module contains the high-level functions to access the library. Care is
 taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
 """
+
+# TODO (advanced): This module should not make use of it's own functions. The
+#     module exists as an abstraction layer only. If one function uses a
+#     "siblng" function, valuable information is lost. In general, this module
+#     is beginning to be too "thick", containing too much business logic for a
+#     mere abstraction layer.
 from collections import OrderedDict, namedtuple
 from typing import List, Tuple
 
