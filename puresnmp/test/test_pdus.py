@@ -207,8 +207,8 @@ class TestBulkGet(ByteTester):
             437387882,
             0,  # non-repeaters
             5,  # max-repeaters
-            VarBind(ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.0'), Null()),
-            VarBind(ObjectIdentifier.from_string('1.3.6.1.2.1.2.3.0'), Null()),
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.0'),
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.3.0')
         )
         packet = Sequence(
             Integer(Version.V2C),

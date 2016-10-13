@@ -197,7 +197,8 @@ class TestApi(unittest.TestCase):
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
             ]))
-        self.assertEqual(result, expected)
+        # TODO (advanced): should order matter in the following result?
+        self.assertCountEqual(result, expected)
 
     def test_multiset(self):
         """
