@@ -26,7 +26,14 @@ from .x690.types import (
 from .x690.util import TypeInfo
 
 
-VarBind = namedtuple('VarBind', 'oid, value')
+class VarBind(namedtuple('VarBind', 'oid, value')):
+
+    def __new__(cls, oid, value):
+        if not isinstance(oid, ObjectIdentifier):
+            raise TypeError('OIDs for VarBinds must be ObjectIdentifier '
+                            'instances!')
+        return super().__new__(cls, oid, value)
+
 
 # TODO (trivial) raise an error if more than MAX_VARBINDS are used in a request.
 MAX_VARBINDS = 2147483647  # Defined in RFC 3416
