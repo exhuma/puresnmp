@@ -9,12 +9,27 @@ to use.
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get, getnext, walk, set, multiget, multiwalk, multiset, bulkget, BulkResult
+from puresnmp import (
+    BulkResult,
+    bulkget,
+    get,
+    getnext,
+    multiget,
+    multiset,
+    multiwalk,
+    set,
+    walk,
+)
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
 from puresnmp.pdu import GetRequest, VarBind, GetNextRequest, BulkGetRequest
 from puresnmp.types import Gauge
-from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString, Sequence
+from puresnmp.x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+)
 
 from . import readbytes
 
