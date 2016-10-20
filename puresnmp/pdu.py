@@ -29,9 +29,11 @@ from .x690.util import TypeInfo
 class VarBind(namedtuple('VarBind', 'oid, value')):
 
     def __new__(cls, oid, value):
-        if not isinstance(oid, ObjectIdentifier):
-            raise TypeError('OIDs for VarBinds must be ObjectIdentifier '
-                            'instances!')
+        if not isinstance(oid, (ObjectIdentifier, str)):
+            raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
+                            ' instances!')
+        if isinstance(oid, str):
+            oid = ObjectIdentifier.from_string(oid)
         return super().__new__(cls, oid, value)
 
 
