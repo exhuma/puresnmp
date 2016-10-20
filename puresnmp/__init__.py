@@ -82,7 +82,7 @@ def multiget(ip: str, community: str, oids: List[str], port: int=161):
     return output
 
 
-def getnext(ip, community, oid, port):
+def getnext(ip, community, oid, port=161):
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
 
