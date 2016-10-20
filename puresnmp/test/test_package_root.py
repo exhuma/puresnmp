@@ -19,7 +19,7 @@ from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString, Sequence
 from . import readbytes
 
 
-class TestApi(unittest.TestCase):
+class TestGet(unittest.TestCase):
 
     def test_get_call_args(self):
         """
@@ -76,6 +76,9 @@ class TestApi(unittest.TestCase):
             with self.assertRaises(NoSuchOID):
                 get('::1', 'private', '1.2.3')
 
+
+class TestWalk(unittest.TestCase):
+
     def test_walk(self):
         response_1 = readbytes('walk_response_1.hex')
         response_2 = readbytes('walk_response_2.hex')
@@ -118,6 +121,9 @@ class TestApi(unittest.TestCase):
             with self.assertRaisesRegexp(SnmpError, 'varbind'):
                 next(walk('::1', 'private', '1.2.3'))
 
+
+class TestSet(unittest.TestCase):
+
     def test_set_without_type(self):
         """
         As we need typing information, we have to hand in an instance of
@@ -145,6 +151,9 @@ class TestApi(unittest.TestCase):
                 set('::1', 'private', '1.3.6.1.2.1.1.4.0',
                     OctetString(b'hello@world.com'))
 
+
+class TestMultiGet(unittest.TestCase):
+
     def test_multiget(self):
         data = readbytes('multiget_response.hex')
         expected = ['1.3.6.1.4.1.8072.3.2.10',
@@ -157,6 +166,9 @@ class TestApi(unittest.TestCase):
                 '1.3.6.1.2.1.1.1.0',
             ])
         self.assertEqual(result, expected)
+
+
+class TestMultiWalk(unittest.TestCase):
 
     def test_multi_walk(self):
         response_1 = readbytes('multiwalk_response_1.hex')
@@ -199,6 +211,9 @@ class TestApi(unittest.TestCase):
             ]))
         # TODO (advanced): should order matter in the following result?
         self.assertCountEqual(result, expected)
+
+
+class TestMultiSet(unittest.TestCase):
 
     def test_multiset(self):
         """
