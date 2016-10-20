@@ -9,10 +9,10 @@ to use.
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get, walk, set, multiget, multiwalk, multiset
+from puresnmp import get, getnext, walk, set, multiget, multiwalk, multiset
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
-from puresnmp.pdu import GetRequest, VarBind
+from puresnmp.pdu import GetRequest, VarBind, GetNextRequest
 from puresnmp.types import Gauge
 from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString, Sequence
 
@@ -233,4 +233,31 @@ class TestMultiSet(unittest.TestCase):
             '1.3.6.1.2.1.1.4.0': b'hello@world.com',
             '1.3.6.1.2.1.1.5.0': b'hello@world.com',
         }
+        self.assertEqual(result, expected)
+
+
+class TestGetNext(unittest.TestCase):
+
+    def test_get_call_args(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            GetNextRequest(0, ObjectIdentifier(1, 2, 3))
+        )
+        with patch('puresnmp.send') as mck, \
+                patch('puresnmp.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+            getnext('::1', 'public', '1.2.3')
+            mck.assert_called_with('::1', 161, bytes(packet))
+
+    def test_getnext(self):
+        data = readbytes('getnext_response.hex')
+        # TODO (beginner): The "Integer" class should not leak out!
+        expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
+
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            result = getnext('::1', 'private', '1.3.6.1.5')
         self.assertEqual(result, expected)
