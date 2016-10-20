@@ -25,7 +25,7 @@ class TestGet(unittest.TestCase):
         """
         Test the call arguments of "get"
         """
-        data = readbytes('get_sysdescr_01.hex')  # any dump would do
+        data = readbytes('dummy.hex')  # any dump would do
         packet = Sequence(
             Integer(Version.V2C),
             OctetString('public'),
