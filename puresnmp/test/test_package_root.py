@@ -9,10 +9,10 @@ to use.
 from unittest.mock import patch
 import unittest
 
-from puresnmp import get, getnext, walk, set, multiget, multiwalk, multiset
+from puresnmp import get, getnext, walk, set, multiget, multiwalk, multiset, bulkget, BulkResult
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
-from puresnmp.pdu import GetRequest, VarBind, GetNextRequest
+from puresnmp.pdu import GetRequest, VarBind, GetNextRequest, BulkGetRequest
 from puresnmp.types import Gauge
 from puresnmp.x690.types import ObjectIdentifier, Integer, OctetString, Sequence
 
@@ -260,4 +260,46 @@ class TestGetNext(unittest.TestCase):
         with patch('puresnmp.send') as mck:
             mck.return_value = data
             result = getnext('::1', 'private', '1.3.6.1.5')
+        self.assertEqual(result, expected)
+
+
+class TestGetBulkGet(unittest.TestCase):
+
+    def test_get_call_args(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            BulkGetRequest(0, 1, 2,
+                           ObjectIdentifier(1, 2, 3),
+                           ObjectIdentifier(1, 2, 4))
+        )
+        with patch('puresnmp.send') as mck, \
+                patch('puresnmp.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+            bulkget('::1', 'public',
+                    ['1.2.3'],
+                    ['1.2.4'],
+                    max_list_size=2)
+            mck.assert_called_with('::1', 161, bytes(packet))
+
+
+    def test_bulkget(self):
+        data = readbytes('bulk_get_response.hex')
+        expected = BulkResult(
+            {'1.3.6.1.2.1.1.1.0': b'Linux 7e68e60fe303 4.4.0-28-generic '
+             b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64'},
+            {'1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1': 10,
+             '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1': b'\x02B\xe2\xc5\x8d\t',
+             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': b'\xac\x11\x00\x01',
+             '1.3.6.1.2.1.4.1.0': 1,
+             '1.3.6.1.2.1.4.3.0': 57})
+
+        with patch('puresnmp.send') as mck:
+            mck.return_value = data
+            result = bulkget('::1', 'public',
+                             ['1.3.6.1.2.1.1.1'],
+                             ['1.3.6.1.2.1.3.1'],
+                             max_list_size=5)
         self.assertEqual(result, expected)
