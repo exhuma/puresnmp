@@ -12,6 +12,8 @@ Type Tree
 
      *  :py:class:`puresnmp.x690.types.Boolean`
 
+     *  :py:class:`puresnmp.pdu.BulkGetRequest`
+
      *  :py:class:`puresnmp.x690.types.CharacterString`
 
      *  :py:class:`puresnmp.x690.types.EOC`
@@ -34,13 +36,11 @@ Type Tree
 
         *  :py:class:`puresnmp.types.Counter`
 
+        *  :py:class:`puresnmp.types.Counter64`
+
         *  :py:class:`puresnmp.types.Gauge`
 
-        *  :py:class:`puresnmp.types.IpAddress`
-
         *  :py:class:`puresnmp.types.NsapAddress`
-
-        *  :py:class:`puresnmp.types.Opaque`
 
         *  :py:class:`puresnmp.types.TimeTicks`
 
@@ -55,6 +55,10 @@ Type Tree
      *  :py:class:`puresnmp.x690.types.ObjectIdentifier`
 
      *  :py:class:`puresnmp.x690.types.OctetString`
+
+        *  :py:class:`puresnmp.types.IpAddress`
+
+        *  :py:class:`puresnmp.types.Opaque`
 
      *  :py:class:`puresnmp.x690.types.PrintableString`
 
