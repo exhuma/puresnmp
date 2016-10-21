@@ -18,6 +18,7 @@ from puresnmp import (
     multiset,
     multiwalk,
     set,
+    table,
     walk,
 )
 from puresnmp.const import Version
@@ -318,3 +319,17 @@ class TestGetBulkGet(unittest.TestCase):
                              ['1.3.6.1.2.1.3.1'],
                              max_list_size=5)
         self.assertEqual(result, expected)
+
+
+class TestGetTable(unittest.TestCase):
+
+    @patch('puresnmp.walk')
+    @patch('puresnmp.tablify')
+    @patch('puresnmp.get_request_id')
+    def test_table(self, mck_rid, mck_tablify, mck_walk):
+        mck_rid.return_value = 0
+        tmp = object()  # dummy return value
+        mck_walk.return_value = tmp
+        table('::1', 'public', '1.2.3.4', port=161, num_base_nodes=2)
+        mck_walk.assert_called_with('::1', 'public', '1.2.3.4', port=161)
+        mck_tablify.assert_called_with(tmp, num_base_nodes=2)
