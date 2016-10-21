@@ -6,12 +6,13 @@ to use.
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch, call
 import unittest
 
 from puresnmp import (
     BulkResult,
     bulkget,
+    bulkwalk,
     get,
     getnext,
     multiget,
@@ -318,6 +319,152 @@ class TestGetBulkGet(unittest.TestCase):
                              ['1.3.6.1.2.1.1.1'],
                              ['1.3.6.1.2.1.3.1'],
                              max_list_size=5)
+        self.assertEqual(result, expected)
+
+
+
+class TestGetBulkWalk(unittest.TestCase):
+
+    def test_get_call_args(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
+        )
+        with patch('puresnmp.send') as mck, \
+                patch('puresnmp.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+
+            # we need to wrap this in a list to consume the generator.
+            list(bulkwalk('::1', 'public',
+                          ['1.2.3'],
+                          bulk_size=2))
+            mck.assert_called_with('::1', 161, bytes(packet))
+
+
+    @patch('puresnmp.send')
+    @patch('puresnmp.get_request_id')
+    def test_bulkwalk(self, mck_rid, mck_send):
+        req1 = readbytes('bulkwalk_request_1.hex')
+        req2 = readbytes('bulkwalk_request_2.hex')
+        req3 = readbytes('bulkwalk_request_3.hex')
+
+        responses = [
+            readbytes('bulkwalk_response_1.hex'),
+            readbytes('bulkwalk_response_2.hex'),
+            readbytes('bulkwalk_response_3.hex'),
+        ]
+        mck_send.side_effect = responses
+
+        request_ids = [1001613222, 1001613223, 1001613224]
+        mck_rid.side_effect = request_ids
+
+        result = list(bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
+                               bulk_size=20))
+
+        self.assertEqual(mck_send.mock_calls, [
+            call('127.0.0.1', 161, req1),
+            call('127.0.0.1', 161, req2),
+            call('127.0.0.1', 161, req3),
+        ])
+
+        # TODO (advanced): Type information is lost for timeticks and OIDs
+        expected = [
+            VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),
+            VarBind('1.3.6.1.2.1.2.2.1.1.10', 10),
+            VarBind('1.3.6.1.2.1.2.2.1.2.1', b"lo"),
+            VarBind('1.3.6.1.2.1.2.2.1.2.10', b"eth0"),
+            VarBind('1.3.6.1.2.1.2.2.1.3.1', 24),
+            VarBind('1.3.6.1.2.1.2.2.1.3.10', 6),
+            VarBind('1.3.6.1.2.1.2.2.1.4.1', 65536),
+            VarBind('1.3.6.1.2.1.2.2.1.4.10', 1500),
+            VarBind('1.3.6.1.2.1.2.2.1.5.1',  10000000),
+            VarBind('1.3.6.1.2.1.2.2.1.5.10',  4294967295),
+            VarBind('1.3.6.1.2.1.2.2.1.6.1', b""),
+            VarBind('1.3.6.1.2.1.2.2.1.6.10', b"\x02\x42\xAC\x11\x00\x02"),
+            VarBind('1.3.6.1.2.1.2.2.1.7.1', 1),
+            VarBind('1.3.6.1.2.1.2.2.1.7.10', 1),
+            VarBind('1.3.6.1.2.1.2.2.1.8.1', 1),
+            VarBind('1.3.6.1.2.1.2.2.1.8.10', 1),
+            VarBind('1.3.6.1.2.1.2.2.1.9.1', 0),  # TODO: type info is lost
+            VarBind('1.3.6.1.2.1.2.2.1.9.10', 0),  # TODO: type info is lost
+            VarBind('1.3.6.1.2.1.2.2.1.10.1', 172),
+            VarBind('1.3.6.1.2.1.2.2.1.10.10', 60558),
+            VarBind('1.3.6.1.2.1.2.2.1.11.1', 2),
+            VarBind('1.3.6.1.2.1.2.2.1.11.10', 564),
+            VarBind('1.3.6.1.2.1.2.2.1.12.1', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.12.10', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.13.1', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.13.10', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.14.1', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.14.10', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.15.1', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.15.10', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.16.1', 172),
+            VarBind('1.3.6.1.2.1.2.2.1.16.10', 44295),
+            VarBind('1.3.6.1.2.1.2.2.1.17.1', 2),
+            VarBind('1.3.6.1.2.1.2.2.1.17.10', 442),
+            VarBind('1.3.6.1.2.1.2.2.1.18.1', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.18.10', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.19.1', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.19.10', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.20.1', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.20.10', 0),
+            VarBind('1.3.6.1.2.1.2.2.1.21.1',  0),
+            VarBind('1.3.6.1.2.1.2.2.1.21.10',  0),
+            VarBind('1.3.6.1.2.1.2.2.1.22.1', '0.0'),  # TODO: type info is lost
+            VarBind('1.3.6.1.2.1.2.2.1.22.10', '0.0'),  # TODO: type info is lost
+        ]
+
+        # TODO: Expected types per OID:
+        # 1.3.6.1.2.1.2.2.1.1.1 = INTEGER: 1
+        # 1.3.6.1.2.1.2.2.1.1.10 = INTEGER: 10
+        # 1.3.6.1.2.1.2.2.1.2.1 = STRING: "lo"
+        # 1.3.6.1.2.1.2.2.1.2.10 = STRING: "eth0"
+        # 1.3.6.1.2.1.2.2.1.3.1 = INTEGER: 24
+        # 1.3.6.1.2.1.2.2.1.3.10 = INTEGER: 6
+        # 1.3.6.1.2.1.2.2.1.4.1 = INTEGER: 65536
+        # 1.3.6.1.2.1.2.2.1.4.10 = INTEGER: 1500
+        # 1.3.6.1.2.1.2.2.1.5.1 = Gauge32: 10000000
+        # 1.3.6.1.2.1.2.2.1.5.10 = Gauge32: 4294967295
+        # 1.3.6.1.2.1.2.2.1.6.1 = ""
+        # 1.3.6.1.2.1.2.2.1.6.10 = Hex-STRING: 02 42 AC 11 00 02
+        # 1.3.6.1.2.1.2.2.1.7.1 = INTEGER: 1
+        # 1.3.6.1.2.1.2.2.1.7.10 = INTEGER: 1
+        # 1.3.6.1.2.1.2.2.1.8.1 = INTEGER: 1
+        # 1.3.6.1.2.1.2.2.1.8.10 = INTEGER: 1
+        # 1.3.6.1.2.1.2.2.1.9.1 = Timeticks: (0) 0:00:00.00
+        # 1.3.6.1.2.1.2.2.1.9.10 = Timeticks: (0) 0:00:00.00
+        # 1.3.6.1.2.1.2.2.1.10.1 = Counter32: 172
+        # 1.3.6.1.2.1.2.2.1.10.10 = Counter32: 60558
+
+        # 1.3.6.1.2.1.2.2.1.11.1 = Counter32: 2
+        # 1.3.6.1.2.1.2.2.1.11.10 = Counter32: 564
+        # 1.3.6.1.2.1.2.2.1.12.1 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.12.10 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.13.1 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.13.10 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.14.1 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.14.10 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.15.1 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.15.10 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.16.1 = Counter32: 172
+        # 1.3.6.1.2.1.2.2.1.16.10 = Counter32: 44295
+        # 1.3.6.1.2.1.2.2.1.17.1 = Counter32: 2
+        # 1.3.6.1.2.1.2.2.1.17.10 = Counter32: 442
+        # 1.3.6.1.2.1.2.2.1.18.1 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.18.10 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.19.1 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.19.10 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.20.1 = Counter32: 0
+        # 1.3.6.1.2.1.2.2.1.20.10 = Counter32: 0
+
+        # 1.3.6.1.2.1.2.2.1.21.1 = Gauge32: 0
+        # 1.3.6.1.2.1.2.2.1.21.10 = Gauge32: 0
+        # 1.3.6.1.2.1.2.2.1.22.1 = OID: ccitt.0
+        # 1.3.6.1.2.1.2.2.1.22.10 = OID: ccitt.0
         self.assertEqual(result, expected)
 
 
