@@ -322,7 +322,6 @@ class TestGetBulkGet(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-
 class TestGetBulkWalk(unittest.TestCase):
 
     def test_get_call_args(self):
