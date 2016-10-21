@@ -196,6 +196,16 @@ class TestObjectIdentifier(ByteTester):
         expected = hash(ObjectIdentifier(1, 2, 3))
         self.assertEqual(result, expected)
 
+    def test_non_containment_f(self):
+        """
+        This case showed up during development of bulk operations. Throwing it
+        into the unit tests to ensure proper containment checks.
+        """
+        a = ObjectIdentifier(1, 3, 6, 1, 2, 1, 2, 2, 1, 22)
+        b = ObjectIdentifier(1, 3, 6, 1, 2, 1, 2, 2, 1, 10, 38)
+        self.assertNotIn(a, b, '%s should not be in %s' % (a, b))
+        self.assertNotIn(b, a, '%s should not be in %s' % (b, a))
+
 
 class TestInteger(ByteTester):
 

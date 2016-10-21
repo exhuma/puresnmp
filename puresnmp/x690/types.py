@@ -546,7 +546,10 @@ class ObjectIdentifier(Type):
         if all([x is None for x in unzipped_b]):
             return True
 
-        return unzipped_a < unzipped_b
+        if len(tail) > 1:
+            return False
+        else:
+            return unzipped_a < unzipped_b
 
     def __hash__(self):
         return hash(self.identifiers)
