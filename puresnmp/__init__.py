@@ -13,6 +13,7 @@ from collections import OrderedDict, namedtuple
 from typing import List, Tuple
 import logging
 
+from . import types  # NOQA (must be here for type detection)
 from .x690.types import (
     Integer,
     ObjectIdentifier,
