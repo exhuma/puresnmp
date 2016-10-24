@@ -8,6 +8,8 @@ See `RFC 1155 section 3.2.3`_ for a description of the types.
 
 # pylint: disable=missing-docstring
 
+from datetime import timedelta
+
 from .x690.types import Integer, OctetString
 from .x690.util import TypeInfo
 
@@ -42,6 +44,15 @@ class TimeTicks(Integer):
     """
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x03
+
+    def __init__(self, value):
+        if isinstance(value, timedelta):
+            value = int(value.total_seconds() * 100)
+        super().__init__(value)
+
+    def pythonize(self):
+        seconds = self.value / 100.0  # see rfc2578#section-7.1.8
+        return timedelta(seconds=seconds)
 
 
 class Opaque(OctetString):

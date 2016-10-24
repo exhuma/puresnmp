@@ -6,6 +6,7 @@ to use.
 """
 
 
+from datetime import timedelta
 from unittest.mock import patch, call
 import unittest
 
@@ -387,8 +388,8 @@ class TestGetBulkWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.7.10', 1),
             VarBind('1.3.6.1.2.1.2.2.1.8.1', 1),
             VarBind('1.3.6.1.2.1.2.2.1.8.10', 1),
-            VarBind('1.3.6.1.2.1.2.2.1.9.1', 0),  # TODO: type info is lost
-            VarBind('1.3.6.1.2.1.2.2.1.9.10', 0),  # TODO: type info is lost
+            VarBind('1.3.6.1.2.1.2.2.1.9.1', timedelta(0)),
+            VarBind('1.3.6.1.2.1.2.2.1.9.10', timedelta(0)),
             VarBind('1.3.6.1.2.1.2.2.1.10.1', 172),
             VarBind('1.3.6.1.2.1.2.2.1.10.10', 60558),
             VarBind('1.3.6.1.2.1.2.2.1.11.1', 2),
