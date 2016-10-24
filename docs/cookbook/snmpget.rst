@@ -1,6 +1,8 @@
 SNMP Get
 --------
 
+See :py:func:`puresnmp.get`
+
 Python Code
 ~~~~~~~~~~~
 

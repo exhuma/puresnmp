@@ -1,6 +1,8 @@
 SNMP Table
 ----------
 
+See :py:func:`puresnmp.table`
+
 Python Code
 ~~~~~~~~~~~
 

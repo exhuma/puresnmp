@@ -1,6 +1,8 @@
 SNMP Set
 --------
 
+See :py:func:`puresnmp.set`
+
 .. note:: 
     For a list of available/implemented types, see :ref:`type_tree`
 

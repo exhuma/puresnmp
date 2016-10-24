@@ -1,6 +1,8 @@
 SNMP Walk
 ---------
 
+See :py:func:`puresnmp.walk`
+
 Python Code
 ~~~~~~~~~~~
 
