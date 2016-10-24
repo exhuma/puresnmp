@@ -18,6 +18,7 @@ Contents
    developer_guide/index
    glossary
    typetree
+   changelog
 
 
 Indices and tables
