@@ -123,7 +123,8 @@ def multigetnext(ip, community, oids, port=161):
         raise SnmpError(
             'Invalid response! Expected exactly %d varbind, '
             'but got %d' % (len(oids), len(response_object.varbinds)))
-    return response_object.varbinds
+    return [VarBind(oid, value.pythonize())
+            for oid, value in response_object.varbinds]
 
 
 def walk(ip: str, community: str, oid, port: int=161):
