@@ -2,7 +2,7 @@
 Model for SNMP PDUs (Request/Response messages).
 
 PDUs all have a common structure, which is handled in the
-:py:class:`~.SnmpMessage` class. The different (basic) PDU types only differ in
+:py:class:`~.PDU` class. The different (basic) PDU types only differ in
 their type identifier header (f.ex. ``b'\\xa0'`` for a
 :py:class:`~.GetRequest`).
 """
@@ -63,11 +63,10 @@ ERROR_MESSAGES = {
 }
 
 
-class SnmpMessage(Type):
+class PDU(Type):
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
-    # TODO (trivial): Rename this class to "PDU" (to align with RFC3416)
     TYPECLASS = TypeInfo.CONTEXT
 
     @classmethod
@@ -75,7 +74,7 @@ class SnmpMessage(Type):
         """
         This method takes a :py:class:`bytes` object and converts it to
         an application object. This is callable from each subclass of
-        :py:class:`~.SnmpMessage`.
+        :py:class:`~.PDU`.
         """
         # TODO (advanced): recent tests revealed that this is *not symmetric*
         # with __bytes__ of this class. This should be ensured!
@@ -151,7 +150,7 @@ class SnmpMessage(Type):
         return '\n'.join(lines)
 
 
-class GetRequest(SnmpMessage):
+class GetRequest(PDU):
     """
     Represents an SNMP Get Request.
     """
@@ -168,7 +167,7 @@ class GetRequest(SnmpMessage):
                                       for oid in wrapped_oids])
 
 
-class GetResponse(SnmpMessage):
+class GetResponse(PDU):
     """
     Represents an SNMP basic response (this may be returned for other requests
     than GET as well).
@@ -194,7 +193,7 @@ class GetNextRequest(GetRequest):
     TAG = 1
 
 
-class SetRequest(SnmpMessage):
+class SetRequest(PDU):
     """
     Represents an SNMP SET Request.
     """
