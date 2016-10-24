@@ -4,6 +4,7 @@ Exceptions for the puresnmp package.
 # pylint: disable=too-few-public-methods
 
 import socket
+from puresnmp.const import MAX_VARBINDS
 
 
 class SnmpError(Exception):
@@ -27,6 +28,15 @@ class NoSuchOID(SnmpError):
     device.
     """
     pass
+
+
+class TooManyVarbinds(SnmpError):
+
+    def __init__(self, num_oids):
+        super().__init__('Too many VarBinds (%d) in one request! RFC3416 '
+                         'limits requests to %d!' % (
+                             num_oids, MAX_VARBINDS))
+        self.num_oids = num_oids
 
 
 class Timeout(socket.timeout):

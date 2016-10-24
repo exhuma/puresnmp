@@ -6,6 +6,18 @@ Type Tree
 
   *  :py:class:`puresnmp.x690.types.Type`
 
+     *  :py:class:`puresnmp.pdu.BulkGetRequest`
+
+     *  :py:class:`puresnmp.pdu.PDU`
+
+        *  :py:class:`puresnmp.pdu.GetRequest`
+
+           *  :py:class:`puresnmp.pdu.GetNextRequest`
+
+        *  :py:class:`puresnmp.pdu.GetResponse`
+
+        *  :py:class:`puresnmp.pdu.SetRequest`
+
      *  :py:class:`puresnmp.x690.types.BitString`
 
      *  :py:class:`puresnmp.x690.types.BmpString`
@@ -34,13 +46,21 @@ Type Tree
 
         *  :py:class:`puresnmp.types.Counter`
 
-        *  :py:class:`puresnmp.types.Gauge`
+        *  :py:class:`puresnmp.types.Counter64`
 
-        *  :py:class:`puresnmp.types.IpAddress`
+        *  :py:class:`puresnmp.types.Gauge`
 
         *  :py:class:`puresnmp.types.NsapAddress`
 
-        *  :py:class:`puresnmp.types.Opaque`
+        *  :py:class:`puresnmp.types.TimeTicks`
+
+        *  :py:class:`puresnmp.types.Counter`
+
+        *  :py:class:`puresnmp.types.Counter64`
+
+        *  :py:class:`puresnmp.types.Gauge`
+
+        *  :py:class:`puresnmp.types.NsapAddress`
 
         *  :py:class:`puresnmp.types.TimeTicks`
 
@@ -56,6 +76,14 @@ Type Tree
 
      *  :py:class:`puresnmp.x690.types.OctetString`
 
+        *  :py:class:`puresnmp.types.IpAddress`
+
+        *  :py:class:`puresnmp.types.Opaque`
+
+        *  :py:class:`puresnmp.types.IpAddress`
+
+        *  :py:class:`puresnmp.types.Opaque`
+
      *  :py:class:`puresnmp.x690.types.PrintableString`
 
      *  :py:class:`puresnmp.x690.types.Real`
@@ -65,16 +93,6 @@ Type Tree
      *  :py:class:`puresnmp.x690.types.Sequence`
 
      *  :py:class:`puresnmp.x690.types.Set`
-
-     *  :py:class:`puresnmp.pdu.SnmpMessage`
-
-        *  :py:class:`puresnmp.pdu.GetRequest`
-
-           *  :py:class:`puresnmp.pdu.GetNextRequest`
-
-        *  :py:class:`puresnmp.pdu.GetResponse`
-
-        *  :py:class:`puresnmp.pdu.SetRequest`
 
      *  :py:class:`puresnmp.x690.types.T61String`
 

@@ -20,3 +20,6 @@ class Length:
     """
 
     INDEFINITE = "indefinite"
+
+
+MAX_VARBINDS = 2147483647  # Defined in RFC 3416

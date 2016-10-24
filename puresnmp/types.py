@@ -8,15 +8,16 @@ See `RFC 1155 section 3.2.3`_ for a description of the types.
 
 # pylint: disable=missing-docstring
 
-from .x690.types import Integer
+from datetime import timedelta
+
+from .x690.types import Integer, OctetString
 from .x690.util import TypeInfo
 
 
-class IpAddress(Integer):
+class IpAddress(OctetString):
     """
     SNMP Type for IP Addresses
     """
-    # TODO: should this really inherit from Integer? Might need a test-case!
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x00
 
@@ -44,8 +45,17 @@ class TimeTicks(Integer):
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x03
 
+    def __init__(self, value):
+        if isinstance(value, timedelta):
+            value = int(value.total_seconds() * 100)
+        super().__init__(value)
 
-class Opaque(Integer):
+    def pythonize(self):
+        seconds = self.value / 100.0  # see rfc2578#section-7.1.8
+        return timedelta(seconds=seconds)
+
+
+class Opaque(OctetString):
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x04
 
@@ -53,6 +63,14 @@ class Opaque(Integer):
 class NsapAddress(Integer):
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x05
+
+
+class Counter64(Integer):
+    """
+    As defined in RFC 2578
+    """
+    TYPECLASS = TypeInfo.APPLICATION
+    TAG = 0x06
 
 
 def _walk_subclasses(cls, indent=0):
@@ -65,7 +83,8 @@ def _walk_subclasses(cls, indent=0):
     ref = ':py:class:`%s`' % cname
 
     print('\n', '   ' * indent, '* ', ref)
-    for subclass in sorted(cls.__subclasses__(), key=lambda x: x.__name__):
+    for subclass in sorted(cls.__subclasses__(),
+                           key=lambda x: x.__module__ + x.__name__):
         _walk_subclasses(subclass, indent + 1)
 
 

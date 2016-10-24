@@ -48,7 +48,6 @@ Additional Features
 
 Some features are still blatantly missing in the high-level API:
 
-* Bulk requests
 * SNMPv3
 
 

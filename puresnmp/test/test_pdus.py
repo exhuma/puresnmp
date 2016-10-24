@@ -1,11 +1,13 @@
 from ..exc import SnmpError
 from ..x690.types import (
     Integer,
+    Null,
     ObjectIdentifier,
     OctetString,
     Sequence,
 )
 from ..pdu import (
+    BulkGetRequest,
     GetNextRequest,
     GetRequest,
     GetResponse,
@@ -188,5 +190,31 @@ class TestSet(ByteTester):
             OctetString('private'),
             request
         )
+        result = bytes(packet)
+        self.assertBytesEqual(result, expected)
+
+
+class TestBulkGet(ByteTester):
+    """
+    BulkGet also receives a default "get" response, so there's no need to test
+    this in this TestCase.
+    """
+
+    def test_request(self):
+        expected = readbytes('bulk_get_request.hex')
+
+        request = BulkGetRequest(
+            437387882,
+            0,  # non-repeaters
+            5,  # max-repeaters
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.0'),
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.3.0')
+        )
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            request
+        )
+
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
