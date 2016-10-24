@@ -11,7 +11,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   cookbook
+   cookbook/index
    status
    design_decisions
    contributing
