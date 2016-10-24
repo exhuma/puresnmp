@@ -429,10 +429,10 @@ def bulkwalk_fetcher(bulk_size=10):
 
 def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     """
-    More efficient implementation of :py:fun:`~.walk`. It uses
-    :py:fun:`~.bulkget` under the hood instead of :py:fun:`~.getnext`.
+    More efficient implementation of :py:func:`~.walk`. It uses
+    :py:func:`~.bulkget` under the hood instead of :py:func:`~.getnext`.
 
-    Just like :py:fun:`~.multiwalk`, it returns a generator over
+    Just like :py:func:`~.multiwalk`, it returns a generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
 
     :param ip: The IP address of the target host.
