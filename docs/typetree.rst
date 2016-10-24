@@ -70,7 +70,7 @@ Type Tree
 
      *  :py:class:`puresnmp.x690.types.Set`
 
-     *  :py:class:`puresnmp.pdu.SnmpMessage`
+     *  :py:class:`puresnmp.pdu.PDU`
 
         *  :py:class:`puresnmp.pdu.GetRequest`
 
