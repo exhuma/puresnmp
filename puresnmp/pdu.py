@@ -13,7 +13,8 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 
 from collections import namedtuple
 
-from .exc import SnmpError, EmptyMessage, NoSuchOID
+from .const import MAX_VARBINDS
+from .exc import SnmpError, EmptyMessage, NoSuchOID, TooManyVarbinds
 from .x690.types import (
     Integer,
     Null,
@@ -36,9 +37,6 @@ class VarBind(namedtuple('VarBind', 'oid, value')):
             oid = ObjectIdentifier.from_string(oid)
         return super().__new__(cls, oid, value)
 
-
-# TODO (trivial) raise an error if more than MAX_VARBINDS are used in a request.
-MAX_VARBINDS = 2147483647  # Defined in RFC 3416
 
 ERROR_MESSAGES = {
     0: '(noError)',
@@ -157,6 +155,8 @@ class GetRequest(PDU):
     TAG = 0
 
     def __init__(self, request_id, *oids):
+        if len(oids) > MAX_VARBINDS:
+            raise TooManyVarbinds(len(oids))
         wrapped_oids = []
         for oid in oids:
             if isinstance(oid, str):
@@ -232,6 +232,8 @@ class BulkGetRequest(Type):
         )
 
     def __init__(self, request_id, non_repeaters, max_repeaters, *oids):
+        if len(oids) > MAX_VARBINDS:
+            raise TooManyVarbinds(len(oids))
         self.request_id = request_id
         self.non_repeaters = non_repeaters
         self.max_repeaters = max_repeaters
