@@ -21,7 +21,7 @@ from .x690.types import (
     Type,
 )
 from .x690.util import tablify
-from .exc import SnmpError
+from .exc import SnmpError, NoSuchOID
 from .pdu import (
     BulkGetRequest,
     GetNextRequest,
@@ -230,7 +230,12 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
     # those.
     while unfinished_oids:
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
-        varbinds = fetcher(ip, community, [str(_) for _ in next_fetches], port)
+        try:
+            varbinds = fetcher(ip, community, [str(_) for _ in next_fetches],
+                               port)
+        except NoSuchOID:
+            # Reached end of OID tree, finish iteration
+            break
         unfinished_oids = get_unfinished_walk_oids(varbinds, next_fetches,
                                                    bases=requested_oids)
         LOG.debug('%d of %d OIDs need to be continued',
