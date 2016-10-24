@@ -6,13 +6,23 @@ Type Tree
 
   *  :py:class:`puresnmp.x690.types.Type`
 
+     *  :py:class:`puresnmp.pdu.BulkGetRequest`
+
+     *  :py:class:`puresnmp.pdu.PDU`
+
+        *  :py:class:`puresnmp.pdu.GetRequest`
+
+           *  :py:class:`puresnmp.pdu.GetNextRequest`
+
+        *  :py:class:`puresnmp.pdu.GetResponse`
+
+        *  :py:class:`puresnmp.pdu.SetRequest`
+
      *  :py:class:`puresnmp.x690.types.BitString`
 
      *  :py:class:`puresnmp.x690.types.BmpString`
 
      *  :py:class:`puresnmp.x690.types.Boolean`
-
-     *  :py:class:`puresnmp.pdu.BulkGetRequest`
 
      *  :py:class:`puresnmp.x690.types.CharacterString`
 
@@ -69,16 +79,6 @@ Type Tree
      *  :py:class:`puresnmp.x690.types.Sequence`
 
      *  :py:class:`puresnmp.x690.types.Set`
-
-     *  :py:class:`puresnmp.pdu.PDU`
-
-        *  :py:class:`puresnmp.pdu.GetRequest`
-
-           *  :py:class:`puresnmp.pdu.GetNextRequest`
-
-        *  :py:class:`puresnmp.pdu.GetResponse`
-
-        *  :py:class:`puresnmp.pdu.SetRequest`
 
      *  :py:class:`puresnmp.x690.types.T61String`
 

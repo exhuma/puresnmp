@@ -72,7 +72,8 @@ def _walk_subclasses(cls, indent=0):
     ref = ':py:class:`%s`' % cname
 
     print('\n', '   ' * indent, '* ', ref)
-    for subclass in sorted(cls.__subclasses__(), key=lambda x: x.__name__):
+    for subclass in sorted(cls.__subclasses__(),
+                           key=lambda x: x.__module__ + x.__name__):
         _walk_subclasses(subclass, indent + 1)
 
 
