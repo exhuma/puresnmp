@@ -74,5 +74,5 @@ Examples
 
 See the `cookbook`_.
 
-.. _cookbook: http://puresnmp.readthedocs.io/en/latest/cookbook.html
+.. _cookbook: http://puresnmp.readthedocs.io/en/latest/cookbook/index.html
 .. _Semantic Versioning: http://semver.org/spec/v2.0.0.html
