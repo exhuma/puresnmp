@@ -26,7 +26,6 @@ from puresnmp import (
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
 from puresnmp.pdu import GetRequest, VarBind, GetNextRequest, BulkGetRequest
-from puresnmp.types import Gauge
 from puresnmp.x690.types import (
     Integer,
     ObjectIdentifier,
@@ -117,11 +116,9 @@ class TestWalk(unittest.TestCase):
                 raise AssertionError('Expected no more than 3 calls!')
 
         expected = [VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'),
-            Gauge(10000000)
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'), 10000000
         ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'),
-            Gauge(4294967295)
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'), 4294967295
         )]
 
         with patch('puresnmp.send') as mck:
@@ -208,17 +205,13 @@ class TestMultiWalk(unittest.TestCase):
                 raise AssertionError('Expected no more than 3 calls!')
 
         expected = [VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'),
-            Integer(1)
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'), 1
         ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
-            OctetString(b'lo')
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'), b'lo'
         ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'),
-            Integer(78)
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'), 78
         ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
-            OctetString(b'eth0')
+            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'), b'eth0'
         )]
 
         with patch('puresnmp.send') as mck:
@@ -272,8 +265,7 @@ class TestGetNext(unittest.TestCase):
 
     def test_getnext(self):
         data = readbytes('getnext_response.hex')
-        # TODO (beginner): The "Integer" class should not leak out!
-        expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
+        expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', 354522558)
 
         with patch('puresnmp.send') as mck:
             mck.return_value = data
