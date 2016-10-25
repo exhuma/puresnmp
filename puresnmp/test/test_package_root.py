@@ -101,20 +101,6 @@ class TestWalk(unittest.TestCase):
         response_2 = readbytes('walk_response_2.hex')
         response_3 = readbytes('walk_response_3.hex')
 
-        num_call = 0
-
-        def mocked_responses(*args, **kwargs):
-            nonlocal num_call
-            num_call += 1
-            if num_call == 1:
-                return response_1
-            elif num_call == 2:
-                return response_2
-            elif num_call == 3:
-                return response_3
-            else:
-                raise AssertionError('Expected no more than 3 calls!')
-
         expected = [VarBind(
             ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'), 10000000
         ), VarBind(
@@ -122,7 +108,7 @@ class TestWalk(unittest.TestCase):
         )]
 
         with patch('puresnmp.send') as mck:
-            mck.side_effect = mocked_responses
+            mck.side_effect = [response_1, response_2, response_3]
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
 
@@ -190,20 +176,6 @@ class TestMultiWalk(unittest.TestCase):
         response_2 = readbytes('multiwalk_response_2.hex')
         response_3 = readbytes('multiwalk_response_3.hex')
 
-        num_call = 0
-
-        def mocked_responses(*args, **kwargs):
-            nonlocal num_call
-            num_call += 1
-            if num_call == 1:
-                return response_1
-            elif num_call == 2:
-                return response_2
-            elif num_call == 3:
-                return response_3
-            else:
-                raise AssertionError('Expected no more than 3 calls!')
-
         expected = [VarBind(
             ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'), 1
         ), VarBind(
@@ -215,7 +187,7 @@ class TestMultiWalk(unittest.TestCase):
         )]
 
         with patch('puresnmp.send') as mck:
-            mck.side_effect = mocked_responses
+            mck.side_effect = [response_1, response_2, response_3]
             result = list(multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
