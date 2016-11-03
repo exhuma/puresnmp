@@ -4,36 +4,31 @@ from collections import namedtuple
 WalkRow = namedtuple('WalkRow', 'value unfinished')
 
 
-def group_varbinds(varbinds, base_ids):
+def group_varbinds(varbinds, effective_roots, user_roots=None):
     """
     Takes a list of varbinds and a list of base OIDs and returns a mapping from
     those base IDs to lists of varbinds.
+
+    :param varbinds: A list of VarBind instnaces.
+    :param effective_roots: The list of OIDs that were requested from the SNMP
+        agent.
+    :param user_roots: The list of VarBind instances that were requested by the
+        user. This is used internally for walk requests. On each requests
+        following the first, the requested OIDs will differ from the OIDs
+        requested by the user. This list will keep track of the original OIDs to
+        determine when the walk needs to terminate.
     """
-    n = len(base_ids)
+    user_roots = user_roots or {}
+    n = len(effective_roots)
+
     results = {}
     for i in range(n):
-        results[base_ids[i]] = varbinds[i::n]
-    return results
+        results[effective_roots[i]] = varbinds[i::n]
 
-
-def get_unfinished_walk_oids(grouped_oids, bases=None):
-    """
-    :param grouped_oids: A dictionary containing VarBinds as values. The keys
-        are the base OID of those VarBinds as requested by the user. We need to
-        keep track of the base to be able to tell when a walk over OIDs is
-        finished (that is, when we hit the first OID outside the base).
-    :param bases: ?  TODO
-    """
-    bases = bases or {}
-
-    # Sometimes (for continued walk requests), the requested OIDs are actually
-    # children of the originally requested OIDs on the second and subsequent
-    # requests. If *bases* is set, it will contain the originally requested OIDs
-    # and we need to replace the dict keys with the appropriate bases.
-    if bases:
+    if user_roots:
         new_results = {}
-        for k, v in grouped_oids.items():
-            containment = [base for base in bases if k in base]
+        for k, v in results.items():
+            containment = [base for base in user_roots if k in base]
             if len(containment) > 1:
                 raise RuntimeError('Unexpected OID result. A value was '
                                    'contained in more than one base than '
@@ -41,7 +36,18 @@ def get_unfinished_walk_oids(grouped_oids, bases=None):
             if not containment:
                 continue
             new_results[containment[0]] = v
-            grouped_oids = new_results
+            results = new_results
+
+    return results
+
+
+def get_unfinished_walk_oids(grouped_oids):
+    """
+    :param grouped_oids: A dictionary containing VarBinds as values. The keys
+        are the base OID of those VarBinds as requested by the user. We need to
+        keep track of the base to be able to tell when a walk over OIDs is
+        finished (that is, when we hit the first OID outside the base).
+    """
 
     # we now have a list of values for each requested OID and need to determine
     # if we need to continue fetching: Inspect the last item of each list if

@@ -188,9 +188,10 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
-        grouped_oids = group_varbinds(varbinds, next_fetches)
-        unfinished_oids = get_unfinished_walk_oids(grouped_oids,
-                                                   bases=requested_oids)
+        grouped_oids = group_varbinds(varbinds,
+                                      next_fetches,
+                                      user_roots=requested_oids)
+        unfinished_oids = get_unfinished_walk_oids(grouped_oids)
         LOG.debug('%d of %d OIDs need to be continued',
                   len(unfinished_oids),
                   len(oids))
