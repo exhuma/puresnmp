@@ -169,7 +169,7 @@ class TestLengthOctets(ByteTester):
         self.assertBytesEqual(result, expected)
 
     def test_encode_length_longer(self):
-        expected = bytes([0b10000010, 0b00101110, 0b00000001])
+        expected = bytes([0b10000010, 0b00000001, 0b00101110])
         result = encode_length(302)
         self.assertBytesEqual(result, expected)
 
@@ -308,3 +308,29 @@ class TestHelpers(ByteTester):
             {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
         ]
         self.assertCountEqual(result, expected)
+
+
+class TestGithubIssue23(ByteTester):
+    """
+    In issue #23 a problem was raised that the byte-order was incorrect when
+    encoding large values for "length" information.
+
+    This test-case takes the value (435) from the X.690 Wikipedia page as
+    reference and has indeed highlighted the error.
+    """
+
+    def test_encode(self):
+        expected = bytes([0b10000010, 0b00000001, 0b10110011])
+        result = encode_length(435)
+        self.assertBytesEqual(result, expected)
+
+    def test_decode(self):
+        data = bytes([0b10000010, 0b00000001, 0b10110011])
+        expected = 435
+        result, data = decode_length(data)
+        self.assertEqual(result, expected)
+        self.assertEqual(data, b'')
+
+    def test_symmetry(self):
+        result, _ = decode_length(encode_length(435))
+        self.assertEqual(result, 435)
