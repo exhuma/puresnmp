@@ -171,7 +171,8 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
 
     varbinds = fetcher(ip, community, oids, port)
     requested_oids = [ObjectIdentifier.from_string(oid) for oid in oids]
-    unfinished_oids = get_unfinished_walk_oids(varbinds, requested_oids)
+    grouped_oids = unzip_walk_result(varbinds, requested_oids)
+    unfinished_oids = get_unfinished_walk_oids(grouped_oids)
     LOG.debug('%d of %d OIDs need to be continued',
               len(unfinished_oids),
               len(oids))
@@ -187,7 +188,8 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
-        unfinished_oids = get_unfinished_walk_oids(varbinds, next_fetches,
+        grouped_oids = unzip_walk_result(varbinds, next_fetches)
+        unfinished_oids = get_unfinished_walk_oids(grouped_oids,
                                                    bases=requested_oids)
         LOG.debug('%d of %d OIDs need to be continued',
                   len(unfinished_oids),
