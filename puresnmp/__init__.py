@@ -13,6 +13,8 @@ from collections import OrderedDict, namedtuple
 from typing import List, Tuple
 import logging
 
+from pkg_resources import resource_string
+
 from . import types  # NOQA (must be here for type detection)
 from .x690.types import (
     Integer,
@@ -37,6 +39,8 @@ from .util import (
     group_varbinds,
 )
 
+__version__ = resource_string('puresnmp',
+                              'version.txt').decode('ascii').strip()
 _set = set
 
 
