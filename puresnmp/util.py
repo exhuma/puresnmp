@@ -4,7 +4,7 @@ from collections import namedtuple
 WalkRow = namedtuple('WalkRow', 'value unfinished')
 
 
-def unzip_walk_result(varbinds, base_ids):
+def group_varbinds(varbinds, base_ids):
     """
     Takes a list of varbinds and a list of base OIDs and returns a mapping from
     those base IDs to lists of varbinds.

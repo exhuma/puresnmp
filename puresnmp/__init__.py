@@ -34,7 +34,7 @@ from .const import Version
 from .transport import send, get_request_id
 from .util import (
     get_unfinished_walk_oids,
-    unzip_walk_result,
+    group_varbinds,
 )
 
 _set = set
@@ -171,12 +171,12 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
 
     varbinds = fetcher(ip, community, oids, port)
     requested_oids = [ObjectIdentifier.from_string(oid) for oid in oids]
-    grouped_oids = unzip_walk_result(varbinds, requested_oids)
+    grouped_oids = group_varbinds(varbinds, requested_oids)
     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
     LOG.debug('%d of %d OIDs need to be continued',
               len(unfinished_oids),
               len(oids))
-    output = unzip_walk_result(varbinds, requested_oids)
+    output = group_varbinds(varbinds, requested_oids)
 
     # As long as we have unfinished OIDs, we need to continue the walk for
     # those.
@@ -188,13 +188,13 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
-        grouped_oids = unzip_walk_result(varbinds, next_fetches)
+        grouped_oids = group_varbinds(varbinds, next_fetches)
         unfinished_oids = get_unfinished_walk_oids(grouped_oids,
                                                    bases=requested_oids)
         LOG.debug('%d of %d OIDs need to be continued',
                   len(unfinished_oids),
                   len(oids))
-        for k, v in unzip_walk_result(varbinds, next_fetches).items():
+        for k, v in group_varbinds(varbinds, next_fetches).items():
             for ko, vo in output.items():
                 if k in ko:
                     vo.extend(v)
