@@ -175,57 +175,43 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
 
     varbinds = fetcher(ip, community, oids, port)
     requested_oids = [ObjectIdentifier.from_string(oid) for oid in oids]
-    for row in varbinds:
-        containments = [row.oid in oid for oid in requested_oids]
-        continuing_oids = [row.oid for oid in requested_oids
-                           if row.oid in requested_oids]
-        from pprint import pprint; pprint(continuing_oids)  # XXX debug statement
-        if any(containments):
-            yield row
-        else:
+    grouped_oids = group_varbinds(varbinds, requested_oids)
+    unfinished_oids = get_unfinished_walk_oids(grouped_oids)
+    LOG.debug('%d of %d OIDs need to be continued',
+              len(unfinished_oids),
+              len(oids))
+    output = group_varbinds(varbinds, requested_oids)
+
+    # As long as we have unfinished OIDs, we need to continue the walk for
+    # those.
+    while unfinished_oids:
+        next_fetches = [_[1].value.oid for _ in unfinished_oids]
+        try:
+            varbinds = fetcher(ip, community, [str(_) for _ in next_fetches],
+                               port)
+        except NoSuchOID:
+            # Reached end of OID tree, finish iteration
             break
-    else:
-        # The loop continued without hitting the "break", so we need to
-        # continue.
-        print(1)  # XXX debug statement
+        grouped_oids = group_varbinds(varbinds,
+                                      next_fetches,
+                                      user_roots=requested_oids)
+        unfinished_oids = get_unfinished_walk_oids(grouped_oids)
+        LOG.debug('%d of %d OIDs need to be continued',
+                  len(unfinished_oids),
+                  len(oids))
+        for k, v in group_varbinds(varbinds, next_fetches).items():
+            for ko, vo in output.items():
+                if k in ko:
+                    vo.extend(v)
 
-    # XXX grouped_oids = group_varbinds(varbinds, requested_oids)
-    # XXX unfinished_oids = get_unfinished_walk_oids(grouped_oids)
-    # XXX LOG.debug('%d of %d OIDs need to be continued',
-    # XXX           len(unfinished_oids),
-    # XXX           len(oids))
-    # XXX output = group_varbinds(varbinds, requested_oids)
-
-    # XXX # As long as we have unfinished OIDs, we need to continue the walk for
-    # XXX # those.
-    # XXX while unfinished_oids:
-    # XXX     next_fetches = [_[1].value.oid for _ in unfinished_oids]
-    # XXX     try:
-    # XXX         varbinds = fetcher(ip, community, [str(_) for _ in next_fetches],
-    # XXX                            port)
-    # XXX     except NoSuchOID:
-    # XXX         # Reached end of OID tree, finish iteration
-    # XXX         break
-    # XXX     grouped_oids = group_varbinds(varbinds,
-    # XXX                                   next_fetches,
-    # XXX                                   user_roots=requested_oids)
-    # XXX     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
-    # XXX     LOG.debug('%d of %d OIDs need to be continued',
-    # XXX               len(unfinished_oids),
-    # XXX               len(oids))
-    # XXX     for k, v in group_varbinds(varbinds, next_fetches).items():
-    # XXX         for ko, vo in output.items():
-    # XXX             if k in ko:
-    # XXX                 vo.extend(v)
-
-    # XXX yielded = _set([])
-    # XXX for v in output.values():
-    # XXX     for varbind in v:
-    # XXX         containment = [varbind.oid in _ for _ in requested_oids]
-    # XXX         if not any(containment) or varbind.oid in yielded:
-    # XXX             continue
-    # XXX         yielded.add(varbind.oid)
-    # XXX         yield varbind
+    yielded = _set([])
+    for v in output.values():
+        for varbind in v:
+            containment = [varbind.oid in _ for _ in requested_oids]
+            if not any(containment) or varbind.oid in yielded:
+                continue
+            yielded.add(varbind.oid)
+            yield varbind
 
 
 def set(ip: str, community: str, oid: str, value: Type, port: int=161):
