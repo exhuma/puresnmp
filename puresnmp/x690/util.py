@@ -135,7 +135,7 @@ def encode_length(value):
     output = []
     while value > 0:
         value, remainder = value // 256, value % 256
-        output.append(remainder)
+        output.insert(0, remainder)
 
     # prefix length information
     output = [0b10000000 | len(output)] + output
