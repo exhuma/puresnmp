@@ -1,3 +1,4 @@
-CONTRIBUTING.rst
-LICENSE.txt
-README.rst
+include CONTRIBUTING.rst
+include LICENSE.txt
+include README.rst
+include puresnmp/version.tx
