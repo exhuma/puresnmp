@@ -59,7 +59,7 @@ Installation
 
 ::
 
-    pip install https://github.com/exhuma/puresnmp/archive/develop.zip
+    pip install puresnmp
 
 
 
