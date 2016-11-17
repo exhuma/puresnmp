@@ -1,5 +1,6 @@
 from ..x690 import types as t
 from ..x690.util import TypeInfo
+from .. import types as apptype
 
 from . import ByteTester
 
@@ -63,6 +64,7 @@ class TestClassDetector(ByteTester):
     pass
 
 
+# "Standard" x690 types
 add_class_detector(TestClassDetector, t.EOC, UNIVERSAL, 0x00)
 add_class_detector(TestClassDetector, t.Boolean, UNIVERSAL, 0x01)
 add_class_detector(TestClassDetector, t.Integer, UNIVERSAL, 0x02)
@@ -92,3 +94,13 @@ add_class_detector(TestClassDetector, t.GeneralString, UNIVERSAL, 0x1b)
 add_class_detector(TestClassDetector, t.UniversalString, UNIVERSAL, 0x1c)
 add_class_detector(TestClassDetector, t.CharacterString, UNIVERSAL, 0x1d)
 add_class_detector(TestClassDetector, t.BmpString, UNIVERSAL, 0x1e)
+
+
+# Application (SNMP-specific) Types
+add_class_detector(TestClassDetector, apptype.IpAddress, APPLICATION, 0x00)
+add_class_detector(TestClassDetector, apptype.Counter, APPLICATION, 0x01)
+add_class_detector(TestClassDetector, apptype.Gauge, APPLICATION, 0x02)
+add_class_detector(TestClassDetector, apptype.TimeTicks, APPLICATION, 0x03)
+add_class_detector(TestClassDetector, apptype.Opaque, APPLICATION, 0x04)
+add_class_detector(TestClassDetector, apptype.NsapAddress, APPLICATION, 0x05)
+add_class_detector(TestClassDetector, apptype.Counter64, APPLICATION, 0x06)
