@@ -1,5 +1,5 @@
 from ..x690 import types as t
-from ..x690.types import TypeInfo
+from ..x690.util import TypeInfo
 
 from . import ByteTester
 
