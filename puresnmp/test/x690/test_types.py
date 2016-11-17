@@ -247,6 +247,17 @@ class TestInteger(ByteTester):
         expected = 1
         self.assertEqual(result, expected)
 
+    def test_signed_a(self):
+        """
+        Issue identified in github issue #27
+
+        See https://github.com/exhuma/puresnmp/issues/27
+        """
+        value = Integer(32768)
+        result = bytes(value)
+        expected = b'\x02\x03\x00\x80\x00'
+        self.assertBytesEqual(result, expected)
+
 
 class TestString(ByteTester):
 
