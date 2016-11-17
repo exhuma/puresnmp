@@ -291,7 +291,8 @@ class OctetString(Type):
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return bytes([OctetString.TAG]) + self.length + self.value
+        tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
+        return bytes(tinfo) + self.length + self.value
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
