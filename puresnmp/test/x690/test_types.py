@@ -262,7 +262,6 @@ class TestIntegerValues(ByteTester):
         self.assertBytesEqual(result, expected)
 
     def test_minus_one(self):
-        self.skipTest('TODO')
         value = Integer(-1)
         result = bytes(value)
         expected = b'\x02\x01\xff'
