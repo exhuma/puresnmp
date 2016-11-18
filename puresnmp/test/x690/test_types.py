@@ -247,7 +247,10 @@ class TestInteger(ByteTester):
         expected = 1
         self.assertEqual(result, expected)
 
-    def test_signed_a(self):
+
+class TestIntegerValues(ByteTester):
+
+    def test_32768(self):
         """
         Issue identified in github issue #27
 
@@ -256,6 +259,72 @@ class TestInteger(ByteTester):
         value = Integer(32768)
         result = bytes(value)
         expected = b'\x02\x03\x00\x80\x00'
+        self.assertBytesEqual(result, expected)
+
+    def test_minus_one(self):
+        value = Integer(-1)
+        result = bytes(value)
+        expected = b'\x02\x01\xff'
+        self.assertBytesEqual(result, expected)
+
+    def test_minus_two(self):
+        value = Integer(-2)
+        result = bytes(value)
+        expected = b'\x02\x01\xfe'
+        self.assertBytesEqual(result, expected)
+
+    def test_zero(self):
+        value = Integer(0)
+        result = bytes(value)
+        expected = b'\x02\x01\x00'
+        self.assertBytesEqual(result, expected)
+
+    def test_minus_16bit(self):
+        value = Integer(-0b1111111111111111)
+        result = bytes(value)
+        expected = b'\x02\x03\xff\x00\x01'
+        self.assertBytesEqual(result, expected)
+
+    def test_minus_16bit_plus_one(self):
+        value = Integer(-0b1111111111111111 + 1)
+        result = bytes(value)
+        expected = b'\x02\x03\xff\x00\x02'
+        self.assertBytesEqual(result, expected)
+
+    def test_minus_16bit_minus_one(self):
+        value = Integer(-0b1111111111111111 - 1)
+        result = bytes(value)
+        expected = b'\x02\x03\xff\x00\x00'
+        self.assertBytesEqual(result, expected)
+
+    def test_minus_16bit_minus_two(self):
+        value = Integer(-0b1111111111111111 - 2)
+        result = bytes(value)
+        expected = b'\x02\x03\xfe\xff\xff'
+        self.assertBytesEqual(result, expected)
+
+    def test_16bit(self):
+        value = Integer(0b1111111111111111)
+        result = bytes(value)
+        expected = b'\x02\x03\x00\xff\xff'
+        self.assertBytesEqual(result, expected)
+
+    def test_16bitplusone(self):
+        value = Integer(0b1111111111111111 + 1)
+        result = bytes(value)
+        expected = b'\x02\x03\x01\x00\x00'
+        self.assertBytesEqual(result, expected)
+
+    def test_16bitminusone(self):
+        value = Integer(0b1111111111111111 - 1)
+        result = bytes(value)
+        expected = b'\x02\x03\x00\xff\xfe'
+        self.assertBytesEqual(result, expected)
+
+    def test_32bit(self):
+        value = Integer(0b11111111111111111111111111111111)
+        result = bytes(value)
+        expected = b'\x02\x05\x00\xff\xff\xff\xff'
         self.assertBytesEqual(result, expected)
 
 

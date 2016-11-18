@@ -386,8 +386,8 @@ class Integer(Type):
 
             # remove leading octet if there is a string of 9 zeros or ones
             while (len(octets) > 1 and
-                   (octets[0] == 0 and octets[1] & 0b10000000 == 0) or
-                   (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0)):
+                   ((octets[0] == 0 and octets[1] & 0b10000000 == 0) or
+                    (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0))):
                 del octets[0]
 
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
