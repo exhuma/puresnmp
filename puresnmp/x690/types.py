@@ -291,7 +291,8 @@ class OctetString(Type):
         self.length = encode_length(len(value))
 
     def __bytes__(self):
-        return bytes([OctetString.TAG]) + self.length + self.value
+        tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
+        return bytes(tinfo) + self.length + self.value
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
@@ -373,11 +374,22 @@ class Integer(Type):
             # Split long integers into multiple octets.
             remainder = self.value
             octets = []
-            while remainder:
-                octet = remainder & 0b11111111
+
+            while True:
+                octets.append(remainder & 0b11111111)
+                if remainder == 0 or remainder == -1:
+                    break
                 remainder = remainder >> 8
-                octets.append(octet)
+            if remainder == 0 and octets[-1] == 0b10000000:
+                octets.append(0)
             octets.reverse()
+
+            # remove leading octet if there is a string of 9 zeros or ones
+            while (len(octets) > 1 and
+                   ((octets[0] == 0 and octets[1] & 0b10000000 == 0) or
+                    (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0))):
+                del octets[0]
+
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
         return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
 

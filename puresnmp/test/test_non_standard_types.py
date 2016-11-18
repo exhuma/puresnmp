@@ -5,6 +5,36 @@ from . import ByteTester
 from .. import types as t
 
 
+class TestIpAddress(ByteTester):
+
+    def test_decoding(self):
+        result = t.IpAddress.from_bytes(b'\x40\x04\x80\x96\xa1\x09')
+        expected = t.IpAddress(b'\x80\x96\xa1\x09')
+        self.assertEqual(result, expected)
+
+    def test_encoding(self):
+        value = t.IpAddress(b'\x80\x96\xa1\x09')
+        result = bytes(value)
+        expected = b'\x40\x04\x80\x96\xa1\x09'
+        self.assertBytesEqual(result, expected)
+
+    def test_conversion_to_python(self):
+        result = t.IpAddress(b'\x80\x96\xa1\x09').pythonize()
+        expected = b'\x80\x96\xa1\x09'
+        self.assertEqual(result, expected)
+
+    def test_conversion_from_python(self):
+        input = b'\x80\x96\xa1\x09'
+        result = t.IpAddress(input)
+        expected = t.IpAddress(b'\x80\x96\xa1\x09')
+        self.assertEqual(result, expected)
+
+    def test_conversion_symmetry(self):
+        input = b'\x80\x96\xa1\x09'
+        result = t.IpAddress(input).pythonize()
+        self.assertEqual(result, input)
+
+
 class TestTimeTicks(ByteTester):
 
     def test_decoding(self):
