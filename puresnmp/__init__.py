@@ -11,8 +11,9 @@ implementations as possible.
 #     mere abstraction layer.
 from collections import OrderedDict, namedtuple
 from typing import List, Tuple
-from os.path import abspath, dirname
 import logging
+
+from pkg_resources import resource_string
 
 from . import types  # NOQA (must be here for type detection)
 from .x690.types import (
@@ -38,8 +39,8 @@ from .util import (
     group_varbinds,
 )
 
-__here = abspath(dirname(__file__))
-__version__ = open(__here + '/version.txt').read().strip()
+__version__ = resource_string('puresnmp',
+                              'version.txt').decode('ascii').strip()
 _set = set
 
 
