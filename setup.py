@@ -1,14 +1,12 @@
 from setuptools import setup, find_packages
-from os.path import dirname, abspath
 
-HERE = abspath(dirname(__file__))
-VERSION = open(HERE + '/puresnmp/version.txt').read().strip()
+VERSION = '1.1.4'
 
 setup(
     name="puresnmp",
     version=VERSION,
     description="Pure Python SNMP implementation",
-    long_description=open(HERE + "/README.rst").read(),
+    long_description=open("README.rst").read(),
     author="Michel Albert",
     author_email="michel@albert.lu",
     provides=['puresnmp'],
