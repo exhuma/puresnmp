@@ -242,6 +242,16 @@ class TestInteger(ByteTester):
         expected = Integer(0)
         self.assertEqual(result, expected)
 
+    def test_decoding_minus_one(self):
+        result = Integer.from_bytes(b"\x02\x01\xff")
+        expected = Integer(-1)
+        self.assertEqual(result, expected)
+
+    def test_decoding_minus_large_value(self):
+        result = Integer.from_bytes(b"\x02\x04\x8d\xf4\x73\xc1")
+        expected = Integer(-1913359423)
+        self.assertEqual(result, expected)
+
     def test_pythonize(self):
         result = Integer(1).pythonize()
         expected = 1
