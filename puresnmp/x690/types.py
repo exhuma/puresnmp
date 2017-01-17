@@ -362,7 +362,7 @@ class Integer(Type):
 
     @classmethod
     def decode(cls, data):
-        return cls(int.from_bytes(data, 'big'))
+        return cls(int.from_bytes(data, 'big', signed=True))
 
     def __init__(self, value):
         self.value = value
