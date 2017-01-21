@@ -18,6 +18,7 @@ Submodules
    puresnmp.pdu
    puresnmp.transport
    puresnmp.types
+   puresnmp.util
 
 Module contents
 ---------------
