@@ -48,7 +48,7 @@ BulkResult = namedtuple('BulkResult', 'scalars listing')
 LOG = logging.getLogger(__name__)
 
 
-def get(ip: str, community: str, oid: str, port: int=161):
+def get(ip: str, community: str, oid: str, port: int=161, timeout: int=2):
     """
     Executes a simple SNMP GET request and returns a pure Python data structure.
 
@@ -57,10 +57,11 @@ def get(ip: str, community: str, oid: str, port: int=161):
         >>> get('192.168.1.1', 'private', '1.2.3.4')
         'non-functional example'
     """
-    return multiget(ip, community, [oid], port)[0]
+    return multiget(ip, community, [oid], port, timeout=timeout)[0]
 
 
-def multiget(ip: str, community: str, oids: List[str], port: int=161):
+def multiget(ip: str, community: str, oids: List[str], port: int=161,
+             timeout: int=2):
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -80,7 +81,7 @@ def multiget(ip: str, community: str, oids: List[str], port: int=161):
         GetRequest(get_request_id(), *oids)
     )
 
-    response = send(ip, port, bytes(packet))
+    response = send(ip, port, bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
 
     output = [value.pythonize() for _, value in raw_response[2].varbinds]
@@ -90,7 +91,7 @@ def multiget(ip: str, community: str, oids: List[str], port: int=161):
     return output
 
 
-def getnext(ip, community, oid, port=161):
+def getnext(ip, community, oid, port=161, timeout=2):
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
 
@@ -99,10 +100,10 @@ def getnext(ip, community, oid, port=161):
         >>> getnext('192.168.1.1', 'private', '1.2.3')
         VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
     """
-    return multigetnext(ip, community, [oid], port)[0]
+    return multigetnext(ip, community, [oid], port, timeout=timeout)[0]
 
 
-def multigetnext(ip, community, oids, port=161):
+def multigetnext(ip, community, oids, port=161, timeout=2):
     """
     Function to send a single multi-oid GETNEXT request.
 
@@ -123,7 +124,7 @@ def multigetnext(ip, community, oids, port=161):
         OctetString(community),
         request
     )
-    response = send(ip, port, bytes(packet))
+    response = send(ip, port, bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
@@ -214,7 +215,8 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
             yield varbind
 
 
-def set(ip: str, community: str, oid: str, value: Type, port: int=161):
+def set(ip: str, community: str, oid: str, value: Type, port: int=161,
+        timeout: int=2):
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
     data structure. The value must be a subclass of
@@ -227,12 +229,12 @@ def set(ip: str, community: str, oid: str, value: Type, port: int=161):
         b'I am contact'
     """
 
-    result = multiset(ip, community, [(oid, value)], port)
+    result = multiset(ip, community, [(oid, value)], port, timeout=timeout)
     return result[oid]
 
 
 def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
-             port: int=161):
+             port: int=161, timeout: int=2):
     """
 
     Executes an SNMP SET request on multiple OIDs. The result is returned as
@@ -256,7 +258,7 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
     packet = Sequence(Integer(Version.V2C),
                       OctetString(community),
                       request)
-    response = send(ip, port, bytes(packet))
+    response = send(ip, port, bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     output = {
         str(oid): value.pythonize() for oid, value in raw_response[2].varbinds
@@ -268,7 +270,7 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
 
 
 def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-            port=161):
+            port=161, timeout=2):
     """
     Runs a "bulk" get operation and returns a :py:class:`~.BulkResult` instance.
     This contains both a mapping for the scalar variables (the "non-repeaters")
@@ -348,7 +350,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
         BulkGetRequest(get_request_id(), non_repeaters, max_list_size, *oids)
     )
 
-    response = send(ip, port, bytes(packet))
+    response = send(ip, port, bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
 
     # See RFC=3416 for details of the following calculation
