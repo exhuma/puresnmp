@@ -53,7 +53,7 @@ class TestGet(unittest.TestCase):
             mck2.return_value = 0
             mck.return_value = data
             get('::1', 'public', '1.2.3')
-            mck.assert_called_with('::1', 161, bytes(packet))
+            mck.assert_called_with('::1', 161, bytes(packet), timeout=2)
 
     def test_get_string(self):
         data = readbytes('get_sysdescr_01.hex')
@@ -233,7 +233,7 @@ class TestGetNext(unittest.TestCase):
             mck2.return_value = 0
             mck.return_value = data
             getnext('::1', 'public', '1.2.3')
-            mck.assert_called_with('::1', 161, bytes(packet))
+            mck.assert_called_with('::1', 161, bytes(packet), timeout=2)
 
     def test_getnext(self):
         data = readbytes('getnext_response.hex')
@@ -264,7 +264,7 @@ class TestGetBulkGet(unittest.TestCase):
                     ['1.2.3'],
                     ['1.2.4'],
                     max_list_size=2)
-            mck.assert_called_with('::1', 161, bytes(packet))
+            mck.assert_called_with('::1', 161, bytes(packet), timeout=2)
 
 
     def test_bulkget(self):
@@ -305,7 +305,7 @@ class TestGetBulkWalk(unittest.TestCase):
             list(bulkwalk('::1', 'public',
                           ['1.2.3'],
                           bulk_size=2))
-            mck.assert_called_with('::1', 161, bytes(packet))
+            mck.assert_called_with('::1', 161, bytes(packet), timeout=2)
 
 
     @patch('puresnmp.send')
@@ -329,9 +329,9 @@ class TestGetBulkWalk(unittest.TestCase):
                                bulk_size=20))
 
         self.assertEqual(mck_send.mock_calls, [
-            call('127.0.0.1', 161, req1),
-            call('127.0.0.1', 161, req2),
-            call('127.0.0.1', 161, req3),
+            call('127.0.0.1', 161, req1, timeout=2),
+            call('127.0.0.1', 161, req2, timeout=2),
+            call('127.0.0.1', 161, req3, timeout=2),
         ])
 
         # TODO (advanced): Type information is lost for timeticks and OIDs
