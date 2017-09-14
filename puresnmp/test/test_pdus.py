@@ -1,7 +1,6 @@
 from ..exc import SnmpError
 from ..x690.types import (
     Integer,
-    Null,
     ObjectIdentifier,
     OctetString,
     Sequence,
