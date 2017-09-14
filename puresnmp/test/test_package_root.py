@@ -79,7 +79,7 @@ class TestGet(unittest.TestCase):
         data = readbytes('get_sysoid_01_error.hex')
         with patch('puresnmp.send') as mck:
             mck.return_value = data
-            with self.assertRaisesRegexp(SnmpError, 'varbind'):
+            with self.assertRaisesRegex(SnmpError, 'varbind'):
                 get('::1', 'private', '1.2.3')
 
     def test_get_non_existing_oid(self):
@@ -119,7 +119,7 @@ class TestWalk(unittest.TestCase):
         data = readbytes('get_sysoid_01_error.hex')
         with patch('puresnmp.send') as mck:
             mck.return_value = data
-            with self.assertRaisesRegexp(SnmpError, 'varbind'):
+            with self.assertRaisesRegex(SnmpError, 'varbind'):
                 next(walk('::1', 'private', '1.2.3'))
 
 
@@ -131,7 +131,7 @@ class TestSet(unittest.TestCase):
         supported types (a subclass of puresnmp.x690.Type).
         """
         with patch('puresnmp.send'):
-            with self.assertRaisesRegexp(TypeError, 'Type'):
+            with self.assertRaisesRegex(TypeError, 'Type'):
                 set('::1', 'private', '1.2.3', 12)
 
     def test_set(self):
@@ -148,7 +148,7 @@ class TestSet(unittest.TestCase):
         data = readbytes('set_response_multiple.hex')
         with patch('puresnmp.send') as mck:
             mck.return_value = data
-            with self.assertRaisesRegexp(SnmpError, 'varbind'):
+            with self.assertRaisesRegex(SnmpError, 'varbind'):
                 set('::1', 'private', '1.3.6.1.2.1.1.4.0',
                     OctetString(b'hello@world.com'))
 

@@ -54,7 +54,7 @@ class TestBoolean(ByteTester):
         """
         Validate what happens when there are too many bytes.
         """
-        with self.assertRaisesRegexp(ValueError, 'Length'):
+        with self.assertRaisesRegex(ValueError, 'Length'):
             Boolean.validate(b'\x01\x00\x00')
 
 
@@ -495,7 +495,7 @@ class TestNonASN1Type(ByteTester):
         self.assertEqual(result, expected)
 
     def test_decoding_corrupt_length(self):
-        with self.assertRaisesRegexp(ValueError, 'length'):
+        with self.assertRaisesRegex(ValueError, 'length'):
             NonASN1Type.from_bytes(b'\x99\x02\x0a')
 
     def test_repr(self):
@@ -537,7 +537,7 @@ class TestAllTypes(ByteTester):
         self.assertEqual(result, expected)
 
     def test_corrupt_length(self):
-        with self.assertRaisesRegexp(ValueError, 'length'):
+        with self.assertRaisesRegex(ValueError, 'length'):
             Integer.from_bytes(b'\x02\x01\x01\x01')
 
     def test_repr(self):
