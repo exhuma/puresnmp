@@ -69,14 +69,6 @@ available commands. A clear procedure for this has not yet been defined, but
 any information I can get, helps.
 
 
-Documentation
-~~~~~~~~~~~~~
-
-While documentation is currently non-existing, it is one of the next steps on
-my roadmap (starting with this document right here). As there is no starting
-material yet, there is not much to contribute. But as always, any help is
-welcome.
-
 Python 2 Support?
 ~~~~~~~~~~~~~~~~~
 

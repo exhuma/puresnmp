@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Release 1.2.0
+~~~~~~~~~~~~~
+
+* Exposed access to the ``timeout`` value. Each SNMP call not takes an optional
+  ``timeout`` value which specifies the timeout in seconds.
+
+
 Release 1.1.0
 ~~~~~~~~~~~~~
 
@@ -28,3 +35,14 @@ Internal changes for better RFC3416 conformance
 * Added support for Counter64 values.
 * Raising an error when requesting too many varbinds.
 * Renamed ``puresnmp.SnmpMessage`` to :py:class:`puresnmp.PDU`
+
+Notable bugfixes on the 1.1.x branch
+####################################
+
+* Some internal types leaked to the outside. This is no longer the case (fixed
+  in ``v1.1.1``)
+* Raw packets are logged using the ``DEBUG`` level ("fixed" in ``v1.1.1``).
+* Fixed encoding of long length values (fixed in ``v1.1.2``)
+* ``v1.1.3`` added minor internal fixes.
+* Fixed IP-Address Header (fixed in ``v1.1.4``)
+* Fixed signed integers (fixed in ``v1.1.5``)

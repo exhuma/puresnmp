@@ -147,12 +147,12 @@ class TestTypeInfoClass(ByteTester):
 
     def test_impossible_class(self):
         instance = TypeInfo(10, 100, 1000)
-        with self.assertRaisesRegexp(ValueError, 'class'):
+        with self.assertRaisesRegex(ValueError, 'class'):
             bytes(instance)
 
     def test_impossible_pc(self):
         instance = TypeInfo(TypeInfo.APPLICATION, 100, 1000)
-        with self.assertRaisesRegexp(ValueError, 'primitive/constructed'):
+        with self.assertRaisesRegex(ValueError, 'primitive/constructed'):
             bytes(instance)
 
 
