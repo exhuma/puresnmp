@@ -1,5 +1,5 @@
-puresnmp.transport module
-=========================
+puresnmp\.transport module
+==========================
 
 .. automodule:: puresnmp.transport
     :members:
