@@ -33,9 +33,10 @@ class NoSuchOID(SnmpError):
 class TooManyVarbinds(SnmpError):
 
     def __init__(self, num_oids):
-        super().__init__('Too many VarBinds (%d) in one request! RFC3416 '
-                         'limits requests to %d!' % (
-                             num_oids, MAX_VARBINDS))
+        super(TooManyVarbinds, self).__init__(
+            'Too many VarBinds (%d) in one request!'
+            ' RFC3416 limits requests to %d!' % (
+                num_oids, MAX_VARBINDS))
         self.num_oids = num_oids
 
 

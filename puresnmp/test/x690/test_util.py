@@ -65,50 +65,50 @@ class TestTypeInfoEncoding(ByteTester):
 
     def test_to_bytes_a(self):
         obj = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b00011110])
+        result = obj.to_bytes()
+        expected = bytearray([0b00011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_b(self):
         obj = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b00111110])
+        result = obj.to_bytes()
+        expected = bytearray([0b00111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_c(self):
         obj = TypeInfo(TypeInfo.APPLICATION, TypeInfo.PRIMITIVE, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b01011110])
+        result = obj.to_bytes()
+        expected = bytearray([0b01011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_d(self):
         obj = TypeInfo(TypeInfo.APPLICATION, TypeInfo.CONSTRUCTED, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b01111110])
+        result = obj.to_bytes()
+        expected = bytearray([0b01111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_e(self):
         obj = TypeInfo(TypeInfo.CONTEXT, TypeInfo.PRIMITIVE, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b10011110])
+        result = obj.to_bytes()
+        expected = bytearray([0b10011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_f(self):
         obj = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b10111110])
+        result = obj.to_bytes()
+        expected = bytearray([0b10111110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_g(self):
         obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.PRIMITIVE, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b11011110])
+        result = obj.to_bytes()
+        expected = bytearray([0b11011110])
         self.assertEqual(result, expected)
 
     def test_to_bytes_h(self):
         obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b11110)
-        result = bytes(obj)
-        expected = bytes([0b11111110])
+        result = obj.to_bytes()
+        expected = bytearray([0b11111110])
         self.assertEqual(result, expected)
 
 
@@ -133,7 +133,7 @@ class TestTypeInfoClass(ByteTester):
         should yield the same instance.
         """
         expected = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, 0b11110)
-        result = TypeInfo.from_bytes(bytes(expected))
+        result = TypeInfo.from_bytes(expected.to_bytes())
         self.assertEqual(result, expected)
 
     def test_dencoding_symmetry_b(self):
@@ -141,45 +141,45 @@ class TestTypeInfoClass(ByteTester):
         Decoding an object from bytes, and then encoding the resulting instance
         should yield the same bytes.
         """
-        expected = bytes([0b11111110])
-        result = bytes(TypeInfo.from_bytes(expected))
+        expected = bytearray([0b11111110])
+        result = TypeInfo.from_bytes(expected).to_bytes()
         self.assertEqual(result, expected)
 
     def test_impossible_class(self):
         instance = TypeInfo(10, 100, 1000)
         with self.assertRaisesRegex(ValueError, 'class'):
-            bytes(instance)
+            instance.to_bytes()
 
     def test_impossible_pc(self):
         instance = TypeInfo(TypeInfo.APPLICATION, 100, 1000)
         with self.assertRaisesRegex(ValueError, 'primitive/constructed'):
-            bytes(instance)
+            instance.to_bytes()
 
 
 class TestLengthOctets(ByteTester):
 
     def test_encode_length_short(self):
-        expected = bytes([0b00100110])
+        expected = bytearray([0b00100110])
         result = encode_length(38)
         self.assertEqual(result, expected)
 
     def test_encode_length_long(self):
-        expected = bytes([0b10000001, 0b11001001])
+        expected = bytearray([0b10000001, 0b11001001])
         result = encode_length(201)
         self.assertBytesEqual(result, expected)
 
     def test_encode_length_longer(self):
-        expected = bytes([0b10000010, 0b00000001, 0b00101110])
+        expected = bytearray([0b10000010, 0b00000001, 0b00101110])
         result = encode_length(302)
         self.assertBytesEqual(result, expected)
 
     def test_encode_length_longer_2(self):
-        expected = bytes([0x81, 0xa4])
+        expected = bytearray([0x81, 0xa4])
         result = encode_length(164)
         self.assertBytesEqual(result, expected)
 
     def test_encode_length_indefinite(self):
-        expected = bytes([0b10000000])
+        expected = bytearray([0b10000000])
         result = encode_length(Length.INDEFINITE)
         self.assertBytesEqual(result, expected)
 
@@ -196,14 +196,14 @@ class TestLengthOctets(ByteTester):
         self.assertEqual(data, b'')
 
     def test_decode_length_long(self):
-        data = bytes([0b10000010, 0b00000001, 0b10110011])
+        data = bytearray([0b10000010, 0b00000001, 0b10110011])
         expected = 435
         result, data = decode_length(data)
         self.assertEqual(result, expected)
         self.assertEqual(data, b'')
 
     def test_decode_length_longer(self):
-        data = bytes([0x81, 0xa4])
+        data = bytearray([0x81, 0xa4])
         expected = 164
         result, data = decode_length(data)
         self.assertEqual(result, expected)
@@ -211,17 +211,17 @@ class TestLengthOctets(ByteTester):
 
     def test_decode_length_indefinite(self):
         with self.assertRaises(NotImplementedError):
-            decode_length(bytes([0b10000000]))
+            decode_length(bytearray([0b10000000]))
 
     def test_decode_length_reserved(self):
         with self.assertRaises(NotImplementedError):
-            decode_length(bytes([0b11111111]))
+            decode_length(bytearray([0b11111111]))
 
 
 class TestHelpers(ByteTester):
 
     def test_visible_octets_minimal(self):
-        result = visible_octets(bytes([0b00000000, 0b01010101]))
+        result = visible_octets(bytearray([0b00000000, 0b01010101]))
         expected = '00 55                                              .U'
         self.assertEqual(result, expected)
 
@@ -229,7 +229,7 @@ class TestHelpers(ByteTester):
         """
         Test that we have a double space after 8 octets for better readability
         """
-        result = visible_octets(bytes([
+        result = visible_octets(bytearray([
             0b00000000,
             0b01010101,
             0b00000000,
@@ -248,7 +248,7 @@ class TestHelpers(ByteTester):
         """
         If we have more than 16 octets, we need to go to a new line.
         """
-        result = visible_octets(bytes([0b00000000, 0b01010101] * 9))
+        result = visible_octets(bytearray([0b00000000, 0b01010101] * 9))
         expected = ('00 55 00 55 00 55 00 55  00 55 00 55 00 55 00 55   '
                     '.U.U.U.U.U.U.U.U\n'
                     '00 55                                              '
@@ -320,12 +320,12 @@ class TestGithubIssue23(ByteTester):
     """
 
     def test_encode(self):
-        expected = bytes([0b10000010, 0b00000001, 0b10110011])
+        expected = bytearray([0b10000010, 0b00000001, 0b10110011])
         result = encode_length(435)
         self.assertBytesEqual(result, expected)
 
     def test_decode(self):
-        data = bytes([0b10000010, 0b00000001, 0b10110011])
+        data = bytearray([0b10000010, 0b00000001, 0b10110011])
         expected = 435
         result, data = decode_length(data)
         self.assertEqual(result, expected)

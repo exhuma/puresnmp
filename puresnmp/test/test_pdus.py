@@ -30,7 +30,7 @@ def comparable(bytes):
 class TestGet(ByteTester):
 
     def setUp(self):
-        super().setUp()
+        super(TestGet, self).setUp()
         self.maxDiff = None
 
     def test_get_request(self):
@@ -61,7 +61,7 @@ class TestGet(ByteTester):
             OctetString('public'),
             request
         )
-        result = bytes(packet)
+        result = packet.to_bytes()
 
         self.assertBytesEqual(result, expected)
 
@@ -125,7 +125,7 @@ class TestGet(ByteTester):
             request
         )
 
-        result = bytes(packet)
+        result = packet.to_bytes()
         self.assertBytesEqual(result, expected)
 
     def test_multiget_response(self):
@@ -170,7 +170,7 @@ class TestWalk(ByteTester):
             OctetString('public'),
             request
         )
-        result = bytes(packet)
+        result = packet.to_bytes()
         self.assertBytesEqual(result, expected)
 
 
@@ -189,7 +189,7 @@ class TestSet(ByteTester):
             OctetString('private'),
             request
         )
-        result = bytes(packet)
+        result = packet.to_bytes()
         self.assertBytesEqual(result, expected)
 
 
@@ -215,5 +215,5 @@ class TestBulkGet(ByteTester):
             request
         )
 
-        result = bytes(packet)
+        result = packet.to_bytes()
         self.assertBytesEqual(result, expected)
