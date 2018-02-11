@@ -25,7 +25,7 @@ from .x690.types import (
     encode_length,
     pop_tlv,
 )
-from .x690.util import TypeInfo
+from .x690.util import to_bytes, TypeInfo
 
 
 class VarBind(namedtuple('VarBind', 'oid, value')):
@@ -76,7 +76,7 @@ class PDU(Type):
         :py:class:`~.PDU`.
         """
         # TODO (advanced): recent tests revealed that this is *not symmetric*
-        # with to_bytes of this class. This should be ensured!
+        # with __bytes__ of this class. This should be ensured!
         if not data:
             raise EmptyMessage('No data to decode!')
         request_id, data = pop_tlv(data)
@@ -107,7 +107,7 @@ class PDU(Type):
         else:
             self.varbinds = varbinds
 
-    def to_bytes(self):
+    def __bytes__(self):
         wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
         data = [
             Integer(self.request_id),
@@ -115,11 +115,11 @@ class PDU(Type):
             Integer(self.error_index),
             Sequence(*wrapped_varbinds)
         ]
-        payload = b''.join([bytes(chunk.to_bytes()) for chunk in data])
+        payload = b''.join([to_bytes(chunk) for chunk in data])
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return tinfo.to_bytes() + length + payload
+        return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
         return '%s(%r, %r)' % (
@@ -166,7 +166,7 @@ class GetRequest(PDU):
             else:
                 wrapped_oids.append(oid)
         super(GetRequest, self).__init__(request_id, [VarBind(oid, Null())
-                                      for oid in wrapped_oids])
+                                         for oid in wrapped_oids])
 
 
 class GetResponse(PDU):
@@ -216,7 +216,7 @@ class BulkGetRequest(Type):
         an application object.
         """
         # TODO (advanced): recent tests revealed that this is *not symmetric*
-        # with to_bytes of this class. This should be ensured!
+        # with __bytes__ of this class. This should be ensured!
         if not data:
             raise EmptyMessage('No data to decode!')
         request_id, data = pop_tlv(data)
@@ -224,7 +224,7 @@ class BulkGetRequest(Type):
         max_repeaters, data = pop_tlv(data)
         values, data = pop_tlv(data)
 
-        oids = [str(*oid) for oid, _ in values]
+        oids = [unicode(*oid) for oid, _ in values]
 
         return cls(
             request_id,
@@ -243,7 +243,7 @@ class BulkGetRequest(Type):
         for oid in oids:
             self.varbinds.append(VarBind(oid, Null()))
 
-    def to_bytes(self):
+    def __bytes__(self):
         wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
         data = [
             Integer(self.request_id),
@@ -251,11 +251,11 @@ class BulkGetRequest(Type):
             Integer(self.max_repeaters),
             Sequence(*wrapped_varbinds)
         ]
-        payload = b''.join([bytes(chunk.to_bytes()) for chunk in data])
+        payload = b''.join([to_bytes(chunk) for chunk in data])
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return tinfo.to_bytes() + length + payload
+        return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
         return '%s(%r, %r)' % (

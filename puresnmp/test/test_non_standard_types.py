@@ -3,6 +3,7 @@ from datetime import timedelta
 from . import ByteTester
 
 from .. import types as t
+from ..x690.util import to_bytes
 
 
 class TestIpAddress(ByteTester):
@@ -14,7 +15,7 @@ class TestIpAddress(ByteTester):
 
     def test_encoding(self):
         value = t.IpAddress(b'\x80\x96\xa1\x09')
-        result = value.to_bytes()
+        result = to_bytes(value)
         expected = b'\x40\x04\x80\x96\xa1\x09'
         self.assertBytesEqual(result, expected)
 
@@ -44,7 +45,7 @@ class TestTimeTicks(ByteTester):
 
     def test_encoding(self):
         value = t.TimeTicks(100)
-        result = value.to_bytes()
+        result = to_bytes(value)
         expected = b'\x43\x01\x64'
         self.assertBytesEqual(result, expected)
 

@@ -23,7 +23,7 @@ from .x690.types import (
     Sequence,
     Type,
 )
-from .x690.util import tablify
+from .x690.util import to_bytes, tablify
 from .exc import SnmpError, NoSuchOID
 from .pdu import (
     BulkGetRequest,
@@ -38,6 +38,11 @@ from .util import (
     get_unfinished_walk_oids,
     group_varbinds,
 )
+
+try:
+    unicode
+except NameError:
+    unicode = str
 
 __version__ = resource_string('puresnmp',
                               'version.txt').decode('ascii').strip()
@@ -82,7 +87,7 @@ def multiget(ip, community, oids, port=161, timeout=2):
         GetRequest(get_request_id(), *oids)
     )
 
-    response = send(ip, port, packet.to_bytes(), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
 
     output = [value.pythonize() for _, value in raw_response[2].varbinds]
@@ -125,7 +130,7 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
         OctetString(community),
         request
     )
-    response = send(ip, port, packet.to_bytes(), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
@@ -190,7 +195,8 @@ def multiwalk(ip, community, oids, port=161, fetcher=multigetnext):
     while unfinished_oids:
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
         try:
-            varbinds = fetcher(ip, community, [str(_) for _ in next_fetches],
+            varbinds = fetcher(ip, community,
+                               [unicode(_) for _ in next_fetches],
                                port)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
@@ -260,10 +266,11 @@ def multiset(ip, community, mappings, port=161, timeout=2):
     packet = Sequence(Integer(Version.V2C),
                       OctetString(community),
                       request)
-    response = send(ip, port, packet.to_bytes(), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     output = {
-        str(oid): value.pythonize() for oid, value in raw_response[2].varbinds
+        unicode(oid): value.pythonize()
+        for oid, value in raw_response[2].varbinds
     }
     if len(output) != len(mappings):
         raise SnmpError('Unexpected response. Expected %d varbinds, '
@@ -352,7 +359,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
         BulkGetRequest(get_request_id(), non_repeaters, max_list_size, *oids)
     )
 
-    response = send(ip, port, packet.to_bytes(), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
 
     # See RFC=3416 for details of the following calculation
@@ -371,12 +378,12 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     repeating_tmp = raw_response[2].varbinds[len(scalar_oids):]
 
     # prepare output for scalar OIDs
-    scalar_out = {str(oid): value.pythonize() for oid, value in scalar_tmp}
+    scalar_out = {unicode(oid): value.pythonize() for oid, value in scalar_tmp}
 
     # prepare output for listing
     repeating_out = OrderedDict()
     for oid, value in repeating_tmp:
-        repeating_out[str(oid)] = value.pythonize()
+        repeating_out[unicode(oid)] = value.pythonize()
 
     return BulkResult(scalar_out, repeating_out)
 

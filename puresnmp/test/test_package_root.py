@@ -5,12 +5,12 @@ The "external" interface is what the user sees. It should be pythonic and easy
 to use.
 """
 
-
+import six
 from datetime import timedelta
 try:
     from unittest.mock import patch, call
 except ImportError:
-    from mock import patch, call # pip install mock
+    from mock import patch, call  # pip install mock
 import unittest
 
 from puresnmp import (
@@ -34,6 +34,7 @@ from puresnmp.x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
+    to_bytes,
 )
 
 from . import readbytes, ByteTester
@@ -56,7 +57,7 @@ class TestGet(ByteTester):
             mck2.return_value = 0
             mck.return_value = data
             get('::1', 'public', '1.2.3')
-            mck.assert_called_with('::1', 161, packet.to_bytes(), timeout=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
 
     def test_get_string(self):
         data = readbytes('get_sysdescr_01.hex')
@@ -82,7 +83,7 @@ class TestGet(ByteTester):
         data = readbytes('get_sysoid_01_error.hex')
         with patch('puresnmp.send') as mck:
             mck.return_value = data
-            with self.assertRaisesRegex(SnmpError, 'varbind'):
+            with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 get('::1', 'private', '1.2.3')
 
     def test_get_non_existing_oid(self):
@@ -97,7 +98,7 @@ class TestGet(ByteTester):
                 get('::1', 'private', '1.2.3')
 
 
-class TestWalk(ByteTester):
+class TestWalk(unittest.TestCase):
 
     def test_walk(self):
         response_1 = readbytes('walk_response_1.hex')
@@ -122,11 +123,11 @@ class TestWalk(ByteTester):
         data = readbytes('get_sysoid_01_error.hex')
         with patch('puresnmp.send') as mck:
             mck.return_value = data
-            with self.assertRaisesRegex(SnmpError, 'varbind'):
+            with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 next(walk('::1', 'private', '1.2.3'))
 
 
-class TestSet(ByteTester):
+class TestSet(unittest.TestCase):
 
     def test_set_without_type(self):
         """
@@ -134,7 +135,7 @@ class TestSet(ByteTester):
         supported types (a subclass of puresnmp.x690.Type).
         """
         with patch('puresnmp.send'):
-            with self.assertRaisesRegex(TypeError, 'Type'):
+            with six.assertRaisesRegex(self, TypeError, 'Type'):
                 set('::1', 'private', '1.2.3', 12)
 
     def test_set(self):
@@ -151,7 +152,7 @@ class TestSet(ByteTester):
         data = readbytes('set_response_multiple.hex')
         with patch('puresnmp.send') as mck:
             mck.return_value = data
-            with self.assertRaisesRegex(SnmpError, 'varbind'):
+            with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 set('::1', 'private', '1.3.6.1.2.1.1.4.0',
                     OctetString(b'hello@world.com'))
 
@@ -172,7 +173,7 @@ class TestMultiGet(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestMultiWalk(ByteTester):
+class TestMultiWalk(unittest.TestCase):
 
     def test_multi_walk(self):
         response_1 = readbytes('multiwalk_response_1.hex')
@@ -196,7 +197,7 @@ class TestMultiWalk(ByteTester):
                 '1.3.6.1.2.1.2.2.1.2'
             ]))
         # TODO (advanced): should order matter in the following result?
-        self.assertCountEqual(result, expected)
+        six.assertCountEqual(self, result, expected)
 
 
 class TestMultiSet(unittest.TestCase):
@@ -236,7 +237,7 @@ class TestGetNext(unittest.TestCase):
             mck2.return_value = 0
             mck.return_value = data
             getnext('::1', 'public', '1.2.3')
-            mck.assert_called_with('::1', 161, packet.to_bytes(), timeout=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
 
     def test_getnext(self):
         data = readbytes('getnext_response.hex')
@@ -267,7 +268,7 @@ class TestGetBulkGet(unittest.TestCase):
                     ['1.2.3'],
                     ['1.2.4'],
                     max_list_size=2)
-            mck.assert_called_with('::1', 161, packet.to_bytes(), timeout=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
 
 
     def test_bulkget(self):
@@ -308,7 +309,7 @@ class TestGetBulkWalk(unittest.TestCase):
             list(bulkwalk('::1', 'public',
                           ['1.2.3'],
                           bulk_size=2))
-            mck.assert_called_with('::1', 161, packet.to_bytes(), timeout=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
 
 
     @patch('puresnmp.send')
