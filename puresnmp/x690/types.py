@@ -41,6 +41,7 @@ from __future__ import unicode_literals, print_function, division
 
 import six
 import sys
+import warnings
 
 try:
     unicode
@@ -214,7 +215,7 @@ class UnknownType(Type):
         return to_bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self):
-        return 'UnknownType(%r, %r)' % (self.tag, self.value)
+        return '%s(%r, %r)' % (self.__class__.__name__, self.tag, self.value)
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
@@ -241,7 +242,11 @@ class UnknownType(Type):
         return UnknownType(tag, data)
 
 
-NonASN1Type = UnknownType  # TODO: flag NonASN1Type as deprecated?
+class NonASN1Type(UnknownType):
+    def __init__(self, tag, value):
+        warnings.warn('puresnmp.x690.types.NonASN1Type is deprecated,'
+                      ' replace it with UnknownType', stacklevel=2)
+        super(NonASN1Type, self).__init__(tag, value)
 
 
 class Boolean(Type):
