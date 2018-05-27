@@ -1,12 +1,43 @@
 """
 Utility functions for working with the X.690 and related standards.
 """
+from __future__ import unicode_literals, print_function, division
 from binascii import hexlify, unhexlify
 from collections import namedtuple
 from typing import Tuple, Union, List, Any
+import six
+import sys
 
 from ..const import Length
 
+try:
+    int_from_bytes = int.from_bytes
+except AttributeError:
+    def int_from_bytes(bytes, byteorder, signed=False):
+        bytes = bytearray(bytes)
+        if byteorder == 'little':
+            little_ordered = list(bytes)
+        elif byteorder == 'big':
+            little_ordered = list(reversed(bytes))
+        n = sum(b << 8*i for i, b in enumerate(little_ordered))
+        if signed and little_ordered and (little_ordered[-1] & 0x80):
+            n -= 1 << 8*len(little_ordered)
+        return n
+
+if six.PY2:
+    def to_bytes(x):
+        if hasattr(x, '__bytes__'):
+            return bytes(x)
+        else:
+            return bytes(bytearray(x))
+else:
+    unicode = str
+
+    def to_bytes(x):
+        try:
+            return bytes(x)
+        except TypeError as e:
+            raise TypeError(e.args[0] + ' on type {}'.format(type(x)))
 
 LengthValue = namedtuple('LengthValue', 'length value')
 
@@ -38,7 +69,8 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     CONSTRUCTED = 'constructed'
 
     @staticmethod
-    def from_bytes(data: Union[int, bytes]) -> "TypeInfo":
+    def from_bytes(data):
+        # type: ( Union[int, bytes] ) -> TypeInfo
         """
         Given one octet, extract the separate fields and return a TypeInfo
         instance::
@@ -48,8 +80,8 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         """
         # pylint: disable=attribute-defined-outside-init
 
-        if isinstance(data, bytes):
-            data = int.from_bytes(data, 'big')
+        if isinstance(data, (bytes, bytearray)):
+            data = int_from_bytes(data, 'big')
         # pylint: disable=protected-access
         if data == 0b11111111:
             raise NotImplementedError('Long identifier types are not yet '
@@ -96,10 +128,17 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
             raise ValueError('Unexpected primitive/constructed for type info')
 
         output = cls << 6 | priv_const << 5 | self.tag
-        return bytes([output])
+        return to_bytes([output])
 
     def __eq__(self, other):
-        return super().__eq__(other)
+        return super(TypeInfo, self).__eq__(other)
+
+    if six.PY2:
+        def __unicode__(self):
+            return repr(self)
+
+        def __str__(self):
+            return self.__bytes__()
 
 
 def encode_length(value):
@@ -127,10 +166,10 @@ def encode_length(value):
         b'\\x81\\xc8'
     """
     if value == Length.INDEFINITE:
-        return bytes([0b10000000])
+        return to_bytes([0b10000000])
 
     if value < 127:
-        return bytes([value])
+        return to_bytes([value])
 
     output = []
     while value > 0:
@@ -139,10 +178,11 @@ def encode_length(value):
 
     # prefix length information
     output = [0b10000000 | len(output)] + output
-    return bytes(output)
+    return to_bytes(output)
 
 
-def decode_length(data: bytes) -> LengthValue:
+def decode_length(data):
+    # type: ( bytes ) -> LengthValue
     """
     Given a bytes object, which starts with the length information of a TLV
     value, returns a namedtuple with the length and the remaining bytes. So,
@@ -168,26 +208,28 @@ def decode_length(data: bytes) -> LengthValue:
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
     """
-    if data[0] == 0b11111111:
+    data0 = six.byte2int(data)
+    if data0 == 0b11111111:
         # reserved
         raise NotImplementedError('This is a reserved case in X690')
-    elif data[0] & 0b10000000 == 0:
+    elif data0 & 0b10000000 == 0:
         # definite short form
-        output = int.from_bytes([data[0]], 'big')
+        output = int_from_bytes([data0], 'big')
         data = data[1:]
-    elif data[0] ^ 0b10000000 == 0:
+    elif data0 ^ 0b10000000 == 0:
         # indefinite form
-        raise NotImplementedError('Indefinite lenghts are not yet implemented!')
+        raise NotImplementedError('Indefinite lengths not yet implemented!')
     else:
         # definite long form
-        num_octets = int.from_bytes([data[0] ^ 0b10000000], 'big')
+        num_octets = int_from_bytes([data0 ^ 0b10000000], 'big')
         value_octets = data[1:1+num_octets]
-        output = int.from_bytes(value_octets, 'big')
+        output = int_from_bytes(value_octets, 'big')
         data = data[num_octets + 1:]
     return LengthValue(output, data)
 
 
-def visible_octets(data: bytes) -> str:
+def visible_octets(data):
+    # type: ( bytes ) -> str
     """
     Returns a geek-friendly (hexdump)  output of a bytes object.
 
@@ -231,7 +273,8 @@ def visible_octets(data: bytes) -> str:
     return '\n'.join(output)
 
 
-def tablify(varbinds: List[Tuple[Any, Any]], num_base_nodes: int=0) -> list:
+def tablify(varbinds, num_base_nodes=0):
+    # type: ( List[Tuple[Any, Any]], int ) -> list
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
@@ -284,12 +327,13 @@ def tablify(varbinds: List[Tuple[Any, Any]], num_base_nodes: int=0) -> list:
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]
             col_id, row_id = tail[0], tail[1:]
-            row_id = '.'.join([str(node) for node in row_id])
+            row_id = '.'.join([unicode(node) for node in row_id])
         else:
-            col_id, row_id = str(oid.identifiers[-2]), str(oid.identifiers[-1])
+            col_id = unicode(oid.identifiers[-2])
+            row_id = unicode(oid.identifiers[-1])
         tmp = {
             '0': row_id,
         }
         row = rows.setdefault(row_id, tmp)
-        row[str(col_id)] = value
+        row[unicode(col_id)] = value
     return list(rows.values())

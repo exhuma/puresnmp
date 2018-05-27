@@ -48,7 +48,7 @@ class TimeTicks(Integer):
     def __init__(self, value):
         if isinstance(value, timedelta):
             value = int(value.total_seconds() * 100)
-        super().__init__(value)
+        super(TimeTicks, self).__init__(value)
 
     def pythonize(self):
         seconds = self.value / 100.0  # see rfc2578#section-7.1.8

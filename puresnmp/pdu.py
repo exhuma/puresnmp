@@ -12,6 +12,7 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       "puresnmp.get", "puresnmp.walk" & co.
 
 from collections import namedtuple
+import six
 
 from .const import MAX_VARBINDS
 from .exc import SnmpError, EmptyMessage, NoSuchOID, TooManyVarbinds
@@ -24,18 +25,18 @@ from .x690.types import (
     encode_length,
     pop_tlv,
 )
-from .x690.util import TypeInfo
+from .x690.util import to_bytes, TypeInfo
 
 
 class VarBind(namedtuple('VarBind', 'oid, value')):
 
     def __new__(cls, oid, value):
-        if not isinstance(oid, (ObjectIdentifier, str)):
+        if not isinstance(oid, (ObjectIdentifier,) + six.string_types):
             raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
                             ' instances!')
-        if isinstance(oid, str):
+        if isinstance(oid, six.string_types):
             oid = ObjectIdentifier.from_string(oid)
-        return super().__new__(cls, oid, value)
+        return super(VarBind, cls).__new__(cls, oid, value)
 
 
 ERROR_MESSAGES = {
@@ -114,11 +115,11 @@ class PDU(Type):
             Integer(self.error_index),
             Sequence(*wrapped_varbinds)
         ]
-        payload = b''.join([bytes(chunk) for chunk in data])
+        payload = b''.join([to_bytes(chunk) for chunk in data])
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return bytes(tinfo) + length + payload
+        return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
         return '%s(%r, %r)' % (
@@ -131,7 +132,8 @@ class PDU(Type):
                 self.request_id == other.request_id and
                 self.varbinds == other.varbinds)
 
-    def pretty(self) -> str:  # pragma: no cover
+    def pretty(self):  # pragma: no cover
+        # type: () -> str
         """
         Returns a "prettified" string representing the SNMP message.
         """
@@ -163,8 +165,8 @@ class GetRequest(PDU):
                 wrapped_oids.append(ObjectIdentifier.from_string(oid))
             else:
                 wrapped_oids.append(oid)
-        super().__init__(request_id, [VarBind(oid, Null())
-                                      for oid in wrapped_oids])
+        super(GetRequest, self).__init__(request_id, [VarBind(oid, Null())
+                                         for oid in wrapped_oids])
 
 
 class GetResponse(PDU):
@@ -181,7 +183,7 @@ class GetResponse(PDU):
         empty), raise a :py:exc:`~puresnmp.exc.NoSuchOID` exception.
         """
         try:
-            return super().decode(data)
+            return super(GetResponse, cls).decode(data)
         except EmptyMessage as exc:
             raise NoSuchOID('Nothing found at the given OID (%s)' % exc)
 
@@ -222,7 +224,7 @@ class BulkGetRequest(Type):
         max_repeaters, data = pop_tlv(data)
         values, data = pop_tlv(data)
 
-        oids = [str(*oid) for oid, _ in values]
+        oids = [unicode(*oid) for oid, _ in values]
 
         return cls(
             request_id,
@@ -249,11 +251,11 @@ class BulkGetRequest(Type):
             Integer(self.max_repeaters),
             Sequence(*wrapped_varbinds)
         ]
-        payload = b''.join([bytes(chunk) for chunk in data])
+        payload = b''.join([to_bytes(chunk) for chunk in data])
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return bytes(tinfo) + length + payload
+        return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
         return '%s(%r, %r)' % (
@@ -268,7 +270,8 @@ class BulkGetRequest(Type):
                 self.max_repeaters == other.max_repeaters and
                 self.varbinds == other.varbinds)
 
-    def pretty(self) -> str:  # pragma: no cover
+    def pretty(self):  # pragma: no cover
+        # type () -> str
         """
         Returns a "prettified" string representing the SNMP message.
         """

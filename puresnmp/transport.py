@@ -20,7 +20,8 @@ LOG = logging.getLogger(__name__)
 RETRIES = 3
 
 
-def send(ip: str, port: int, packet: bytes, timeout: int=2) -> bytes:  # pragma: no cover
+def send(ip, port, packet, timeout=2):  # pragma: no cover
+    # type: ( str, int, bytes, int ) -> bytes
     """
     Opens a TCP connection to *ip:port*, sends a packet with *bytes* and returns
     the raw bytes as returned from the remote host.

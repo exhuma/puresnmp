@@ -23,7 +23,7 @@ from .x690.types import (
     Sequence,
     Type,
 )
-from .x690.util import tablify
+from .x690.util import to_bytes, tablify
 from .exc import SnmpError, NoSuchOID
 from .pdu import (
     BulkGetRequest,
@@ -39,6 +39,11 @@ from .util import (
     group_varbinds,
 )
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 __version__ = resource_string('puresnmp',
                               'version.txt').decode('ascii').strip()
 _set = set
@@ -48,7 +53,8 @@ BulkResult = namedtuple('BulkResult', 'scalars listing')
 LOG = logging.getLogger(__name__)
 
 
-def get(ip: str, community: str, oid: str, port: int=161, timeout: int=2):
+def get(ip, community, oid, port=161, timeout=2):
+    # type: ( str, str, str, int, int )
     """
     Executes a simple SNMP GET request and returns a pure Python data structure.
 
@@ -60,8 +66,8 @@ def get(ip: str, community: str, oid: str, port: int=161, timeout: int=2):
     return multiget(ip, community, [oid], port, timeout=timeout)[0]
 
 
-def multiget(ip: str, community: str, oids: List[str], port: int=161,
-             timeout: int=2):
+def multiget(ip, community, oids, port=161, timeout=2):
+    # type: ( str, List[str], int, int )
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -81,7 +87,7 @@ def multiget(ip: str, community: str, oids: List[str], port: int=161,
         GetRequest(get_request_id(), *oids)
     )
 
-    response = send(ip, port, bytes(packet), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
 
     output = [value.pythonize() for _, value in raw_response[2].varbinds]
@@ -124,7 +130,7 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
         OctetString(community),
         request
     )
-    response = send(ip, port, bytes(packet), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
@@ -135,7 +141,8 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
             for oid, value in response_object.varbinds]
 
 
-def walk(ip: str, community: str, oid, port: int=161):
+def walk(ip, community, oid, port=161):
+    # type: ( str, str, , int )
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -158,8 +165,8 @@ def walk(ip: str, community: str, oid, port: int=161):
     return multiwalk(ip, community, [oid], port)
 
 
-def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
-              fetcher=multigetnext):
+def multiwalk(ip, community, oids, port=161, fetcher=multigetnext):
+    # type: ( str, str, List[str], int, )
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -188,7 +195,8 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
     while unfinished_oids:
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
         try:
-            varbinds = fetcher(ip, community, [str(_) for _ in next_fetches],
+            varbinds = fetcher(ip, community,
+                               [unicode(_) for _ in next_fetches],
                                port)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
@@ -215,8 +223,8 @@ def multiwalk(ip: str, community: str, oids: List[str], port: int=161,
             yield varbind
 
 
-def set(ip: str, community: str, oid: str, value: Type, port: int=161,
-        timeout: int=2):
+def set(ip, community, oid, value, port=161, timeout=2):
+    # type: ( str, str, str, Type, int, int )
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
     data structure. The value must be a subclass of
@@ -233,8 +241,8 @@ def set(ip: str, community: str, oid: str, value: Type, port: int=161,
     return result[oid]
 
 
-def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
-             port: int=161, timeout: int=2):
+def multiset(ip, community, mappings, port=161, timeout=2):
+    # type: ( str, str, List[Tuple[str, Type]], int, int )
     """
 
     Executes an SNMP SET request on multiple OIDs. The result is returned as
@@ -258,10 +266,11 @@ def multiset(ip: str, community: str, mappings: List[Tuple[str, Type]],
     packet = Sequence(Integer(Version.V2C),
                       OctetString(community),
                       request)
-    response = send(ip, port, bytes(packet), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     output = {
-        str(oid): value.pythonize() for oid, value in raw_response[2].varbinds
+        unicode(oid): value.pythonize()
+        for oid, value in raw_response[2].varbinds
     }
     if len(output) != len(mappings):
         raise SnmpError('Unexpected response. Expected %d varbinds, '
@@ -350,7 +359,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
         BulkGetRequest(get_request_id(), non_repeaters, max_list_size, *oids)
     )
 
-    response = send(ip, port, bytes(packet), timeout=timeout)
+    response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
 
     # See RFC=3416 for details of the following calculation
@@ -369,12 +378,12 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     repeating_tmp = raw_response[2].varbinds[len(scalar_oids):]
 
     # prepare output for scalar OIDs
-    scalar_out = {str(oid): value.pythonize() for oid, value in scalar_tmp}
+    scalar_out = {unicode(oid): value.pythonize() for oid, value in scalar_tmp}
 
     # prepare output for listing
     repeating_out = OrderedDict()
     for oid, value in repeating_tmp:
-        repeating_out[str(oid)] = value.pythonize()
+        repeating_out[unicode(oid)] = value.pythonize()
 
     return BulkResult(scalar_out, repeating_out)
 
@@ -434,8 +443,8 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         yield VarBind(oid, value)
 
 
-def table(ip: str, community: str, oid: str, port: int=161,
-          num_base_nodes: int=0):
+def table(ip, community, oid, port=161, num_base_nodes=0):
+    # type ( str, str, str, int, int )
     """
     Run a series of GETNEXT requests on an OID and construct a table from the
     result.
