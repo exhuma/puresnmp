@@ -37,20 +37,21 @@ Depending on type, you may also want to override certain methods. See
 """
 # pylint: disable=abstract-method, missing-docstring
 
-from __future__ import unicode_literals, print_function, division
+from __future__ import division, print_function, unicode_literals
+
+import warnings
 
 import six
-import sys
-import warnings
+from six.moves import zip_longest
+
+from .util import (TypeInfo, decode_length, encode_length, int_from_bytes,
+                   to_bytes)
 
 try:
     unicode
 except NameError:
-    unicode = str
-from six.moves import zip_longest
+    unicode = str  # pylint: disable=invalid-name
 
-from .util import decode_length, encode_length, TypeInfo, int_from_bytes, \
-    to_bytes
 
 
 class Registry(type):
@@ -150,12 +151,13 @@ class Type(object):
     def decode(cls, data):  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
-        of the object. That means, the octets *without* the type information and
-        length.
+        of the object. That means, the octets *without* the type information
+        and length.
 
         This function must be overridden by the concrete subclasses.
         """
-        raise NotImplementedError('Decoding is not yet implemented on %s' % cls)
+        raise NotImplementedError(
+            'Decoding is not yet implemented on %s' % cls)
 
     def __bytes__(self):  # pragma: no cover
         """
@@ -356,7 +358,8 @@ class Sequence(Type):
         output = [to_bytes(item) for item in self]
         output = b''.join(output)
         length = encode_length(len(output))
-        tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, Sequence.TAG)
+        tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED,
+                         Sequence.TAG)
         return to_bytes(tinfo) + length + output
 
     def __eq__(self, other):
@@ -397,6 +400,7 @@ class Integer(Type):
         self.value = value
 
     def __bytes__(self):
+        # pylint: disable=line-too-long
         if self.value == 0:
             octets = [0]
         else:
@@ -484,8 +488,8 @@ class ObjectIdentifier(Type):
         remaining = six.iterbytes(data[1:])
 
         for char in remaining:
-            # Each node can only contain values from 0-127. Other values need to
-            # be combined.
+            # Each node can only contain values from 0-127. Other values need
+            # to be combined.
             if char > 127:
                 collapsed_value = ObjectIdentifier.decode_large_value(
                     char, remaining)
@@ -508,6 +512,8 @@ class ObjectIdentifier(Type):
         return ObjectIdentifier(*identifiers)
 
     def __init__(self, *identifiers):
+        # pylint: disable=line-too-long
+
         # If the user hands in an iterable, instead of positional arguments,
         # make sure we unpack it
         if len(identifiers) == 1 and not isinstance(identifiers[0], int):
@@ -516,7 +522,7 @@ class ObjectIdentifier(Type):
         if len(identifiers) > 1:
             # The first two bytes are collapsed according to X.690
             # See https://en.wikipedia.org/wiki/X.690#BER_encoding
-            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]  # NOQA
+            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
             first_output = (40*first) + second
         else:
             first_output = 1
@@ -555,7 +561,7 @@ class ObjectIdentifier(Type):
         return 'ObjectIdentifier(%r)' % (self.identifiers, )
 
     def __eq__(self, other):
-        # pylint: disable=unidiomatic-typecheck
+        # pylint: disable=unidiomatic-typecheck, protected-access
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
 

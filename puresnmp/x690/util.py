@@ -1,24 +1,25 @@
 """
 Utility functions for working with the X.690 and related standards.
 """
-from __future__ import unicode_literals, print_function, division
+from __future__ import division, print_function, unicode_literals
+
 from binascii import hexlify, unhexlify
 from collections import namedtuple
-from typing import Tuple, Union, List, Any
+
 import six
-import sys
 
 from ..const import Length
 
 try:
+    # pylint: disable=invalid-name
     int_from_bytes = int.from_bytes
 except AttributeError:
-    def int_from_bytes(bytes, byteorder, signed=False):
-        bytes = bytearray(bytes)
+    def int_from_bytes(bytes_, byteorder, signed=False):
+        bytes_ = bytearray(bytes_)
         if byteorder == 'little':
-            little_ordered = list(bytes)
+            little_ordered = list(bytes_)
         elif byteorder == 'big':
-            little_ordered = list(reversed(bytes))
+            little_ordered = list(reversed(bytes_))
         n = sum(b << 8*i for i, b in enumerate(little_ordered))
         if signed and little_ordered and (little_ordered[-1] & 0x80):
             n -= 1 << 8*len(little_ordered)
@@ -31,7 +32,7 @@ if six.PY2:
         else:
             return bytes(bytearray(x))
 else:
-    unicode = str
+    unicode = str  # pylint: disable=invalid-name
 
     def to_bytes(x):
         try:

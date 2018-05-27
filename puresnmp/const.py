@@ -1,6 +1,6 @@
 """
-This file contains various values used to avoid magic numbers and strings in the
-application.
+This file contains various values used to avoid magic numbers and strings in
+the application.
 """
 # pylint: disable=too-few-public-methods
 

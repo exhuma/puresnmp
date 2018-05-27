@@ -1,11 +1,27 @@
 [MASTER]
 ignore=.git env
 
+[BASIC]
+good-names=i,
+    j,
+    k,
+    n,
+    m,
+    ex,
+    ip,
+    Run,
+    _
+
+
+
 [MESSAGES CONTROL]
-# "bad-whitespace" is temporarily disabled as fixing them would cause conflicts
-# with PR #32
-disable=bad-whitespace,
-        duplicate-code
+disable=duplicate-code,
+        no-else-return,
+        fixme
+
+[DESIGN]
+max-locals=25
+max-args=8
 
 [REPORTS]
 output-format=colorized
@@ -13,5 +29,5 @@ reports=no
 
 [FORMAT]
 expected-line-ending-format=LF
-ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+ignore-long-lines=(^\s*(# )?<?https?://\S+>?$|.*VarBind.*ObjectIdentifier.*|# TODO)
 max-line-length=79
