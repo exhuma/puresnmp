@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 """
 Test the "external" interface.
 

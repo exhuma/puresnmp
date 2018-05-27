@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import six
 import sys
 try:

@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import six
 from ...x690.types import ObjectIdentifier
 from ...x690.util import (

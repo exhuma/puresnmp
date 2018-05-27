@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from datetime import timedelta
 
 from . import ByteTester

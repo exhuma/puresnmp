@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import six
 from ..exc import SnmpError
 from ..x690.types import (
