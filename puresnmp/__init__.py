@@ -437,7 +437,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 38)), value='0.0')
     """
 
-    result = multiwalk(ip, community, oids, port=161,
+    result = multiwalk(ip, community, oids, port=port,
                        fetcher=_bulkwalk_fetcher(bulk_size))
     for oid, value in result:
         yield VarBind(oid, value)
