@@ -12,7 +12,7 @@ import six
 from ..const import Length
 
 if TYPE_CHECKING:
-    # pylint: disable=unused-import
+    # pylint: disable=unused-import, cyclic-import
     from typing import Any, Dict, List, Union, Tuple
     from .types import Type
 
