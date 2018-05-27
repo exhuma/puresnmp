@@ -14,7 +14,7 @@ Contents
    cookbook/index
    status
    design_decisions
-   contributing
+   CONTRIBUTING
    developer_guide/index
    glossary
    typetree
