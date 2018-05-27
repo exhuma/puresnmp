@@ -330,7 +330,7 @@ class OctetString(Type):
             self.value = value.encode('ascii')
         else:
             self.value = value
-        self.length = encode_length(len(value))
+        self.length = encode_length(len(self.value))
 
     def __bytes__(self):
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
