@@ -5,10 +5,16 @@ from __future__ import division, print_function, unicode_literals
 
 from binascii import hexlify, unhexlify
 from collections import namedtuple
+from typing import TYPE_CHECKING
 
 import six
 
 from ..const import Length
+
+if TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from typing import Any, Dict, List, Union, Tuple
+    from .types import Type
 
 try:
     # pylint: disable=invalid-name
@@ -322,7 +328,7 @@ def tablify(varbinds, num_base_nodes=0):
             {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
         ]
     """
-    rows = {}
+    rows = {}  # type: Dict[str, Dict[str, Type]]
     for oid, value in varbinds:
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]

@@ -12,6 +12,7 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       "puresnmp.get", "puresnmp.walk" & co.
 
 from collections import namedtuple
+from typing import TYPE_CHECKING
 import six
 
 from .const import MAX_VARBINDS
@@ -27,10 +28,15 @@ from .x690.types import (
 )
 from .x690.util import to_bytes, TypeInfo
 
+if TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from typing import Any, Callable
+
 try:
-    unicode
+    unicode  # type: Callable[[Any], str]
 except NameError:
-    unicode = str  # pylint: disable=invalid-name
+    # pylint: disable=invalid-name
+    unicode = str  # type: Callable[[Any], str]
 
 
 class VarBind(namedtuple('VarBind', 'oid, value')):

@@ -29,5 +29,5 @@ reports=no
 
 [FORMAT]
 expected-line-ending-format=LF
-ignore-long-lines=(^\s*(# )?<?https?://\S+>?$|.*VarBind.*ObjectIdentifier.*|# TODO)
+ignore-long-lines=(^\s*(# )?<?https?://\S+>?$|.*VarBind.*ObjectIdentifier.*|# TODO|# type:)
 max-line-length=79

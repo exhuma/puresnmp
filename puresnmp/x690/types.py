@@ -40,6 +40,7 @@ Depending on type, you may also want to override certain methods. See
 from __future__ import division, print_function, unicode_literals
 
 import warnings
+from typing import Union, TYPE_CHECKING
 
 import six
 from six.moves import zip_longest
@@ -47,16 +48,26 @@ from six.moves import zip_longest
 from .util import (TypeInfo, decode_length, encode_length, int_from_bytes,
                    to_bytes)
 
-try:
-    unicode
-except NameError:
-    unicode = str  # pylint: disable=invalid-name
 
+if TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from typing import Any, Callable, Dict, Tuple
+
+try:
+    unicode  # type: Callable[[Any], str]
+except NameError:
+    # pylint: disable=invalid-name
+    unicode = str  # type: Callable[[Any], str]
+
+
+# A type alias for mypy. This should contain all possible return values of the
+# `pythonize` method
+Pythonized = Union[bytes, int, str]  # pylint:disable=invalid-name
 
 
 class Registry(type):
 
-    __registry = {}
+    __registry = {}  # type: Dict[Tuple[str, int], type]
 
     def __new__(mcs, name, parents, dict_):
         new_cls = super(Registry, mcs).__new__(mcs, name, parents, dict_)
