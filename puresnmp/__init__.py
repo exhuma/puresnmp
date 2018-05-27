@@ -42,7 +42,7 @@ from .util import (
 try:
     unicode
 except NameError:
-    unicode = str
+    unicode = str  # pylint: disable=invalid-name
 
 __version__ = resource_string('puresnmp',
                               'version.txt').decode('ascii').strip()
@@ -56,7 +56,8 @@ LOG = logging.getLogger(__name__)
 def get(ip, community, oid, port=161, timeout=2):
     # type: ( str, str, str, int, int )
     """
-    Executes a simple SNMP GET request and returns a pure Python data structure.
+    Executes a simple SNMP GET request and returns a pure Python data
+    structure.
 
     Example::
 
@@ -171,8 +172,8 @@ def multiwalk(ip, community, oids, port=161, fetcher=multigetnext):
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
 
-    This is the same as :py:func:`~.walk` except that it is capable of iterating
-    over multiple OIDs at the same time.
+    This is the same as :py:func:`~.walk` except that it is capable of
+    iterating over multiple OIDs at the same time.
 
     Example::
 
@@ -208,14 +209,14 @@ def multiwalk(ip, community, oids, port=161, fetcher=multigetnext):
         LOG.debug('%d of %d OIDs need to be continued',
                   len(unfinished_oids),
                   len(oids))
-        for k, v in group_varbinds(varbinds, next_fetches).items():
-            for ko, vo in output.items():
-                if k in ko:
-                    vo.extend(v)
+        for key, value in group_varbinds(varbinds, next_fetches).items():
+            for out_key, out_value in output.items():
+                if key in out_key:
+                    out_value.extend(value)
 
     yielded = _set([])
-    for v in output.values():
-        for varbind in v:
+    for value in output.values():
+        for varbind in value:
             containment = [varbind.oid in _ for _ in requested_oids]
             if not any(containment) or varbind.oid in yielded:
                 continue
@@ -223,7 +224,7 @@ def multiwalk(ip, community, oids, port=161, fetcher=multigetnext):
             yield varbind
 
 
-def set(ip, community, oid, value, port=161, timeout=2):
+def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
     # type: ( str, str, str, Type, int, int )
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
@@ -281,17 +282,18 @@ def multiset(ip, community, mappings, port=161, timeout=2):
 def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
             port=161, timeout=2):
     """
-    Runs a "bulk" get operation and returns a :py:class:`~.BulkResult` instance.
-    This contains both a mapping for the scalar variables (the "non-repeaters")
-    and an OrderedDict instance containing the remaining list (the "repeaters").
+    Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
+    instance.  This contains both a mapping for the scalar variables (the
+    "non-repeaters") and an OrderedDict instance containing the remaining list
+    (the "repeaters").
 
     The OrderedDict is ordered the same way as the SNMP response (whatever the
     remote device returns).
 
     This operation can retrieve both single/scalar values *and* lists of values
-    ("repeating values") in one single request. You can for example retrieve the
-    hostname (a scalar value), the list of interfaces (a repeating value) and
-    the list of physical entities (another repeating value) in one single
+    ("repeating values") in one single request. You can for example retrieve
+    the hostname (a scalar value), the list of interfaces (a repeating value)
+    and the list of physical entities (another repeating value) in one single
     request.
 
     Note that this behaves like a **getnext** request for scalar values! So you
@@ -365,7 +367,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     # See RFC=3416 for details of the following calculation
     n = min(non_repeaters, len(oids))
     m = max_list_size
-    r = max(len(oids) - n, 0)
+    r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
     expected_max_varbinds = n + (m * r)
 
     if len(raw_response[2].varbinds) > expected_max_varbinds:
@@ -392,13 +394,16 @@ def _bulkwalk_fetcher(bulk_size=10):
     """
     Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
     """
-    def fun(ip, community, oids, port=161):
+    def fetcher(ip, community, oids, port=161):
+        '''
+        Executes a SNMP BulkGet request.
+        '''
         result = bulkget(ip, community, [], oids, max_list_size=bulk_size,
                          port=port)
         return [VarBind(ObjectIdentifier.from_string(k), v)
                 for k, v in result.listing.items()]
-    fun.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
-    return fun
+    fetcher.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
+    return fetcher
 
 
 def bulkwalk(ip, community, oids, bulk_size=10, port=161):
@@ -437,7 +442,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 38)), value='0.0')
     """
 
-    result = multiwalk(ip, community, oids, port=161,
+    result = multiwalk(ip, community, oids, port=port,
                        fetcher=_bulkwalk_fetcher(bulk_size))
     for oid, value in result:
         yield VarBind(oid, value)
@@ -452,8 +457,8 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     The table is a row of dicts. The key of each dict is the row ID. By default
     that is the **last** node of the OID tree.
 
-    If the rows are identified by multiple nodes, you need to secify the base by
-    setting *walk* to a non-zero value.
+    If the rows are identified by multiple nodes, you need to secify the base
+    by setting *walk* to a non-zero value.
     """
     tmp = walk(ip, community, oid, port=port)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)

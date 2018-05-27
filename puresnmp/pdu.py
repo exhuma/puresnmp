@@ -27,8 +27,17 @@ from .x690.types import (
 )
 from .x690.util import to_bytes, TypeInfo
 
+try:
+    unicode
+except NameError:
+    unicode = str  # pylint: disable=invalid-name
+
 
 class VarBind(namedtuple('VarBind', 'oid, value')):
+    '''
+    A "VarBind" is a 2-tuple containing an object-identifier and the
+    corresponding value.
+    '''
 
     def __new__(cls, oid, value):
         if not isinstance(oid, (ObjectIdentifier,) + six.string_types):
@@ -166,7 +175,7 @@ class GetRequest(PDU):
             else:
                 wrapped_oids.append(oid)
         super(GetRequest, self).__init__(request_id, [VarBind(oid, Null())
-                                         for oid in wrapped_oids])
+                                                      for oid in wrapped_oids])
 
 
 class GetResponse(PDU):

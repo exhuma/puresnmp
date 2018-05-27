@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from ..x690 import types as t
 from ..x690.util import TypeInfo
 from .. import types as apptype

@@ -69,16 +69,17 @@ available commands. A clear procedure for this has not yet been defined, but
 any information I can get, helps.
 
 
-Python 2 Support?
-~~~~~~~~~~~~~~~~~
+Code Style
+----------
 
-The library is currently deliberately targeted for Python 3. The reason is that
-asyncio support in Python 3 may be an interesting subject to check out in the
-future.
+As a Python project, the code should conform to PEP8_. To verify you should run
+pylint_ over your code. The project contains a local ``pylintrc`` with
+customised project settings.
 
-But Python 2 still exists and may need support. This is not on my highest
-priority however.
+As always, PEP8 is a *guideline* and you are free to add ``# pylint: disable
+...`` comments wherever it makes sense to get a clean ``pylint`` output.
 
 
-
+.. _PEP8: https://www.python.org/dev/peps/pep-0008/
+.. _pylint: https://www.pylint.org/
 .. _github: https://www.github.com/exhuma/puresnmp
