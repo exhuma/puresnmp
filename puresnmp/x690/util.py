@@ -130,9 +130,6 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         output = cls << 6 | priv_const << 5 | self.tag
         return to_bytes([output])
 
-    def __eq__(self, other):
-        return super(TypeInfo, self).__eq__(other)
-
     if six.PY2:
         def __unicode__(self):
             return repr(self)
@@ -140,19 +137,19 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         def __str__(self):
             return self.__bytes__()
 
-
 def encode_length(value):
     """
     This function encodes the length of a variable into bytes conforming to the
-    rules defined in :term:`X.690`: The "length" field must be specially encoded
-    for values above 127.  Additionally, from :term:`X.690`:
+    rules defined in :term:`X.690`: The "length" field must be specially
+    encoded for values above 127.  Additionally, from :term:`X.690`:
 
         8.1.3.2 A sender shall:
 
-            a) use the definite form (see 8.1.3.3) if the encoding is primitive;
-            b) use either the definite form (see 8.1.3.3) or the indefinite form
-               (see 8.1.3.6), a sender's option, if the encoding is constructed
-               and all immediately available;
+            a) use the definite form (see 8.1.3.3) if the encoding is
+               primitive;
+            b) use either the definite form (see 8.1.3.3) or the indefinite
+               form (see 8.1.3.6), a sender's option, if the encoding is
+               constructed and all immediately available;
             c) use the indefinite form (see 8.1.3.6) if the encoding is
                constructed and is not all immediately available.
 
@@ -192,8 +189,9 @@ def decode_length(data):
 
     For values which are longer than 127 bytes, the length must be encoded into
     an unknown amount of "length" bytes. This function reads as many bytes as
-    needed for the length. The return value contains the parsed length in number
-    of bytes, and the remaining data bytes which follow the length bytes.
+    needed for the length. The return value contains the parsed length in
+    number of bytes, and the remaining data bytes which follow the length
+    bytes.
 
     Examples::
 
@@ -218,7 +216,8 @@ def decode_length(data):
         data = data[1:]
     elif data0 ^ 0b10000000 == 0:
         # indefinite form
-        raise NotImplementedError('Indefinite lengths not yet implemented!')
+        raise NotImplementedError('Indefinite lenghts are '
+                                  'not yet implemented!')
     else:
         # definite long form
         num_octets = int_from_bytes([data0 ^ 0b10000000], 'big')
