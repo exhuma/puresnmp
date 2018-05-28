@@ -92,6 +92,23 @@ class TestObjectIdentifier(ByteTester):
         result = ObjectIdentifier.from_bytes(b'\x06\x05\x2b\x06\x01\x02\x01')
         self.assertEqual(result, expected)
 
+    def test_decoding_zero(self):
+        """
+        A simple OID with the top-level ID '0'
+        """
+        expected = ObjectIdentifier(0)
+        result = ObjectIdentifier.from_bytes(b'\x06\x00')
+        self.assertEqual(result, expected)
+
+    def test_encoding_zero(self):
+        """
+        A simple OID with the top-level ID '0'
+        """
+        oid = ObjectIdentifier(0)
+        result = to_bytes(oid)
+        expected = b'\x06\x00'
+        self.assertEqual(result, expected)
+
     def test_multibyte_encoding(self):
         """
         If a sub-identifier has a value bigger than 127, the encoding becomes a

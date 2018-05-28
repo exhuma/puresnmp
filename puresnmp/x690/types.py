@@ -491,6 +491,12 @@ class ObjectIdentifier(Type):
 
     @classmethod
     def decode(cls, data):
+
+        # Special case for "empty" object identifiers which should be returned
+        # as "0"
+        if not data:
+            return ObjectIdentifier(0)
+
         # unpack the first byte into first and second sub-identifiers.
         data0 = six.byte2int(data)
         first, second = data0 // 40, data0 % 40
@@ -536,7 +542,7 @@ class ObjectIdentifier(Type):
             first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
             first_output = (40*first) + second
         else:
-            first_output = 1
+            first_output = identifiers[0]
             rest = []
 
         # Values above 127 need a special encoding. They get split up into
@@ -558,8 +564,12 @@ class ObjectIdentifier(Type):
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __bytes__(self):
-        return to_bytes([self.TAG]) + self.length + to_bytes(
-            self.__collapsed_identifiers)
+        output = to_bytes([self.TAG])
+        if self.__collapsed_identifiers == (0,):
+            output += b'\x00'
+        else:
+            output += self.length + to_bytes(self.__collapsed_identifiers)
+        return output
 
     if six.PY2:
         def __unicode__(self):
