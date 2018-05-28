@@ -192,13 +192,13 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     LOG.debug('%d of %d OIDs need to be continued',
               len(unfinished_oids),
               len(oids))
-    yielded = _set([])
+    yielded = _set([])  # type: ignore
     for var in group_varbinds(varbinds, requested_oids).values():
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
-            if not any(containment) or varbind.oid in yielded:
+            if not any(containment) or varbind.oid in yielded:  # type: ignore
                 continue
-            yielded.add(varbind.oid)
+            yielded.add(varbind.oid)  # type: ignore
             yield varbind
 
     # As long as we have unfinished OIDs, we need to continue the walk for
@@ -223,9 +223,9 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
         for var in group_varbinds(varbinds, next_fetches).values():
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
-                if not any(containment) or varbind.oid in yielded:
+                if not any(containment) or varbind.oid in yielded:  # type: ignore
                     continue
-                yielded.add(varbind.oid)
+                yielded.add(varbind.oid)  # type: ignore
                 yield varbind
 
 

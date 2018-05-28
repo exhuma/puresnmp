@@ -2,12 +2,20 @@
 Colleciton of utility functions for the puresnmp package.
 '''
 from collections import namedtuple
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from typing import Dict, List, Tuple
+    from .pdu import VarBind
+    from .x690.types import ObjectIdentifier
 
 
 WalkRow = namedtuple('WalkRow', 'value unfinished')
 
 
 def group_varbinds(varbinds, effective_roots, user_roots=None):
+    # type: (List[VarBind], List[ObjectIdentifier], List[ObjectIdentifier]) -> Dict[ObjectIdentifier, List[VarBind]]
     """
     Takes a list of varbinds and a list of base OIDs and returns a mapping from
     those base IDs to lists of varbinds.
@@ -21,7 +29,7 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
         requested by the user. This list will keep track of the original OIDs
         to determine when the walk needs to terminate.
     """
-    user_roots = user_roots or {}
+    user_roots = user_roots or []
     n = len(effective_roots)
 
     results = {}
@@ -45,6 +53,7 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
 
 
 def get_unfinished_walk_oids(grouped_oids):
+    # type: (Dict[ObjectIdentifier, List[VarBind]]) -> List[Tuple[ObjectIdentifier, WalkRow]]
     """
     :param grouped_oids: A dictionary containing VarBinds as values. The keys
         are the base OID of those VarBinds as requested by the user. We need to
