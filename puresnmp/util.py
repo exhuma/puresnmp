@@ -20,11 +20,11 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
     Takes a list of varbinds and a list of base OIDs and returns a mapping from
     those base IDs to lists of varbinds.
 
-    :param varbinds: A list of VarBind instnaces.
+    :param varbinds: A list of VarBind instances.
     :param effective_roots: The list of OIDs that were requested from the SNMP
         agent.
-    :param user_roots: The list of VarBind instances that were requested by the
-        user. This is used internally for walk requests. On each requests
+    :param user_roots: The set of VarBind instances that were requested by the
+        user. This is used internally for walk requests. On each request
         following the first, the requested OIDs will differ from the OIDs
         requested by the user. This list will keep track of the original OIDs
         to determine when the walk needs to terminate.
