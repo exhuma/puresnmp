@@ -1,11 +1,22 @@
+"""
+This module contains the high-level functions to access the library. Care is
+taken to make this as pythonic as possible and hide as many of the gory
+implementations as possible.
+"""
+
+# TODO (advanced): This module should not make use of it's own functions. The
+#     module exists as an abstraction layer only. If one function uses a
+#     "siblng" function, valuable information is lost. In general, this module
+#     is beginning to be too "thick", containing too much business logic for a
+#     mere abstraction layer.
 from collections import OrderedDict, namedtuple
 from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
 import logging
 
 from pkg_resources import resource_string
 
-from . import types, BulkResult  # NOQA (must be here for type detection)
-from .x690.types import (
+from .. import types  # NOQA (must be here for type detection)
+from ..x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
@@ -13,18 +24,19 @@ from .x690.types import (
     Sequence,
     Type,
 )
-from .x690.util import to_bytes, tablify
-from .exc import SnmpError, NoSuchOID
-from .pdu import (
+from ..x690.util import to_bytes, tablify
+from ..exc import SnmpError, NoSuchOID
+from ..pdu import (
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
     SetRequest,
     VarBind,
 )
-from .const import Version
-from .transport import send, get_request_id
-from .util import (
+from ..const import Version
+from ..transport import send, get_request_id
+from ..util import (
+    BulkResult,
     get_unfinished_walk_oids,
     group_varbinds,
 )
@@ -35,6 +47,8 @@ except NameError:
     # pylint: disable=invalid-name
     unicode = str  # type: Callable[[Any], str]
 
+__version__ = resource_string('puresnmp',
+                              'version.txt').decode('ascii').strip()
 _set = set
 
 LOG = logging.getLogger(__name__)
@@ -78,7 +92,7 @@ def multiget(ip, community, oids, port=161, timeout=2):
     response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
 
-    output = [value for _, value in raw_response[2].varbinds]
+    output = [value.pythonize() for _, value in raw_response[2].varbinds]
     if len(output) != len(oids):
         raise SnmpError('Unexpected response. Expected %d varbind, '
                         'but got %d!' % (len(oids), len(output)))
@@ -127,8 +141,8 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
         raise SnmpError(
             'Invalid response! Expected exactly %d varbind, '
             'but got %d' % (len(oids), len(response_object.varbinds)))
-    output = [VarBind(oid, value) for oid, value in response_object.varbinds]
-    return output
+    return [VarBind(oid, value.pythonize())
+            for oid, value in response_object.varbinds]
 
 
 def walk(ip, community, oid, port=161, timeout=2):
@@ -261,7 +275,7 @@ def multiset(ip, community, mappings, port=161, timeout=2):
     response = send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     output = {
-        unicode(oid): value
+        unicode(oid): value.pythonize()
         for oid, value in raw_response[2].varbinds
     }
     if len(output) != len(mappings):
@@ -372,15 +386,12 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     repeating_tmp = raw_response[2].varbinds[len(scalar_oids):]
 
     # prepare output for scalar OIDs
-    scalar_out = {
-        unicode(oid): value
-        for oid, value in scalar_tmp
-    }
+    scalar_out = {unicode(oid): value.pythonize() for oid, value in scalar_tmp}
 
     # prepare output for listing
     repeating_out = OrderedDict()  # type: Dict[str, Pythonized]
     for oid, value in repeating_tmp:
-        repeating_out[unicode(oid)] = value
+        repeating_out[unicode(oid)] = value.pythonize()
 
     return BulkResult(scalar_out, repeating_out)
 
@@ -460,3 +471,4 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     tmp = walk(ip, community, oid, port=port)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
+

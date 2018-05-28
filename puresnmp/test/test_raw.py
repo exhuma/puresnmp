@@ -12,13 +12,13 @@ from datetime import timedelta
 
 import six
 
-from puresnmp import BulkResult
+from puresnmp.api.raw import (bulkget, bulkwalk, get, getnext, multiget,
+                              multiset, multiwalk, set, table, walk)
 from puresnmp.const import Version
 from puresnmp.exc import NoSuchOID, SnmpError
 from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
-from puresnmp.raw import (bulkget, bulkwalk, get, getnext, multiget, multiset,
-                          multiwalk, set, table, walk)
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
+from puresnmp.util import BulkResult
 from puresnmp.x690.types import (Integer, ObjectIdentifier, OctetString,
                                  Sequence, to_bytes)
 
@@ -39,7 +39,7 @@ class TestGet(ByteTester):
         expected = OctetString(
             b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
             b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
@@ -47,7 +47,7 @@ class TestGet(ByteTester):
     def test_get_oid(self):
         data = readbytes('get_sysoid_01.hex')
         expected = ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10')
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
@@ -68,7 +68,7 @@ class TestWalk(unittest.TestCase):
             Gauge(4294967295)
         )]
 
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.side_effect = [response_1, response_2, response_3]
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
@@ -84,7 +84,7 @@ class TestMultiGet(unittest.TestCase):
                         b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
                         b"UTC 2016 x86_64")
         ]
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data
             result = multiget('::1', 'private', [
                 '1.3.6.1.2.1.1.2.0',
@@ -112,7 +112,7 @@ class TestMultiWalk(unittest.TestCase):
             OctetString(b'eth0')
         )]
 
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.side_effect = [response_1, response_2, response_3]
             result = list(multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
@@ -132,7 +132,7 @@ class TestMultiSet(unittest.TestCase):
               unit-testing. It probably has a different type in the real world!
         """
         data = readbytes('multiset_response.hex')
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data
             result = multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
@@ -151,7 +151,7 @@ class TestGetNext(unittest.TestCase):
         data = readbytes('getnext_response.hex')
         expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
 
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data
             result = getnext('::1', 'private', '1.3.6.1.5')
         self.assertEqual(result, expected)
@@ -173,7 +173,7 @@ class TestGetBulkGet(unittest.TestCase):
              '1.3.6.1.2.1.4.1.0': Integer(1),
              '1.3.6.1.2.1.4.3.0': Counter(57)})
 
-        with patch('puresnmp.raw.send') as mck:
+        with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data
             result = bulkget('::1', 'public',
                              ['1.3.6.1.2.1.1.1'],
@@ -184,8 +184,8 @@ class TestGetBulkGet(unittest.TestCase):
 
 class TestGetBulkWalk(unittest.TestCase):
 
-    @patch('puresnmp.raw.send')
-    @patch('puresnmp.raw.get_request_id')
+    @patch('puresnmp.api.raw.send')
+    @patch('puresnmp.api.raw.get_request_id')
     def test_bulkwalk(self, mck_rid, mck_send):
         req1 = readbytes('bulkwalk_request_1.hex')
         req2 = readbytes('bulkwalk_request_2.hex')

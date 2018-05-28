@@ -15,8 +15,7 @@ except ImportError:
     from mock import patch, call  # pip install mock
 import unittest
 
-from puresnmp import (
-    BulkResult,
+from puresnmp.api.pythonic import (
     bulkget,
     bulkwalk,
     get,
@@ -31,6 +30,7 @@ from puresnmp import (
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
 from puresnmp.pdu import GetRequest, VarBind, GetNextRequest, BulkGetRequest
+from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
     Integer,
     ObjectIdentifier,
@@ -54,8 +54,8 @@ class TestGet(ByteTester):
             OctetString('public'),
             GetRequest(0, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.send') as mck, \
-                patch('puresnmp.get_request_id') as mck2:
+        with patch('puresnmp.api.pythonic.send') as mck, \
+                patch('puresnmp.api.pythonic.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
             get('::1', 'public', '1.2.3')
@@ -65,7 +65,7 @@ class TestGet(ByteTester):
         data = readbytes('get_sysdescr_01.hex')
         expected = (b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
                     b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
@@ -73,7 +73,7 @@ class TestGet(ByteTester):
     def test_get_oid(self):
         data = readbytes('get_sysoid_01.hex')
         expected = ('1.3.6.1.4.1.8072.3.2.10')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
@@ -83,7 +83,7 @@ class TestGet(ByteTester):
         A "GET" response should only return one varbind.
         """
         data = readbytes('get_sysoid_01_error.hex')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 get('::1', 'private', '1.2.3')
@@ -94,7 +94,7 @@ class TestGet(ByteTester):
         exception.
         """
         data = readbytes('get_non_existing.hex')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             with self.assertRaises(NoSuchOID):
                 get('::1', 'private', '1.2.3')
@@ -113,7 +113,7 @@ class TestWalk(unittest.TestCase):
             ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'), 4294967295
         )]
 
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.side_effect = [response_1, response_2, response_3]
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
@@ -123,7 +123,7 @@ class TestWalk(unittest.TestCase):
         A "WALK" response should only return one varbind.
         """
         data = readbytes('get_sysoid_01_error.hex')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 next(walk('::1', 'private', '1.2.3'))
@@ -136,13 +136,13 @@ class TestSet(unittest.TestCase):
         As we need typing information, we have to hand in an instance of
         supported types (a subclass of puresnmp.x690.Type).
         """
-        with patch('puresnmp.send'):
+        with patch('puresnmp.api.pythonic.send'):
             with six.assertRaisesRegex(self, TypeError, 'Type'):
                 set('::1', 'private', '1.2.3', 12)
 
     def test_set(self):
         data = readbytes('set_response.hex')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             set('::1', 'private', '1.3.6.1.2.1.1.4.0',
                 OctetString(b'hello@world.com'))
@@ -152,7 +152,7 @@ class TestSet(unittest.TestCase):
         SET responses should only contain one varbind.
         """
         data = readbytes('set_response_multiple.hex')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 set('::1', 'private', '1.3.6.1.2.1.1.4.0',
@@ -166,7 +166,7 @@ class TestMultiGet(unittest.TestCase):
         expected = ['1.3.6.1.4.1.8072.3.2.10',
                     b"Linux 7fbf2f0c363d 4.4.0-28-generic #47-Ubuntu SMP Fri "
                     b"Jun 24 10:09:13 UTC 2016 x86_64"]
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             result = multiget('::1', 'private', [
                 '1.3.6.1.2.1.1.2.0',
@@ -192,7 +192,7 @@ class TestMultiWalk(unittest.TestCase):
             ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'), b'eth0'
         )]
 
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.side_effect = [response_1, response_2, response_3]
             result = list(multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
@@ -212,7 +212,7 @@ class TestMultiSet(unittest.TestCase):
               unit-testing. It probably has a different type in the real world!
         """
         data = readbytes('multiset_response.hex')
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             result = multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
@@ -234,8 +234,8 @@ class TestGetNext(unittest.TestCase):
             OctetString('public'),
             GetNextRequest(0, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.send') as mck, \
-                patch('puresnmp.get_request_id') as mck2:
+        with patch('puresnmp.api.pythonic.send') as mck, \
+                patch('puresnmp.api.pythonic.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
             getnext('::1', 'public', '1.2.3')
@@ -245,7 +245,7 @@ class TestGetNext(unittest.TestCase):
         data = readbytes('getnext_response.hex')
         expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', 354522558)
 
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             result = getnext('::1', 'private', '1.3.6.1.5')
         self.assertEqual(result, expected)
@@ -262,8 +262,8 @@ class TestGetBulkGet(unittest.TestCase):
                            ObjectIdentifier(1, 2, 3),
                            ObjectIdentifier(1, 2, 4))
         )
-        with patch('puresnmp.send') as mck, \
-                patch('puresnmp.get_request_id') as mck2:
+        with patch('puresnmp.api.pythonic.send') as mck, \
+                patch('puresnmp.api.pythonic.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
             bulkget('::1', 'public',
@@ -284,7 +284,7 @@ class TestGetBulkGet(unittest.TestCase):
              '1.3.6.1.2.1.4.1.0': 1,
              '1.3.6.1.2.1.4.3.0': 57})
 
-        with patch('puresnmp.send') as mck:
+        with patch('puresnmp.api.pythonic.send') as mck:
             mck.return_value = data
             result = bulkget('::1', 'public',
                              ['1.3.6.1.2.1.1.1'],
@@ -302,8 +302,8 @@ class TestGetBulkWalk(unittest.TestCase):
             OctetString('public'),
             BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.send') as mck, \
-                patch('puresnmp.get_request_id') as mck2:
+        with patch('puresnmp.api.pythonic.send') as mck, \
+                patch('puresnmp.api.pythonic.get_request_id') as mck2:
             mck2.return_value = 0
             mck.return_value = data
 
@@ -314,8 +314,8 @@ class TestGetBulkWalk(unittest.TestCase):
             mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
 
 
-    @patch('puresnmp.send')
-    @patch('puresnmp.get_request_id')
+    @patch('puresnmp.api.pythonic.send')
+    @patch('puresnmp.api.pythonic.get_request_id')
     def test_bulkwalk(self, mck_rid, mck_send):
         req1 = readbytes('bulkwalk_request_1.hex')
         req2 = readbytes('bulkwalk_request_2.hex')
@@ -440,9 +440,9 @@ class TestGetBulkWalk(unittest.TestCase):
 
 class TestGetTable(unittest.TestCase):
 
-    @patch('puresnmp.walk')
-    @patch('puresnmp.tablify')
-    @patch('puresnmp.get_request_id')
+    @patch('puresnmp.api.pythonic.walk')
+    @patch('puresnmp.api.pythonic.tablify')
+    @patch('puresnmp.api.pythonic.get_request_id')
     def test_table(self, mck_rid, mck_tablify, mck_walk):
         mck_rid.return_value = 0
         tmp = object()  # dummy return value
