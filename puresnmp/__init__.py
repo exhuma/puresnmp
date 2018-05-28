@@ -192,7 +192,14 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     LOG.debug('%d of %d OIDs need to be continued',
               len(unfinished_oids),
               len(oids))
-    output = group_varbinds(varbinds, requested_oids)
+    yielded = _set([])
+    for var in group_varbinds(varbinds, requested_oids).values():
+        for varbind in var:
+            containment = [varbind.oid in _ for _ in requested_oids]
+            if not any(containment) or varbind.oid in yielded:
+                continue
+            yielded.add(varbind.oid)
+            yield varbind
 
     # As long as we have unfinished OIDs, we need to continue the walk for
     # those.
@@ -213,19 +220,13 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
         LOG.debug('%d of %d OIDs need to be continued',
                   len(unfinished_oids),
                   len(oids))
-        for key, value in group_varbinds(varbinds, next_fetches).items():
-            for out_key, out_value in output.items():
-                if key in out_key:
-                    out_value.extend(value)
-
-    yielded = _set([])  # type: ignore
-    for value in output.values():
-        for varbind in value:
-            containment = [varbind.oid in _ for _ in requested_oids]
-            if not any(containment) or varbind.oid in yielded:  # type: ignore
-                continue
-            yielded.add(varbind.oid)  #type: ignore
-            yield varbind
+        for var in group_varbinds(varbinds, next_fetches).values():
+            for varbind in var:
+                containment = [varbind.oid in _ for _ in requested_oids]
+                if not any(containment) or varbind.oid in yielded:
+                    continue
+                yielded.add(varbind.oid)
+                yield varbind
 
 
 def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
