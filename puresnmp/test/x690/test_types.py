@@ -143,6 +143,15 @@ class TestObjectIdentifier(ByteTester):
         expected = ObjectIdentifier(1, 2, 3)
         self.assertEqual(result, expected)
 
+    def test_fromstring_leading_dot(self):
+        '''
+        A leading dot represents the "root" node. This should be allowed as
+        string input.
+        '''
+        result = ObjectIdentifier.from_string('.1.2.3')
+        expected = ObjectIdentifier(1, 2, 3)
+        self.assertEqual(result, expected)
+
     def test_pythonize(self):
         result = ObjectIdentifier(1, 2, 3).pythonize()
         expected = '1.2.3'

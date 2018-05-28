@@ -525,6 +525,9 @@ class ObjectIdentifier(Type):
         if value == '.':
             return ObjectIdentifier(1)
 
+        if isinstance(value, str) and value.startswith('.'):
+            value = value[1:]
+
         identifiers = [int(ident, 10) for ident in value.split('.')]
         return ObjectIdentifier(*identifiers)
 
