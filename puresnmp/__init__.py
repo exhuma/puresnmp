@@ -145,7 +145,7 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
             for oid, value in response_object.varbinds]
 
 
-def walk(ip, community, oid, port=161):
+def walk(ip, community, oid, port=161, timeout=2):
     # type: (str, str, str, int) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
@@ -166,7 +166,7 @@ def walk(ip, community, oid, port=161):
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
     """
 
-    return multiwalk(ip, community, [oid], port)
+    return multiwalk(ip, community, [oid], port, timeout=timeout)
 
 
 def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
