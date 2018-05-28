@@ -8,7 +8,6 @@ from ..x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
-    Pythonized,
     Sequence,
     Type,
 )
@@ -378,7 +377,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     }
 
     # prepare output for listing
-    repeating_out = OrderedDict()  # type: Dict[str, Pythonized]
+    repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
         repeating_out[unicode(oid)] = value
 

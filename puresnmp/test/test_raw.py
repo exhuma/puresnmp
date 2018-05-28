@@ -52,6 +52,27 @@ class TestGet(ByteTester):
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
 
+    def test_get_multiple_return_binds(self):
+        """
+        A "GET" response should only return one varbind.
+        """
+        data = readbytes('get_sysoid_01_error.hex')
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.return_value = data
+            with six.assertRaisesRegex(self, SnmpError, 'varbind'):
+                get('::1', 'private', '1.2.3')
+
+    def test_get_non_existing_oid(self):
+        """
+        A "GET" response on a non-existing OID should raise an appropriate
+        exception.
+        """
+        data = readbytes('get_non_existing.hex')
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.return_value = data
+            with self.assertRaises(NoSuchOID):
+                get('::1', 'private', '1.2.3')
+
 
 class TestWalk(unittest.TestCase):
 
@@ -72,6 +93,16 @@ class TestWalk(unittest.TestCase):
             mck.side_effect = [response_1, response_2, response_3]
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
+
+    def test_walk_multiple_return_binds(self):
+        """
+        A "WALK" response should only return one varbind.
+        """
+        data = readbytes('get_sysoid_01_error.hex')
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.return_value = data
+            with six.assertRaisesRegex(self, SnmpError, 'varbind'):
+                next(walk('::1', 'private', '1.2.3'))
 
 
 class TestMultiGet(unittest.TestCase):
@@ -147,6 +178,20 @@ class TestMultiSet(unittest.TestCase):
 
 class TestGetNext(unittest.TestCase):
 
+    def test_get_call_args(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            GetNextRequest(0, ObjectIdentifier(1, 2, 3))
+        )
+        with patch('puresnmp.api.raw.send') as mck, \
+                patch('puresnmp.api.raw.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+            getnext('::1', 'public', '1.2.3')
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
+
     def test_getnext(self):
         data = readbytes('getnext_response.hex')
         expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
@@ -158,6 +203,25 @@ class TestGetNext(unittest.TestCase):
 
 
 class TestGetBulkGet(unittest.TestCase):
+
+    def test_get_call_args(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            BulkGetRequest(0, 1, 2,
+                           ObjectIdentifier(1, 2, 3),
+                           ObjectIdentifier(1, 2, 4))
+        )
+        with patch('puresnmp.api.raw.send') as mck, \
+                patch('puresnmp.api.raw.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+            bulkget('::1', 'public',
+                    ['1.2.3'],
+                    ['1.2.4'],
+                    max_list_size=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
 
     def test_bulkget(self):
         data = readbytes('bulk_get_response.hex')
@@ -183,6 +247,24 @@ class TestGetBulkGet(unittest.TestCase):
 
 
 class TestGetBulkWalk(unittest.TestCase):
+
+    def test_get_call_args(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
+        )
+        with patch('puresnmp.api.raw.send') as mck, \
+                patch('puresnmp.api.raw.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+
+            # we need to wrap this in a list to consume the generator.
+            list(bulkwalk('::1', 'public',
+                          ['1.2.3'],
+                          bulk_size=2))
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
 
     @patch('puresnmp.api.raw.send')
     @patch('puresnmp.api.raw.get_request_id')
