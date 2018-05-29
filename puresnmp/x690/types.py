@@ -584,6 +584,9 @@ class ObjectIdentifier(Type):
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
 
+    def __len__(self):
+        return len(self.identifiers)
+
     def __contains__(self, other):
         """
         Check if one OID is a child of another.
@@ -621,6 +624,9 @@ class ObjectIdentifier(Type):
             return False
         else:
             return unzipped_a < unzipped_b
+
+    def __lt__(self, other):
+        return self.identifiers < other.identifiers
 
     def __hash__(self):
         return hash(self.identifiers)
