@@ -68,9 +68,9 @@ class TestWalk(unittest.TestCase):
 
     def test_walk(self):
         expected = [VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'), 10000000
+            '1.3.6.1.2.1.2.2.1.5.1', 10000000
         ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'), 4294967295
+            '1.3.6.1.2.1.2.2.1.5.13', 4294967295
         )]
 
         with patch('puresnmp.api.pythonic.raw') as mck:
@@ -109,15 +109,12 @@ class TestMultiGet(unittest.TestCase):
 class TestMultiWalk(unittest.TestCase):
 
     def test_multi_walk(self):
-        expected = [VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'), 1
-        ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'), b'lo'
-        ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'), 78
-        ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'), b'eth0'
-        )]
+        expected = [
+            VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),
+            VarBind('1.3.6.1.2.1.2.2.1.2.1', b'lo'),
+            VarBind('1.3.6.1.2.1.2.2.1.1.78', 78),
+            VarBind('1.3.6.1.2.1.2.2.1.2.78', b'eth0')
+        ]
 
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multiwalk.return_value = [VarBind(
