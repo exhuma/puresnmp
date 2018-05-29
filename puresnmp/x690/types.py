@@ -630,6 +630,9 @@ class ObjectIdentifier(Type):
         else:
             return unzipped_a < unzipped_b
 
+    def __lt__(self, other):
+        return self.identifiers < other.identifiers
+
     def __hash__(self):
         return hash(self.identifiers)
 
