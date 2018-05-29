@@ -1,8 +1,6 @@
-from collections import OrderedDict, namedtuple
-from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
+from collections import OrderedDict
+from typing import TYPE_CHECKING
 import logging
-
-from pkg_resources import resource_string
 
 from ..x690.types import (
     Integer,
@@ -27,6 +25,10 @@ from ..util import (
     get_unfinished_walk_oids,
     group_varbinds,
 )
+
+if TYPE_CHECKING:  # pragma: no cover
+    # pylint: disable=unused-import, invalid-name, ungrouped-imports
+    from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -131,7 +133,7 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
 
 
 def walk(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int) -> Generator[VarBind, None, None]
+    # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.

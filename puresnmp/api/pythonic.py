@@ -22,15 +22,14 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from . import raw
-from .. import types  # NOQA (must be here for type detection)
 from ..pdu import VarBind
 from ..util import BulkResult
-from ..x690.types import ObjectIdentifier, Type
 from ..x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
+    from ..x690.types import Type
     Pythonized = Union[str, bytes, int, datetime, timedelta]
 
 try:
@@ -102,7 +101,8 @@ def walk(ip, community, oid, port=161, timeout=2):
     """
 
     raw_result = raw.walk(ip, community, oid, port, timeout)
-    return (VarBind(oid, value.pythonize()) for oid, value in raw_result)
+    for raw_oid, raw_value in raw_result:
+        yield VarBind(raw_oid, raw_value.pythonize())
 
 
 def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
@@ -114,8 +114,8 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher)
-    pythonized = (VarBind(oid, value.pythonize()) for oid, value in raw_output)
-    return pythonized
+    for oid, value in raw_output:
+        yield VarBind(oid, value.pythonize())
 
 
 def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
@@ -157,11 +157,14 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     """
 
     raw_output = raw.bulkget(ip, community, scalar_oids, repeating_oids,
-                             max_list_size=1, port=161, timeout=2)
+                             max_list_size=max_list_size,
+                             port=port,
+                             timeout=timeout)
     pythonized_scalars = {oid: value.pythonize()
                           for oid, value in raw_output.scalars.items()}
     pythonized_list = OrderedDict(
-        [(oid, value.pythonize()) for oid, value in raw_output.listing.items()])
+        [(oid, value.pythonize())
+         for oid, value in raw_output.listing.items()])
     return BulkResult(pythonized_scalars, pythonized_list)
 
 
@@ -174,8 +177,9 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = multiwalk(ip, community, oids, port=port,
-                       fetcher=raw._bulkwalk_fetcher(bulk_size))
+    result = multiwalk(
+        ip, community, oids, port=port,
+        fetcher=raw._bulkwalk_fetcher(bulk_size))  # pylint: disable=protected-access
     for oid, value in result:
         yield VarBind(oid, value)
 
