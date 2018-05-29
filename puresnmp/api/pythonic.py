@@ -164,23 +164,6 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     return BulkResult(pythonized_scalars, pythonized_list)
 
 
-def _bulkwalk_fetcher(bulk_size=10):
-    # type: (int) -> Callable[[str, str, List[str], int, int], List[VarBind]]
-    """
-    Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
-    """
-    def fetcher(ip, community, oids, port=161, timeout=2):
-        '''
-        Executes a SNMP BulkGet request.
-        '''
-        result = bulkget(ip, community, [], oids, max_list_size=bulk_size,
-                         port=port, timeout=timeout)
-        return [VarBind(ObjectIdentifier.from_string(k), v)
-                for k, v in result.listing.items()]
-    fetcher.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
-    return fetcher
-
-
 def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     # type: (str, str, List[str], int, int) -> Generator[VarBind, None, None]
     """
@@ -191,7 +174,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     """
 
     result = multiwalk(ip, community, oids, port=port,
-                       fetcher=_bulkwalk_fetcher(bulk_size))
+                       fetcher=raw._bulkwalk_fetcher(bulk_size))
     for oid, value in result:
         yield VarBind(oid, value)
 
