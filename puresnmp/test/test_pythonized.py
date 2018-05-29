@@ -263,4 +263,4 @@ class TestTable(unittest.TestCase):
             {'0': '1', '1': b'test-11', '2': b'test-21'},
             {'0': '2', '1': b'test-21', '2': b'test-22'},
         ]
-        self.assertEqual(result, expected)
+        self.assertCountEqual(result, expected)
