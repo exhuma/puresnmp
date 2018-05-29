@@ -60,11 +60,6 @@ except NameError:
     unicode = str  # type: Callable[[Any], str]
 
 
-# A type alias for mypy. This should contain all possible return values of the
-# `pythonize` method
-Pythonized = Union[bytes, int, str]  # pylint:disable=invalid-name
-
-
 class Registry(type):
 
     __registry = {}  # type: Dict[Tuple[str, int], type]

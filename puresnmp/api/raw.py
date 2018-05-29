@@ -1,33 +1,34 @@
-from collections import OrderedDict, namedtuple
-from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
+from collections import OrderedDict
+from typing import TYPE_CHECKING
 import logging
 
-from pkg_resources import resource_string
-
-from . import types, BulkResult  # NOQA (must be here for type detection)
-from .x690.types import (
+from ..x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
-    Pythonized,
     Sequence,
     Type,
 )
-from .x690.util import to_bytes, tablify
-from .exc import SnmpError, NoSuchOID
-from .pdu import (
+from ..x690.util import to_bytes, tablify
+from ..exc import SnmpError, NoSuchOID
+from ..pdu import (
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
     SetRequest,
     VarBind,
 )
-from .const import Version
-from .transport import send, get_request_id
-from .util import (
+from ..const import Version
+from ..transport import send, get_request_id
+from ..util import (
+    BulkResult,  # NOQA (must be here for type detection)
     get_unfinished_walk_oids,
     group_varbinds,
 )
+
+if TYPE_CHECKING:  # pragma: no cover
+    # pylint: disable=unused-import, invalid-name, ungrouped-imports
+    from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -132,7 +133,7 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
 
 
 def walk(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int) -> Generator[VarBind, None, None]
+    # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -378,7 +379,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     }
 
     # prepare output for listing
-    repeating_out = OrderedDict()  # type: Dict[str, Pythonized]
+    repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
         repeating_out[unicode(oid)] = value
 

@@ -111,7 +111,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         priv_const = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
 
         instance = TypeInfo(cls, priv_const, value)
-        instance._raw_value = data
+        instance._raw_value = data  # type: ignore
         return instance
 
     def __bytes__(self):

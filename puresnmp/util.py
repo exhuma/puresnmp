@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 
 WalkRow = namedtuple('WalkRow', 'value unfinished')
+BulkResult = namedtuple('BulkResult', 'scalars listing')
 
 
 def group_varbinds(varbinds, effective_roots, user_roots=None):
