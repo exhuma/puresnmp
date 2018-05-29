@@ -141,7 +141,8 @@ def multiset(ip, community, mappings, port=161, timeout=2):
     """
 
     raw_output = raw.multiset(ip, community, mappings, port, timeout)
-    pythonized = {oid: value.pythonize() for oid, value in raw_output.items()}
+    pythonized = {str(oid): value.pythonize()
+                  for oid, value in raw_output.items()}
     return pythonized
 
 
