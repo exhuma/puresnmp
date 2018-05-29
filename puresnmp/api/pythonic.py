@@ -28,7 +28,7 @@ from ..util import BulkResult
 from ..x690.types import ObjectIdentifier, Type
 from ..x690.util import tablify
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
     Pythonized = Union[str, bytes, int, datetime, timedelta]

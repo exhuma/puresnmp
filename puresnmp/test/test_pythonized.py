@@ -64,6 +64,18 @@ class TestGet(ByteTester):
         self.assertEqual(result, expected)
 
 
+class TestSet(ByteTester):
+
+    def test_set_string(self):
+        expected = (b'foo')
+        with patch('puresnmp.api.pythonic.raw') as mck:
+            mck.multiset.return_value = {
+                ObjectIdentifier.from_string('1.2.3'): OctetString(b'foo')
+            }
+            result = set('::1', 'private', '1.2.3', OctetString(b'foo'))
+        self.assertEqual(result, expected)
+
+
 class TestWalk(unittest.TestCase):
 
     def test_walk(self):
@@ -232,4 +244,23 @@ class TestGetBulkWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.22.10', '0.0'),
         ]
 
+        self.assertEqual(result, expected)
+
+
+class TestTable(unittest.TestCase):
+
+    def test_table(self):
+        with patch('puresnmp.api.pythonic.raw') as mck:
+            oid = ObjectIdentifier.from_string
+            mck.walk.return_value = [
+                VarBind(oid('1.2.1.1'), OctetString(b'test-11')),
+                VarBind(oid('1.2.2.1'), OctetString(b'test-21')),
+                VarBind(oid('1.2.1.2'), OctetString(b'test-21')),
+                VarBind(oid('1.2.2.2'), OctetString(b'test-22')),
+            ]
+            result = table('1.2.3.4', 'private', ['1.2'])
+        expected = [
+            {'0': '1', '1': b'test-11', '2': b'test-21'},
+            {'0': '2', '1': b'test-21', '2': b'test-22'},
+        ]
         self.assertEqual(result, expected)
