@@ -20,6 +20,11 @@ class TestTypeInfoDecoding(ByteTester):
     Python objects.
     """
 
+    def test_from_bytes_raw_value(self):
+        result = TypeInfo.from_bytes(0b00011110)._raw_value
+        expected = 0b00011110
+        self.assertEqual(result, expected)
+
     def test_from_bytes_a(self):
         result = TypeInfo.from_bytes(0b00011110)
         expected = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.PRIMITIVE, 0b11110)

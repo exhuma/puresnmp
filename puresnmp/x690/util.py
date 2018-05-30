@@ -66,6 +66,9 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
 
     tag
         The actual type identifier.
+
+    The instance also keeps the raw value as it was seen in the ``_raw_value``
+    attribute.
     """
 
     UNIVERSAL = 'universal'
@@ -74,6 +77,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     PRIVATE = 'private'
     PRIMITIVE = 'primitive'
     CONSTRUCTED = 'constructed'
+    _raw_value = None
 
     @staticmethod
     def from_bytes(data):
