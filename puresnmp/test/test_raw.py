@@ -30,6 +30,7 @@ except ImportError:
     from mock import patch, call  # pip install mock
 
 
+OID = ObjectIdentifier.from_string
 
 
 class TestGet(ByteTester):
@@ -46,7 +47,7 @@ class TestGet(ByteTester):
 
     def test_get_oid(self):
         data = readbytes('get_sysoid_01.hex')
-        expected = ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10')
+        expected = OID('1.3.6.1.4.1.8072.3.2.10')
         with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data
             result = get('::1', 'private', '1.2.3')
@@ -81,13 +82,10 @@ class TestWalk(unittest.TestCase):
         response_2 = readbytes('walk_response_2.hex')
         response_3 = readbytes('walk_response_3.hex')
 
-        expected = [VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'),
-            Gauge(10000000)
-        ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'),
-            Gauge(4294967295)
-        )]
+        expected = [
+            VarBind(OID('1.3.6.1.2.1.2.2.1.5.1'), Gauge(10000000)),
+            VarBind(OID('1.3.6.1.2.1.2.2.1.5.13'), Gauge(4294967295))
+        ]
 
         with patch('puresnmp.api.raw.send') as mck:
             mck.side_effect = [response_1, response_2, response_3]
@@ -110,7 +108,7 @@ class TestMultiGet(unittest.TestCase):
     def test_multiget(self):
         data = readbytes('multiget_response.hex')
         expected = [
-            ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10'),
+            OID('1.3.6.1.4.1.8072.3.2.10'),
             OctetString(b"Linux 7fbf2f0c363d 4.4.0-28-generic "
                         b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
                         b"UTC 2016 x86_64")
@@ -131,17 +129,12 @@ class TestMultiWalk(unittest.TestCase):
         response_2 = readbytes('multiwalk_response_2.hex')
         response_3 = readbytes('multiwalk_response_3.hex')
 
-        expected = [VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'), Integer(1)
-        ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
-            OctetString(b'lo')
-        ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'), Integer(78)
-        ), VarBind(
-            ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
-            OctetString(b'eth0')
-        )]
+        expected = [
+            VarBind(OID('1.3.6.1.2.1.2.2.1.1.1'), Integer(1)),
+            VarBind(OID('1.3.6.1.2.1.2.2.1.2.1'), OctetString(b'lo')),
+            VarBind(OID('1.3.6.1.2.1.2.2.1.1.78'), Integer(78)),
+            VarBind(OID('1.3.6.1.2.1.2.2.1.2.78'), OctetString(b'eth0'))
+        ]
 
         with patch('puresnmp.api.raw.send') as mck:
             mck.side_effect = [response_1, response_2, response_3]
@@ -226,16 +219,14 @@ class TestGetBulkGet(unittest.TestCase):
     def test_bulkget(self):
         data = readbytes('bulk_get_response.hex')
         expected = BulkResult(
-            {'1.3.6.1.2.1.1.1.0': OctetString(
+            {OID('1.3.6.1.2.1.1.1.0'): OctetString(
                 b'Linux 7e68e60fe303 4.4.0-28-generic '
                 b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64')},
-            {'1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1': Integer(10),
-             '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1':
-             OctetString(b'\x02B\xe2\xc5\x8d\t'),
-             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1':
-             IpAddress(b'\xac\x11\x00\x01'),
-             '1.3.6.1.2.1.4.1.0': Integer(1),
-             '1.3.6.1.2.1.4.3.0': Counter(57)})
+            {OID('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1'): Integer(10),
+             OID('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1'): OctetString(b'\x02B\xe2\xc5\x8d\t'),
+             OID('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1'): IpAddress(b'\xac\x11\x00\x01'),
+             OID('1.3.6.1.2.1.4.1.0'): Integer(1),
+             OID('1.3.6.1.2.1.4.3.0'): Counter(57)})
 
         with patch('puresnmp.api.raw.send') as mck:
             mck.return_value = data

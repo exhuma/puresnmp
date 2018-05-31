@@ -162,8 +162,10 @@ class TestMultiSet(unittest.TestCase):
         """
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multiset.return_value = {
-                '1.3.6.1.2.1.1.4.0': OctetString(b'hello@world.com'),
-                '1.3.6.1.2.1.1.5.0': OctetString(b'hello@world.com'),
+                ObjectIdentifier.from_string(
+                    '1.3.6.1.2.1.1.4.0'): OctetString(b'hello@world.com'),
+                ObjectIdentifier.from_string(
+                    '1.3.6.1.2.1.1.5.0'): OctetString(b'hello@world.com'),
             }
             result = multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
@@ -203,17 +205,21 @@ class TestGetBulkGet(unittest.TestCase):
 
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.bulkget.return_value = BulkResult({
-                '1.3.6.1.2.1.1.1.0': OctetString(
-                    b'Linux 7e68e60fe303 4.4.0-28-generic '
-                    b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64')
+                ObjectIdentifier.from_string(
+                    '1.3.6.1.2.1.1.1.0'): OctetString(
+                        b'Linux 7e68e60fe303 4.4.0-28-generic '
+                        b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64')
             }, {
-                '1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1': Integer(10),
-                '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1': OctetString(
-                    b'\x02B\xe2\xc5\x8d\t'),
-                '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': IpAddress(
-                    b'\xac\x11\x00\x01'),
-                '1.3.6.1.2.1.4.1.0': Integer(1),
-                '1.3.6.1.2.1.4.3.0': Counter(57)
+                ObjectIdentifier.from_string(
+                    '1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1'): Integer(10),
+                ObjectIdentifier.from_string(
+                    '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1'): OctetString(
+                        b'\x02B\xe2\xc5\x8d\t'),
+                ObjectIdentifier.from_string(
+                    '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1'): IpAddress(
+                        b'\xac\x11\x00\x01'),
+                ObjectIdentifier.from_string('1.3.6.1.2.1.4.1.0'): Integer(1),
+                ObjectIdentifier.from_string('1.3.6.1.2.1.4.3.0'): Counter(57)
             })
             result = bulkget('::1', 'public',
                              ['1.3.6.1.2.1.1.1'],

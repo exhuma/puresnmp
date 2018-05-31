@@ -102,7 +102,7 @@ def walk(ip, community, oid, port=161, timeout=2):
 
     raw_result = raw.walk(ip, community, oid, port, timeout)
     for raw_oid, raw_value in raw_result:
-        yield VarBind(raw_oid, raw_value.pythonize())
+        yield VarBind(raw_oid.pythonize(), raw_value.pythonize())
 
 
 def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
@@ -115,7 +115,7 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     """
     raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher)
     for oid, value in raw_output:
-        yield VarBind(oid, value.pythonize())
+        yield VarBind(oid.pythonize(), value.pythonize())
 
 
 def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
@@ -141,7 +141,7 @@ def multiset(ip, community, mappings, port=161, timeout=2):
     """
 
     raw_output = raw.multiset(ip, community, mappings, port, timeout)
-    pythonized = {str(oid): value.pythonize()
+    pythonized = {oid.pythonize(): value.pythonize()
                   for oid, value in raw_output.items()}
     return pythonized
 
@@ -160,10 +160,10 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
                              max_list_size=max_list_size,
                              port=port,
                              timeout=timeout)
-    pythonized_scalars = {oid: value.pythonize()
+    pythonized_scalars = {oid.pythonize(): value.pythonize()
                           for oid, value in raw_output.scalars.items()}
     pythonized_list = OrderedDict(
-        [(oid, value.pythonize())
+        [(oid.pythonize(), value.pythonize())
          for oid, value in raw_output.listing.items()])
     return BulkResult(pythonized_scalars, pythonized_list)
 

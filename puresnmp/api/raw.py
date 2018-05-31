@@ -374,14 +374,14 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
     # prepare output for scalar OIDs
     scalar_out = {
-        unicode(oid): value
+        oid: value
         for oid, value in scalar_tmp
     }
 
     # prepare output for listing
     repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
-        repeating_out[unicode(oid)] = value
+        repeating_out[oid] = value
 
     return BulkResult(scalar_out, repeating_out)
 
@@ -397,8 +397,7 @@ def _bulkwalk_fetcher(bulk_size=10):
         '''
         result = bulkget(ip, community, [], oids, max_list_size=bulk_size,
                          port=port, timeout=timeout)
-        return [VarBind(ObjectIdentifier.from_string(k), v)
-                for k, v in result.listing.items()]
+        return [VarBind(k, v) for k, v in result.listing.items()]
     fetcher.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
     return fetcher
 
