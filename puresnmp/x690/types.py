@@ -513,9 +513,13 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def from_string(value):
+        # type: (str) -> ObjectIdentifier
         """
         Create an OID from a string
         """
+
+        if not isinstance(value, str):
+            raise TypeError('%r is not of type `str`' % value)
 
         if value == '.':
             return ObjectIdentifier(1)
