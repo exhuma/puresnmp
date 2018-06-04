@@ -243,6 +243,31 @@ class TestObjectIdentifier(ByteTester):
         self.assertNotIn(a, b, '%s should not be in %s' % (a, b))
         self.assertNotIn(b, a, '%s should not be in %s' % (b, a))
 
+    def test_length_1(self):
+        '''
+        OIDs with one node should have a length of 1
+        '''
+        obj = ObjectIdentifier(1)
+        self.assertEqual(len(obj), 1)
+
+    def test_length_ge1(self):
+        '''
+        OIDs with more than one node should have a length equal to the number
+        of nodes.
+        '''
+        obj = ObjectIdentifier(1, 2, 3)
+        self.assertEqual(len(obj), 3)
+
+    def test_inequalitites(self):
+        a = ObjectIdentifier(1, 2, 3)
+        b = ObjectIdentifier(1, 2, 4)
+        self.assertTrue(a < b)
+        self.assertFalse(b < a)
+        self.assertFalse(a < a)
+        self.assertFalse(a > b)
+        self.assertTrue(b > a)
+        self.assertFalse(b > b)
+
 
 class TestInteger(ByteTester):
 
