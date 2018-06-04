@@ -75,7 +75,7 @@ class Counter64(Integer):
     TAG = 0x06
 
 
-def _walk_subclasses(cls, indent=0):
+def _walk_subclasses(cls, indent=0):  # pragma: no cover
     if cls.__module__ == '__main__':
         modname = 'puresnmp.types'
     else:
@@ -90,7 +90,7 @@ def _walk_subclasses(cls, indent=0):
         _walk_subclasses(subclass, indent + 1)
 
 
-def main():
+def main():  # pragma: no cover
     """
     Entrypoint for::
 
@@ -108,6 +108,6 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     import sys
     sys.exit(main())
