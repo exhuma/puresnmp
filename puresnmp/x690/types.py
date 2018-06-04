@@ -406,28 +406,23 @@ class Integer(Type):
         self.value = value
 
     def __bytes__(self):
-        # pylint: disable=line-too-long
-        if self.value == 0:
-            octets = [0]
-        else:
-            # Split long integers into multiple octets.
-            remainder = self.value
-            octets = []
+        octets = [self.value & 0b11111111]
 
-            while True:
-                octets.append(remainder & 0b11111111)
-                if remainder == 0 or remainder == -1:
-                    break
-                remainder = remainder >> 8
-            if remainder == 0 and octets[-1] == 0b10000000:
-                octets.append(0)
-            octets.reverse()
+        # Append remaining octets for long integers.
+        remainder = self.value
+        while remainder not in (0, -1):
+            remainder = remainder >> 8
+            octets.append(remainder & 0b11111111)
 
-            # remove leading octet if there is a string of 9 zeros or ones
-            while (len(octets) > 1 and
-                   ((octets[0] == 0 and octets[1] & 0b10000000 == 0) or
-                    (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0))):
-                del octets[0]
+        if remainder == 0 and octets[-1] == 0b10000000:
+            octets.append(0)
+        octets.reverse()
+
+        # remove leading octet if there is a string of 9 zeros or ones
+        while (len(octets) > 1 and
+               ((octets[0] == 0 and octets[1] & 0b10000000 == 0) or
+                (octets[0] == 0b11111111 and octets[1] & 0b10000000 != 0))):
+            del octets[0]
 
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
         return to_bytes(tinfo) + to_bytes([len(octets)]) + to_bytes(octets)
