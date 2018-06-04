@@ -16,10 +16,14 @@ if TYPE_CHECKING:
     from typing import Any, Dict, List, Union, Tuple
     from .types import Type
 
-try:
-    # pylint: disable=invalid-name
-    int_from_bytes = int.from_bytes
-except AttributeError:
+if six.PY2:
+
+    def to_bytes(x):
+        if hasattr(x, '__bytes__'):
+            return bytes(x)
+        else:
+            return bytes(bytearray(x))
+
     def int_from_bytes(bytes_, byteorder, signed=False):
         bytes_ = bytearray(bytes_)
         if byteorder == 'little':
@@ -31,14 +35,10 @@ except AttributeError:
             n -= 1 << 8*len(little_ordered)
         return n
 
-if six.PY2:
-    def to_bytes(x):
-        if hasattr(x, '__bytes__'):
-            return bytes(x)
-        else:
-            return bytes(bytearray(x))
 else:
     unicode = str  # pylint: disable=invalid-name
+    unicode = str
+    int_from_bytes = int.from_bytes
 
     def to_bytes(x):
         try:
