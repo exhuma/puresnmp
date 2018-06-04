@@ -49,7 +49,7 @@ from .util import (TypeInfo, decode_length, encode_length, int_from_bytes,
                    to_bytes)
 
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import
     from typing import Any, Callable, Dict, Tuple
 
@@ -192,7 +192,7 @@ class Type(object):
         """
         return unicode(self)
 
-    if six.PY2:
+    if six.PY2:  # pragma: no cover
         def __unicode__(self):
             return repr(self)
 
@@ -250,7 +250,7 @@ class UnknownType(Type):
         return UnknownType(tag, data)
 
 
-class NonASN1Type(UnknownType):
+class NonASN1Type(UnknownType):  # pragma: no cover
     def __init__(self, tag, value):
         warnings.warn('puresnmp.x690.types.NonASN1Type is deprecated,'
                       ' replace it with UnknownType', stacklevel=2)
@@ -309,7 +309,7 @@ class Null(Type):
     def __bool__(self):
         return False
 
-    def __nonzero__(self):  # __bool__ for py2
+    def __nonzero__(self):  # pragma: no cover (__bool__ for py2)
         return False
 
 
@@ -564,7 +564,7 @@ class ObjectIdentifier(Type):
             output += self.length + to_bytes(self.__collapsed_identifiers)
         return output
 
-    if six.PY2:
+    if six.PY2:  # pragma: no cover
         def __unicode__(self):
             return '.'.join([unicode(_) for _ in self.identifiers])
     else:
