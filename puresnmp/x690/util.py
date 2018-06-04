@@ -11,12 +11,12 @@ import six
 
 from ..const import Length
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
     from typing import Any, Dict, List, Union, Tuple
     from .types import Type
 
-if six.PY2:
+if six.PY2:  # pragma: no cover
 
     def to_bytes(x):
         if hasattr(x, '__bytes__'):
@@ -36,7 +36,7 @@ if six.PY2:
         return n
 
 else:
-    unicode = str  # pylint: disable=invalid-name
+    # pylint: disable=invalid-name
     unicode = str
     int_from_bytes = int.from_bytes
 
@@ -141,7 +141,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         output = cls << 6 | priv_const << 5 | self.tag
         return to_bytes([output])
 
-    if six.PY2:
+    if six.PY2:  # pragma: no cover
         def __unicode__(self):
             return repr(self)
 
