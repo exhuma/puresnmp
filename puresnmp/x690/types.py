@@ -611,14 +611,16 @@ class ObjectIdentifier(Type):
                 continue
             tail.append((tmp_a, tmp_b))
 
-        unzipped_a, unzipped_b = zip(*tail)
+        # if we only have Nones in "b", we know that "a" was longer and that it
+        # is a direct subtree of "b" (no diverging nodes). Otherwise we would
+        # have te divergence in "b", and we can say that "b is contained in a"
+        _, unzipped_b = zip(*tail)
         if all([x is None for x in unzipped_b]):
             return True
 
-        if len(tail) > 1:
-            return False
-        else:
-            return unzipped_a < unzipped_b
+        # In all other cases we end up with an unmatching tail and know that "b
+        # is not contained in a".
+        return False
 
     def __lt__(self, other):
         return self.identifiers < other.identifiers
