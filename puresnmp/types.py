@@ -76,6 +76,10 @@ class Counter64(Integer):
 
 
 def _walk_subclasses(cls, indent=0):  # pragma: no cover
+    '''
+    Recursively walk over the :py:class:`Type` hierarchy and print out ReST
+    formatted text on stdout.
+    '''
     if cls.__module__ == '__main__':
         modname = 'puresnmp.types'
     else:
