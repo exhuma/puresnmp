@@ -121,7 +121,7 @@ class PDU(Type):
         self.error_status = error_status
         self.error_index = error_index
         if isinstance(varbinds, tuple):
-            self.varbinds = [varbinds]
+            self.varbinds = [VarBind(*varbinds)]
         else:
             self.varbinds = varbinds
 
