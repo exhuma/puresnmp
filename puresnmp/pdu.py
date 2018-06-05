@@ -30,7 +30,7 @@ from .x690.util import to_bytes, TypeInfo
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Callable
+    from typing import Any, Callable, List, Union
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -85,6 +85,7 @@ class PDU(Type):
 
     @classmethod
     def decode(cls, data):
+        # type: (bytes) -> PDU
         """
         This method takes a :py:class:`bytes` object and converts it to
         an application object. This is callable from each subclass of
@@ -113,7 +114,9 @@ class PDU(Type):
             error_index
         )
 
-    def __init__(self, request_id, varbinds, error_status=0, error_index=0):
+    def __init__(self, request_id, varbinds, error_status=0,
+                 error_index=0):
+        # type: (int, Union[tuple, List[VarBind]], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index
@@ -172,6 +175,7 @@ class GetRequest(PDU):
     TAG = 0
 
     def __init__(self, request_id, *oids):
+        # type: (int, Union[str, ObjectIdentifier]) -> None
         if len(oids) > MAX_VARBINDS:
             raise TooManyVarbinds(len(oids))
         wrapped_oids = []
@@ -193,6 +197,7 @@ class GetResponse(PDU):
 
     @classmethod
     def decode(cls, data):
+        # type: (bytes) -> PDU
         """
         Try decoding the response. If nothing was returned (the message was
         empty), raise a :py:exc:`~puresnmp.exc.NoSuchOID` exception.
@@ -226,6 +231,7 @@ class BulkGetRequest(Type):
 
     @classmethod
     def decode(cls, data):
+        # type: (bytes) -> BulkGetRequest
         """
         This method takes a :py:class:`bytes` object and converts it to
         an application object.
@@ -249,12 +255,13 @@ class BulkGetRequest(Type):
         )
 
     def __init__(self, request_id, non_repeaters, max_repeaters, *oids):
+        # type: (int, int, int, ObjectIdentifier) -> None
         if len(oids) > MAX_VARBINDS:
             raise TooManyVarbinds(len(oids))
         self.request_id = request_id
         self.non_repeaters = non_repeaters
         self.max_repeaters = max_repeaters
-        self.varbinds = []
+        self.varbinds = []  # type: List[VarBind]
         for oid in oids:
             self.varbinds.append(VarBind(oid, Null()))
 

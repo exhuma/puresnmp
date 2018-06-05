@@ -27,7 +27,7 @@ from . import ByteTester, readbytes
 try:
     from unittest.mock import patch, call
 except ImportError:
-    from mock import patch, call  # pip install mock
+    from mock import patch, call  # type: ignore
 
 
 

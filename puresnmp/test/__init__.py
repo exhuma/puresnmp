@@ -5,7 +5,7 @@ import sys
 try:
     from itertools import zip_longest
 except ImportError:
-    from itertools import izip_longest as zip_longest
+    from itertools import izip_longest as zip_longest  # type: ignore
 from os.path import dirname, join
 import unittest
 from ..x690.util import to_bytes
