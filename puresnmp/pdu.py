@@ -32,11 +32,9 @@ if TYPE_CHECKING:
     # pylint: disable=unused-import
     from typing import Any, Callable, List, Union
 
-try:
-    unicode  # type: Callable[[Any], str]
-except NameError:
-    # pylint: disable=invalid-name
-    unicode = str  # type: Callable[[Any], str]
+
+if six.PY3:
+    unicode = str  # pylint: disable=invalid-name
 
 
 class VarBind(namedtuple('VarBind', 'oid, value')):
