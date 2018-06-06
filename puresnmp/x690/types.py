@@ -573,6 +573,13 @@ class ObjectIdentifier(Type):
             output += self.length + to_bytes(self.__collapsed_identifiers)
         return output
 
+    def __int__(self):
+        if len(self.identifiers) != 1:
+            raise ValueError('Only ObjectIdentifier with one node can be '
+                             'converted to int. %r is not convertable' % self)
+        return self.identifiers[0]
+
+
     if six.PY2:
         def __unicode__(self):
             return '.'.join([unicode(_) for _ in self.identifiers])
