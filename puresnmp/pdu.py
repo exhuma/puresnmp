@@ -278,9 +278,13 @@ class BulkGetRequest(Type):
         return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
-        return '%s(%r, %r)' % (
+        oids = [repr(oid) for oid, _ in self.varbinds]
+        return '%s(%r, %r, %r, %s)' % (
             self.__class__.__name__,
-            self.request_id, self.varbinds)
+            self.request_id,
+            self.non_repeaters,
+            self.max_repeaters,
+            ', '.join(oids))
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck

@@ -221,3 +221,12 @@ class TestBulkGet(ByteTester):
 
         result = to_bytes(packet)
         self.assertBytesEqual(result, expected)
+
+    def test_repr(self):
+        request = BulkGetRequest(
+            1234, 1, 2,
+            ObjectIdentifier((1, 2, 3))
+        )
+        result = repr(request)
+        expected = 'BulkGetRequest(1234, 1, 2, ObjectIdentifier((1, 2, 3)))'
+        self.assertEqual(result, expected)
