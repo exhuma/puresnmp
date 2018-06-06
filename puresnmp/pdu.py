@@ -227,31 +227,6 @@ class BulkGetRequest(Type):
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 5
 
-    @classmethod
-    def decode(cls, data):
-        # type: (bytes) -> BulkGetRequest
-        """
-        This method takes a :py:class:`bytes` object and converts it to
-        an application object.
-        """
-        # TODO (advanced): recent tests revealed that this is *not symmetric*
-        # with __bytes__ of this class. This should be ensured!
-        if not data:
-            raise EmptyMessage('No data to decode!')
-        request_id, data = pop_tlv(data)
-        non_repeaters, data = pop_tlv(data)
-        max_repeaters, data = pop_tlv(data)
-        values, data = pop_tlv(data)
-
-        oids = [unicode(*oid) for oid, _ in values]
-
-        return cls(
-            request_id,
-            non_repeaters,
-            max_repeaters,
-            *oids
-        )
-
     def __init__(self, request_id, non_repeaters, max_repeaters, *oids):
         # type: (int, int, int, ObjectIdentifier) -> None
         if len(oids) > MAX_VARBINDS:
