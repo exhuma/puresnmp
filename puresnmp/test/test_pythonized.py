@@ -62,8 +62,7 @@ class TestGet(ByteTester):
     def test_get_oid(self):
         expected = ('1.3.6.1.4.1.8072.3.2.10')
         with patch('puresnmp.api.pythonic.raw') as mck:
-            mck.get.return_value = ObjectIdentifier.from_string(
-                '1.3.6.1.4.1.8072.3.2.10')
+            mck.get.return_value = OID('1.3.6.1.4.1.8072.3.2.10')
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
 
@@ -74,7 +73,7 @@ class TestSet(ByteTester):
         expected = (b'foo')
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multiset.return_value = {
-                ObjectIdentifier.from_string('1.2.3'): OctetString(b'foo')
+                OID('1.2.3'): OctetString(b'foo')
             }
             result = set('::1', 'private', '1.2.3', OctetString(b'foo'))
         self.assertEqual(result, expected)
@@ -91,13 +90,9 @@ class TestWalk(unittest.TestCase):
 
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.walk.return_value = [
-                VarBind(
-                    ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'),
-                    Gauge(10000000)
-                ), VarBind(
-                    ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'),
-                    Integer(4294967295)
-                )]
+                VarBind(OID('1.3.6.1.2.1.2.2.1.5.1'), Gauge(10000000)),
+                VarBind(OID('1.3.6.1.2.1.2.2.1.5.13'), Integer(4294967295))
+            ]
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
 
@@ -110,7 +105,7 @@ class TestMultiGet(unittest.TestCase):
                     b"Jun 24 10:09:13 UTC 2016 x86_64"]
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multiget.return_value = [
-                ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10'),
+                OID('1.3.6.1.4.1.8072.3.2.10'),
                 OctetString(b"Linux 7fbf2f0c363d 4.4.0-28-generic "
                             b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
                             b"UTC 2016 x86_64")
@@ -133,19 +128,12 @@ class TestMultiWalk(unittest.TestCase):
         ]
 
         with patch('puresnmp.api.pythonic.raw') as mck:
-            mck.multiwalk.return_value = [VarBind(
-                ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'),
-                Integer(1)
-            ), VarBind(
-                ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
-                OctetString(b'lo')
-            ), VarBind(
-                ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'),
-                Integer(78)
-            ), VarBind(
-                ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
-                OctetString(b'eth0')
-            )]
+            mck.multiwalk.return_value = [
+                VarBind(OID('1.3.6.1.2.1.2.2.1.1.1'), Integer(1)),
+                VarBind(OID('1.3.6.1.2.1.2.2.1.2.1'), OctetString(b'lo')),
+                VarBind(OID('1.3.6.1.2.1.2.2.1.1.78'), Integer(78)),
+                VarBind(OID('1.3.6.1.2.1.2.2.1.2.78'), OctetString(b'eth0'))
+            ]
             result = list(multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
@@ -165,10 +153,8 @@ class TestMultiSet(unittest.TestCase):
         """
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multiset.return_value = {
-                ObjectIdentifier.from_string(
-                    '1.3.6.1.2.1.1.4.0'): OctetString(b'hello@world.com'),
-                ObjectIdentifier.from_string(
-                    '1.3.6.1.2.1.1.5.0'): OctetString(b'hello@world.com'),
+                OID('1.3.6.1.2.1.1.4.0'): OctetString(b'hello@world.com'),
+                OID('1.3.6.1.2.1.1.5.0'): OctetString(b'hello@world.com'),
             }
             result = multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
@@ -208,21 +194,17 @@ class TestGetBulkGet(unittest.TestCase):
 
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.bulkget.return_value = BulkResult({
-                ObjectIdentifier.from_string(
-                    '1.3.6.1.2.1.1.1.0'): OctetString(
-                        b'Linux 7e68e60fe303 4.4.0-28-generic '
-                        b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64')
+                OID('1.3.6.1.2.1.1.1.0'): OctetString(
+                    b'Linux 7e68e60fe303 4.4.0-28-generic '
+                    b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64')
             }, {
-                ObjectIdentifier.from_string(
-                    '1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1'): Integer(10),
-                ObjectIdentifier.from_string(
-                    '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1'): OctetString(
-                        b'\x02B\xe2\xc5\x8d\t'),
-                ObjectIdentifier.from_string(
-                    '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1'): IpAddress(
-                        b'\xac\x11\x00\x01'),
-                ObjectIdentifier.from_string('1.3.6.1.2.1.4.1.0'): Integer(1),
-                ObjectIdentifier.from_string('1.3.6.1.2.1.4.3.0'): Counter(57)
+                OID('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1'): Integer(10),
+                OID('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1'): OctetString(
+                    b'\x02B\xe2\xc5\x8d\t'),
+                OID('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1'): IpAddress(
+                    b'\xac\x11\x00\x01'),
+                OID('1.3.6.1.2.1.4.1.0'): Integer(1),
+                OID('1.3.6.1.2.1.4.3.0'): Counter(57)
             })
             result = bulkget('::1', 'public',
                              ['1.3.6.1.2.1.1.1'],
