@@ -243,6 +243,19 @@ class TestObjectIdentifier(ByteTester):
         self.assertNotIn(a, b, '%s should not be in %s' % (a, b))
         self.assertNotIn(b, a, '%s should not be in %s' % (b, a))
 
+    def test_concatenation(self):
+        a = ObjectIdentifier(1, 2, 3)
+        b = ObjectIdentifier(4, 5, 6)
+        expected = ObjectIdentifier(1, 2, 3, 4, 5, 6)
+        result = a + b
+        self.assertEqual(result, expected)
+
+    def test_item_access(self):
+        a = ObjectIdentifier(1, 2, 3)
+        expected = ObjectIdentifier(2)
+        result = a[1]
+        self.assertEqual(result, expected)
+
 
 class TestInteger(ByteTester):
 

@@ -642,6 +642,13 @@ class ObjectIdentifier(Type):
     def __hash__(self):
         return hash(self.identifiers)
 
+    def __add__(self, other):
+        nodes = self.identifiers + other.identifiers
+        return ObjectIdentifier(*nodes)
+
+    def __getitem__(self, index):
+        return ObjectIdentifier(self.identifiers[index])
+
     def pythonize(self):
         return '.'.join([unicode(_) for _ in self.identifiers])
 
