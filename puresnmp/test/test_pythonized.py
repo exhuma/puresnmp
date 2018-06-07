@@ -9,7 +9,6 @@ to use.
 
 import six
 from datetime import timedelta
-from ipaddress import ip_address
 try:
     from unittest.mock import patch, call
 except ImportError:
@@ -197,7 +196,7 @@ class TestGetBulkGet(unittest.TestCase):
              b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64'},
             {'1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1': 10,
              '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1': b'\x02B\xe2\xc5\x8d\t',
-             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': ip_address('172.17.0.1'),
+             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': b'\xac\x11\x00\x01',
              '1.3.6.1.2.1.4.1.0': 1,
              '1.3.6.1.2.1.4.3.0': 57})
 
