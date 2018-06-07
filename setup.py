@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 VERSION = open('puresnmp/version.txt').read().strip()
 DEPENDENCIES = []
-if version_info < (3, 0):
+if version_info < (3, 5):
     DEPENDENCIES.append('typing')
 
 setup(
