@@ -31,8 +31,6 @@ Release 1.3.0
 
     ObjectIdentifier(1, 2, 3)[1] == ObjectIdentifier(2)
 
-* **[new]** The SNMP type ``IpAddress`` is now properly transcoded to the
-  Python ``IPv4Address`` type (via RFC3416).
 * **[changed]** ``NonASN1Type`` is now deprectated. Use ``UnknownType`` instead
   (Royce Mitchell).
 * **[fix]** ``ObjectIdentifier(0)`` is now correctly detected & transcoded.
