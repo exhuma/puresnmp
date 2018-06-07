@@ -1,11 +1,53 @@
 Changelog
 =========
 
+Release 1.3.0
+~~~~~~~~~~~~~
+
+* **[new]** Python 2 support (Royce Mitchell).
+* **[new]** Expose ``timeout`` argument in additional functions.
+* **[new]** Walk operations now yield rows as they come in over the network
+  instead of materialising them in memory (Royce Mitchell).
+* **[new]** Introduce ``puresnmp.api.raw`` with same signatures as ``puresnmp``
+  but for for non-pythonized output.
+* **[new]** ``ObjectIdentifier.from_string`` now allows a leading ``.``.
+* **[new]** Collections of ``ObjectIdentifier`` instances are now sortable.
+* **[new]** Enforce ``str`` type in ``ObjectIdentifier.from_string``.
+* **[new]** ``ObjectIdentifier`` now supports ``__len__``::
+
+    len(ObjectIdentifier(1, 2, 3)) == 3
+
+* **[new]** ``ObjectIdentifier`` instances can now be converted to ``int`` (if
+  they only have one node)::
+
+    int(ObjectIdentifier(5)) == 5
+
+* **[new]** ``ObjectIdentifier`` instances can now be concatenated using
+  ``+``::
+
+    ObjectIdentifier(1) + ObjectIdentifier(2) == ObjectIdentifier(1, 2)
+
+* **[new]** ``ObjectIdentifier`` instances are now indexable::
+
+    ObjectIdentifier(1, 2, 3)[1] == ObjectIdentifier(2)
+
+* **[new]** The SNMP type ``IpAddress`` is now properly transcoded to the
+  Python ``IPv4Address`` type (via RFC3416).
+* **[changed]** ``NonASN1Type`` is now deprectated. Use ``UnknownType`` instead
+  (Royce Mitchell).
+* **[fix]** ``ObjectIdentifier(0)`` is now correctly detected & transcoded.
+* **[fix]** ``port`` no longer ignores the ``port`` argument.
+* **[fix]** Avoid potential error in reported ``OctetString`` length.
+* **[code-quality]** Improved type-hints.
+* **[code-quality]** Update contribution guide, adding code-style rules. Added
+  an appropriate ``pylintrc`` and fixed some style violations.
+
+
 Release 1.2.0
 ~~~~~~~~~~~~~
 
 * Exposed access to the ``timeout`` value. Each SNMP call not takes an optional
-  ``timeout`` value which specifies the timeout in seconds.
+  ``timeout`` value which specifies the timeout in seconds (Thomas Kirsch).
 
 
 Release 1.1.0

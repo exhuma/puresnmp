@@ -1,7 +1,7 @@
 High-Level Overview
 ===================
 
-The package is internally split into a few broad categories:
+Apart from that, the package is internally split into a few broad categories:
 
 * :term:`X.690`
 * SNMP
