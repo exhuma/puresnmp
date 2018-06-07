@@ -188,7 +188,7 @@ class TestGetNext(unittest.TestCase):
 
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multigetnext.return_value = [
-                VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
+                VarBind(OID('1.3.6.1.6.3.1.1.6.1.0'), Integer(354522558))
             ]
             result = getnext('::1', 'private', '1.3.6.1.5')
         self.assertEqual(result, expected)

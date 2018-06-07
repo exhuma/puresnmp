@@ -14,6 +14,7 @@ from ..const import Length
 if TYPE_CHECKING:
     # pylint: disable=unused-import, cyclic-import
     from typing import Any, Dict, List, Union, Tuple
+    from ..pdu import VarBind
     from .types import Type
 
 try:
@@ -280,7 +281,7 @@ def visible_octets(data):
 
 
 def tablify(varbinds, num_base_nodes=0):
-    # type: ( List[Tuple[Any, Any]], int ) -> list
+    # type: (List[VarBind], int) -> List[Dict[str, Type]]
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
@@ -329,6 +330,7 @@ def tablify(varbinds, num_base_nodes=0):
         ]
     """
     rows = {}  # type: Dict[str, Dict[str, Type]]
+    from .types import ObjectIdentifier
     for oid, value in varbinds:
         if isinstance(oid, str):
             # TODO This type-check should be avoided. Internally in puresnmp we
@@ -339,13 +341,13 @@ def tablify(varbinds, num_base_nodes=0):
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]
             col_id, row_id = tail[0], tail[1:]
-            row_id = '.'.join([unicode(node) for node in row_id])
+            row_id = ObjectIdentifier(row_id)
         else:
-            col_id = unicode(oid.identifiers[-2])
-            row_id = unicode(oid.identifiers[-1])
+            col_id = oid[-2].identifiers[0]
+            row_id = oid[-1]
         tmp = {
-            '0': row_id,
+            0: row_id,
         }
         row = rows.setdefault(row_id, tmp)
-        row[unicode(col_id)] = value
+        row[col_id] = value
     return list(rows.values())

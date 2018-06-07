@@ -1,6 +1,9 @@
 # pylint: skip-file
 
 import six
+
+from .. import ByteTester
+from ...pdu import VarBind
 from ...x690.types import ObjectIdentifier
 from ...x690.util import (
     Length,
@@ -8,10 +11,11 @@ from ...x690.util import (
     decode_length,
     encode_length,
     tablify,
-    visible_octets,
     to_bytes,
+    visible_octets
 )
-from .. import ByteTester
+
+OID = ObjectIdentifier.from_string
 
 
 class TestTypeInfoDecoding(ByteTester):
@@ -261,19 +265,19 @@ class TestHelpers(ByteTester):
 
     def test_tablify_simple(self):
         data = [
-            (ObjectIdentifier.from_string('1.2.1.1'), 'row 1 col 1'),
-            (ObjectIdentifier.from_string('1.2.1.2'), 'row 2 col 1'),
-            (ObjectIdentifier.from_string('1.2.2.1'), 'row 1 col 2'),
-            (ObjectIdentifier.from_string('1.2.2.2'), 'row 2 col 2'),
+            VarBind(OID('1.2.1.1'), 'row 1 col 1'),
+            VarBind(OID('1.2.1.2'), 'row 2 col 1'),
+            VarBind(OID('1.2.2.1'), 'row 1 col 2'),
+            VarBind(OID('1.2.2.2'), 'row 2 col 2'),
         ]
         result = tablify(data)
         expected = [
-            {'0': '1',
-             '1': 'row 1 col 1',
-             '2': 'row 1 col 2'},
-            {'0': '2',
-             '1': 'row 2 col 1',
-             '2': 'row 2 col 2'},
+            {0: OID('1'),
+             1: 'row 1 col 1',
+             2: 'row 1 col 2'},
+            {0: OID('2'),
+             1: 'row 2 col 1',
+             2: 'row 2 col 2'},
         ]
         six.assertCountEqual(self, result, expected)
 
@@ -283,33 +287,33 @@ class TestHelpers(ByteTester):
         these off.
         """
         data = [
-            (ObjectIdentifier.from_string('1.2.1.1.1.1'), 'row 1.1.1 col 1'),
-            (ObjectIdentifier.from_string('1.2.1.2.1.1'), 'row 2.1.1 col 1'),
-            (ObjectIdentifier.from_string('1.2.2.1.1.1'), 'row 1.1.1 col 2'),
-            (ObjectIdentifier.from_string('1.2.2.2.1.1'), 'row 2.1.1 col 2'),
+            VarBind(OID('1.2.1.1.1.1'), 'row 1.1.1 col 1'),
+            VarBind(OID('1.2.1.2.1.1'), 'row 2.1.1 col 1'),
+            VarBind(OID('1.2.2.1.1.1'), 'row 1.1.1 col 2'),
+            VarBind(OID('1.2.2.2.1.1'), 'row 2.1.1 col 2'),
         ]
         result = tablify(data, num_base_nodes=2)
         expected = [
-            {'0': '1.1.1',
-             '1': 'row 1.1.1 col 1',
-             '2': 'row 1.1.1 col 2'},
-            {'0': '2.1.1',
-             '1': 'row 2.1.1 col 1',
-             '2': 'row 2.1.1 col 2'},
+            {0: OID('1.1.1'),
+             1: 'row 1.1.1 col 1',
+             2: 'row 1.1.1 col 2'},
+            {0: OID('2.1.1'),
+             1: 'row 2.1.1 col 1',
+             2: 'row 2.1.1 col 2'},
         ]
         six.assertCountEqual(self, result, expected)
 
     def test_tmp(self):
         data = [
-            (ObjectIdentifier.from_string('1.2.1.5.10'), 'row 5.10 col 1'),
-            (ObjectIdentifier.from_string('1.2.1.6.10'), 'row 6.10 col 1'),
-            (ObjectIdentifier.from_string('1.2.2.5.10'), 'row 5.10 col 2'),
-            (ObjectIdentifier.from_string('1.2.2.6.10'), 'row 6.10 col 2'),
+            VarBind(OID('1.2.1.5.10'), 'row 5.10 col 1'),
+            VarBind(OID('1.2.1.6.10'), 'row 6.10 col 1'),
+            VarBind(OID('1.2.2.5.10'), 'row 5.10 col 2'),
+            VarBind(OID('1.2.2.6.10'), 'row 6.10 col 2'),
         ]
         result = tablify(data, num_base_nodes=2)
         expected = [
-            {'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'},
-            {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
+            {0: OID('5.10'), 1: 'row 5.10 col 1', 2: 'row 5.10 col 2'},
+            {0: OID('6.10'), 1: 'row 6.10 col 1', 2: 'row 6.10 col 2'},
         ]
         six.assertCountEqual(self, result, expected)
 
