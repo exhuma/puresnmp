@@ -44,7 +44,7 @@ interface. Example::
     raw_result = raw_get(ip, community, oid)
 
     print(type(result), repr(result))
-    # Output: <class 'bytes'> b'192.168.168.1'
+    # Output: <class 'ipaddress.IPv4Address'> IPv4Address('192.168.168.1')
 
     print(type(raw_result), repr(raw_result))
     # Output: <class 'puresnmp.types.IpAddress'> IpAddress(b'\xc0\xa8\xa8\x01')
