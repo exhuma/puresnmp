@@ -330,6 +330,12 @@ def tablify(varbinds, num_base_nodes=0):
     """
     rows = {}  # type: Dict[str, Dict[str, Type]]
     for oid, value in varbinds:
+        if isinstance(oid, str):
+            # TODO This type-check should be avoided. Internally in puresnmp we
+            # should always have ObjectIdentifier instances. Conversion to/from
+            # str should happen only on the boundaries!
+            from .types import ObjectIdentifier
+            oid = ObjectIdentifier.from_string(oid)
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]
             col_id, row_id = tail[0], tail[1:]

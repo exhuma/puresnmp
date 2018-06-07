@@ -39,19 +39,7 @@ except NameError:
     unicode = str  # type: Callable[[Any], str]
 
 
-class VarBind(namedtuple('VarBind', 'oid, value')):
-    '''
-    A "VarBind" is a 2-tuple containing an object-identifier and the
-    corresponding value.
-    '''
-
-    def __new__(cls, oid, value):
-        if not isinstance(oid, (ObjectIdentifier,) + six.string_types):
-            raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
-                            ' instances!')
-        if isinstance(oid, six.string_types):
-            oid = ObjectIdentifier.from_string(oid)
-        return super(VarBind, cls).__new__(cls, oid, value)
+VarBind = namedtuple('VarBind', 'oid, value')
 
 
 ERROR_MESSAGES = {

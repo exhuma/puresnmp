@@ -44,6 +44,9 @@ from puresnmp.x690.types import (
 from . import ByteTester
 
 
+OID = ObjectIdentifier.from_string
+
+
 class TestGet(ByteTester):
 
     def test_get_string(self):
@@ -235,10 +238,10 @@ class TestGetBulkWalk(unittest.TestCase):
         request_ids = [1001613222, 1001613223, 1001613224]
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multiwalk.return_value = [
-                VarBind('1.3.6.1.2.1.2.2.1.1.1', Integer(1)),
-                VarBind('1.3.6.1.2.1.2.2.1.1.10', Integer(10)),
-                VarBind('1.3.6.1.2.1.2.2.1.2.1', OctetString(b"lo")),
-                VarBind('1.3.6.1.2.1.2.2.1.22.10', ObjectIdentifier(0, 0))
+                VarBind(OID('1.3.6.1.2.1.2.2.1.1.1'), Integer(1)),
+                VarBind(OID('1.3.6.1.2.1.2.2.1.1.10'), Integer(10)),
+                VarBind(OID('1.3.6.1.2.1.2.2.1.2.1'), OctetString(b"lo")),
+                VarBind(OID('1.3.6.1.2.1.2.2.1.22.10'), ObjectIdentifier(0, 0))
             ]
 
             result = list(bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
