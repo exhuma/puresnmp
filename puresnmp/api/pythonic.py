@@ -87,7 +87,8 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_output = raw.multigetnext(ip, community, oids, port, timeout)
-    pythonized = [VarBind(oid, value.pythonize()) for oid, value in raw_output]
+    pythonized = [VarBind(oid.pythonize(), value.pythonize())
+                  for oid, value in raw_output]
     return pythonized
 
 
@@ -190,6 +191,8 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     Converts a "walk" result into a pseudo-table. See
     :py:func:`puresnmp.api.raw.table` for more information.
     """
-    tmp = walk(ip, community, oid, port=port)
+    tmp = raw.walk(ip, community, oid, port=port)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
-    return as_table
+    for row in as_table:
+        out = {key: value.pythonize() for key, value in row.items()}
+        yield out
