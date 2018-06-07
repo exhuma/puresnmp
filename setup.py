@@ -6,6 +6,9 @@ VERSION = open('puresnmp/version.txt').read().strip()
 DEPENDENCIES = []
 if version_info < (3, 5):
     DEPENDENCIES.append('typing')
+if version_info < (3, 3):
+    DEPENDENCIES.append('ipaddress')
+    DEPENDENCIES.append('mock')
 
 setup(
     name="puresnmp",
