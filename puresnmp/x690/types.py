@@ -518,7 +518,7 @@ class ObjectIdentifier(Type):
         Create an OID from a string
         """
 
-        if not isinstance(value, str):
+        if not isinstance(value, six.string_types):
             raise TypeError('%r is not of type `str`' % value)
 
         if value == '.':
@@ -565,14 +565,6 @@ class ObjectIdentifier(Type):
         self.__collapsed_identifiers = tuple(collapsed_identifiers)
         self.length = encode_length(len(self.__collapsed_identifiers))
 
-    def __bytes__(self):
-        output = to_bytes([self.TAG])
-        if self.__collapsed_identifiers == (0,):
-            output += b'\x00'
-        else:
-            output += self.length + to_bytes(self.__collapsed_identifiers)
-        return output
-
     def __int__(self):
         if len(self.identifiers) != 1:
             raise ValueError('Only ObjectIdentifier with one node can be '
@@ -581,11 +573,27 @@ class ObjectIdentifier(Type):
 
 
     if six.PY2:
+        def __str__(self):
+            output = to_bytes([self.TAG])
+            if self.__collapsed_identifiers == (0,):
+                output += b'\x00'
+            else:
+                output += self.length + to_bytes(self.__collapsed_identifiers)
+            return output
+
         def __unicode__(self):
             return '.'.join([unicode(_) for _ in self.identifiers])
     else:
         def __str__(self):
             return '.'.join([unicode(_) for _ in self.identifiers])
+
+        def __bytes__(self):
+            output = to_bytes([self.TAG])
+            if self.__collapsed_identifiers == (0,):
+                output += b'\x00'
+            else:
+                output += self.length + to_bytes(self.__collapsed_identifiers)
+            return output
 
     def __repr__(self):
         return 'ObjectIdentifier(%r)' % (self.identifiers, )
