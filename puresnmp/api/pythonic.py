@@ -31,6 +31,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
     from ..x690.types import Type
     Pythonized = Union[str, bytes, int, datetime, timedelta]
+    TableRow = Dict[str, Pythonized]
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -186,7 +187,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type (str, str, str, int, int) ->
+    # type: (str, str, str, int, int) -> Generator[TableRow, None, None]
     """
     Converts a "walk" result into a pseudo-table. See
     :py:func:`puresnmp.api.raw.table` for more information.
