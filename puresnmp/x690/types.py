@@ -508,9 +508,13 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def from_string(value):
+        # type: (str) -> ObjectIdentifier
         """
         Create an OID from a string
         """
+
+        if not isinstance(value, six.string_types):
+            raise TypeError('%r is not of type `str`' % value)
 
         if value == '.':
             return ObjectIdentifier(1)
@@ -556,20 +560,34 @@ class ObjectIdentifier(Type):
         self.__collapsed_identifiers = tuple(collapsed_identifiers)
         self.length = encode_length(len(self.__collapsed_identifiers))
 
-    def __bytes__(self):
-        output = to_bytes([self.TAG])
-        if self.__collapsed_identifiers == (0,):
-            output += b'\x00'
-        else:
-            output += self.length + to_bytes(self.__collapsed_identifiers)
-        return output
+    def __int__(self):
+        if len(self.identifiers) != 1:
+            raise ValueError('Only ObjectIdentifier with one node can be '
+                             'converted to int. %r is not convertable' % self)
+        return self.identifiers[0]
 
     if six.PY2:  # pragma: no cover
+        def __str__(self):
+            output = to_bytes([self.TAG])
+            if self.__collapsed_identifiers == (0,):
+                output += b'\x00'
+            else:
+                output += self.length + to_bytes(self.__collapsed_identifiers)
+            return output
+
         def __unicode__(self):
             return '.'.join([unicode(_) for _ in self.identifiers])
     else:
         def __str__(self):
             return '.'.join([unicode(_) for _ in self.identifiers])
+
+        def __bytes__(self):
+            output = to_bytes([self.TAG])
+            if self.__collapsed_identifiers == (0,):
+                output += b'\x00'
+            else:
+                output += self.length + to_bytes(self.__collapsed_identifiers)
+            return output
 
     def __repr__(self):
         return 'ObjectIdentifier(%r)' % (self.identifiers, )
@@ -627,6 +645,13 @@ class ObjectIdentifier(Type):
 
     def __hash__(self):
         return hash(self.identifiers)
+
+    def __add__(self, other):
+        nodes = self.identifiers + other.identifiers
+        return ObjectIdentifier(*nodes)
+
+    def __getitem__(self, index):
+        return ObjectIdentifier(self.identifiers[index])
 
     def pythonize(self):
         return '.'.join([unicode(_) for _ in self.identifiers])

@@ -1,6 +1,14 @@
-from setuptools import setup, find_packages
+from sys import version_info
+
+from setuptools import find_packages, setup
 
 VERSION = open('puresnmp/version.txt').read().strip()
+DEPENDENCIES = []
+if version_info < (3, 5):
+    DEPENDENCIES.append('typing')
+if version_info < (3, 3):
+    DEPENDENCIES.append('ipaddress')
+    DEPENDENCIES.append('mock')
 
 setup(
     name="puresnmp",
@@ -12,9 +20,7 @@ setup(
     provides=['puresnmp'],
     license="MIT",
     include_package_data=True,
-    install_requires=[
-        'typing',
-    ],
+    install_requires=DEPENDENCIES,
     extras_require={
         'dev': [],
         'test': ['pytest-xdist', 'pytest', 'pytest-coverage']
