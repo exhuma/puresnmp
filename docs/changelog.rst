@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Release 1.2.1
+~~~~~~~~~~~~~
+
+* Clarify error message if a ``bulkwalk`` is requested with non-iterable OIDs.
+
 Release 1.2.0
 ~~~~~~~~~~~~~
 
