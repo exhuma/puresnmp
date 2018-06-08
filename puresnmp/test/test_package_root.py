@@ -307,6 +307,21 @@ class TestGetBulkWalk(unittest.TestCase):
                           bulk_size=2))
             mck.assert_called_with('::1', 161, bytes(packet), timeout=2)
 
+    def test_get_call_args_issue_22(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
+        )
+        with patch('puresnmp.send') as mck, \
+                patch('puresnmp.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+
+            with self.assertRaisesRegex(TypeError, 'OIDS.*list'):
+                # we need to wrap this in a list to consume the generator.
+                list(bulkwalk('::1', 'public', '1.2.3', bulk_size=2))
 
     @patch('puresnmp.send')
     @patch('puresnmp.get_request_id')

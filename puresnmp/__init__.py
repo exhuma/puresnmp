@@ -428,6 +428,9 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 38)), value='0.0')
     """
 
+    if not isinstance(oids, list):
+        raise TypeError('OIDS need to be passed as list!')
+
     result = multiwalk(ip, community, oids, port=161,
                        fetcher=_bulkwalk_fetcher(bulk_size))
     for oid, value in result:
