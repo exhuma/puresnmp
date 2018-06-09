@@ -1,6 +1,10 @@
 # pylint: skip-file
 
+import sys
+
 import six
+
+from .. import ByteTester
 from ...x690.types import ObjectIdentifier
 from ...x690.util import (
     Length,
@@ -12,6 +16,12 @@ from ...x690.util import (
     to_bytes,
 )
 from .. import ByteTester
+
+if sys.version_info > (3, 3):
+    from unittest.mock import patch
+else:
+    from mock import patch
+
 
 
 class TestTypeInfoDecoding(ByteTester):
@@ -114,6 +124,13 @@ class TestTypeInfoEncoding(ByteTester):
         result = to_bytes(obj)
         expected = to_bytes([0b11111110])
         self.assertEqual(result, expected)
+
+    def test_to_bytes_error(self):
+        obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b11110)
+        with patch('puresnmp.x690.util.bytes') as ptch:
+            ptch.side_effect = TypeError('booh')
+            with six.assertRaisesRegex(self, TypeError, r'booh'):
+                to_bytes(obj)
 
 
 class TestTypeInfoClass(ByteTester):

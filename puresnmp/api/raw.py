@@ -1,6 +1,8 @@
+from __future__ import unicode_literals
 from collections import OrderedDict
 from typing import TYPE_CHECKING
 import logging
+import sys
 
 from ..x690.types import (
     Integer,
@@ -399,7 +401,10 @@ def _bulkwalk_fetcher(bulk_size=10):
                          port=port, timeout=timeout)
         return [VarBind(ObjectIdentifier.from_string(k), v)
                 for k, v in result.listing.items()]
-    fetcher.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
+    if sys.version_info < (3, 0):
+        fetcher.__name__ = str('_bulkwalk_fetcher(%d)' % bulk_size)
+    else:
+        fetcher.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
     return fetcher
 
 

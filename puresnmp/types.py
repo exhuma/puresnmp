@@ -10,6 +10,7 @@ for the definition of the new types.
 
 # pylint: disable=missing-docstring
 
+import sys
 from datetime import timedelta
 
 from .x690.types import Integer, OctetString
