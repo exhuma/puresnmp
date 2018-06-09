@@ -7,6 +7,7 @@ The "external" interface is what the user sees. It should be pythonic and easy
 to use.
 """
 
+from __future__ import unicode_literals
 import six
 from datetime import timedelta
 from ipaddress import ip_address

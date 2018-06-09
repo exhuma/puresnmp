@@ -12,6 +12,7 @@ for the definition of the new types.
 """
 # TODO: Implement IPv6 via https://tools.ietf.org/html/rfc2465
 
+import sys
 from datetime import timedelta
 from ipaddress import ip_address, IPv4Address
 from struct import pack
@@ -40,6 +41,9 @@ class IpAddress(OctetString):
     def pythonize(self):
         intvalue = 0
         for i, octet in enumerate(reversed(self.value)):
+            if sys.version_info < (3, 0):
+                # Python 2 assumes has str === bytes so we need to cast
+                octet = ord(octet)
             intvalue |= octet << (8*i)
         return ip_address(intvalue)
 

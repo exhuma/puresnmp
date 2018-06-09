@@ -284,7 +284,7 @@ class TestGetBulkWalk(unittest.TestCase):
             mck2.return_value = 0
             mck.return_value = data
 
-            with self.assertRaisesRegex(TypeError, 'OIDS.*list'):
+            with six.assertRaisesRegex(self, TypeError, 'OIDS.*list'):
                 # we need to wrap this in a list to consume the generator.
                 list(bulkwalk('::1', 'public', '1.2.3', bulk_size=2))
 

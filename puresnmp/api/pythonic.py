@@ -16,6 +16,7 @@ variable types unmodified which are all subclasses of
 #     "siblng" function, valuable information is lost. In general, this module
 
 
+from __future__ import unicode_literals
 import logging
 from collections import OrderedDict
 from datetime import datetime, timedelta
