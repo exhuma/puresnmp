@@ -64,8 +64,6 @@ Type Tree
 
         *  :py:class:`puresnmp.types.TimeTicks`
 
-     *  :py:class:`puresnmp.x690.types.NonASN1Type`
-
      *  :py:class:`puresnmp.x690.types.Null`
 
      *  :py:class:`puresnmp.x690.types.NumericString`
@@ -97,6 +95,10 @@ Type Tree
      *  :py:class:`puresnmp.x690.types.T61String`
 
      *  :py:class:`puresnmp.x690.types.UniversalString`
+
+     *  :py:class:`puresnmp.x690.types.UnknownType`
+
+        *  :py:class:`puresnmp.x690.types.NonASN1Type`
 
      *  :py:class:`puresnmp.x690.types.UtcTime`
 
