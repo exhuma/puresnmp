@@ -50,7 +50,7 @@ def send(ip, port, packet, timeout=2):  # pragma: no cover
             response = sock.recv(4096)
             break
         except socket.timeout:
-            LOG.error('Timeout')  # TODO add detail
+            LOG.debug('Timeout')  # TODO add detail
             continue
     else:
         raise Timeout("Max of %d retries reached" % RETRIES)
