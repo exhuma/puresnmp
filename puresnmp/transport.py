@@ -47,7 +47,7 @@ def send(ip, port, packet, timeout=2):  # pragma: no cover
     sock.sendto(packet, (ip, port))
     for _ in range(RETRIES):
         try:
-            response = sock.recv(4096)
+            response = sock.recv(8192)
             break
         except socket.timeout:
             LOG.debug('Timeout')  # TODO add detail
