@@ -2,8 +2,26 @@ from sys import version_info
 
 from setuptools import find_packages, setup
 
-VERSION = open('puresnmp/version.txt').read().strip()
-DEPENDENCIES = []
+
+def get_version():
+    # type: () -> str
+    '''
+    Retrieves the version information for this package.
+    '''
+    filename = 'puresnmp/version.py'
+
+    with open(filename) as fptr:
+        # pylint: disable=invalid-name, exec-used
+        obj = compile(fptr.read(), filename, 'single')
+        data = {}  # type: ignore
+        exec(obj, data)
+    return data['VERSION']
+
+
+VERSION = get_version()
+DEPENDENCIES = [
+    'verlib'
+]
 if version_info < (3, 5):
     DEPENDENCIES.append('typing')
 if version_info < (3, 3):
