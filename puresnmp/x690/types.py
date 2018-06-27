@@ -285,6 +285,9 @@ class Boolean(Type):
 class Null(Type):
     TAG = 0x05
 
+    def __init__(self):
+        self.value = None
+
     @classmethod
     def validate(cls, data):
         super(Null, cls).validate(data)
