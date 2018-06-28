@@ -1,0 +1,8 @@
+
+# This is the response received when calling SNMP-Set on the sysLocation field
+# to "On the move"
+
+30 35 02 01 01 04 07 70  72 69 76 61 74 65 a2 27   05.....private.'
+02 04 5b 30 a6 dc 02 01  00 02 01 00 30 19 30 17   ..[0........0.0.
+06 08 2b 06 01 02 01 01  06 00 04 0b 4f 6e 20 74   ..+.........On t
+68 65 20 6d 6f 76 65                               he move
