@@ -41,58 +41,34 @@ class TestGet(ByteTester):
         self._send = patcher.start()
         self.addCleanup(lambda: patcher.stop())  #pylint: disable=unnecessary-lambda
 
-    def _create_response_pdu(self, response):
-        # type: (Type) -> None
-        '''
-        Primes the network transport mock to return a valid SNMP response.
-        '''
-        packet = Sequence(
-            Integer(Version.V2C),
-            OctetString('public'),
-            response
-        )
-        response_bytes = bytes(packet)
-        return response_bytes
-
     def test_get(self):
-        self._send.return_value = self._create_response_pdu(GetResponse(request_id=1, varbinds=[
-            VarBind(ObjectIdentifier(1, 2, 3, 4), Integer(10)),
-        ]))
+        response = readbytes('apiv1/get_response.hex')
+        self._send.return_value = response
         result = snmp.get('192.168.1.1', 'private', '1.3.6.1.2.1.1.2.0')
-        self.assertEqual(result, 10)
+        self.assertEqual(result, '1.3.6.1.4.1.8072.3.2.10')
         self._send.assert_called()
 
     def test_multiget(self):
-        self._send.return_value = self._create_response_pdu(GetResponse(request_id=1, varbinds=[
-            VarBind(ObjectIdentifier(1, 2, 3), Integer(10)),
-            VarBind(ObjectIdentifier(2, 3, 4), Integer(20)),
-        ]))
-        result = snmp.multiget('192.168.1.1', 'private', ['1.2.3', '2.3.4'],
+        response = readbytes('apiv1/multiget_response.hex')
+        self._send.return_value = response
+        oids = ['1.3.6.1.2.1.1.4.0', '1.3.6.1.2.1.1.6.0']
+        result = snmp.multiget('192.168.1.1', 'private', oids,
                                port=161, timeout=1)
-        self.assertEqual(result, [10, 20])
+        self.assertEqual(result, [b'root', b'On the move'])
         self._send.assert_called()
 
     def test_getnext(self):
-        self._send.return_value = self._create_response_pdu(GetResponse(request_id=1, varbinds=[
-            VarBind(ObjectIdentifier(1, 2, 4), Integer(10)),
-        ]))
-        result = snmp.getnext('192.168.1.1', 'private', '1.2.3',
+        response = readbytes('apiv1/getnext_response.hex')
+        self._send.return_value = response
+        result = snmp.getnext('192.168.1.1', 'private', '1.3.6.1.2.1.1.6.0',
                               port=161, timeout=1)
-        expected = VarBind(ObjectIdentifier(1, 2, 4), 10)
+        expected = VarBind(OID('1.3.6.1.2.1.1.7.0'), 72)
         self.assertEqual(result, expected)
         self._send.assert_called()
 
     def test_bulkget(self):
-        self._send.return_value = self._create_response_pdu(GetResponse(request_id=1, varbinds=[
-            VarBind(OID('1.3.6.1.2.1.1.1.0'), OctetString(b'Some Text')),
-            VarBind(OID('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1'), Integer(10)),
-            VarBind(OID('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1'),
-                    OctetString(b'More text')),
-            VarBind(OID('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1'),
-                    OctetString(b'even more text')),
-            VarBind(OID('1.3.6.1.2.1.4.1.0'), Integer(1)),
-            VarBind(OID('1.3.6.1.2.1.4.3.0'), Integer(57)),
-        ]))
+        response = readbytes('apiv1/bulkget_response.hex')
+        self._send.return_value = response
         result = snmp.bulkget('192.168.1.1', 'private',
                               scalar_oids=['1.3.6.1.2.1.1.1.0'],
                               repeating_oids=[
@@ -103,60 +79,70 @@ class TestGet(ByteTester):
                               port=161, timeout=1)
 
         expected = snmp.BulkResult(
-            {'1.3.6.1.2.1.1.1.0': b'Some Text'},
+            {'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10'},
             OrderedDict([
-                ('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1', 10),
-                ('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1', b'More text'),
-                ('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1', b'even more text'),
+                ('1.3.6.1.2.1.3.1.1.1.12.1.172.17.0.1', 12),
                 ('1.3.6.1.2.1.4.1.0', 1),
-                ('1.3.6.1.2.1.4.3.0', 57)
+                ('1.3.6.1.2.1.3.1.1.2.12.1.172.17.0.1', b'\x02B@j\xbf\xcd'),
+                ('1.3.6.1.2.1.4.2.0', 64),
+                ('1.3.6.1.2.1.3.1.1.3.12.1.172.17.0.1', b'\xac\x11\x00\x01'),
+                ('1.3.6.1.2.1.4.3.0', 589),
+                ('1.3.6.1.2.1.4.4.0', 0),
+                ('1.3.6.1.2.1.4.5.0', 0),
+                ('1.3.6.1.2.1.4.6.0', 0),
+                ('1.3.6.1.2.1.4.7.0', 0),
+                ('1.3.6.1.2.1.4.8.0', 0),
+                ('1.3.6.1.2.1.4.9.0', 410),
+                ('1.3.6.1.2.1.4.10.0', 409)
             ])
         )
         self.assertEqual(result, expected)
         self._send.assert_called()
 
     def test_bulkwalk(self):
-        self._send.return_value = self._create_response_pdu(GetResponse(request_id=1, varbinds=[
-            VarBind(OID('1.2.3.4.0'), Integer(10)),
-            VarBind(OID('1.2.3.4.1'), OctetString(b'More text')),
-            VarBind(OID('1.2.3.4.2'), OctetString(b'even more text')),
-            VarBind(OID('2.2.2.2.2'), OctetString(b'End-Of-Walk')),
-        ]))
-        result = list(snmp.bulkwalk('192.168.1.1', 'private', ['1.2.3.4']))
+        response = readbytes_multiple('apiv1/bulkwalk_response.hex')
+        self._send.side_effect = response
+        result = list(snmp.bulkwalk('192.168.1.1', 'private', [
+            '1.3.6.1.2.1.1.9.1.4']))
+
         expected = [
-            VarBind(OID('1.2.3.4.0'), 10),
-            VarBind(OID('1.2.3.4.1'), b'More text'),
-            VarBind(OID('1.2.3.4.2'), b'even more text'),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.1'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.2'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.3'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.4'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.5'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.6'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.7'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.8'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.9'), datetime.timedelta(0)),
+            VarBind(OID('1.3.6.1.2.1.1.9.1.4.10'), datetime.timedelta(0))
         ]
+
         self.assertEqual(result, expected)
         self._send.assert_called()
 
     def test_multigetnext(self):
-        self._send.return_value = self._create_response_pdu(GetResponse(request_id=1, varbinds=[
-            VarBind(ObjectIdentifier(1, 2, 3, 0), Integer(10)),
-            VarBind(ObjectIdentifier(1, 2, 4, 0), Integer(11)),
-        ]))
+        response = readbytes('apiv1/multigetnext_response.hex')
+        self._send.return_value = response
         result = snmp.multigetnext('192.168.1.1', 'private',
-                                   ['1.2.3', '1.2.4'])
+                                   ['1.3.6.1.2.1.3.1.1', '1.3.6.1.2.1.4'])
         expected = [
-            VarBind(ObjectIdentifier(1, 2, 3, 0), 10),
-            VarBind(ObjectIdentifier(1, 2, 4, 0), 11)
+            VarBind(OID('1.3.6.1.2.1.3.1.1.1.12.1.172.17.0.1'), 12),
+            VarBind(OID('1.3.6.1.2.1.4.1.0'), 1)
         ]
         self.assertEqual(result, expected)
         self._send.assert_called()
 
     def test_multiset(self):
-        self._send.return_value = self._create_response_pdu(GetResponse(request_id=1, varbinds=[
-            VarBind(OID('1.2.3'), OctetString(b'foo')),
-            VarBind(OID('2.3.4'), OctetString(b'bar')),
-        ]))
+        response = readbytes('apiv1/multiset_response.hex')
+        self._send.return_value = response
         result = snmp.multiset('127.0.0.1', 'private', [
-            ('1.2.3', OctetString(b'foo')),
-            ('2.3.4', OctetString(b'bar'))
+            ('1.3.6.1.2.1.1.4.0', OctetString(b'foo')),
+            ('1.3.6.1.2.1.1.6.0', OctetString(b'bar'))
         ])
         expected = {
-            '1.2.3': b'foo',
-            '2.3.4': b'bar'
+            '1.3.6.1.2.1.1.4.0': b'foo',
+            '1.3.6.1.2.1.1.6.0': b'bar'
         }
         self.assertEqual(result, expected)
         self._send.assert_called()
