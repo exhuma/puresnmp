@@ -20,6 +20,34 @@ LOG = logging.getLogger(__name__)
 RETRIES = 3
 
 
+def recv_all(sock):
+    '''
+    Read data from socket using ``sock.recv`` until no bytes are left to read.
+
+    Unfortunately, decoding the byte-length is non-trivial according to the
+    X690 standard (see :py:func:`puresnmp.x690.types.pop_tlv` and
+    :py:func:`puresnmp.x690.util.decode_length` for more details.
+
+    This means a simple call to ``recv`` does not have length-information and
+    detecting the end of the stream is more error-prone.
+
+    This could be refactored in the future to meld the x690 and "transport"
+    layers together.
+
+    See https://stackoverflow.com/a/17697651/160665
+    '''
+    buffer_size = 4096 # 4 KiB
+    chunks = []
+    while True:
+        chunk = sock.recv(buffer_size)
+        chunks.append(chunk)
+        if len(chunk) < buffer_size:
+            # either 0 or end of data
+            break
+    data = b''.join(chunks)
+    return data
+
+
 def send(ip: str, port: int, packet: bytes, timeout: int=2) -> bytes:  # pragma: no cover
     """
     Opens a TCP connection to *ip:port*, sends a packet with *bytes* and returns
@@ -45,7 +73,7 @@ def send(ip: str, port: int, packet: bytes, timeout: int=2) -> bytes:  # pragma:
     sock.sendto(packet, (ip, port))
     for _ in range(RETRIES):
         try:
-            response = sock.recv(4096)
+            response = recv_all(sock)
             break
         except socket.timeout:
             LOG.error('Timeout')  # TODO add detail
