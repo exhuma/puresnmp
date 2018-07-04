@@ -54,6 +54,7 @@ class VarBind(namedtuple('VarBind', 'oid, value')):
         return super(VarBind, cls).__new__(cls, oid, value)
 
 
+# Error messages as defined in https://tools.ietf.org/html/rfc3416#section-3
 ERROR_MESSAGES = {
     0: '(noError)',
     1: '(tooBig)',
