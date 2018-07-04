@@ -176,9 +176,11 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     requested_oids = [ObjectIdentifier.from_string(oid) for oid in oids]
     grouped_oids = group_varbinds(varbinds, requested_oids)
     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
-    LOG.debug('%d of %d OIDs need to be continued',
-              len(unfinished_oids),
-              len(oids))
+
+    if LOG.isEnabledFor(logging.DEBUG) and len(oids) > 1:
+        LOG.debug('%d of %d OIDs need to be continued',
+                  len(unfinished_oids),
+                  len(oids))
     yielded = _set([])  # type: ignore
     for var in group_varbinds(varbinds, requested_oids).values():
         for varbind in var:
@@ -204,9 +206,10 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
                                       next_fetches,
                                       user_roots=requested_oids)
         unfinished_oids = get_unfinished_walk_oids(grouped_oids)
-        LOG.debug('%d of %d OIDs need to be continued',
-                  len(unfinished_oids),
-                  len(oids))
+        if LOG.isEnabledFor(logging.DEBUG) and len(oids) > 1:
+            LOG.debug('%d of %d OIDs need to be continued',
+                      len(unfinished_oids),
+                      len(oids))
         for var in group_varbinds(varbinds, next_fetches).values():
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
