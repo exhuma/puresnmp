@@ -43,30 +43,30 @@ _set = set
 LOG = logging.getLogger(__name__)
 
 
-async def get(ip, community, oid, port=161, timeout=2):
+async def get(ip, community, oid, port=161, timeout=6):
     # type: ( str, str, str, int, int ) -> Type
     """
-    Executes a simple SNMP GET request and returns a pure Python data
-    structure.
+    A coroutine that executes a simple SNMP GET request and returns a pure 
+    Python data structure.
 
     Example::
 
-        >>> get('192.168.1.1', 'private', '1.2.3.4')
+        >>> await get('192.168.1.1', 'private', '1.2.3.4')
         'non-functional example'
     """
     return await multiget(ip, community, [oid], port, timeout=timeout)[0]
 
 
-async def multiget(ip, community, oids, port=161, timeout=2):
+async def multiget(ip, community, oids, port=161, timeout=6):
     # type: ( str, str, List[str], int, int ) -> List[Type]
     """
-    Executes an SNMP GET request with multiple OIDs and returns a list of pure
-    Python objects. The order of the output items is the same order as the OIDs
-    given as arguments.
+    A coroutine that executes an SNMP GET request with multiple OIDs and returns
+    a list of pure Python objects. The order of the output items is the same
+    order as the OIDs given as arguments.
 
     Example::
 
-        >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
+        >>> await multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
         ['non-functional example', 'second value']
     """
 
@@ -88,30 +88,30 @@ async def multiget(ip, community, oids, port=161, timeout=2):
     return output
 
 
-async def getnext(ip, community, oid, port=161, timeout=2):
+async def getnext(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> VarBind
     """
-    Executes a single SNMP GETNEXT request (used inside *walk*).
+    A coroutine that executes a single SNMP GETNEXT request (used inside *walk*).
 
     Example::
 
-        >>> getnext('192.168.1.1', 'private', '1.2.3')
+        >>> await getnext('192.168.1.1', 'private', '1.2.3')
         VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
     """
     return await multigetnext(ip, community, [oid], port, timeout=timeout)[0]
 
 
-async def multigetnext(ip, community, oids, port=161, timeout=2):
+async def multigetnext(ip, community, oids, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
-    Function to send a single multi-oid GETNEXT request.
+    A coroutine that sends a single multi-oid GETNEXT request.
 
     The request sends one packet to the remote host requesting the value of the
     OIDs following one or more given OIDs.
 
     Example::
 
-        >>> multigetnext('192.168.1.1', 'private', ['1.2.3', '1.2.4'])
+        >>> await multigetnext('192.168.1.1', 'private', ['1.2.3', '1.2.4'])
         [
             VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example'),
             VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
@@ -134,11 +134,11 @@ async def multigetnext(ip, community, oids, port=161, timeout=2):
     return output
 
 
-async def walk(ip, community, oid, port=161, timeout=2):
+async def walk(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
     """
-    Executes a sequence of SNMP GETNEXT requests and returns an generator over
-    :py:class:`~puresnmp.pdu.VarBind` instances.
+    Executes a sequence of SNMP GETNEXT requests and returns an async_generator
+    over :py:class:`~puresnmp.pdu.VarBind` instances.
 
     The generator stops when hitting an OID which is *not* a sub-node of the
     given start OID or at the end of the tree (whichever comes first).
@@ -146,10 +146,10 @@ async def walk(ip, community, oid, port=161, timeout=2):
     Example::
 
         >>> walk('127.0.0.1', 'private', '1.3.6.1.2.1.1')
-        <generator object multiwalk at 0x7fa2f775cf68>
+        <async_generator object walk at 0x7fa2f775cf68>
 
         >>> from pprint import pprint
-        >>> pprint(list(walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')))
+        >>> pprint([x async for x in walk('127.0.0.1', 'private', '1.3.6.1.2.1.3'))])
         [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
@@ -159,19 +159,19 @@ async def walk(ip, community, oid, port=161, timeout=2):
         yield varbind
 
 
-async def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
+async def multiwalk(ip, community, oids, port=161, timeout=6, fetcher=multigetnext):
     # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
     """
-    Executes a sequence of SNMP GETNEXT requests and returns an generator over
-    :py:class:`~puresnmp.pdu.VarBind` instances.
+    Executes a sequence of SNMP GETNEXT requests and returns an async_generator
+    over :py:class:`~puresnmp.pdu.VarBind` instances.
 
     This is the same as :py:func:`~.walk` except that it is capable of
     iterating over multiple OIDs at the same time.
 
     Example::
 
-        >>> walk('127.0.0.1', 'private', ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
-        <generator object multiwalk at 0x7fa2f775cf68>
+        >>> multiwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
+        <async_generator object multiwalk at 0x7fa2f775cf68>
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)
 
@@ -219,16 +219,16 @@ async def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetne
                 yield varbind
 
 
-async def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
+async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
     # type: (str, str, str, Type, int, int) -> Type
     """
-    Executes a simple SNMP SET request. The result is returned as pure Python
-    data structure. The value must be a subclass of
+    A coroutine that executes a simple SNMP SET request. The result is returned 
+    as pure Python data structure. The value must be a subclass of
     :py:class:`~puresnmp.x690.types.Type`.
 
     Example::
 
-        >>> set('127.0.0.1', 'private', '1.3.6.1.2.1.1.4.0',
+        >>> await set('127.0.0.1', 'private', '1.3.6.1.2.1.1.4.0',
         ...     OctetString(b'I am contact'))
         b'I am contact'
     """
@@ -237,17 +237,17 @@ async def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disabl
     return result[oid]
 
 
-async def multiset(ip, community, mappings, port=161, timeout=2):
+async def multiset(ip, community, mappings, port=161, timeout=6):
     # type: (str, str, List[Tuple[str, Type]], int, int) -> Dict[str, Type]
     """
 
-    Executes an SNMP SET request on multiple OIDs. The result is returned as
-    pure Python data structure.
+    A coroutine that executes an SNMP SET request on multiple OIDs. The result
+    is returned as pure Python data structure.
 
     Fake Example::
 
-        >>> multiset('127.0.0.1', 'private', [('1.2.3', OctetString(b'foo')),
-        ...                                   ('2.3.4', OctetString(b'bar'))])
+        >>> await multiset('127.0.0.1', 'private', [('1.2.3', OctetString(b'foo')),
+        ...                                         ('2.3.4', OctetString(b'bar'))])
         {'1.2.3': b'foo', '2.3.4': b'bar'}
     """
 
@@ -275,13 +275,13 @@ async def multiset(ip, community, mappings, port=161, timeout=2):
 
 
 async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-            port=161, timeout=2):
+            port=161, timeout=6):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
-    Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
-    instance.  This contains both a mapping for the scalar variables (the
-    "non-repeaters") and an OrderedDict instance containing the remaining list
-    (the "repeaters").
+    A coroutine that runs a "bulk" get operation and returns a
+    :py:class:`~.BulkResult` instance.  This contains both a mapping for the
+    scalar variables (the "non-repeaters") and an OrderedDict instance containing
+    the remaining list (the "repeaters").
 
     The OrderedDict is ordered the same way as the SNMP response (whatever the
     remote device returns).
@@ -305,13 +305,13 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
         >>> ip = '192.168.1.1'
         >>> community = 'private'
-        >>> result = bulkget(ip,
-        ...                  community,
-        ...                  scalar_oids=['1.3.6.1.2.1.1.1',
-        ...                               '1.3.6.1.2.1.1.2'],
-        ...                  repeating_oids=['1.3.6.1.2.1.3.1',
-        ...                                  '1.3.6.1.2.1.5.1'],
-        ...                  max_list_size=10)
+        >>> result = await bulkget(ip,
+        ...                        community,
+        ...                        scalar_oids=['1.3.6.1.2.1.1.1',
+        ...                                     '1.3.6.1.2.1.1.2'],
+        ...                        repeating_oids=['1.3.6.1.2.1.3.1',
+        ...                                        '1.3.6.1.2.1.5.1'],
+        ...                        max_list_size=10)
         BulkResult(
             scalars={'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
                      '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
@@ -392,9 +392,9 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 def _bulkwalk_fetcher(bulk_size=10):
     # type: (int) -> Callable[[str, str, List[str], int, int], List[VarBind]]
     """
-    Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
+    Create a bulk fetcher coroutine with a fixed limit on "repeatable" OIDs.
     """
-    async def fetcher(ip, community, oids, port=161, timeout=2):
+    async def fetcher(ip, community, oids, port=161, timeout=6):
         '''
         Executes a SNMP BulkGet request.
         '''
@@ -415,7 +415,7 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     More efficient implementation of :py:func:`~.walk`. It uses
     :py:func:`~.bulkget` under the hood instead of :py:func:`~.getnext`.
 
-    Just like :py:func:`~.multiwalk`, it returns a generator over
+    Just like :py:func:`~.multiwalk`, it returns an async_generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
 
     :param ip: The IP address of the target host.
@@ -427,7 +427,7 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
     Example::
 
-        >>> from puresnmp import bulkwalk
+        >>> from puresnmp.api.aio_raw import bulkwalk
         >>> ip = '127.0.0.1'
         >>> community = 'private'
         >>> oids = [
@@ -436,7 +436,7 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         ...     '1.3.6.1.2.1.2.2.1.22',  # ?
         ... ]
         >>> result = bulkwalk(ip, community, oids)
-        >>> for row in result:
+        >>> async for row in result:
         ...     print(row)
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 2, 1)), value=b'lo')
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 6, 1)), value=b'')
@@ -458,8 +458,8 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 async def table(ip, community, oid, port=161, num_base_nodes=0):
     # type (str, str, str, int, int) ->
     """
-    Run a series of GETNEXT requests on an OID and construct a table from the
-    result.
+    A coroutine that runs a series of GETNEXT requests on an OID and constructs
+    a table from the result.
 
     The table is a row of dicts. The key of each dict is the row ID. By default
     that is the **last** node of the OID tree.

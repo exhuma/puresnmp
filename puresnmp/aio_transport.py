@@ -1,5 +1,5 @@
 """
-Low-Level network transport.
+Low-Level network transport for asyncio.
 
 This module mainly exist to enable a "seam" for mocking/patching out during
 testing.
@@ -16,6 +16,7 @@ import logging
 
 from .exc import Timeout
 from .x690.util import visible_octets
+from .transport import get_request_id
 
 LOG = logging.getLogger(__name__)
 
@@ -75,27 +76,19 @@ async def send(ip, port, packet, timeout=6, loop=None):  # pragma: no cover
     Opens a UDP socket to *ip:port*, sends a packet with *bytes* and
     returns the raw bytes as returned from the remote host.
 
-    If the connection fails due to a timeout, the connection is retried 3
-    times.  If it still failed, a Timeout exception is raised.
+    If the connection fails due to a timeout, a Timeout exception is raised.
     """
     if loop is None:
         loop = asyncio.get_event_loop()
 
     # family could be specified here (and is in the sync implementation), is it needed?
     # are retries necessary for async implementation?
-    transport, protocol = await loop.create_datagram_endpoint(lambda: SNMPClientProtocol(packet, loop), remote_addr=(ip, port))
+    transport, protocol = await loop.create_datagram_endpoint(
+                            lambda: SNMPClientProtocol(packet, loop),
+                            remote_addr=(ip, port)
+                        )
 
     response = await protocol.get_data(timeout)
 
     return response
 
-
-def get_request_id():  # pragma: no cover
-    """
-    Generates a SNMP request ID. This value should be unique for each request.
-    """
-    # TODO check if this is good enough. My gut tells me "no"! Depends if it
-    # has to be unique across all clients, or just one client. If it's just
-    # one client it *may* be enough.
-    from time import time
-    return int(time())
