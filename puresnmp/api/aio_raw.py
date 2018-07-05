@@ -46,7 +46,7 @@ LOG = logging.getLogger(__name__)
 async def get(ip, community, oid, port=161, timeout=6):
     # type: ( str, str, str, int, int ) -> Type
     """
-    A coroutine that executes a simple SNMP GET request and returns a pure 
+    A coroutine that executes a simple SNMP GET request and returns a pure
     Python data structure.
 
     Example::
@@ -60,9 +60,9 @@ async def get(ip, community, oid, port=161, timeout=6):
 async def multiget(ip, community, oids, port=161, timeout=6):
     # type: ( str, str, List[str], int, int ) -> List[Type]
     """
-    A coroutine that executes an SNMP GET request with multiple OIDs and returns
-    a list of pure Python objects. The order of the output items is the same
-    order as the OIDs given as arguments.
+    A coroutine that executes an SNMP GET request with multiple OIDs and
+    returns a list of pure Python objects. The order of the output items is
+    the same order as the OIDs given as arguments.
 
     Example::
 
@@ -91,7 +91,8 @@ async def multiget(ip, community, oids, port=161, timeout=6):
 async def getnext(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> VarBind
     """
-    A coroutine that executes a single SNMP GETNEXT request (used inside *walk*).
+    A coroutine that executes a single SNMP GETNEXT request
+    (used inside *walk*).
 
     Example::
 
@@ -149,17 +150,20 @@ async def walk(ip, community, oid, port=161, timeout=6):
         <async_generator object walk at 0x7fa2f775cf68>
 
         >>> from pprint import pprint
-        >>> pprint([x async for x in walk('127.0.0.1', 'private', '1.3.6.1.2.1.3'))])
+        >>> gen = walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')
+        >>> pprint([x async for x in gen)])
         [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
     """
 
-    async for varbind in multiwalk(ip, community, [oid], port, timeout=timeout):
+    gen = multiwalk(ip, community, [oid], port, timeout=timeout)
+    async for varbind in gen:
         yield varbind
 
 
-async def multiwalk(ip, community, oids, port=161, timeout=6, fetcher=multigetnext):
+async def multiwalk(ip, community, oids,
+                    port=161, timeout=6, fetcher=multigetnext):
     # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an async_generator
@@ -170,7 +174,8 @@ async def multiwalk(ip, community, oids, port=161, timeout=6, fetcher=multigetne
 
     Example::
 
-        >>> multiwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
+        >>> multiwalk('127.0.0.1', 'private',
+        ...           ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
         <async_generator object multiwalk at 0x7fa2f775cf68>
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)
@@ -197,9 +202,9 @@ async def multiwalk(ip, community, oids, port=161, timeout=6, fetcher=multigetne
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
         try:
             varbinds = await fetcher(ip, community,
-                               [unicode(_) for _ in next_fetches],
-                               port,
-                               timeout)
+                                     [unicode(_) for _ in next_fetches],
+                                     port,
+                                     timeout)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
@@ -222,7 +227,7 @@ async def multiwalk(ip, community, oids, port=161, timeout=6, fetcher=multigetne
 async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
     # type: (str, str, str, Type, int, int) -> Type
     """
-    A coroutine that executes a simple SNMP SET request. The result is returned 
+    A coroutine that executes a simple SNMP SET request. The result is returned
     as pure Python data structure. The value must be a subclass of
     :py:class:`~puresnmp.x690.types.Type`.
 
@@ -233,7 +238,8 @@ async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disabl
         b'I am contact'
     """
 
-    result = await multiset(ip, community, [(oid, value)], port, timeout=timeout)
+    result = await multiset(ip, community, [(oid, value)],
+                            port, timeout=timeout)
     return result[oid]
 
 
@@ -246,8 +252,9 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
 
     Fake Example::
 
-        >>> await multiset('127.0.0.1', 'private', [('1.2.3', OctetString(b'foo')),
-        ...                                         ('2.3.4', OctetString(b'bar'))])
+        >>> await multiset('127.0.0.1', 'private',
+        ...                [('1.2.3', OctetString(b'foo')),
+        ...                 ('2.3.4', OctetString(b'bar'))])
         {'1.2.3': b'foo', '2.3.4': b'bar'}
     """
 
@@ -275,13 +282,13 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
 
 
 async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-            port=161, timeout=6):
+                  port=161, timeout=6):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
     A coroutine that runs a "bulk" get operation and returns a
     :py:class:`~.BulkResult` instance.  This contains both a mapping for the
-    scalar variables (the "non-repeaters") and an OrderedDict instance containing
-    the remaining list (the "repeaters").
+    scalar variables (the "non-repeaters") and an OrderedDict instance
+    containing the remaining list (the "repeaters").
 
     The OrderedDict is ordered the same way as the SNMP response (whatever the
     remote device returns).
@@ -398,8 +405,9 @@ def _bulkwalk_fetcher(bulk_size=10):
         '''
         Executes a SNMP BulkGet request.
         '''
-        result = await bulkget(ip, community, [], oids, max_list_size=bulk_size,
-                         port=port, timeout=timeout)
+        result = await bulkget(ip, community, [], oids,
+                               max_list_size=bulk_size,
+                               port=port, timeout=timeout)
         return [VarBind(ObjectIdentifier.from_string(k), v)
                 for k, v in result.listing.items()]
     if sys.version_info < (3, 0):

@@ -1,7 +1,7 @@
 """
-This module contains the high-level functions to access the library with asyncio.
-Care is taken to make this as pythonic as possible and hide as many of the gory
-implementations as possible.
+This module contains the high-level functions to access the library with
+asyncio. Care is taken to make this as pythonic as possible and hide as many
+of the gory implementations as possible.
 
 This module provides "syntactic sugar" around the lower-level, but almost
 identical, module :py:mod:`puresnmp.api.aio_raw`. The "raw" module
@@ -82,8 +82,8 @@ async def getnext(ip, community, oid, port=161, timeout=6):
 async def multigetnext(ip, community, oids, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.multigetnext` but returns simple
-    Python types.
+    Delegates to :py:func:`~puresnmp.api.aio_raw.multigetnext` but returns
+    simple Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
@@ -95,8 +95,8 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
 async def walk(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.walk` but returns simple Python
-    types.
+    Delegates to :py:func:`~puresnmp.api.aio_raw.walk` but returns simple
+    Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
@@ -106,7 +106,8 @@ async def walk(ip, community, oid, port=161, timeout=6):
         yield VarBind(raw_oid, raw_value.pythonize())
 
 
-async def multiwalk(ip, community, oids, port=161, timeout=6, fetcher=multigetnext):
+async def multiwalk(ip, community, oids, port=161, timeout=6,
+                    fetcher=multigetnext):
     # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
     """
     Delegates to :py:func:`~puresnmp.api.aio_raw.multiwalk` but returns simple
@@ -128,7 +129,8 @@ async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disabl
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = await multiset(ip, community, [(oid, value)], port, timeout=timeout)
+    result = await multiset(ip, community, [(oid, value)],
+                            port, timeout=timeout)
     return result[oid]
 
 
@@ -148,7 +150,7 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
 
 
 async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-            port=161, timeout=6):
+                  port=161, timeout=6):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
     Delegates to :py:func:`~puresnmp.api.aio_raw.mulkget` but returns simple
@@ -158,9 +160,9 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     """
 
     raw_output = await raw.bulkget(ip, community, scalar_oids, repeating_oids,
-                             max_list_size=max_list_size,
-                             port=port,
-                             timeout=timeout)
+                                   max_list_size=max_list_size,
+                                   port=port,
+                                   timeout=timeout)
     pythonized_scalars = {oid: value.pythonize()
                           for oid, value in raw_output.scalars.items()}
     pythonized_list = OrderedDict(
