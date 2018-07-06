@@ -14,9 +14,9 @@ hard to test.
 import asyncio
 import logging
 
-from .exc import Timeout
-from .x690.util import visible_octets
-from .transport import get_request_id
+from ..exc import Timeout
+from ..x690.util import visible_octets
+from ..transport import get_request_id
 
 LOG = logging.getLogger(__name__)
 

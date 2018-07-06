@@ -4,25 +4,25 @@ from typing import TYPE_CHECKING
 import logging
 import sys
 
-from ..x690.types import (
+from ...x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
     Type,
 )
-from ..x690.util import to_bytes, tablify
-from ..exc import SnmpError, NoSuchOID
-from ..pdu import (
+from ...x690.util import to_bytes, tablify
+from ...exc import SnmpError, NoSuchOID
+from ...pdu import (
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
     SetRequest,
     VarBind,
 )
-from ..const import Version
-from ..aio_transport import send, get_request_id
-from ..util import (
+from ...const import Version
+from ..transport import send, get_request_id
+from ...util import (
     BulkResult,  # NOQA (must be here for type detection)
     get_unfinished_walk_oids,
     group_varbinds,

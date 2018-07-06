@@ -4,7 +4,7 @@ asyncio. Care is taken to make this as pythonic as possible and hide as many
 of the gory implementations as possible.
 
 This module provides "syntactic sugar" around the lower-level, but almost
-identical, module :py:mod:`puresnmp.api.aio_raw`. The "raw" module
+identical, module :py:mod:`puresnmp.aio.api.raw`. The "raw" module
 returns the variable types unmodified which are all subclasses of
 :py:class:`puresnmp.x690.types.Type`.
 """
@@ -22,15 +22,15 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from . import aio_raw as raw
-from ..pdu import VarBind
-from ..util import BulkResult
-from ..x690.util import tablify
+from . import raw
+from ...pdu import VarBind
+from ...util import BulkResult
+from ...x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
-    from ..x690.types import Type
+    from ...x690.types import Type
     Pythonized = Union[str, bytes, int, datetime, timedelta]
 
 try:
@@ -46,7 +46,7 @@ LOG = logging.getLogger(__name__)
 async def get(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> Pythonized
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.get` but returns simple Python
+    Delegates to :py:func:`~puresnmp.aio.api.raw.get` but returns simple Python
     types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -58,7 +58,7 @@ async def get(ip, community, oid, port=161, timeout=6):
 async def multiget(ip, community, oids, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> List[Pythonized]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.multiget` but returns simple
+    Delegates to :py:func:`~puresnmp.aio.api.raw.multiget` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -71,7 +71,7 @@ async def multiget(ip, community, oids, port=161, timeout=6):
 async def getnext(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> VarBind
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.getnext` but returns simple
+    Delegates to :py:func:`~puresnmp.aio.api.raw.getnext` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -82,7 +82,7 @@ async def getnext(ip, community, oid, port=161, timeout=6):
 async def multigetnext(ip, community, oids, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.multigetnext` but returns
+    Delegates to :py:func:`~puresnmp.aio.api.raw.multigetnext` but returns
     simple Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -95,7 +95,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
 async def walk(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.walk` but returns simple
+    Delegates to :py:func:`~puresnmp.aio.api.raw.walk` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -110,7 +110,7 @@ async def multiwalk(ip, community, oids, port=161, timeout=6,
                     fetcher=multigetnext):
     # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.multiwalk` but returns simple
+    Delegates to :py:func:`~puresnmp.aio.api.raw.multiwalk` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -123,7 +123,7 @@ async def multiwalk(ip, community, oids, port=161, timeout=6,
 async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
     # type: (str, str, str, Type, int, int) -> Type
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.set` but returns simple Python
+    Delegates to :py:func:`~puresnmp.aio.api.raw.set` but returns simple Python
     types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -137,7 +137,7 @@ async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disabl
 async def multiset(ip, community, mappings, port=161, timeout=6):
     # type: (str, str, List[Tuple[str, Type]], int, int) -> Dict[str, Type]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.multiset` but returns simple
+    Delegates to :py:func:`~puresnmp.aio.api.raw.multiset` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -153,7 +153,7 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
                   port=161, timeout=6):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.mulkget` but returns simple
+    Delegates to :py:func:`~puresnmp.aio.api.raw.bulkget` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -174,7 +174,7 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     # type: (str, str, List[str], int, int) -> Generator[VarBind, None, None]
     """
-    Delegates to :py:func:`~puresnmp.api.aio_raw.bulkwalk` but returns simple
+    Delegates to :py:func:`~puresnmp.aio.api.raw.bulkwalk` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
@@ -191,7 +191,7 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     # type (str, str, str, int, int) ->
     """
     Converts a "walk" result into a pseudo-table. See
-    :py:func:`puresnmp.api.aio_raw.table` for more information.
+    :py:func:`puresnmp.aio.api.raw.table` for more information.
     """
     tmp = [varbind async for varbind in walk(ip, community, oid, port=port)]
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
