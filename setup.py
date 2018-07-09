@@ -41,7 +41,7 @@ setup(
     install_requires=DEPENDENCIES,
     extras_require={
         'dev': [],
-        'test': ['pytest-xdist', 'pytest', 'pytest-coverage']
+        'test': ['pytest-xdist', 'pytest', 'pytest-coverage', 'pytest-asyncio']
     },
     packages=find_packages(exclude=["tests.*", "tests", "docs"]),
     url="https://github.com/exhuma/puresnmp",
