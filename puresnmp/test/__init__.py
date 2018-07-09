@@ -10,10 +10,26 @@ from os.path import dirname, join
 import unittest
 from ..x690.util import to_bytes
 
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import MagicMock  # type: ignore
+
 DATA_DIR = join(dirname(__file__), 'data')
 
 __unittest = True  # <- This disables stack traces in unittest output for
                    # everything in this module.
+
+
+class AsyncMock(MagicMock):
+    async def __call__(self, *args, **kwargs):
+        return super(AsyncMock, self).__call__(*args, **kwargs)
+
+
+class AsyncGenMock(MagicMock):
+    async def __call__(self, *args, **kwargs):
+        for item in super(AsyncGenMock, self).__call__(*args, **kwargs):
+            yield item
 
 
 class ByteTester(unittest.TestCase):

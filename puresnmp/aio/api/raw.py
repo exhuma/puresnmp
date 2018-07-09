@@ -54,7 +54,7 @@ async def get(ip, community, oid, port=161, timeout=6):
         >>> await get('192.168.1.1', 'private', '1.2.3.4')
         'non-functional example'
     """
-    return await multiget(ip, community, [oid], port, timeout=timeout)[0]
+    return (await multiget(ip, community, [oid], port, timeout=timeout))[0]
 
 
 async def multiget(ip, community, oids, port=161, timeout=6):
@@ -99,7 +99,7 @@ async def getnext(ip, community, oid, port=161, timeout=6):
         >>> await getnext('192.168.1.1', 'private', '1.2.3')
         VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
     """
-    return await multigetnext(ip, community, [oid], port, timeout=timeout)[0]
+    return (await multigetnext(ip, community, [oid], port, timeout=timeout))[0]
 
 
 async def multigetnext(ip, community, oids, port=161, timeout=6):

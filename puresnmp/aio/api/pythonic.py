@@ -76,7 +76,7 @@ async def getnext(ip, community, oid, port=161, timeout=6):
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    return await multigetnext(ip, community, [oid], port, timeout=timeout)[0]
+    return (await multigetnext(ip, community, [oid], port, timeout=timeout))[0]
 
 
 async def multigetnext(ip, community, oids, port=161, timeout=6):
