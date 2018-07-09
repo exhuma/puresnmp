@@ -52,8 +52,8 @@ def get_unfinished_walk_oids(grouped_oids):
     # grouped_oids contains a list of values for each requested OID. We need to
     # determine if we need to continue fetching: Inspect the last item of each
     # list if those OIDs are still children of the requested IDs we need to
-    # continue fetching using *those* IDs (as we're using GetNext behaviour). If
-    # they are *not* children of the requested OIDs, we went too far (in the
+    # continue fetching using *those* IDs (as we're using GetNext behaviour).
+    # If they are *not* children of the requested OIDs, we went too far (in the
     # case of a bulk operation) and need to remove all outliers.
     #
     # The above behaviour is the same for both bulk and simple operations. For
