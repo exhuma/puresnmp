@@ -43,6 +43,9 @@ from puresnmp.x690.types import (
 
 from . import AsyncMock, AsyncGenMock
 
+pytestmark = pytest.mark.skipif(sys.version_info < (3,5),
+                                reason="requires python3.5")
+
 
 class TestGet(object):
 
@@ -83,6 +86,8 @@ class TestSet(object):
 class TestWalk(object):
 
     @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
     async def test_walk(self):
         expected = [VarBind(
             '1.3.6.1.2.1.2.2.1.5.1', 10000000
@@ -127,6 +132,8 @@ class TestMultiGet(object):
 class TestMultiWalk(object):
 
     @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
     async def test_multi_walk(self):
         expected = [
             VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),
@@ -234,6 +241,8 @@ class TestGetBulkGet(object):
 class TestGetBulkWalk(object):
 
     @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
     async def test_bulkwalk(self):
         request_ids = [1001613222, 1001613223, 1001613224]
         with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
@@ -260,6 +269,8 @@ class TestGetBulkWalk(object):
 class TestTable(object):
 
     @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
     async def test_table(self):
         with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             oid = ObjectIdentifier.from_string

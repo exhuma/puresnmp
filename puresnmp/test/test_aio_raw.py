@@ -29,6 +29,9 @@ try:
 except ImportError:
     from mock import patch, call  # type: ignore
 
+pytestmark = pytest.mark.skipif(sys.version_info < (3,5),
+                                reason="requires python3.5")
+
 
 class TestGet(object):
 
