@@ -10,11 +10,12 @@ hard to test.
 
 # TODO (beginner, no-dev): Ignore this file from coverage without adding "pragma: no cover" to each function.
 
-import socket
 import logging
+import socket
 from ipaddress import ip_address
 
 from .exc import Timeout
+from .x690.util import visible_octets
 
 LOG = logging.getLogger(__name__)
 RETRIES = 3
@@ -38,7 +39,6 @@ def send(ip: str, port: int, packet: bytes, timeout: int=2) -> bytes:  # pragma:
     sock.settimeout(timeout)
 
     if LOG.isEnabledFor(logging.DEBUG):
-        from .x690.util import visible_octets
         hexdump = visible_octets(packet)
         LOG.debug('Sending packet to %s:%s\n%s', ip, port, hexdump)
 
@@ -55,7 +55,6 @@ def send(ip: str, port: int, packet: bytes, timeout: int=2) -> bytes:  # pragma:
     sock.close()
 
     if LOG.isEnabledFor(logging.DEBUG):
-        from .x690.util import visible_octets
         hexdump = visible_octets(response)
         LOG.debug('Received packet:\n%s', hexdump)
 
