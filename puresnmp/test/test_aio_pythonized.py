@@ -9,6 +9,7 @@ to use.
 
 from __future__ import unicode_literals
 import pytest
+import sys
 from datetime import timedelta
 from ipaddress import ip_address
 try:
