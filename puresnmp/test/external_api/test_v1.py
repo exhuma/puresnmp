@@ -3,7 +3,7 @@
 Test the "external" interface in version 1.0.
 
 This file should remain in the repository as long as we're still backwrds
-compatible with 1.0.
+compatible with 1.0. This includes call signatures *including* return types!
 """
 
 
@@ -34,6 +34,23 @@ OID = ObjectIdentifier.from_string
 TESTS_SHOULD_RUN = snmp.__version__.startswith('1')
 
 
+def assert_of_types(values, types):
+    '''
+    Checks the types of a collection of values. Raises an AssertionError if
+    something is of the wrong type.
+
+    This assumes that *values* and *types* are collections of tuples. Example::
+
+        >>> values = [(1, 2), (1, 'foo')]
+        >>> expected_types = [(int, int), (int, str)]
+        >>> assert_of_types(values, expected_types)
+    '''
+    for result, expected in zip(values, types):
+        for a, b in zip(result, expected):
+            if not isinstance(a, b):
+                raise AssertionError('%r is not of type %r' % (a, b))
+
+
 class TestGet(ByteTester):
 
     def setUp(self):
@@ -47,6 +64,7 @@ class TestGet(ByteTester):
         result = snmp.get('192.168.1.1', 'private', '1.3.6.1.2.1.1.2.0')
         self.assertEqual(result, '1.3.6.1.4.1.8072.3.2.10')
         self._send.assert_called()
+        self.assertIsInstance(result, str)
 
     def test_multiget(self):
         response = readbytes('apiv1/multiget_response.hex')
@@ -56,6 +74,8 @@ class TestGet(ByteTester):
                                port=161, timeout=1)
         self.assertEqual(result, [b'root', b'On the move'])
         self._send.assert_called()
+        for value in result:
+            self.assertIsInstance(value, bytes)
 
     def test_getnext(self):
         response = readbytes('apiv1/getnext_response.hex')
@@ -65,6 +85,8 @@ class TestGet(ByteTester):
         expected = VarBind(OID('1.3.6.1.2.1.1.7.0'), 72)
         self.assertEqual(result, expected)
         self._send.assert_called()
+        self.assertIsInstance(result.oid, ObjectIdentifier)
+        self.assertIsInstance(result.value, int)
 
     def test_bulkget(self):
         response = readbytes('apiv1/bulkget_response.hex')
@@ -98,6 +120,27 @@ class TestGet(ByteTester):
         )
         self.assertEqual(result, expected)
         self._send.assert_called()
+        self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
+        key_types = {type(k) for k in result.listing.keys()}
+        self.assertEqual(key_types, {str})
+
+        expected_types = [
+            int,
+            int,
+            bytes,
+            int,
+            bytes,
+            int,
+            int,
+            int,
+            int,
+            int,
+            int,
+            int,
+            int
+        ]
+        for value, type_ in zip(result.listing.values(), expected_types):
+            self.assertIsInstance(value, type_)
 
     def test_bulkwalk(self):
         response = readbytes_multiple('apiv1/bulkwalk_response.hex')
@@ -120,6 +163,9 @@ class TestGet(ByteTester):
 
         self.assertEqual(result, expected)
         self._send.assert_called()
+        expected_types = [(ObjectIdentifier, datetime.timedelta)] * 10
+        returned_values = [(row.oid, row.value) for row in result]
+        assert_of_types(returned_values, expected_types)
 
     def test_multigetnext(self):
         response = readbytes('apiv1/multigetnext_response.hex')
@@ -132,6 +178,13 @@ class TestGet(ByteTester):
         ]
         self.assertEqual(result, expected)
         self._send.assert_called()
+        expected_types = [
+            (ObjectIdentifier, int),
+            (ObjectIdentifier, int),
+        ]
+        returned_values = [(row.oid, row.value) for row in result]
+        returned_types = [(type(row.oid), type(row.value)) for row in result]
+        assert_of_types(returned_values, expected_types)
 
     def test_multiset(self):
         response = readbytes('apiv1/multiset_response.hex')
@@ -146,6 +199,11 @@ class TestGet(ByteTester):
         }
         self.assertEqual(result, expected)
         self._send.assert_called()
+        self.assertIsInstance(result, dict)
+        key_types = {type(key) for key in result.keys()}
+        self.assertEqual(key_types, {str})
+        value_types = {type(value) for value in result.values()}
+        self.assertEqual(value_types, {bytes})
 
     def test_multiwalk(self):
         response_1 = readbytes('apiv1/multiwalk_response_1.hex')
@@ -168,6 +226,13 @@ class TestGet(ByteTester):
         result = list(result)
         self.assertEqual(result, expected)
 
+        expected_types = [
+            (ObjectIdentifier, int),
+            (ObjectIdentifier, int),
+        ]
+        returned_values = [(row.oid, row.value) for row in result]
+        assert_of_types(returned_values, expected_types)
+
     def test_set(self):
         self._send.return_value = readbytes('apiv1/set_response.hex')
         result = snmp.set(
@@ -178,6 +243,7 @@ class TestGet(ByteTester):
         )
         self.assertEqual(result, b'On the move')
         self._send.assert_called()
+        self.assertIsInstance(result, bytes)
 
     def test_table(self):
         responses = readbytes_multiple('apiv1/table_response.hex')
@@ -234,6 +300,10 @@ class TestGet(ByteTester):
         }]
         self.assertCountEqual(result, expected)
         self.assertEqual(self._send.call_count, 45)
+        for row in result:
+            self.assertIsInstance(row, dict)
+            dict_types = {type(key) for key in row.keys()}
+            self.assertEqual(dict_types, {str})
 
     def test_walk(self):
         responses = readbytes_multiple('apiv1/walk_response.hex')
@@ -246,3 +316,13 @@ class TestGet(ByteTester):
         ]
         self.assertCountEqual(result, expected)
         self.assertEqual(self._send.call_count, 3)
+
+        expected_types = [
+            (ObjectIdentifier, int),
+            (ObjectIdentifier, int),
+        ]
+        returned_values = [
+            (row.oid, row.value)
+            for row in result
+        ]
+        assert_of_types(returned_values, expected_types)
