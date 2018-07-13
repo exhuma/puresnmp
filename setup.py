@@ -33,7 +33,7 @@ TEST_DEPENDENCIES = [
     'pytest',
     'pytest-coverage'
 ]
-if version_info >= (3, 5):
+if version_info >= (3, 6):
     TEST_DEPENDENCIES.append('pytest-asyncio')
 
 setup(
