@@ -98,7 +98,9 @@ class TestWalk(object):
 
         with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
             mck.side_effect = [response_1, response_2, response_3]
-            result = [x async for x in walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5')]
+            result = []
+            async for x in walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'):
+                result.append(x)
         assert result == expected
 
     @pytest.mark.asyncio
@@ -110,7 +112,8 @@ class TestWalk(object):
         with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
             mck.return_value = data
             with pytest.raises(SnmpError, match='varbind'):
-                [x async for x in walk('::1', 'private', '1.2.3')]
+                async for x in walk('::1', 'private', '1.2.3'):
+                    pass
 
 
 class TestMultiGet(object):
@@ -159,10 +162,12 @@ class TestMultiWalk(object):
 
         with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
             mck.side_effect = [response_1, response_2, response_3]
-            result = [x async for x in multiwalk('::1', 'public', [
+            result = []
+            async for x in multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
-            ])]
+            ]):
+                result.append(x)
         # TODO (advanced): should order matter in the following result?
         assert len(result) == len(expected)
 
@@ -281,9 +286,10 @@ class TestGetBulkWalk(object):
             mck.return_value = data
 
             # we need to wrap this in a list to consume the generator.
-            [x async for x in bulkwalk('::1', 'public',
+            async for x in bulkwalk('::1', 'public',
                           ['1.2.3'],
-                          bulk_size=2)]
+                          bulk_size=2):
+                 pass
             mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
 
     @pytest.mark.asyncio
@@ -301,7 +307,8 @@ class TestGetBulkWalk(object):
 
             with pytest.raises(TypeError, match=r'OIDS.*list'):
                 # we need to wrap this in a list to consume the generator.
-                [x async for x in bulkwalk('::1', 'public', '1.2.3', bulk_size=2)]
+                async for x in bulkwalk('::1', 'public', '1.2.3', bulk_size=2):
+                    pass
 
     @pytest.mark.asyncio
     async def test_bulkwalk(self):
@@ -321,8 +328,10 @@ class TestGetBulkWalk(object):
             request_ids = [1001613222, 1001613223, 1001613224]
             mck_rid.side_effect = request_ids
 
-            result = [x async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                   bulk_size=20)]
+            result = []
+            async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
+                                   bulk_size=20):
+                result.append(x)
 
             assert mck_send.mock_calls == [
                 call('127.0.0.1', 161, req1, timeout=6),

@@ -193,6 +193,8 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     Converts a "walk" result into a pseudo-table. See
     :py:func:`puresnmp.aio.api.raw.table` for more information.
     """
-    tmp = [varbind async for varbind in walk(ip, community, oid, port=port)]
+    tmp = []
+    async for varbind in walk(ip, community, oid, port=port):
+        tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table

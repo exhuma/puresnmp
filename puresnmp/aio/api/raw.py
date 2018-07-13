@@ -151,7 +151,11 @@ async def walk(ip, community, oid, port=161, timeout=6):
 
         >>> from pprint import pprint
         >>> gen = walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')
-        >>> pprint([x async for x in gen)])
+        >>> res = []
+        >>> async for x in gen:
+        ...     res.append(x)
+        ... 
+        >>> pprint(res)
         [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
@@ -475,6 +479,8 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     If the rows are identified by multiple nodes, you need to secify the base
     by setting *walk* to a non-zero value.
     """
-    tmp = [varbind async for varbind in walk(ip, community, oid, port=port)]
+    tmp = []
+    async for varbind in walk(ip, community, oid, port=port):
+        tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table

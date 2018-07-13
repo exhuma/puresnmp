@@ -105,7 +105,9 @@ class TestWalk(object):
                     ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'),
                     Integer(4294967295)
                 )]
-            result = [x async for x in walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5')]
+            result = []
+            async for x in walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'):
+                result.append(x)
         assert result == expected
 
 
@@ -157,10 +159,12 @@ class TestMultiWalk(object):
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
                 OctetString(b'eth0')
             )]
-            result = [x async for x in multiwalk('::1', 'public', [
+            result = []
+            async for x in multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
-            ])]
+            ]):
+                result.append(x)
         # TODO (advanced): should order matter in the following result?
         assert len(result) == len(expected)
 
@@ -254,8 +258,10 @@ class TestGetBulkWalk(object):
                 VarBind('1.3.6.1.2.1.2.2.1.22.10', ObjectIdentifier(0, 0))
             ]
 
-            result = [x async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                bulk_size=20)]
+            result = []
+            async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
+                                bulk_size=20):
+                result.append(x)
 
         expected = [
             VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),
