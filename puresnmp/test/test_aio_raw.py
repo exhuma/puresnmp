@@ -22,7 +22,8 @@ from puresnmp.util import BulkResult
 from puresnmp.x690.types import (Integer, ObjectIdentifier, OctetString,
                                  Sequence, to_bytes)
 
-from . import AsyncMock, readbytes
+from . import readbytes
+from asyncmock import AsyncMock
 
 try:
     from unittest.mock import patch, call

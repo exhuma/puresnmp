@@ -42,7 +42,7 @@ from puresnmp.x690.types import (
     to_bytes,
 )
 
-from . import AsyncMock, AsyncGenMock
+from asyncmock import AsyncMock, AsyncGenMock
 
 pytestmark = pytest.mark.skipif(sys.version_info < (3,5),
                                 reason="requires python3.5")
