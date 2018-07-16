@@ -11,8 +11,8 @@ hard to test.
 # TODO (beginner, no-dev): Ignore this file from coverage without adding
 #                          "pragma: no cover" to each function.
 
-import socket
 import logging
+import socket
 from ipaddress import ip_address
 
 from .exc import Timeout
