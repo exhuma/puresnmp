@@ -116,7 +116,7 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     """
     raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher)
     for oid, value in raw_output:
-        yield VarBind(oid, value.pythonize())
+        yield VarBind(oid, value)
 
 
 def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
@@ -182,7 +182,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         ip, community, oids, port=port,
         fetcher=raw._bulkwalk_fetcher(bulk_size))  # pylint: disable=protected-access
     for oid, value in result:
-        yield VarBind(oid, value)
+        yield VarBind(oid, value.pythonize())
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):

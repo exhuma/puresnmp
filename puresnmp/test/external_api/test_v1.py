@@ -11,7 +11,8 @@ import datetime
 import sys
 from collections import OrderedDict
 from typing import TYPE_CHECKING
-from unittest import skip
+
+import six
 
 import puresnmp as snmp
 from puresnmp.const import Version
@@ -52,11 +53,10 @@ def assert_of_types(values, types):
                 raise AssertionError('%r is not of type %r' % (a, b))
 
 
-@skip('TODO - This test is not functional yet after merge. Fix after merge is complete to get a cleaner DIFF')
 class TestGet(ByteTester):
 
     def setUp(self):
-        patcher = patch('puresnmp.send')
+        patcher = patch('puresnmp.api.raw.send')
         self._send = patcher.start()
         self.addCleanup(lambda: patcher.stop())  #pylint: disable=unnecessary-lambda
 
@@ -66,7 +66,10 @@ class TestGet(ByteTester):
         result = snmp.get('192.168.1.1', 'private', '1.3.6.1.2.1.1.2.0')
         self.assertEqual(result, '1.3.6.1.4.1.8072.3.2.10')
         self._send.assert_called()
-        self.assertIsInstance(result, str)
+        if sys.version_info > (3, 0):
+            self.assertIsInstance(result, str)
+        else:
+            self.assertIsInstance(result, unicode)
 
     def test_multiget(self):
         response = readbytes('apiv1/multiget_response.hex')
@@ -102,7 +105,7 @@ class TestGet(ByteTester):
                               max_list_size=10,
                               port=161, timeout=1)
 
-        expected = snmp.BulkResult(
+        expected = snmp.util.BulkResult(
             {'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10'},
             OrderedDict([
                 ('1.3.6.1.2.1.3.1.1.1.12.1.172.17.0.1', 12),
@@ -122,9 +125,14 @@ class TestGet(ByteTester):
         )
         self.assertEqual(result, expected)
         self._send.assert_called()
-        self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
         key_types = {type(k) for k in result.listing.keys()}
-        self.assertEqual(key_types, {str})
+
+        if sys.version_info > (3, 0):
+            self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
+            self.assertEqual(key_types, {str})
+        else:
+            self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], unicode)
+            self.assertEqual(key_types, {unicode})
 
         expected_types = [
             int,
@@ -203,7 +211,10 @@ class TestGet(ByteTester):
         self._send.assert_called()
         self.assertIsInstance(result, dict)
         key_types = {type(key) for key in result.keys()}
-        self.assertEqual(key_types, {str})
+        if sys.version_info > (3, 0):
+            self.assertEqual(key_types, {str})
+        else:
+            self.assertEqual(key_types, {unicode})
         value_types = {type(value) for value in result.values()}
         self.assertEqual(value_types, {bytes})
 
@@ -300,12 +311,15 @@ class TestGet(ByteTester):
             '8': 1,
             '9': datetime.timedelta(0)
         }]
-        self.assertCountEqual(result, expected)
+        six.assertCountEqual(self, result, expected)
         self.assertEqual(self._send.call_count, 45)
         for row in result:
             self.assertIsInstance(row, dict)
             dict_types = {type(key) for key in row.keys()}
-            self.assertEqual(dict_types, {str})
+            if sys.version_info > (3, 0):
+                self.assertEqual(dict_types, {str})
+            else:
+                self.assertEqual(dict_types, {unicode})
 
     def test_walk(self):
         responses = readbytes_multiple('apiv1/walk_response.hex')
@@ -316,7 +330,7 @@ class TestGet(ByteTester):
             VarBind(oid=OID('1.3.6.1.2.1.2.2.1.1.1'), value=1),
             VarBind(oid=OID('1.3.6.1.2.1.2.2.1.1.12'), value=12)
         ]
-        self.assertCountEqual(result, expected)
+        six.assertCountEqual(self, result, expected)
         self.assertEqual(self._send.call_count, 3)
 
         expected_types = [

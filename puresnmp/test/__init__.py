@@ -100,12 +100,13 @@ def readbytes_multiple(filename):
             line = line.split(':')[1]
         if line.startswith('----'):
             values = [int(char, 16) for char in str_bytes]
-            yield bytes(values)
+            yield to_bytes(values)
             del str_bytes[:]
         else:
             str_bytes.extend(line.split())
     values = [int(char, 16) for char in str_bytes]
-    yield to_bytes(values)
+    output = to_bytes(values)
+    yield output
 
 
 def readbytes(filename):
