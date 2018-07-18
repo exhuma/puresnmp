@@ -39,13 +39,18 @@ class IpAddress(OctetString):
         super(IpAddress, self).__init__(value)
 
     def pythonize(self):
-        intvalue = 0
-        for i, octet in enumerate(reversed(self.value)):
-            if sys.version_info < (3, 0):
-                # Python 2 assumes has str === bytes so we need to cast
-                octet = ord(octet)
-            intvalue |= octet << (8*i)
-        return ip_address(intvalue)
+        return self.value
+
+        # TODO The following code breaks backwards compatbility and should be
+        # released in the next mator verion
+
+        # TODO v2.0.0 intvalue = 0
+        # TODO v2.0.0 for i, octet in enumerate(reversed(self.value)):
+        # TODO v2.0.0     if sys.version_info < (3, 0):
+        # TODO v2.0.0         # Python 2 assumes has str === bytes so we need to cast
+        # TODO v2.0.0         octet = ord(octet)
+        # TODO v2.0.0     intvalue |= octet << (8*i)
+        # TODO v2.0.0 return ip_address(intvalue)
 
 
 class Counter(Integer):

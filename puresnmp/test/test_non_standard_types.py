@@ -24,7 +24,8 @@ class TestIpAddress(ByteTester):
 
     def test_conversion_to_python(self):
         result = t.IpAddress(b'\x80\x96\xa1\x09').pythonize()
-        expected = ip_address('128.150.161.9')
+        expected = b'\x80\x96\xa1\x09'
+        # TODO 2.0.0 expected = ip_address('128.150.161.9')
         self.assertEqual(result, expected)
 
     def test_conversion_from_python(self):
@@ -34,7 +35,8 @@ class TestIpAddress(ByteTester):
         self.assertEqual(result, expected)
 
     def test_conversion_symmetry(self):
-        input = ip_address('128.150.161.9')
+        input = b'\x80\x96\xa1\t'
+        # TODO 2.0.0 input = ip_address('128.150.161.9')
         result = t.IpAddress(input).pythonize()
         self.assertEqual(result, input)
 
