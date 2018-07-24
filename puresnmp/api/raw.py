@@ -167,7 +167,8 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
 
     Example::
 
-        >>> walk('127.0.0.1', 'private', ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
+        >>> multiwalk('127.0.0.1', 'private', [
+        ...     '1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
         <generator object multiwalk at 0x7fa2f775cf68>
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)
@@ -439,6 +440,8 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 6, 38)), value=b'\x02B\xac\x11\x00\x02')
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 38)), value='0.0')
     """
+    if not isinstance(oids, list):
+        raise TypeError('OIDS need to be passed as list!')
 
     result = multiwalk(ip, community, oids, port=port,
                        fetcher=_bulkwalk_fetcher(bulk_size))

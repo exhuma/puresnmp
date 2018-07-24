@@ -1,6 +1,7 @@
 Changelog
 =========
 
+
 Release 1.3.0
 ~~~~~~~~~~~~~
 
@@ -40,6 +41,10 @@ Release 1.3.0
 * **[code-quality]** Update contribution guide, adding code-style rules. Added
   an appropriate ``pylintrc`` and fixed some style violations.
 
+Release 1.2.1
+~~~~~~~~~~~~~
+
+* Clarify error message if a ``bulkwalk`` is requested with non-iterable OIDs.
 
 Release 1.2.0
 ~~~~~~~~~~~~~

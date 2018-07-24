@@ -82,20 +82,32 @@ class ByteTester(unittest.TestCase):
                 '\n'.join(comparisons))
 
 
-def readbytes(filename):
+def readbytes_multiple(filename):
     with open(join(DATA_DIR, filename)) as fp:
         lines = fp.readlines()
 
     ascii_position = 56 if ':' in lines[0] else 50
     without_ascii = [line[:ascii_position] for line in lines]
+    without_comments = [line for line in without_ascii if not line.startswith('#')]
+    nonempty = [line for line in without_comments if line.strip()]
 
     str_bytes = []
-    for line in without_ascii:
+    for line in nonempty:
         # if the content contains a ":" character, it contains the byte offset
         # in the beginning. This is the case for libsnmp command output using
         # the "-d" switch. We need to remove the offset
         if ':' in line:
             line = line.split(':')[1]
-        str_bytes.extend(line.split())
+        if line.startswith('----'):
+            values = [int(char, 16) for char in str_bytes]
+            yield to_bytes(values)
+            del str_bytes[:]
+        else:
+            str_bytes.extend(line.split())
     values = [int(char, 16) for char in str_bytes]
-    return to_bytes(values)
+    yield to_bytes(values)
+
+
+def readbytes(filename):
+    packets = readbytes_multiple(filename)
+    return next(packets)
