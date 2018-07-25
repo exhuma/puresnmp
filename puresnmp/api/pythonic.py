@@ -106,7 +106,8 @@ def walk(ip, community, oid, port=161, timeout=2):
         yield VarBind(raw_oid, raw_value.pythonize())
 
 
-def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
+def multiwalk(ip, community, oids, port=161, timeout=2,
+              fetcher=raw.multigetnext):
     # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiwalk` but returns simple

@@ -15,10 +15,9 @@ from typing import TYPE_CHECKING
 import six
 
 import puresnmp as snmp
-from puresnmp.const import Version
-from puresnmp.pdu import GetResponse, VarBind
-from puresnmp.x690.types import (Integer, ObjectIdentifier, OctetString,
-                                 Sequence)
+from puresnmp.pdu import VarBind
+from puresnmp.util import BulkResult
+from puresnmp.x690.types import ObjectIdentifier, OctetString
 
 from .. import ByteTester, readbytes, readbytes_multiple
 
@@ -66,7 +65,7 @@ class TestGet(ByteTester):
         result = snmp.get('192.168.1.1', 'private', '1.3.6.1.2.1.1.2.0')
         self.assertEqual(result, '1.3.6.1.4.1.8072.3.2.10')
         self._send.assert_called()
-        if sys.version_info > (3, 0):
+        if six.PY3:
             self.assertIsInstance(result, str)
         else:
             self.assertIsInstance(result, unicode)
@@ -105,7 +104,7 @@ class TestGet(ByteTester):
                               max_list_size=10,
                               port=161, timeout=1)
 
-        expected = snmp.util.BulkResult(
+        expected = BulkResult(
             {'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10'},
             OrderedDict([
                 ('1.3.6.1.2.1.3.1.1.1.12.1.172.17.0.1', 12),
@@ -127,7 +126,7 @@ class TestGet(ByteTester):
         self._send.assert_called()
         key_types = {type(k) for k in result.listing.keys()}
 
-        if sys.version_info > (3, 0):
+        if six.PY3:
             self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
             self.assertEqual(key_types, {str})
         else:
@@ -211,7 +210,7 @@ class TestGet(ByteTester):
         self._send.assert_called()
         self.assertIsInstance(result, dict)
         key_types = {type(key) for key in result.keys()}
-        if sys.version_info > (3, 0):
+        if six.PY3:
             self.assertEqual(key_types, {str})
         else:
             self.assertEqual(key_types, {unicode})
@@ -316,7 +315,7 @@ class TestGet(ByteTester):
         for row in result:
             self.assertIsInstance(row, dict)
             dict_types = {type(key) for key in row.keys()}
-            if sys.version_info > (3, 0):
+            if six.PY3:
                 self.assertEqual(dict_types, {str})
             else:
                 self.assertEqual(dict_types, {unicode})

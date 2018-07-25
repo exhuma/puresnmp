@@ -11,19 +11,26 @@ from __future__ import unicode_literals
 from collections import namedtuple
 
 import verlib
-from pkg_resources import resource_string
-
-from puresnmp.api.pythonic import (bulkget, bulkwalk, get, getnext, multiget,
-                                   multigetnext, multiset, multiwalk, set,
-                                   table, walk)
 
 # !!! DO NOT REMOVE !!! The following import triggers the processing of SNMP
 # Types and thus populates the Registry. If this is not included, Non x.690
 # SNMP types will not be properly detected!
 import puresnmp.types
+from puresnmp.api.pythonic import (
+    bulkget,
+    bulkwalk,
+    get,
+    getnext,
+    multiget,
+    multigetnext,
+    multiset,
+    multiwalk,
+    set,
+    table,
+    walk
+)
 
 from .version import VERSION
-
 
 # Simple version information as text
 __version__ = VERSION

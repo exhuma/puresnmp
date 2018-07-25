@@ -105,8 +105,7 @@ def readbytes_multiple(filename):
         else:
             str_bytes.extend(line.split())
     values = [int(char, 16) for char in str_bytes]
-    output = to_bytes(values)
-    yield output
+    yield to_bytes(values)
 
 
 def readbytes(filename):
