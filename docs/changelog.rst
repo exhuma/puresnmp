@@ -38,6 +38,7 @@ Release 1.3.0
 * **[fix]** ``ObjectIdentifier(0)`` is now correctly detected & transcoded.
 * **[fix]** ``port`` no longer ignores the ``port`` argument.
 * **[fix]** Avoid potential error in reported ``OctetString`` length.
+* **[fix]** UDP connection retries are now handled properly.
 * **[code-quality]** Improved type-hints.
 * **[code-quality]** Update contribution guide, adding code-style rules. Added
   an appropriate ``pylintrc`` and fixed some style violations.
