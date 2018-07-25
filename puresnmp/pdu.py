@@ -48,7 +48,7 @@ class VarBind(namedtuple('VarBind', 'oid, value')):
     def __new__(cls, oid, value):
         if not isinstance(oid, (ObjectIdentifier,) + six.string_types):
             raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
-                            ' instances!')
+                            ' instances! Your value: %r' % oid)
         if isinstance(oid, six.string_types):
             oid = ObjectIdentifier.from_string(oid)
         return super(VarBind, cls).__new__(cls, oid, value)
