@@ -1,9 +1,11 @@
 """
 SMI Types / Structure types which are not defined in :term:`X.690`.
 
-See `RFC 1155 section 3.2.3`_ for a description of the types.
+See `RFC 1155 section 3.2.3`_ for a description of the types and `RFC 3416`_
+for the definition of the new types.
 
 .. _RFC 1155 section 3.2.3: https://tools.ietf.org/html/rfc1155#section-3.2.3
+.. _RFC 3416: https://tools.ietf.org/html/rfc3416
 """
 
 # pylint: disable=missing-docstring
@@ -48,7 +50,7 @@ class TimeTicks(Integer):
     def __init__(self, value):
         if isinstance(value, timedelta):
             value = int(value.total_seconds() * 100)
-        super().__init__(value)
+        super(TimeTicks, self).__init__(value)
 
     def pythonize(self):
         seconds = self.value / 100.0  # see rfc2578#section-7.1.8

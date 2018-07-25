@@ -37,14 +37,32 @@ Depending on type, you may also want to override certain methods. See
 """
 # pylint: disable=abstract-method, missing-docstring
 
-from itertools import zip_longest
+from __future__ import division, print_function, unicode_literals
 
-from .util import decode_length, encode_length, TypeInfo
+import warnings
+from typing import Union, TYPE_CHECKING
+
+import six
+from six.moves import zip_longest
+
+from .util import (TypeInfo, decode_length, encode_length, int_from_bytes,
+                   to_bytes)
+
+
+if TYPE_CHECKING:
+    # pylint: disable=unused-import
+    from typing import Any, Callable, Dict, Tuple
+
+try:
+    unicode  # type: Callable[[Any], str]
+except NameError:
+    # pylint: disable=invalid-name
+    unicode = str  # type: Callable[[Any], str]
 
 
 class Registry(type):
 
-    __registry = {}
+    __registry = {}  # type: Dict[Tuple[str, int], type]
 
     def __new__(mcs, name, parents, dict_):
         new_cls = super(Registry, mcs).__new__(mcs, name, parents, dict_)
@@ -89,11 +107,12 @@ def pop_tlv(data):
         value = cls.from_bytes(chunk)
     except KeyError:
         # Add context information
-        value = NonASN1Type.from_bytes(chunk)
+        value = UnknownType.from_bytes(chunk)
     return value, remainder[length:]
 
 
-class Type(metaclass=Registry):
+@six.add_metaclass(Registry)
+class Type(object):
     """
     The superclass for all supported types.
     """
@@ -113,7 +132,8 @@ class Type(metaclass=Registry):
                              'Expected a %s class with tag '
                              'ID 0x%02x, but got a %s class with '
                              'tag ID 0x%02x' % (
-                                 cls.TYPECLASS, cls.TAG, tinfo.cls, data[0]))
+                                 cls.TYPECLASS, cls.TAG, tinfo.cls,
+                                 six.byte2int(data)))
 
     @classmethod
     def from_bytes(cls, data):
@@ -137,12 +157,13 @@ class Type(metaclass=Registry):
     def decode(cls, data):  # pragma: no cover
         """
         This method takes a bytes object which contains the raw content octets
-        of the object. That means, the octets *without* the type information and
-        length.
+        of the object. That means, the octets *without* the type information
+        and length.
 
         This function must be overridden by the concrete subclasses.
         """
-        raise NotImplementedError('Decoding is not yet implemented on %s' % cls)
+        raise NotImplementedError(
+            'Decoding is not yet implemented on %s' % cls)
 
     def __bytes__(self):  # pragma: no cover
         """
@@ -169,10 +190,17 @@ class Type(metaclass=Registry):
         By default this simply returns the string representation. But more
         complex values may override this.
         """
-        return str(self)
+        return unicode(self)
+
+    if six.PY2:
+        def __unicode__(self):
+            return repr(self)
+
+        def __str__(self):
+            return self.__bytes__()
 
 
-class NonASN1Type(Type):
+class UnknownType(Type):
     """
     A fallback type for anything not in X.690.
 
@@ -185,7 +213,6 @@ class NonASN1Type(Type):
       details.
     * ``length``: The length of the value.
     """
-    # TODO: Rename this class to UnknownType
 
     def __init__(self, tag, value):
         self.value = value
@@ -193,10 +220,10 @@ class NonASN1Type(Type):
         self.length = len(value)
 
     def __bytes__(self):
-        return bytes([self.tag]) + encode_length(self.length) + self.value
+        return to_bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self):
-        return 'NonASN1Type(%r, %r)' % (self.tag, self.value)
+        return '%s(%r, %r)' % (self.__class__.__name__, self.tag, self.value)
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
@@ -213,14 +240,21 @@ class NonASN1Type(Type):
         """
         if not data:
             return Null()
-        tag = data[0]
+        tag = six.byte2int(data)
         expected_length, data = decode_length(data[1:])
         if len(data) != expected_length:
             raise ValueError('Corrupt packet: Unexpected length for {0} '
                              'Expected {1} (0x{1:02x}) '
                              'but got {2} (0x{2:02x})'.format(
-                                 NonASN1Type, expected_length, len(data)))
-        return NonASN1Type(tag, data)
+                                 UnknownType, expected_length, len(data)))
+        return UnknownType(tag, data)
+
+
+class NonASN1Type(UnknownType):
+    def __init__(self, tag, value):
+        warnings.warn('puresnmp.x690.types.NonASN1Type is deprecated,'
+                      ' replace it with UnknownType', stacklevel=2)
+        super(NonASN1Type, self).__init__(tag, value)
 
 
 class Boolean(Type):
@@ -232,16 +266,16 @@ class Boolean(Type):
 
     @classmethod
     def validate(cls, data):
-        super().validate(data)
-        if data[1] != 1:
-            raise ValueError('Unexpected Boolean value. Length should be 1, it '
-                             'was %d' % data[1])
+        super(Boolean, cls).validate(data)
+        if six.indexbytes(data, 1) != 1:
+            raise ValueError('Unexpected Boolean value. Length should be 1,'
+                             ' it was %d' % six.indexbytes(data, 1))
 
     def __init__(self, value):
         self.value = value
 
     def __bytes__(self):
-        return bytes([1, 1, int(self.value)])
+        return to_bytes([1, 1, int(self.value)])
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
@@ -251,12 +285,15 @@ class Boolean(Type):
 class Null(Type):
     TAG = 0x05
 
+    def __init__(self):
+        self.value = None
+
     @classmethod
     def validate(cls, data):
-        super().validate(data)
-        if data[1] != 0:
-            raise ValueError('Unexpected NULL value. Lenght should be 0, it '
-                             'was %d' % data[1])
+        super(Null, cls).validate(data)
+        if six.indexbytes(data, 1) != 0:
+            raise ValueError('Unexpected NULL value. Length should be 0, it '
+                             'was %d' % six.indexbytes(data, 1))
 
     @classmethod
     def decode(cls, data):
@@ -275,6 +312,9 @@ class Null(Type):
     def __bool__(self):
         return False
 
+    def __nonzero__(self):  # __bool__ for py2
+        return False
+
 
 class OctetString(Type):
     TAG = 0x04
@@ -284,15 +324,15 @@ class OctetString(Type):
         return cls(data)
 
     def __init__(self, value):
-        if isinstance(value, str):
+        if isinstance(value, unicode):
             self.value = value.encode('ascii')
         else:
             self.value = value
-        self.length = encode_length(len(value))
+        self.length = encode_length(len(self.value))
 
     def __bytes__(self):
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
-        return bytes(tinfo) + self.length + self.value
+        return to_bytes(tinfo) + self.length + self.value
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
@@ -324,11 +364,12 @@ class Sequence(Type):
         self.items = items
 
     def __bytes__(self):
-        output = [bytes(item) for item in self]
+        output = [to_bytes(item) for item in self]
         output = b''.join(output)
         length = encode_length(len(output))
-        tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED, Sequence.TAG)
-        return bytes(tinfo) + length + output
+        tinfo = TypeInfo(TypeInfo.UNIVERSAL, TypeInfo.CONSTRUCTED,
+                         Sequence.TAG)
+        return to_bytes(tinfo) + length + output
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
@@ -362,12 +403,13 @@ class Integer(Type):
 
     @classmethod
     def decode(cls, data):
-        return cls(int.from_bytes(data, 'big', signed=True))
+        return cls(int_from_bytes(data, 'big', signed=True))
 
     def __init__(self, value):
         self.value = value
 
     def __bytes__(self):
+        # pylint: disable=line-too-long
         if self.value == 0:
             octets = [0]
         else:
@@ -391,7 +433,7 @@ class Integer(Type):
                 del octets[0]
 
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
-        return bytes(tinfo) + bytes([len(octets)]) + bytes(octets)
+        return to_bytes(tinfo) + to_bytes([len(octets)]) + to_bytes(octets)
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
@@ -447,15 +489,22 @@ class ObjectIdentifier(Type):
 
     @classmethod
     def decode(cls, data):
+
+        # Special case for "empty" object identifiers which should be returned
+        # as "0"
+        if not data:
+            return ObjectIdentifier(0)
+
         # unpack the first byte into first and second sub-identifiers.
-        first, second = data[0] // 40, data[0] % 40
+        data0 = six.byte2int(data)
+        first, second = data0 // 40, data0 % 40
         output = [first, second]
 
-        remaining = iter(data[1:])
+        remaining = six.iterbytes(data[1:])
 
         for char in remaining:
-            # Each node can only contain values from 0-127. Other values need to
-            # be combined.
+            # Each node can only contain values from 0-127. Other values need
+            # to be combined.
             if char > 127:
                 collapsed_value = ObjectIdentifier.decode_large_value(
                     char, remaining)
@@ -467,17 +516,26 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def from_string(value):
+        # type: (str) -> ObjectIdentifier
         """
         Create an OID from a string
         """
 
+        if not isinstance(value, six.string_types):
+            raise TypeError('%r is not of type `str`' % value)
+
         if value == '.':
             return ObjectIdentifier(1)
+
+        if isinstance(value, str) and value.startswith('.'):
+            value = value[1:]
 
         identifiers = [int(ident, 10) for ident in value.split('.')]
         return ObjectIdentifier(*identifiers)
 
     def __init__(self, *identifiers):
+        # pylint: disable=line-too-long
+
         # If the user hands in an iterable, instead of positional arguments,
         # make sure we unpack it
         if len(identifiers) == 1 and not isinstance(identifiers[0], int):
@@ -486,10 +544,10 @@ class ObjectIdentifier(Type):
         if len(identifiers) > 1:
             # The first two bytes are collapsed according to X.690
             # See https://en.wikipedia.org/wiki/X.690#BER_encoding
-            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]  # NOQA
+            first, second, rest = identifiers[0], identifiers[1], identifiers[2:]
             first_output = (40*first) + second
         else:
-            first_output = 1
+            first_output = identifiers[0]
             rest = []
 
         # Values above 127 need a special encoding. They get split up into
@@ -510,20 +568,46 @@ class ObjectIdentifier(Type):
         self.__collapsed_identifiers = tuple(collapsed_identifiers)
         self.length = encode_length(len(self.__collapsed_identifiers))
 
-    def __bytes__(self):
-        return bytes([self.TAG]) + self.length + bytes(
-            self.__collapsed_identifiers)
+    def __int__(self):
+        if len(self.identifiers) != 1:
+            raise ValueError('Only ObjectIdentifier with one node can be '
+                             'converted to int. %r is not convertable' % self)
+        return self.identifiers[0]
 
-    def __str__(self):
-        return '.'.join([str(_) for _ in self.identifiers])
+
+    if six.PY2:
+        def __str__(self):
+            output = to_bytes([self.TAG])
+            if self.__collapsed_identifiers == (0,):
+                output += b'\x00'
+            else:
+                output += self.length + to_bytes(self.__collapsed_identifiers)
+            return output
+
+        def __unicode__(self):
+            return '.'.join([unicode(_) for _ in self.identifiers])
+    else:
+        def __str__(self):
+            return '.'.join([unicode(_) for _ in self.identifiers])
+
+        def __bytes__(self):
+            output = to_bytes([self.TAG])
+            if self.__collapsed_identifiers == (0,):
+                output += b'\x00'
+            else:
+                output += self.length + to_bytes(self.__collapsed_identifiers)
+            return output
 
     def __repr__(self):
         return 'ObjectIdentifier(%r)' % (self.identifiers, )
 
     def __eq__(self, other):
-        # pylint: disable=unidiomatic-typecheck
+        # pylint: disable=unidiomatic-typecheck, protected-access
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
+
+    def __len__(self):
+        return len(self.identifiers)
 
     def __contains__(self, other):
         """
@@ -563,11 +647,21 @@ class ObjectIdentifier(Type):
         else:
             return unzipped_a < unzipped_b
 
+    def __lt__(self, other):
+        return self.identifiers < other.identifiers
+
     def __hash__(self):
         return hash(self.identifiers)
 
+    def __add__(self, other):
+        nodes = self.identifiers + other.identifiers
+        return ObjectIdentifier(*nodes)
+
+    def __getitem__(self, index):
+        return ObjectIdentifier(self.identifiers[index])
+
     def pythonize(self):
-        return '.'.join([str(_) for _ in self.identifiers])
+        return '.'.join([unicode(_) for _ in self.identifiers])
 
 
 class ObjectDescriptor(Type):

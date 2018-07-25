@@ -1,12 +1,50 @@
 """
 Utility functions for working with the X.690 and related standards.
 """
+from __future__ import division, print_function, unicode_literals
+
 from binascii import hexlify, unhexlify
 from collections import namedtuple
-from typing import Tuple, Union, List, Any
+from typing import TYPE_CHECKING
+
+import six
 
 from ..const import Length
 
+if TYPE_CHECKING:
+    # pylint: disable=unused-import, cyclic-import
+    from typing import Any, Dict, List, Union, Tuple
+    from .types import Type
+
+try:
+    # pylint: disable=invalid-name
+    int_from_bytes = int.from_bytes
+except AttributeError:
+    def int_from_bytes(bytes_, byteorder, signed=False):
+        bytes_ = bytearray(bytes_)
+        if byteorder == 'little':
+            little_ordered = list(bytes_)
+        elif byteorder == 'big':
+            little_ordered = list(reversed(bytes_))
+        n = sum(b << 8*i for i, b in enumerate(little_ordered))
+        if signed and little_ordered and (little_ordered[-1] & 0x80):
+            n -= 1 << 8*len(little_ordered)
+        return n
+
+if six.PY2:
+    def to_bytes(x):
+        if hasattr(x, '__bytes__'):
+            return bytes(x)
+        else:
+            return bytes(bytearray(x))
+else:
+    unicode = str  # pylint: disable=invalid-name
+
+    def to_bytes(x):
+        try:
+            return bytes(x)
+        except TypeError as e:
+            raise TypeError(e.args[0] + ' on type {}'.format(type(x)))
 
 LengthValue = namedtuple('LengthValue', 'length value')
 
@@ -38,7 +76,8 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     CONSTRUCTED = 'constructed'
 
     @staticmethod
-    def from_bytes(data: Union[int, bytes]) -> "TypeInfo":
+    def from_bytes(data):
+        # type: ( Union[int, bytes] ) -> TypeInfo
         """
         Given one octet, extract the separate fields and return a TypeInfo
         instance::
@@ -48,8 +87,8 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         """
         # pylint: disable=attribute-defined-outside-init
 
-        if isinstance(data, bytes):
-            data = int.from_bytes(data, 'big')
+        if isinstance(data, (bytes, bytearray)):
+            data = int_from_bytes(data, 'big')
         # pylint: disable=protected-access
         if data == 0b11111111:
             raise NotImplementedError('Long identifier types are not yet '
@@ -72,7 +111,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         priv_const = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
 
         instance = TypeInfo(cls, priv_const, value)
-        instance._raw_value = data
+        instance._raw_value = data  # type: ignore
         return instance
 
     def __bytes__(self):
@@ -96,24 +135,28 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
             raise ValueError('Unexpected primitive/constructed for type info')
 
         output = cls << 6 | priv_const << 5 | self.tag
-        return bytes([output])
+        return to_bytes([output])
 
-    def __eq__(self, other):
-        return super().__eq__(other)
+    if six.PY2:
+        def __unicode__(self):
+            return repr(self)
 
+        def __str__(self):
+            return self.__bytes__()
 
 def encode_length(value):
     """
     This function encodes the length of a variable into bytes conforming to the
-    rules defined in :term:`X.690`: The "length" field must be specially encoded
-    for values above 127.  Additionally, from :term:`X.690`:
+    rules defined in :term:`X.690`: The "length" field must be specially
+    encoded for values above 127.  Additionally, from :term:`X.690`:
 
         8.1.3.2 A sender shall:
 
-            a) use the definite form (see 8.1.3.3) if the encoding is primitive;
-            b) use either the definite form (see 8.1.3.3) or the indefinite form
-               (see 8.1.3.6), a sender's option, if the encoding is constructed
-               and all immediately available;
+            a) use the definite form (see 8.1.3.3) if the encoding is
+               primitive;
+            b) use either the definite form (see 8.1.3.3) or the indefinite
+               form (see 8.1.3.6), a sender's option, if the encoding is
+               constructed and all immediately available;
             c) use the indefinite form (see 8.1.3.6) if the encoding is
                constructed and is not all immediately available.
 
@@ -127,10 +170,10 @@ def encode_length(value):
         b'\\x81\\xc8'
     """
     if value == Length.INDEFINITE:
-        return bytes([0b10000000])
+        return to_bytes([0b10000000])
 
     if value < 127:
-        return bytes([value])
+        return to_bytes([value])
 
     output = []
     while value > 0:
@@ -139,10 +182,11 @@ def encode_length(value):
 
     # prefix length information
     output = [0b10000000 | len(output)] + output
-    return bytes(output)
+    return to_bytes(output)
 
 
-def decode_length(data: bytes) -> LengthValue:
+def decode_length(data):
+    # type: ( bytes ) -> LengthValue
     """
     Given a bytes object, which starts with the length information of a TLV
     value, returns a namedtuple with the length and the remaining bytes. So,
@@ -152,8 +196,9 @@ def decode_length(data: bytes) -> LengthValue:
 
     For values which are longer than 127 bytes, the length must be encoded into
     an unknown amount of "length" bytes. This function reads as many bytes as
-    needed for the length. The return value contains the parsed length in number
-    of bytes, and the remaining data bytes which follow the length bytes.
+    needed for the length. The return value contains the parsed length in
+    number of bytes, and the remaining data bytes which follow the length
+    bytes.
 
     Examples::
 
@@ -168,26 +213,29 @@ def decode_length(data: bytes) -> LengthValue:
     TODO: Upon rereading this, I wonder if it would not make more sense to take
           the complete TLV content as input.
     """
-    if data[0] == 0b11111111:
+    data0 = six.byte2int(data)
+    if data0 == 0b11111111:
         # reserved
         raise NotImplementedError('This is a reserved case in X690')
-    elif data[0] & 0b10000000 == 0:
+    elif data0 & 0b10000000 == 0:
         # definite short form
-        output = int.from_bytes([data[0]], 'big')
+        output = int_from_bytes([data0], 'big')
         data = data[1:]
-    elif data[0] ^ 0b10000000 == 0:
+    elif data0 ^ 0b10000000 == 0:
         # indefinite form
-        raise NotImplementedError('Indefinite lenghts are not yet implemented!')
+        raise NotImplementedError('Indefinite lenghts are '
+                                  'not yet implemented!')
     else:
         # definite long form
-        num_octets = int.from_bytes([data[0] ^ 0b10000000], 'big')
+        num_octets = int_from_bytes([data0 ^ 0b10000000], 'big')
         value_octets = data[1:1+num_octets]
-        output = int.from_bytes(value_octets, 'big')
+        output = int_from_bytes(value_octets, 'big')
         data = data[num_octets + 1:]
     return LengthValue(output, data)
 
 
-def visible_octets(data: bytes) -> str:
+def visible_octets(data):
+    # type: ( bytes ) -> str
     """
     Returns a geek-friendly (hexdump)  output of a bytes object.
 
@@ -231,7 +279,8 @@ def visible_octets(data: bytes) -> str:
     return '\n'.join(output)
 
 
-def tablify(varbinds: List[Tuple[Any, Any]], num_base_nodes: int=0) -> list:
+def tablify(varbinds, num_base_nodes=0):
+    # type: ( List[Tuple[Any, Any]], int ) -> list
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
@@ -279,17 +328,18 @@ def tablify(varbinds: List[Tuple[Any, Any]], num_base_nodes: int=0) -> list:
             {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
         ]
     """
-    rows = {}
+    rows = {}  # type: Dict[str, Dict[str, Type]]
     for oid, value in varbinds:
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]
             col_id, row_id = tail[0], tail[1:]
-            row_id = '.'.join([str(node) for node in row_id])
+            row_id = '.'.join([unicode(node) for node in row_id])
         else:
-            col_id, row_id = str(oid.identifiers[-2]), str(oid.identifiers[-1])
+            col_id = unicode(oid.identifiers[-2])
+            row_id = unicode(oid.identifiers[-1])
         tmp = {
             '0': row_id,
         }
         row = rows.setdefault(row_id, tmp)
-        row[str(col_id)] = value
+        row[unicode(col_id)] = value
     return list(rows.values())

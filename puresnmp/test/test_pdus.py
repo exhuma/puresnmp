@@ -1,9 +1,13 @@
+# pylint: skip-file
+
+import six
 from ..exc import SnmpError
 from ..x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
+    to_bytes,
 )
 from ..pdu import (
     BulkGetRequest,
@@ -30,7 +34,7 @@ def comparable(bytes):
 class TestGet(ByteTester):
 
     def setUp(self):
-        super().setUp()
+        super(TestGet, self).setUp()
         self.maxDiff = None
 
     def test_get_request(self):
@@ -61,7 +65,7 @@ class TestGet(ByteTester):
             OctetString('public'),
             request
         )
-        result = bytes(packet)
+        result = to_bytes(packet)
 
         self.assertBytesEqual(result, expected)
 
@@ -97,7 +101,7 @@ class TestGet(ByteTester):
                 b"\x30\x16"
                 b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
                 b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a")
-        with self.assertRaisesRegex(SnmpError, 'tooBig'):
+        with six.assertRaisesRegex(self, SnmpError, 'tooBig'):
             Sequence.from_bytes(data)
 
     def test_get_repr(self):
@@ -125,7 +129,7 @@ class TestGet(ByteTester):
             request
         )
 
-        result = bytes(packet)
+        result = to_bytes(packet)
         self.assertBytesEqual(result, expected)
 
     def test_multiget_response(self):
@@ -170,7 +174,7 @@ class TestWalk(ByteTester):
             OctetString('public'),
             request
         )
-        result = bytes(packet)
+        result = to_bytes(packet)
         self.assertBytesEqual(result, expected)
 
 
@@ -189,7 +193,7 @@ class TestSet(ByteTester):
             OctetString('private'),
             request
         )
-        result = bytes(packet)
+        result = to_bytes(packet)
         self.assertBytesEqual(result, expected)
 
 
@@ -215,5 +219,5 @@ class TestBulkGet(ByteTester):
             request
         )
 
-        result = bytes(packet)
+        result = to_bytes(packet)
         self.assertBytesEqual(result, expected)

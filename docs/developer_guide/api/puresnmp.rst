@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    puresnmp.api
     puresnmp.x690
 
 Submodules
@@ -19,6 +20,7 @@ Submodules
    puresnmp.transport
    puresnmp.types
    puresnmp.util
+   puresnmp.version
 
 Module contents
 ---------------

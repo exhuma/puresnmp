@@ -45,6 +45,7 @@ coverage.xml
 *,cover
 /coverage
 .hypothesis/
+.pytest_cache
 
 # Translations
 *.mo
@@ -88,3 +89,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# MyPy
+.mypy_cache
