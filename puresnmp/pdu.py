@@ -26,7 +26,7 @@ from .x690.types import (
     encode_length,
     pop_tlv,
 )
-from .x690.util import to_bytes, TypeInfo
+from .x690.util import TypeInfo, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import

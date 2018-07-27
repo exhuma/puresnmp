@@ -28,7 +28,7 @@ from puresnmp.api.pythonic import (
     multiwalk,
     set,
     table,
-    walk,
+    walk
 )
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
@@ -39,7 +39,7 @@ from puresnmp.x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
-    to_bytes,
+    to_bytes
 )
 
 from . import ByteTester

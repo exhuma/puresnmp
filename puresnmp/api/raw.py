@@ -82,12 +82,12 @@ def multiget(ip, community, oids, port=161, timeout=2):
         ['non-functional example', 'second value']
     """
 
-    oids = [OID(oid) for oid in oids]
+    parsed_oids = [OID(oid) for oid in oids]
 
     packet = Sequence(
         Integer(Version.V2C),
         OctetString(community),
-        GetRequest(get_request_id(), *oids)
+        GetRequest(get_request_id(), *parsed_oids)
     )
 
     response = send(ip, port, to_bytes(packet), timeout=timeout)
