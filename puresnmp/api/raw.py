@@ -1,3 +1,14 @@
+'''
+This module contains a high-level API to SNMP functions.
+
+The arguments and return values of these functions have types which are
+internal to ``puresnmp`` (subclasses of :py:class:`puresnmp.x690.Type`).
+
+Alternatively, there is :py:mod:`puresnmp.api.pythonic` which converts these
+values into pure Python types. This makes day-to-day programming a bit easier
+but loses type information which may be useful in some edge-cases. In such a
+case it's recommended to use :py:mod:`puresnmp.api.raw`.
+'''
 from __future__ import unicode_literals
 from collections import OrderedDict
 from typing import TYPE_CHECKING
