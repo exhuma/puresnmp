@@ -57,7 +57,7 @@ class TestGet(ByteTester):
     def setUp(self):
         patcher = patch('puresnmp.api.raw.send')
         self._send = patcher.start()
-        self.addCleanup(lambda: patcher.stop())  #pylint: disable=unnecessary-lambda
+        self.addCleanup(lambda: patcher.stop)
 
     def test_get(self):
         response = readbytes('apiv1/get_response.hex')
