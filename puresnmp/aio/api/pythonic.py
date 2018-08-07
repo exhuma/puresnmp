@@ -17,6 +17,7 @@ returns the variable types unmodified which are all subclasses of
 
 
 from __future__ import unicode_literals
+
 import logging
 from collections import OrderedDict
 from datetime import datetime, timedelta
@@ -25,12 +26,12 @@ from typing import TYPE_CHECKING
 from . import raw
 from ...pdu import VarBind
 from ...util import BulkResult
+from ...x690.types import Type
 from ...x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
-    from ...x690.types import Type
     Pythonized = Union[str, bytes, int, datetime, timedelta]
 
 try:
@@ -117,7 +118,9 @@ async def multiwalk(ip, community, oids, port=161, timeout=6,
     """
     raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher)
     async for oid, value in raw_output:
-        yield VarBind(oid, value.pythonize())
+        if isinstance(value, Type):
+            value = value.pythonize()
+        yield VarBind(oid, value)
 
 
 async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin

@@ -11,7 +11,6 @@ from __future__ import unicode_literals
 import pytest
 import sys
 from datetime import timedelta
-from ipaddress import ip_address
 try:
     from unittest.mock import patch, call
 except ImportError:
@@ -28,7 +27,7 @@ from puresnmp.aio.api.pythonic import (
     multiwalk,
     set,
     table,
-    walk,
+    walk
 )
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
@@ -39,7 +38,7 @@ from puresnmp.x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
-    to_bytes,
+    to_bytes
 )
 
 from .asyncmock import AsyncMock, AsyncGenMock
@@ -148,16 +147,16 @@ class TestMultiWalk(object):
         with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             mck.multiwalk.return_value = [VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'),
-                Integer(1)
+                1
             ), VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
-                OctetString(b'lo')
+                b'lo'
             ), VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'),
-                Integer(78)
+                78
             ), VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
-                OctetString(b'eth0')
+                b'eth0'
             )]
             result = []
             async for x in multiwalk('::1', 'public', [
@@ -218,7 +217,7 @@ class TestGetBulkGet(object):
              b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64'},
             {'1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1': 10,
              '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1': b'\x02B\xe2\xc5\x8d\t',
-             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': ip_address('172.17.0.1'),
+             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': b'\xac\x11\x00\x01',
              '1.3.6.1.2.1.4.1.0': 1,
              '1.3.6.1.2.1.4.3.0': 57})
 
