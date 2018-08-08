@@ -1,3 +1,14 @@
+'''
+This module contains a high-level API to SNMP functions.
+
+The arguments and return values of these functions have types which are
+internal to ``puresnmp`` (subclasses of :py:class:`puresnmp.x690.Type`).
+
+Alternatively, there is :py:mod:`puresnmp.api.pythonic` which converts these
+values into pure Python types. This makes day-to-day programming a bit easier
+but loses type information which may be useful in some edge-cases. In such a
+case it's recommended to use :py:mod:`puresnmp.api.raw`.
+'''
 from __future__ import unicode_literals
 from collections import OrderedDict
 from typing import TYPE_CHECKING
@@ -41,6 +52,7 @@ except NameError:
 _set = set
 
 LOG = logging.getLogger(__name__)
+OID = ObjectIdentifier.from_string
 
 
 def get(ip, community, oid, port=161, timeout=2):
@@ -70,12 +82,12 @@ def multiget(ip, community, oids, port=161, timeout=2):
         ['non-functional example', 'second value']
     """
 
-    oids = [ObjectIdentifier.from_string(oid) for oid in oids]
+    parsed_oids = [OID(oid) for oid in oids]
 
     packet = Sequence(
         Integer(Version.V2C),
         OctetString(community),
-        GetRequest(get_request_id(), *oids)
+        GetRequest(get_request_id(), *parsed_oids)
     )
 
     response = send(ip, port, to_bytes(packet), timeout=timeout)
@@ -169,13 +181,14 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
 
     Example::
 
-        >>> walk('127.0.0.1', 'private', ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
+        >>> multiwalk('127.0.0.1', 'private', [
+        ...     '1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
         <generator object multiwalk at 0x7fa2f775cf68>
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)
 
     varbinds = fetcher(ip, community, oids, port, timeout)
-    requested_oids = [ObjectIdentifier.from_string(oid) for oid in oids]
+    requested_oids = [OID(oid) for oid in oids]
     grouped_oids = group_varbinds(varbinds, requested_oids)
     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
     LOG.debug('%d of %d OIDs need to be continued',
@@ -254,7 +267,7 @@ def multiset(ip, community, mappings, port=161, timeout=2):
         raise TypeError('SNMP requires typing information. The value for a '
                         '"set" request must be an instance of "Type"!')
 
-    binds = [VarBind(ObjectIdentifier.from_string(k), v)
+    binds = [VarBind(OID(k), v)
              for k, v in mappings]
 
     request = SetRequest(get_request_id(), binds)
@@ -343,9 +356,9 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     repeating_oids = repeating_oids or []  # protect against empty values
 
     oids = [
-        ObjectIdentifier.from_string(oid) for oid in scalar_oids
+        OID(oid) for oid in scalar_oids
     ] + [
-        ObjectIdentifier.from_string(oid) for oid in repeating_oids
+        OID(oid) for oid in repeating_oids
     ]
 
     non_repeaters = len(scalar_oids)
@@ -393,14 +406,15 @@ def _bulkwalk_fetcher(bulk_size=10):
     """
     Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
     """
+
     def fetcher(ip, community, oids, port=161, timeout=2):
         '''
         Executes a SNMP BulkGet request.
         '''
         result = bulkget(ip, community, [], oids, max_list_size=bulk_size,
                          port=port, timeout=timeout)
-        return [VarBind(ObjectIdentifier.from_string(k), v)
-                for k, v in result.listing.items()]
+        return [VarBind(OID(k), v) for k, v in result.listing.items()]
+
     if sys.version_info < (3, 0):
         fetcher.__name__ = str('_bulkwalk_fetcher(%d)' % bulk_size)
     else:
@@ -444,6 +458,8 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 6, 38)), value=b'\x02B\xac\x11\x00\x02')
         VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 38)), value='0.0')
     """
+    if not isinstance(oids, list):
+        raise TypeError('OIDS need to be passed as list!')
 
     if not isinstance(oids, list):
         raise TypeError('OIDS need to be passed as list!')

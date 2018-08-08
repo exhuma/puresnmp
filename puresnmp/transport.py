@@ -11,8 +11,8 @@ hard to test.
 # TODO (beginner, no-dev): Ignore this file from coverage without adding
 #                          "pragma: no cover" to each function.
 
-import socket
 import logging
+import socket
 from ipaddress import ip_address
 
 from .exc import Timeout
@@ -40,17 +40,18 @@ def send(ip, port, packet, timeout=2):  # pragma: no cover
     sock = socket.socket(address_family, socket.SOCK_DGRAM)
     sock.settimeout(timeout)
 
-    if LOG.isEnabledFor(logging.DEBUG):
-        hexdump = visible_octets(packet)
-        LOG.debug('Sending packet to %s:%s\n%s', ip, port, hexdump)
-
-    sock.sendto(packet, (ip, port))
-    for _ in range(RETRIES):
+    for num_retry in range(RETRIES):
         try:
-            response = sock.recv(4096)
+            if LOG.isEnabledFor(logging.DEBUG):
+                hexdump = visible_octets(packet)
+                LOG.debug('Sending packet to %s:%s (attempt %d/%d)\n%s',
+                          ip, port, (num_retry+1), RETRIES, hexdump)
+            sock.sendto(packet, (ip, port))
+            response = sock.recv(8192)
             break
         except socket.timeout:
-            LOG.debug('Timeout')  # TODO add detail
+            LOG.debug('Timeout during attempt #%d',
+                      (num_retry+1))  # TODO add detail
             continue
     else:
         raise Timeout("Max of %d retries reached" % RETRIES)

@@ -28,7 +28,7 @@ from puresnmp.api.pythonic import (
     multiwalk,
     set,
     table,
-    walk,
+    walk
 )
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
@@ -39,7 +39,7 @@ from puresnmp.x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
-    to_bytes,
+    to_bytes
 )
 
 from . import ByteTester
@@ -133,16 +133,16 @@ class TestMultiWalk(unittest.TestCase):
         with patch('puresnmp.api.pythonic.raw') as mck:
             mck.multiwalk.return_value = [VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'),
-                Integer(1)
+                1,
             ), VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
-                OctetString(b'lo')
+                b'lo'
             ), VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.78'),
-                Integer(78)
+                78
             ), VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
-                OctetString(b'eth0')
+                b'eth0'
             )]
             result = list(multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
@@ -198,7 +198,7 @@ class TestGetBulkGet(unittest.TestCase):
              b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64'},
             {'1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1': 10,
              '1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1': b'\x02B\xe2\xc5\x8d\t',
-             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': ip_address('172.17.0.1'),
+             '1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1': b'\xac\x11\x00\x01',
              '1.3.6.1.2.1.4.1.0': 1,
              '1.3.6.1.2.1.4.3.0': 57})
 

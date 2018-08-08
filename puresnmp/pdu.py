@@ -26,7 +26,7 @@ from .x690.types import (
     encode_length,
     pop_tlv,
 )
-from .x690.util import to_bytes, TypeInfo
+from .x690.util import TypeInfo, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
@@ -46,7 +46,7 @@ class VarBind(namedtuple('VarBind', 'oid, value')):
     def __new__(cls, oid, value):
         if not isinstance(oid, (ObjectIdentifier,) + six.string_types):
             raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
-                            ' instances!')
+                            ' instances! Your value: %r' % oid)
         if isinstance(oid, six.string_types):
             oid = ObjectIdentifier.from_string(oid)
         return super(VarBind, cls).__new__(cls, oid, value)

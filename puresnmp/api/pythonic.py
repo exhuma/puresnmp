@@ -17,6 +17,7 @@ variable types unmodified which are all subclasses of
 
 
 from __future__ import unicode_literals
+
 import logging
 from collections import OrderedDict
 from datetime import datetime, timedelta
@@ -25,6 +26,7 @@ from typing import TYPE_CHECKING
 from . import raw
 from ..pdu import VarBind
 from ..util import BulkResult
+from ..x690.types import Type
 from ..x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -106,7 +108,8 @@ def walk(ip, community, oid, port=161, timeout=2):
         yield VarBind(raw_oid, raw_value.pythonize())
 
 
-def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
+def multiwalk(ip, community, oids, port=161, timeout=2,
+              fetcher=multigetnext):
     # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiwalk` but returns simple
@@ -116,7 +119,9 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     """
     raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher)
     for oid, value in raw_output:
-        yield VarBind(oid, value.pythonize())
+        if isinstance(value, Type):
+            value = value.pythonize()
+        yield VarBind(oid, value)
 
 
 def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
