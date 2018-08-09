@@ -461,9 +461,6 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     if not isinstance(oids, list):
         raise TypeError('OIDS need to be passed as list!')
 
-    if not isinstance(oids, list):
-        raise TypeError('OIDS need to be passed as list!')
-
     result = multiwalk(ip, community, oids, port=port,
                        fetcher=_bulkwalk_fetcher(bulk_size))
     for oid, value in result:
