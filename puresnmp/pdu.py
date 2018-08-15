@@ -86,6 +86,7 @@ class PDU(Type):
 
     @classmethod
     def decode(cls, data):
+        # type: (bytes) -> PDU
         """
         This method takes a :py:class:`bytes` object and converts it to
         an application object. This is callable from each subclass of
@@ -115,6 +116,7 @@ class PDU(Type):
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
+        # type: (int, List[VarBind], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index
