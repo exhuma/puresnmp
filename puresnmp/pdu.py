@@ -13,10 +13,11 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 
 from collections import namedtuple
 from typing import TYPE_CHECKING
+
 import six
 
 from .const import MAX_VARBINDS
-from .exc import SnmpError, EmptyMessage, NoSuchOID, TooManyVarbinds
+from .exc import EmptyMessage, NoSuchOID, SnmpError, TooManyVarbinds
 from .x690.types import (
     Integer,
     Null,
@@ -24,13 +25,13 @@ from .x690.types import (
     Sequence,
     Type,
     encode_length,
-    pop_tlv,
+    pop_tlv
 )
 from .x690.util import TypeInfo, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Callable, List, Union
+    from typing import List, Union
 
 
 if six.PY3:
@@ -112,8 +113,7 @@ class PDU(Type):
             error_index
         )
 
-    def __init__(self, request_id, varbinds, error_status=0,
-                 error_index=0):
+    def __init__(self, request_id, varbinds, error_status=0, error_index=0):
         # type: (int, Union[tuple, List[VarBind]], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
