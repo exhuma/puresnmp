@@ -13,10 +13,11 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 
 from collections import namedtuple
 from typing import TYPE_CHECKING
+
 import six
 
 from .const import MAX_VARBINDS
-from .exc import SnmpError, EmptyMessage, NoSuchOID, TooManyVarbinds
+from .exc import EmptyMessage, NoSuchOID, SnmpError, TooManyVarbinds
 from .x690.types import (
     Integer,
     Null,
@@ -24,9 +25,9 @@ from .x690.types import (
     Sequence,
     Type,
     encode_length,
-    pop_tlv,
+    pop_tlv
 )
-from .x690.util import to_bytes, TypeInfo
+from .x690.util import TypeInfo, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
