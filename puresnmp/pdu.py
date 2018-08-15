@@ -30,7 +30,7 @@ from .x690.util import to_bytes, TypeInfo
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Callable
+    from typing import Any, Callable, List
 
 try:
     unicode  # type: Callable[[Any], str]

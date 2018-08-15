@@ -47,3 +47,9 @@ class Timeout(socket.timeout):
     Wrapper for network timeouts.
     """
     # TODO: is this really needed? Why not bubble up socket.timeout?
+
+
+class FaultySNMPImplementation(SnmpError):
+    '''
+    Exception which indicates an unexpected response from an SNMP agent.
+    '''

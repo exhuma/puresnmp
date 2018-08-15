@@ -10,7 +10,7 @@ from ..x690.types import (
     Type,
 )
 from ..x690.util import to_bytes, tablify
-from ..exc import SnmpError, NoSuchOID
+from ..exc import SnmpError, NoSuchOID, FaultySNMPImplementation
 from ..pdu import (
     BulkGetRequest,
     GetNextRequest,
@@ -39,6 +39,9 @@ except NameError:
 _set = set
 
 LOG = logging.getLogger(__name__)
+OID = ObjectIdentifier.from_string
+ERRORS_STRICT = 'strict'
+ERRORS_WARN = 'warn'
 
 
 def get(ip, community, oid, port=161, timeout=2):
@@ -129,11 +132,18 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
             'Invalid response! Expected exactly %d varbind, '
             'but got %d' % (len(oids), len(response_object.varbinds)))
     output = [VarBind(oid, value) for oid, value in response_object.varbinds]
+
+    # Verify that the OIDs we retrieved are successors of the requested OIDs.
+    for requested, retrieved in zip(oids, output):
+        if not OID(requested) < retrieved.oid:
+            raise FaultySNMPImplementation(
+                'The OID %s is not a successor of %s!' %
+                (retrieved.oid, requested))
     return output
 
 
-def walk(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
+def walk(ip, community, oid, port=161, timeout=2, errors=ERRORS_STRICT):
+    # type: (str, str, str, int, int, str) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -153,11 +163,13 @@ def walk(ip, community, oid, port=161, timeout=2):
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
     """
 
-    return multiwalk(ip, community, [oid], port, timeout=timeout)
+    return multiwalk(ip, community, [oid], port, timeout=timeout,
+                     errors=errors)
 
 
-def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
+def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext,
+              errors=ERRORS_STRICT):
+    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]], str) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -185,6 +197,9 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
             if not any(containment) or varbind.oid in yielded:  # type: ignore
+                LOG.debug('Unexpected device response: Returned VarBind %s '
+                          'was either not contained in the requested tree or '
+                          'appeared more than once. Skipping!', varbind)
                 continue
             yielded.add(varbind.oid)  # type: ignore
             yield varbind
@@ -193,14 +208,23 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext):
     # those.
     while unfinished_oids:
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
+        next_fetches_str = [unicode(_) for _ in next_fetches]
         try:
             varbinds = fetcher(ip, community,
-                               [unicode(_) for _ in next_fetches],
+                               next_fetches_str,
                                port,
                                timeout)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
+        except FaultySNMPImplementation as exc:
+            if errors == ERRORS_WARN:
+                LOG.warning('SNMP walk aborted prematurely due to faulty SNMP '
+                            'implementation on device %r! Upon running a '
+                            'GetNext on OIDs %r it returned the following '
+                            'error: %s', ip, next_fetches_str, exc)
+                break
+            raise
         grouped_oids = group_varbinds(varbinds,
                                       next_fetches,
                                       user_roots=requested_oids)
