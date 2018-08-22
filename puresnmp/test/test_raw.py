@@ -61,7 +61,7 @@ except ImportError:
 class CapturingHandler(Handler):
 
     def __init__(self):
-        super().__init__()
+        super(CapturingHandler, self).__init__()
         self.captured_records = []
 
     def emit(self, record):
