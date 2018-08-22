@@ -13,10 +13,11 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 
 from collections import namedtuple
 from typing import TYPE_CHECKING
+
 import six
 
 from .const import MAX_VARBINDS
-from .exc import SnmpError, EmptyMessage, NoSuchOID, TooManyVarbinds
+from .exc import EmptyMessage, NoSuchOID, SnmpError, TooManyVarbinds
 from .x690.types import (
     Integer,
     Null,
@@ -24,13 +25,13 @@ from .x690.types import (
     Sequence,
     Type,
     encode_length,
-    pop_tlv,
+    pop_tlv
 )
-from .x690.util import to_bytes, TypeInfo
+from .x690.util import TypeInfo, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Callable
+    from typing import Any, Callable, List
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -85,6 +86,7 @@ class PDU(Type):
 
     @classmethod
     def decode(cls, data):
+        # type: (bytes) -> PDU
         """
         This method takes a :py:class:`bytes` object and converts it to
         an application object. This is callable from each subclass of
@@ -114,6 +116,7 @@ class PDU(Type):
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
+        # type: (int, List[VarBind], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index

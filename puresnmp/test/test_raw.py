@@ -1,5 +1,6 @@
 # pylint: skip-file
 
+
 """
 Test the external "raw" interface.
 
@@ -7,22 +8,46 @@ Test the external "raw" interface.
 PureSNMP object instances.
 """
 
-import unittest
+from __future__ import print_function
+from logging import Handler, getLevelName, getLogger, WARNING
+import re
 import sys
+import unittest
 from datetime import timedelta
 from unittest import skipUnless
 
 import six
 
-from puresnmp.api.raw import (bulkget, bulkwalk, get, getnext, multiget,
-                              multiset, multiwalk, set, table, walk)
+from puresnmp.api.raw import (
+    bulkget,
+    bulkwalk,
+    get,
+    getnext,
+    multiget,
+    multiset,
+    multiwalk,
+    set,
+    table,
+    walk
+)
 from puresnmp.const import Version
-from puresnmp.exc import NoSuchOID, SnmpError
-from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
+from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
+from puresnmp.pdu import (
+    BulkGetRequest,
+    GetNextRequest,
+    GetRequest,
+    GetResponse,
+    VarBind
+)
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.util import BulkResult
-from puresnmp.x690.types import (Integer, ObjectIdentifier, OctetString,
-                                 Sequence, to_bytes)
+from puresnmp.x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    to_bytes
+)
 
 from . import ByteTester, readbytes
 
@@ -31,6 +56,32 @@ try:
 except ImportError:
     from mock import patch, call  # pip install mock
 
+
+
+class CapturingHandler(Handler):
+
+    def __init__(self):
+        super(CapturingHandler, self).__init__()
+        self.captured_records = []
+
+    def emit(self, record):
+        self.captured_records.append(record)
+
+    def assertContains(self, level, message_regex):
+        found = False
+        for record in self.captured_records:
+            matches_level = record.levelno == level
+            matches_re = re.search(message_regex, record.msg % record.args)
+            if matches_level and matches_re:
+                found = True
+                break
+        if not found:
+            print('--- Captured log messages:', file=sys.stderr)
+            for record in self.captured_records:
+                print('Level:', getLevelName(record.levelno), 'Message:',
+                      record.msg % record.args, file=sys.stderr)
+            raise AssertionError('Pattern %r was not found with level %r in '
+                                 'the log records' % (message_regex, level))
 
 
 
@@ -158,6 +209,55 @@ class TestMultiWalk(unittest.TestCase):
         # TODO (advanced): should order matter in the following result?
         six.assertCountEqual(self, result, expected)
 
+    def test_multiwalk_non_containment(self):
+        '''
+        Running a multiwalk should raise an exception if the agent returns OIDs
+        which are not properly increasing.
+        '''
+        from puresnmp.pdu import GetResponse
+        OID = ObjectIdentifier.from_string
+
+        # First case: Returned OIDs are the same
+        response = Sequence(
+            Integer(1),
+            OctetString(b'public'),
+            GetResponse(
+                123,
+                [
+                    VarBind(oid=OID('1.2.3'), value=Integer(30)),
+                    VarBind(oid=OID('2.3.4'), value=Integer(40)),
+                ]
+            )
+        )
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.side_effect = [to_bytes(response)]
+            with self.assertRaises(FaultySNMPImplementation):
+                list(multiwalk('::1', 'public', [
+                    '1.2.3',
+                    '2.3.4',
+                ]))
+
+
+        # Second case: Returned OIDs are smaller
+        response = Sequence(
+            Integer(1),
+            OctetString(b'public'),
+            GetResponse(
+                123,
+                [
+                    VarBind(oid=OID('1.2.2'), value=Integer(30)),
+                    VarBind(oid=OID('2.3.3'), value=Integer(40)),
+                ]
+            )
+        )
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.side_effect = [to_bytes(response)]
+            with self.assertRaises(FaultySNMPImplementation):
+                list(multiwalk('::1', 'public', [
+                    '1.2.3',
+                    '2.3.4',
+                ]))
+
 
 class TestMultiSet(unittest.TestCase):
 
@@ -206,6 +306,125 @@ class TestGetNext(unittest.TestCase):
             mck.return_value = data
             result = getnext('::1', 'private', '1.3.6.1.5')
         self.assertEqual(result, expected)
+
+    def test_getnext_increasing_oid_strict(self):
+        '''
+        When running "getnext" we expect a different OID than the one we passed
+        in. If not, this can cause endless-loops in the worst case. Faulty SNMP
+        implementations may behave this way!
+        '''
+        requested_oid = ObjectIdentifier(1, 2, 3, 4)
+        response_object = Sequence(
+            Integer(1),
+            OctetString(b'public'),
+            GetResponse(
+                234,
+                [VarBind(requested_oid, Integer(123))]
+            )
+        )
+        response_bytes = to_bytes(response_object)
+
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.return_value = response_bytes
+            with self.assertRaises(FaultySNMPImplementation):
+                getnext('::1', 'private', '1.2.3.4')
+
+    def test_walk_increasing_oid_lenient(self):
+        '''
+        We want to be able to allow faulty SNMP implementations to at least try
+        to fetch the values in a walk which are not increasing. It should read
+        up to the values which are no longer increasing and emit a warning.
+        '''
+        logger = getLogger('puresnmp')
+        handler = CapturingHandler()
+        logger.addHandler(handler)
+
+        response_binds = [
+            VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
+            VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
+            VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
+            VarBind(ObjectIdentifier(1, 2, 1), Integer(121)),  # non-increasing
+        ]
+        response_packets = [
+            Sequence(
+                Integer(1),
+                OctetString(b'public'),
+                GetResponse(
+                    234,
+                    [bind]
+                )
+            )
+            for bind in response_binds
+        ]
+        response_bytes = [to_bytes(packet) for packet in response_packets]
+
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.side_effect = response_bytes
+            result = list(walk('::1', 'private', '1.2', errors='warn'))
+
+
+        # The last OID in the mocked responses is decreasing so we want to read
+        # just up to that point.
+        expected = [
+            VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
+            VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
+            VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
+        ]
+        self.assertEqual(result, expected)
+
+        # We also want to make sure that we have a proper warning about this
+        handler.assertContains(WARNING, r'.*1.2.1.*1.2.5.*')
+        logger.removeHandler(handler)
+
+
+    def test_walk_endless_loop(self):
+        '''
+        In rare cases, some devices fall into an endless loop by returning the
+        requested OID on a "getnext" call during a "walk" operation. A SNMP
+        client behaving according to the SNMP spec will fall into an endless
+        loop. This test fakes such a case and revents the loop.
+        '''
+        response_binds = [
+            VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
+            VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
+            VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
+            VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),  # same OID
+            VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),  # same OID
+            VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),  # same OID
+        ]
+        response_packets = [
+            Sequence(
+                Integer(1),
+                OctetString(b'public'),
+                GetResponse(
+                    234,
+                    [bind]
+                )
+            )
+            for bind in response_binds
+        ]
+        response_bytes = [to_bytes(packet) for packet in response_packets]
+
+        handler = CapturingHandler()
+        logger = getLogger('puresnmp')
+        logger.addHandler(handler)
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.side_effect = response_bytes
+            result = list(walk('::1', 'private', '1.2', errors='warn'))
+        logger.removeHandler(handler)
+
+
+        # The last OID in the mocked responses is decreasing so we want to read
+        # just up to that point.
+        expected = [
+            VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
+            VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
+            VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
+        ]
+        self.assertEqual(result, expected)
+
+        # We also want to make sure that we have a proper warning about this
+        handler.assertContains(WARNING, r'.*1.2.5.*')
 
 
 class TestGetBulkGet(unittest.TestCase):
