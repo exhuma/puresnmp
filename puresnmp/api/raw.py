@@ -136,9 +136,10 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
         if not OID(requested) < retrieved.oid:
+            stringified = unicode(retrieved.oid)  # TODO remove when Py2 is dropped
             raise FaultySNMPImplementation(
                 'The OID %s is not a successor of %s!' %
-                (retrieved.oid, requested))
+                (stringified, requested))
     return output
 
 
