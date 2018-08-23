@@ -5,7 +5,7 @@ def generate_type_hierarchy():
     """
     Generate a document containing the available variable types.
     """
-    fab.local('python -m puresnmp.types > docs/typetree.rst')
+    fab.local('./env/bin/python -m puresnmp.types > docs/typetree.rst')
 
 
 @fab.task

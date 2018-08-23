@@ -1,5 +1,5 @@
-puresnmp\.api package
-=====================
+puresnmp.api package
+====================
 
 Submodules
 ----------

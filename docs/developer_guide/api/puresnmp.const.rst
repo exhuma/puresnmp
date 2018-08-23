@@ -1,5 +1,5 @@
-puresnmp\.const module
-======================
+puresnmp.const module
+=====================
 
 .. automodule:: puresnmp.const
     :members:
