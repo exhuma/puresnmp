@@ -19,3 +19,10 @@ def doc():
               'puresnmp/test')
     with fab.lcd('docs'):
         fab.local('make html')
+
+
+@fab.task
+def publish():
+    fab.local('python3 setup.py bdist_wheel --universal')
+    fab.local('python3 setup.py sdist')
+    fab.local('twine upload dist/*')
