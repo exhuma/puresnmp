@@ -28,6 +28,14 @@ if version_info < (3, 3):
     DEPENDENCIES.append('ipaddress')
     DEPENDENCIES.append('mock')
 
+TEST_DEPENDENCIES = [
+    'pytest-xdist',
+    'pytest',
+    'pytest-coverage'
+]
+if version_info >= (3, 6):
+    TEST_DEPENDENCIES.append('pytest-asyncio')
+
 setup(
     name="puresnmp",
     version=VERSION,
@@ -41,7 +49,7 @@ setup(
     install_requires=DEPENDENCIES,
     extras_require={
         'dev': [],
-        'test': ['pytest-xdist', 'pytest', 'pytest-coverage']
+        'test': TEST_DEPENDENCIES
     },
     packages=find_packages(exclude=["tests.*", "tests", "docs"]),
     url="https://github.com/exhuma/puresnmp",

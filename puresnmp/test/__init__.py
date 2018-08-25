@@ -10,6 +10,7 @@ from os.path import dirname, join
 import unittest
 from ..x690.util import to_bytes
 
+
 DATA_DIR = join(dirname(__file__), 'data')
 
 __unittest = True  # <- This disables stack traces in unittest output for
