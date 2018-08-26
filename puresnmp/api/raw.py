@@ -207,7 +207,7 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext,
               len(unfinished_oids),
               len(oids))
     yielded = _set([])  # type: ignore
-    for var in group_varbinds(varbinds, requested_oids).values():
+    for var in grouped_oids.values():
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
             if not any(containment) or varbind.oid in yielded:  # type: ignore
@@ -246,7 +246,7 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext,
         LOG.debug('%d of %d OIDs need to be continued',
                   len(unfinished_oids),
                   len(oids))
-        for var in group_varbinds(varbinds, next_fetches).values():
+        for var in grouped_oids.values():
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
                 if not any(containment) or varbind.oid in yielded:  # type: ignore

@@ -1,5 +1,5 @@
-puresnmp\.util module
-=====================
+puresnmp.util module
+====================
 
 .. automodule:: puresnmp.util
     :members:

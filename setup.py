@@ -62,7 +62,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 2',
         'Topic :: System :: Networking',
         'Topic :: System :: Networking :: Monitoring',
         'Topic :: System :: Systems Administration',

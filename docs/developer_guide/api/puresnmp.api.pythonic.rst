@@ -1,5 +1,5 @@
-puresnmp\.api\.pythonic module
-==============================
+puresnmp.api.pythonic module
+============================
 
 .. automodule:: puresnmp.api.pythonic
     :members:
