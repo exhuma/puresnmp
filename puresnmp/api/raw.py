@@ -193,8 +193,8 @@ def multiwalk(ip, community, oids, port=161, timeout=2, fetcher=multigetnext,
 
     Example::
 
-        >>> multiwalk('127.0.0.1', 'private', [
-        ...     '1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
+        >>> multiwalk('127.0.0.1', 'private',
+        ...           ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
         <generator object multiwalk at 0x7fa2f775cf68>
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)

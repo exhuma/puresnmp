@@ -12,7 +12,7 @@ from ...x690.types import (
     Type,
 )
 from ...x690.util import to_bytes, tablify
-from ...exc import SnmpError, NoSuchOID
+from ...exc import SnmpError, NoSuchOID, FaultySNMPImplementation
 from ...pdu import (
     BulkGetRequest,
     GetNextRequest,
@@ -42,6 +42,8 @@ _set = set
 
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
+ERRORS_STRICT = 'strict'
+ERRORS_WARN = 'warn'
 
 
 async def get(ip, community, oid, port=161, timeout=6):
@@ -133,6 +135,14 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
             'Invalid response! Expected exactly %d varbind, '
             'but got %d' % (len(oids), len(response_object.varbinds)))
     output = [VarBind(oid, value) for oid, value in response_object.varbinds]
+
+    # Verify that the OIDs we retrieved are successors of the requested OIDs.
+    for requested, retrieved in zip(oids, output):
+        if not OID(requested) < retrieved.oid:
+            stringified = unicode(retrieved.oid)  # TODO remove when Py2 is dropped
+            raise FaultySNMPImplementation(
+                'The OID %s is not a successor of %s!' %
+                (stringified, requested))
     return output
 
 
@@ -197,6 +207,9 @@ async def multiwalk(ip, community, oids,
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
             if not any(containment) or varbind.oid in yielded:  # type: ignore
+                LOG.debug('Unexpected device response: Returned VarBind %s '
+                          'was either not contained in the requested tree or '
+                          'appeared more than once. Skipping!', varbind)
                 continue
             yielded.add(varbind.oid)  # type: ignore
             yield varbind
@@ -205,14 +218,23 @@ async def multiwalk(ip, community, oids,
     # those.
     while unfinished_oids:
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
+        next_fetches_str = [unicode(_) for _ in next_fetches]
         try:
             varbinds = await fetcher(ip, community,
-                                     [unicode(_) for _ in next_fetches],
+                                     next_fetches_str,
                                      port,
                                      timeout)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
+        except FaultySNMPImplementation as exc:
+            if errors == ERRORS_WARN:
+                LOG.warning('SNMP walk aborted prematurely due to faulty SNMP '
+                            'implementation on device %r! Upon running a '
+                            'GetNext on OIDs %r it returned the following '
+                            'error: %s', ip, next_fetches_str, exc)
+                break
+            raise
         grouped_oids = group_varbinds(varbinds,
                                       next_fetches,
                                       user_roots=requested_oids)
