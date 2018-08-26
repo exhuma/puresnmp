@@ -1,5 +1,5 @@
-puresnmp\.exc module
-====================
+puresnmp.exc module
+===================
 
 .. automodule:: puresnmp.exc
     :members:
