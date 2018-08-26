@@ -2,6 +2,19 @@ Changelog
 =========
 
 
+Release 1.3.2
+~~~~~~~~~~~~~
+
+* **[fix]** Fixed a regression introduced by `v1.3.1` for Python < 3.6.
+
+Release 1.3.1
+~~~~~~~~~~~~~
+
+* **[fix]** Fixed an endless loop caused by some network devices with broken
+  SNMP implementations. This will now raise a `FaultySNMPImplementation`
+  exception unless `errors=puresnmp.api.raw.ERRORS_WARN` is passed to `walk`
+  operations.
+
 Release 1.3.0
 ~~~~~~~~~~~~~
 
