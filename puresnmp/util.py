@@ -30,25 +30,18 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
         requested by the user. This list will keep track of the original OIDs
         to determine when the walk needs to terminate.
     """
-    user_roots = user_roots or []
-    n = len(effective_roots)
+    roots = user_roots or effective_roots
 
     results = {}
-    for i in range(n):
-        results[effective_roots[i]] = varbinds[i::n]
-
-    if user_roots:
-        new_results = {}
-        for key, value in results.items():
-            containment = [base for base in user_roots if key in base]
-            if len(containment) > 1:
-                raise RuntimeError('Unexpected OID result. A value was '
-                                   'contained in more than one base than '
-                                   'should be possible!')
-            if not containment:
-                continue
-            new_results[containment[0]] = value
-            results = new_results
+    for varbind in varbinds:
+        containment = [base for base in roots if varbind.oid in base]
+        if len(containment) > 1:
+            raise RuntimeError('Unexpected OID result. A value was '
+                               'contained in more than one base than '
+                               'should be possible!')
+        if not containment:
+            continue
+        results.setdefault(containment[0], []).append(varbind)
 
     return results
 
@@ -78,6 +71,6 @@ def get_unfinished_walk_oids(grouped_oids):
     last_received_oids = {k: WalkRow(v[-1], v[-1].oid in k)
                           for k, v in grouped_oids.items()}
 
-    output = [item for item in last_received_oids.items()
+    output = [item for item in sorted(last_received_oids.items())
               if item[1].unfinished]
     return output
