@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Dict, List, Tuple
+    from typing import Dict, List, Optional, Tuple
     from .pdu import VarBind
     from .x690.types import ObjectIdentifier
 
@@ -16,7 +16,7 @@ BulkResult = namedtuple('BulkResult', 'scalars listing')
 
 
 def group_varbinds(varbinds, effective_roots, user_roots=None):
-    # type: (List[VarBind], List[ObjectIdentifier], List[ObjectIdentifier]) -> Dict[ObjectIdentifier, List[VarBind]]
+    # type: (List[VarBind], List[ObjectIdentifier], Optional[List[ObjectIdentifier]]) -> Dict[ObjectIdentifier, List[VarBind]]
     """
     Takes a list of varbinds and a list of base OIDs and returns a mapping from
     those base IDs to lists of varbinds.
