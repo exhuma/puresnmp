@@ -119,7 +119,7 @@ class GenErr(ErrorResponse):
     error classes.
     """
 
-    DEFAULT_MESSAGE = 'Generall Error (genErr)'
+    DEFAULT_MESSAGE = 'General Error (genErr)'
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
