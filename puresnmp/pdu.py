@@ -17,7 +17,13 @@ from typing import TYPE_CHECKING
 import six
 
 from .const import MAX_VARBINDS
-from .exc import EmptyMessage, NoSuchOID, SnmpError, TooManyVarbinds
+from .exc import (
+    EmptyMessage,
+    ErrorResponse,
+    NoSuchOID,
+    SnmpError,
+    TooManyVarbinds
+)
 from .x690.types import (
     Integer,
     Null,
@@ -98,12 +104,15 @@ class PDU(Type):
         error_status, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
         if error_status.value:
-            msg = ERROR_MESSAGES.get(error_status.value,
-                                     'Unknown Error: %s' % error_status.value)
-            # TODO Add detail from the error_index.
-            raise SnmpError('Error packet received: %s!' % msg)
-        values, data = pop_tlv(data)
+            error_detail, data = pop_tlv(data)
+            varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
+            offending_oid = varbinds[error_index.value-1].oid
+            assert data == b''
+            exception = ErrorResponse.construct(
+                error_status.value, offending_oid)
+            raise exception
 
+        values, data = pop_tlv(data)
         varbinds = [VarBind(*encoded_varbind) for encoded_varbind in values]
 
         return cls(
