@@ -1,7 +1,6 @@
 """
 Exceptions for the puresnmp package.
 """
-# pylint: disable=too-few-public-methods
 from __future__ import unicode_literals
 
 import socket
@@ -10,6 +9,8 @@ from warnings import warn
 from puresnmp.const import MAX_VARBINDS
 
 from .x690.types import ObjectIdentifier
+
+# pylint: disable=too-few-public-methods
 
 
 class SnmpError(Exception):
@@ -56,7 +57,7 @@ class ErrorResponse(SnmpError):
     def __init__(self, error_status, offending_oid, message=''):
         # type: (int, ObjectIdentifier, str) -> None
         super(ErrorResponse, self).__init__('%s (status-code: %r) on OID %s' % (
-            message or self.DEFAULT_MESSAGE, error_status,  offending_oid))
+            message or self.DEFAULT_MESSAGE, error_status, offending_oid))
         self.error_status = error_status
         self.offending_oid = offending_oid
 
