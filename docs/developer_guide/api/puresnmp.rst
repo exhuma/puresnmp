@@ -6,6 +6,7 @@ Subpackages
 
 .. toctree::
 
+    puresnmp.aio
     puresnmp.api
     puresnmp.x690
 
