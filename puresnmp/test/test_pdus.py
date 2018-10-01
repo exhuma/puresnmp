@@ -1,25 +1,26 @@
 # pylint: skip-file
 
 import six
+
+from . import ByteTester, readbytes
+from ..const import Version
 from ..exc import SnmpError
-from ..x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes,
-)
 from ..pdu import (
+    PDU,
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
     GetResponse,
     SetRequest,
-    VarBind,
+    VarBind
 )
-
-from ..const import Version
-from . import ByteTester, readbytes
+from ..x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    to_bytes
+)
 
 
 def comparable(bytes):
@@ -96,12 +97,12 @@ class TestGet(ByteTester):
         data = (b"\x30\x33\x02\x01\x01\x04\x06\x70\x75\x62\x6c\x69\x63"
                 b"\xa2\x26"
                 b"\x02\x04\x72\x0b\x8c\x3f"
-                b"\x02\x01\x01\x02\x01\x02"
+                b"\x02\x01\x01\x02\x01\x01"
                 b"\x30\x18"
                 b"\x30\x16"
                 b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
                 b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a")
-        with six.assertRaisesRegex(self, SnmpError, 'tooBig'):
+        with six.assertRaisesRegex(self, SnmpError, 'too big'):
             Sequence.from_bytes(data)
 
     def test_get_repr(self):
@@ -230,3 +231,38 @@ class TestBulkGet(ByteTester):
         result = repr(request)
         expected = 'BulkGetRequest(1234, 1, 2, ObjectIdentifier((1, 2, 3)))'
         self.assertEqual(result, expected)
+
+
+class TestError(ByteTester):
+    '''
+    We want to make sure error packets contain enough information in the
+    exception instances.
+    '''
+
+    def test_gen_error(self):
+        pdu = PDU(123, [
+            VarBind(ObjectIdentifier.from_string('1.2.3'), Integer(1))],
+            error_status=5,
+            error_index=1)
+
+        with self.assertRaisesRegex(SnmpError, 'genErr.*1.2.3') as exc:
+            PDU.decode(to_bytes(pdu))
+
+        self.assertEqual(exc.exception.error_status, 5)
+        self.assertEqual(
+            exc.exception.offending_oid,
+            ObjectIdentifier.from_string('1.2.3')
+        )
+
+    def test_non_standard_error(self):
+        pdu = PDU(123, [
+            VarBind(ObjectIdentifier.from_string('1.2.3'), Integer(1))],
+            error_status=7,
+            error_index=1)
+        with self.assertRaisesRegex(SnmpError, 'unknown.*error.*1.2.3') as exc:
+            PDU.decode(to_bytes(pdu))
+        self.assertEqual(exc.exception.error_status, 7)
+        self.assertEqual(
+            exc.exception.offending_oid,
+            ObjectIdentifier.from_string('1.2.3')
+        )

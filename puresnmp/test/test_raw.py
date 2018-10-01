@@ -9,11 +9,11 @@ PureSNMP object instances.
 """
 
 from __future__ import print_function
-from logging import Handler, getLevelName, getLogger, WARNING
-import re
+
 import sys
 import unittest
 from datetime import timedelta
+from logging import WARNING, Handler, getLevelName, getLogger
 from unittest import skipUnless
 
 import six
@@ -49,39 +49,12 @@ from puresnmp.x690.types import (
     to_bytes
 )
 
-from . import ByteTester, readbytes
+from . import ByteTester, CapturingHandler, readbytes
 
 try:
     from unittest.mock import patch, call
 except ImportError:
     from mock import patch, call  # type: ignore
-
-
-
-class CapturingHandler(Handler):
-
-    def __init__(self):
-        super(CapturingHandler, self).__init__()
-        self.captured_records = []
-
-    def emit(self, record):
-        self.captured_records.append(record)
-
-    def assertContains(self, level, message_regex):
-        found = False
-        for record in self.captured_records:
-            matches_level = record.levelno == level
-            matches_re = re.search(message_regex, record.msg % record.args)
-            if matches_level and matches_re:
-                found = True
-                break
-        if not found:
-            print('--- Captured log messages:', file=sys.stderr)
-            for record in self.captured_records:
-                print('Level:', getLevelName(record.levelno), 'Message:',
-                      record.msg % record.args, file=sys.stderr)
-            raise AssertionError('Pattern %r was not found with level %r in '
-                                 'the log records' % (message_regex, level))
 
 
 
