@@ -2,6 +2,7 @@
 Exceptions for the puresnmp package.
 """
 # pylint: disable=too-few-public-methods
+from __future__ import unicode_literals
 
 import socket
 from warnings import warn
