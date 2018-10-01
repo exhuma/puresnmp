@@ -21,6 +21,13 @@ class ErrorResponse(SnmpError):
     """
     A superclass used when the SNMP agent responded with additional error
     information.
+
+    Instances of ``ErrorResponse`` have two attributes concerning the error:
+
+    * ``error_status`` the raw (int) value of the error-status as returned by
+      the SNMP agent.
+    * ``offending_oid`` the OID identified in the error message which caused
+      the error.
     """
 
     DEFAULT_MESSAGE = 'unknown error'
@@ -50,7 +57,7 @@ class ErrorResponse(SnmpError):
         super().__init__('%s on OID %s' % (
             message or self.DEFAULT_MESSAGE, offending_oid))
         self.error_status = error_status
-        self.error_oid = offending_oid
+        self.offending_oid = offending_oid
 
 
 class TooBig(ErrorResponse):
