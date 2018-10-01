@@ -20,7 +20,8 @@ def get_version():
 
 VERSION = get_version()
 DEPENDENCIES = [
-    'verlib'
+    'verlib',
+    'six',
 ]
 if version_info < (3, 5):
     DEPENDENCIES.append('typing')
