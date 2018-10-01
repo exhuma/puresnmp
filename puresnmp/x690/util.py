@@ -11,15 +11,19 @@ import six
 
 from ..const import Length
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
     from typing import Any, Dict, List, Union, Tuple
     from .types import Type
 
-try:
-    # pylint: disable=invalid-name
-    int_from_bytes = int.from_bytes
-except AttributeError:
+if six.PY2:  # pragma: no cover
+
+    def to_bytes(x):
+        if hasattr(x, '__bytes__'):
+            return bytes(x)
+        else:
+            return bytes(bytearray(x))
+
     def int_from_bytes(bytes_, byteorder, signed=False):
         bytes_ = bytearray(bytes_)
         if byteorder == 'little':
@@ -31,14 +35,10 @@ except AttributeError:
             n -= 1 << 8*len(little_ordered)
         return n
 
-if six.PY2:
-    def to_bytes(x):
-        if hasattr(x, '__bytes__'):
-            return bytes(x)
-        else:
-            return bytes(bytearray(x))
 else:
-    unicode = str  # pylint: disable=invalid-name
+    # pylint: disable=invalid-name
+    unicode = str
+    int_from_bytes = int.from_bytes
 
     def to_bytes(x):
         try:
@@ -66,6 +66,9 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
 
     tag
         The actual type identifier.
+
+    The instance also keeps the raw value as it was seen in the ``_raw_value``
+    attribute.
     """
 
     UNIVERSAL = 'universal'
@@ -74,6 +77,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     PRIVATE = 'private'
     PRIMITIVE = 'primitive'
     CONSTRUCTED = 'constructed'
+    _raw_value = None
 
     @staticmethod
     def from_bytes(data):
@@ -137,7 +141,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         output = cls << 6 | priv_const << 5 | self.tag
         return to_bytes([output])
 
-    if six.PY2:
+    if six.PY2:  # pragma: no cover
         def __unicode__(self):
             return repr(self)
 

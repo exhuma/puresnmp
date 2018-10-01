@@ -57,14 +57,14 @@ class TestGet(ByteTester):
     def setUp(self):
         patcher = patch('puresnmp.api.raw.send')
         self._send = patcher.start()
-        self.addCleanup(lambda: patcher.stop())  #pylint: disable=unnecessary-lambda
+        self.addCleanup(lambda: patcher.stop)
 
     def test_get(self):
         response = readbytes('apiv1/get_response.hex')
         self._send.return_value = response
         result = snmp.get('192.168.1.1', 'private', '1.3.6.1.2.1.1.2.0')
         self.assertEqual(result, '1.3.6.1.4.1.8072.3.2.10')
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         if six.PY3:
             self.assertIsInstance(result, str)
         else:
@@ -77,7 +77,7 @@ class TestGet(ByteTester):
         result = snmp.multiget('192.168.1.1', 'private', oids,
                                port=161, timeout=1)
         self.assertEqual(result, [b'root', b'On the move'])
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         for value in result:
             self.assertIsInstance(value, bytes)
 
@@ -88,7 +88,7 @@ class TestGet(ByteTester):
                               port=161, timeout=1)
         expected = VarBind(OID('1.3.6.1.2.1.1.7.0'), 72)
         self.assertEqual(result, expected)
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         self.assertIsInstance(result.oid, ObjectIdentifier)
         self.assertIsInstance(result.value, int)
 
@@ -123,8 +123,9 @@ class TestGet(ByteTester):
             ])
         )
         self.assertEqual(result, expected)
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         key_types = {type(k) for k in result.listing.keys()}
+
         if six.PY3:
             self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
             self.assertEqual(key_types, {str})
@@ -170,7 +171,7 @@ class TestGet(ByteTester):
         ]
 
         self.assertEqual(result, expected)
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         expected_types = [(ObjectIdentifier, datetime.timedelta)] * 10
         returned_values = [(row.oid, row.value) for row in result]
         assert_of_types(returned_values, expected_types)
@@ -185,7 +186,7 @@ class TestGet(ByteTester):
             VarBind(OID('1.3.6.1.2.1.4.1.0'), 1)
         ]
         self.assertEqual(result, expected)
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         expected_types = [
             (ObjectIdentifier, int),
             (ObjectIdentifier, int),
@@ -206,7 +207,7 @@ class TestGet(ByteTester):
             '1.3.6.1.2.1.1.6.0': b'bar'
         }
         self.assertEqual(result, expected)
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         self.assertIsInstance(result, dict)
         key_types = {type(key) for key in result.keys()}
         if six.PY3:
@@ -253,7 +254,7 @@ class TestGet(ByteTester):
             OctetString(b'Hello')
         )
         self.assertEqual(result, b'On the move')
-        self.assertTrue(self._send.called)
+        self.assertTrue(self._send.called, 'method was not called')
         self.assertIsInstance(result, bytes)
 
     def test_table(self):

@@ -17,7 +17,13 @@ from typing import TYPE_CHECKING
 import six
 
 from .const import MAX_VARBINDS
-from .exc import EmptyMessage, NoSuchOID, SnmpError, TooManyVarbinds
+from .exc import (
+    EmptyMessage,
+    ErrorResponse,
+    NoSuchOID,
+    SnmpError,
+    TooManyVarbinds
+)
 from .x690.types import (
     Integer,
     Null,
@@ -31,13 +37,11 @@ from .x690.util import TypeInfo, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Callable, List
+    from typing import List, Union
 
-try:
-    unicode  # type: Callable[[Any], str]
-except NameError:
-    # pylint: disable=invalid-name
-    unicode = str  # type: Callable[[Any], str]
+
+if six.PY3:
+    unicode = str  # pylint: disable=invalid-name
 
 
 class VarBind(namedtuple('VarBind', 'oid, value')):
@@ -100,12 +104,15 @@ class PDU(Type):
         error_status, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
         if error_status.value:
-            msg = ERROR_MESSAGES.get(error_status.value,
-                                     'Unknown Error: %s' % error_status.value)
-            # TODO Add detail from the error_index.
-            raise SnmpError('Error packet received: %s!' % msg)
-        values, data = pop_tlv(data)
+            error_detail, data = pop_tlv(data)
+            varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
+            offending_oid = varbinds[error_index.value-1].oid
+            assert data == b''
+            exception = ErrorResponse.construct(
+                error_status.value, offending_oid)
+            raise exception
 
+        values, data = pop_tlv(data)
         varbinds = [VarBind(*encoded_varbind) for encoded_varbind in values]
 
         return cls(
@@ -116,12 +123,12 @@ class PDU(Type):
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
-        # type: (int, List[VarBind], int, int) -> None
+        # type: (int, Union[tuple, List[VarBind]], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index
         if isinstance(varbinds, tuple):
-            self.varbinds = [varbinds]
+            self.varbinds = [VarBind(*varbinds)]
         else:
             self.varbinds = varbinds
 
@@ -175,6 +182,7 @@ class GetRequest(PDU):
     TAG = 0
 
     def __init__(self, request_id, *oids):
+        # type: (int, Union[str, ObjectIdentifier]) -> None
         if len(oids) > MAX_VARBINDS:
             raise TooManyVarbinds(len(oids))
         wrapped_oids = []
@@ -196,6 +204,7 @@ class GetResponse(PDU):
 
     @classmethod
     def decode(cls, data):
+        # type: (bytes) -> PDU
         """
         Try decoding the response. If nothing was returned (the message was
         empty), raise a :py:exc:`~puresnmp.exc.NoSuchOID` exception.
@@ -227,37 +236,14 @@ class BulkGetRequest(Type):
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 5
 
-    @classmethod
-    def decode(cls, data):
-        """
-        This method takes a :py:class:`bytes` object and converts it to
-        an application object.
-        """
-        # TODO (advanced): recent tests revealed that this is *not symmetric*
-        # with __bytes__ of this class. This should be ensured!
-        if not data:
-            raise EmptyMessage('No data to decode!')
-        request_id, data = pop_tlv(data)
-        non_repeaters, data = pop_tlv(data)
-        max_repeaters, data = pop_tlv(data)
-        values, data = pop_tlv(data)
-
-        oids = [unicode(*oid) for oid, _ in values]
-
-        return cls(
-            request_id,
-            non_repeaters,
-            max_repeaters,
-            *oids
-        )
-
     def __init__(self, request_id, non_repeaters, max_repeaters, *oids):
+        # type: (int, int, int, ObjectIdentifier) -> None
         if len(oids) > MAX_VARBINDS:
             raise TooManyVarbinds(len(oids))
         self.request_id = request_id
         self.non_repeaters = non_repeaters
         self.max_repeaters = max_repeaters
-        self.varbinds = []
+        self.varbinds = []  # type: List[VarBind]
         for oid in oids:
             self.varbinds.append(VarBind(oid, Null()))
 
@@ -276,9 +262,13 @@ class BulkGetRequest(Type):
         return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
-        return '%s(%r, %r)' % (
+        oids = [repr(oid) for oid, _ in self.varbinds]
+        return '%s(%r, %r, %r, %s)' % (
             self.__class__.__name__,
-            self.request_id, self.varbinds)
+            self.request_id,
+            self.non_repeaters,
+            self.max_repeaters,
+            ', '.join(oids))
 
     def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck

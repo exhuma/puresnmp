@@ -1,6 +1,10 @@
 # pylint: skip-file
 
+import sys
+
 import six
+
+from .. import ByteTester
 from ...x690.types import ObjectIdentifier
 from ...x690.util import (
     Length,
@@ -8,10 +12,15 @@ from ...x690.util import (
     decode_length,
     encode_length,
     tablify,
-    visible_octets,
     to_bytes,
+    visible_octets
 )
-from .. import ByteTester
+
+if sys.version_info > (3, 3):
+    from unittest.mock import patch
+else:
+    from mock import patch
+
 
 
 class TestTypeInfoDecoding(ByteTester):
@@ -19,6 +28,11 @@ class TestTypeInfoDecoding(ByteTester):
     Tests the various possible combinations for decoding type-hint octets into
     Python objects.
     """
+
+    def test_from_bytes_raw_value(self):
+        result = TypeInfo.from_bytes(0b00011110)._raw_value
+        expected = 0b00011110
+        self.assertEqual(result, expected)
 
     def test_from_bytes_a(self):
         result = TypeInfo.from_bytes(0b00011110)
@@ -114,6 +128,13 @@ class TestTypeInfoEncoding(ByteTester):
         result = to_bytes(obj)
         expected = to_bytes([0b11111110])
         self.assertEqual(result, expected)
+
+    def test_to_bytes_error(self):
+        obj = TypeInfo(TypeInfo.PRIVATE, TypeInfo.CONSTRUCTED, 0b11110)
+        with patch('puresnmp.x690.util.bytes') as ptch:
+            ptch.side_effect = TypeError('booh')
+            with six.assertRaisesRegex(self, TypeError, r'booh'):
+                to_bytes(obj)
 
 
 class TestTypeInfoClass(ByteTester):

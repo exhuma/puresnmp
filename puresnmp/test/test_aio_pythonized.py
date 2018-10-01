@@ -8,17 +8,16 @@ to use.
 """
 
 from __future__ import unicode_literals
-import six
+import pytest
+import sys
 from datetime import timedelta
-from ipaddress import ip_address
 try:
     from unittest.mock import patch, call
 except ImportError:
     from mock import patch, call  # pip install mock
-import unittest
 
 from puresnmp.types import Counter, Gauge, IpAddress
-from puresnmp.api.pythonic import (
+from puresnmp.aio.api.pythonic import (
     bulkget,
     bulkwalk,
     get,
@@ -42,52 +41,61 @@ from puresnmp.x690.types import (
     to_bytes
 )
 
-from . import ByteTester
+from .asyncmock import AsyncMock, AsyncGenMock
+
+pytestmark = pytest.mark.skipif(sys.version_info < (3,5),
+                                reason="requires python3.5")
 
 
-class TestGet(ByteTester):
+class TestGet(object):
 
-    def test_get_string(self):
+    @pytest.mark.asyncio
+    async def test_get_string(self):
         expected = (b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
                     b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
             mck.get.return_value = OctetString(
                 b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
                 b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
-            result = get('::1', 'private', '1.2.3')
-        self.assertEqual(result, expected)
+            result = await get('::1', 'private', '1.2.3')
+        assert result == expected
 
-    def test_get_oid(self):
+    @pytest.mark.asyncio
+    async def test_get_oid(self):
         expected = ('1.3.6.1.4.1.8072.3.2.10')
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
             mck.get.return_value = ObjectIdentifier.from_string(
                 '1.3.6.1.4.1.8072.3.2.10')
-            result = get('::1', 'private', '1.2.3')
-        self.assertEqual(result, expected)
+            result = await get('::1', 'private', '1.2.3')
+        assert result == expected
 
 
-class TestSet(ByteTester):
+class TestSet(object):
 
-    def test_set_string(self):
+    @pytest.mark.asyncio
+    async def test_set_string(self):
         expected = (b'foo')
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
             mck.multiset.return_value = {
                 ObjectIdentifier.from_string('1.2.3'): OctetString(b'foo')
             }
-            result = set('::1', 'private', '1.2.3', OctetString(b'foo'))
-        self.assertEqual(result, expected)
+            result = await set('::1', 'private', '1.2.3', OctetString(b'foo'))
+        assert result == expected
 
 
-class TestWalk(unittest.TestCase):
+class TestWalk(object):
 
-    def test_walk(self):
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
+    async def test_walk(self):
         expected = [VarBind(
             '1.3.6.1.2.1.2.2.1.5.1', 10000000
         ), VarBind(
             '1.3.6.1.2.1.2.2.1.5.13', 4294967295
         )]
 
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             mck.walk.return_value = [
                 VarBind(
                     ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.1'),
@@ -96,33 +104,39 @@ class TestWalk(unittest.TestCase):
                     ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.5.13'),
                     Integer(4294967295)
                 )]
-            result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
-        self.assertEqual(result, expected)
+            result = []
+            async for x in walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'):
+                result.append(x)
+        assert result == expected
 
 
-class TestMultiGet(unittest.TestCase):
+class TestMultiGet(object):
 
-    def test_multiget(self):
+    @pytest.mark.asyncio
+    async def test_multiget(self):
         expected = ['1.3.6.1.4.1.8072.3.2.10',
                     b"Linux 7fbf2f0c363d 4.4.0-28-generic #47-Ubuntu SMP Fri "
                     b"Jun 24 10:09:13 UTC 2016 x86_64"]
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
             mck.multiget.return_value = [
                 ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10'),
                 OctetString(b"Linux 7fbf2f0c363d 4.4.0-28-generic "
                             b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
                             b"UTC 2016 x86_64")
             ]
-            result = multiget('::1', 'private', [
+            result = await multiget('::1', 'private', [
                 '1.3.6.1.2.1.1.2.0',
                 '1.3.6.1.2.1.1.1.0',
             ])
-        self.assertEqual(result, expected)
+        assert result == expected
 
 
-class TestMultiWalk(unittest.TestCase):
+class TestMultiWalk(object):
 
-    def test_multi_walk(self):
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
+    async def test_multi_walk(self):
         expected = [
             VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),
             VarBind('1.3.6.1.2.1.2.2.1.2.1', b'lo'),
@@ -130,10 +144,10 @@ class TestMultiWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.2.78', b'eth0')
         ]
 
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             mck.multiwalk.return_value = [VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.1.1'),
-                1,
+                1
             ), VarBind(
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.1'),
                 b'lo'
@@ -144,29 +158,32 @@ class TestMultiWalk(unittest.TestCase):
                 ObjectIdentifier.from_string('1.3.6.1.2.1.2.2.1.2.78'),
                 b'eth0'
             )]
-            result = list(multiwalk('::1', 'public', [
+            result = []
+            async for x in multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
-            ]))
+            ]):
+                result.append(x)
         # TODO (advanced): should order matter in the following result?
-        six.assertCountEqual(self, result, expected)
+        assert len(result) == len(expected)
 
 
-class TestMultiSet(unittest.TestCase):
+class TestMultiSet(object):
 
-    def test_multiset(self):
+    @pytest.mark.asyncio
+    async def test_multiset(self):
         """
         Test setting multiple OIDs at once.
 
         NOTE: The OID '1.3.6.1.2.1.1.5.0' below is manually edited for
               unit-testing. It probably has a different type in the real world!
         """
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
             mck.multiset.return_value = {
                 '1.3.6.1.2.1.1.4.0': OctetString(b'hello@world.com'),
                 '1.3.6.1.2.1.1.5.0': OctetString(b'hello@world.com'),
             }
-            result = multiset('::1', 'private', [
+            result = await multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
                 ('1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
             ])
@@ -174,25 +191,27 @@ class TestMultiSet(unittest.TestCase):
             '1.3.6.1.2.1.1.4.0': b'hello@world.com',
             '1.3.6.1.2.1.1.5.0': b'hello@world.com',
         }
-        self.assertEqual(result, expected)
+        assert result == expected
 
 
-class TestGetNext(unittest.TestCase):
+class TestGetNext(object):
 
-    def test_getnext(self):
+    @pytest.mark.asyncio
+    async def test_getnext(self):
         expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', 354522558)
 
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
             mck.multigetnext.return_value = [
                 VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
             ]
-            result = getnext('::1', 'private', '1.3.6.1.5')
-        self.assertEqual(result, expected)
+            result = await getnext('::1', 'private', '1.3.6.1.5')
+        assert result == expected
 
 
-class TestGetBulkGet(unittest.TestCase):
+class TestGetBulkGet(object):
 
-    def test_bulkget(self):
+    @pytest.mark.asyncio
+    async def test_bulkget(self):
         expected = BulkResult(
             {'1.3.6.1.2.1.1.1.0': b'Linux 7e68e60fe303 4.4.0-28-generic '
              b'#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC 2016 x86_64'},
@@ -202,7 +221,7 @@ class TestGetBulkGet(unittest.TestCase):
              '1.3.6.1.2.1.4.1.0': 1,
              '1.3.6.1.2.1.4.3.0': 57})
 
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
             mck.bulkget.return_value = BulkResult({
                 '1.3.6.1.2.1.1.1.0': OctetString(
                     b'Linux 7e68e60fe303 4.4.0-28-generic '
@@ -216,19 +235,21 @@ class TestGetBulkGet(unittest.TestCase):
                 '1.3.6.1.2.1.4.1.0': Integer(1),
                 '1.3.6.1.2.1.4.3.0': Counter(57)
             })
-            result = bulkget('::1', 'public',
+            result = await bulkget('::1', 'public',
                              ['1.3.6.1.2.1.1.1'],
                              ['1.3.6.1.2.1.3.1'],
                              max_list_size=5)
-        self.assertEqual(result, expected)
+        assert result == expected
 
 
-class TestGetBulkWalk(unittest.TestCase):
+class TestGetBulkWalk(object):
 
-
-    def test_bulkwalk(self):
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
+    async def test_bulkwalk(self):
         request_ids = [1001613222, 1001613223, 1001613224]
-        with patch('puresnmp.api.pythonic.raw') as mck:
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             mck.multiwalk.return_value = [
                 VarBind('1.3.6.1.2.1.2.2.1.1.1', Integer(1)),
                 VarBind('1.3.6.1.2.1.2.2.1.1.10', Integer(10)),
@@ -236,8 +257,10 @@ class TestGetBulkWalk(unittest.TestCase):
                 VarBind('1.3.6.1.2.1.2.2.1.22.10', ObjectIdentifier(0, 0))
             ]
 
-            result = list(bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                bulk_size=20))
+            result = []
+            async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
+                                bulk_size=20):
+                result.append(x)
 
         expected = [
             VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),
@@ -246,13 +269,16 @@ class TestGetBulkWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.22.10', '0.0'),
         ]
 
-        self.assertEqual(result, expected)
+        assert result == expected
 
 
-class TestTable(unittest.TestCase):
+class TestTable(object):
 
-    def test_table(self):
-        with patch('puresnmp.api.pythonic.raw') as mck:
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3,6),
+                        reason="requires python3.6")
+    async def test_table(self):
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             oid = ObjectIdentifier.from_string
             mck.walk.return_value = [
                 VarBind(oid('1.2.1.1'), OctetString(b'test-11')),
@@ -260,9 +286,10 @@ class TestTable(unittest.TestCase):
                 VarBind(oid('1.2.1.2'), OctetString(b'test-21')),
                 VarBind(oid('1.2.2.2'), OctetString(b'test-22')),
             ]
-            result = table('1.2.3.4', 'private', ['1.2'])
+            result = await table('1.2.3.4', 'private', ['1.2'])
         expected = [
             {'0': '1', '1': b'test-11', '2': b'test-21'},
             {'0': '2', '1': b'test-21', '2': b'test-22'},
         ]
-        six.assertCountEqual(self, result, expected)
+        assert len(result) == len(expected)
+

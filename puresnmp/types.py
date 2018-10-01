@@ -4,13 +4,18 @@ SMI Types / Structure types which are not defined in :term:`X.690`.
 See `RFC 1155 section 3.2.3`_ for a description of the types and `RFC 3416`_
 for the definition of the new types.
 
+.. note::
+    The IPv6 Type is not yet implemented and will be returned as OctetString!
+
 .. _RFC 1155 section 3.2.3: https://tools.ietf.org/html/rfc1155#section-3.2.3
 .. _RFC 3416: https://tools.ietf.org/html/rfc3416
 """
+# TODO: Implement IPv6 via https://tools.ietf.org/html/rfc2465
 
-# pylint: disable=missing-docstring
-
+import sys
 from datetime import timedelta
+from ipaddress import ip_address, IPv4Address
+from struct import pack
 
 from .x690.types import Integer, OctetString
 from .x690.util import TypeInfo
@@ -18,10 +23,34 @@ from .x690.util import TypeInfo
 
 class IpAddress(OctetString):
     """
-    SNMP Type for IP Addresses
+    SNMP Type for IPv4 Addresses
     """
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x00
+
+    def __init__(self, value):
+        if isinstance(value, IPv4Address):
+            remainder = int(value)
+            octet_4, remainder = remainder & 0xff, remainder >> 8
+            octet_3, remainder = remainder & 0xff, remainder >> 8
+            octet_2, remainder = remainder & 0xff, remainder >> 8
+            octet_1, remainder = remainder & 0xff, remainder >> 8
+            value = pack('BBBB', octet_1, octet_2, octet_3, octet_4)
+        super(IpAddress, self).__init__(value)
+
+    def pythonize(self):
+        return self.value
+
+        # TODO The following code breaks backwards compatbility and should be
+        # released in the next mator verion
+
+        # TODO v2.0.0 intvalue = 0
+        # TODO v2.0.0 for i, octet in enumerate(reversed(self.value)):
+        # TODO v2.0.0     if sys.version_info < (3, 0):
+        # TODO v2.0.0         # Python 2 assumes has str === bytes so we need to cast
+        # TODO v2.0.0         octet = ord(octet)
+        # TODO v2.0.0     intvalue |= octet << (8*i)
+        # TODO v2.0.0 return ip_address(intvalue)
 
 
 class Counter(Integer):
@@ -75,7 +104,11 @@ class Counter64(Integer):
     TAG = 0x06
 
 
-def _walk_subclasses(cls, indent=0):
+def _walk_subclasses(cls, indent=0):  # pragma: no cover
+    '''
+    Recursively walk over the :py:class:`Type` hierarchy and print out ReST
+    formatted text on stdout.
+    '''
     if cls.__module__ == '__main__':
         modname = 'puresnmp.types'
     else:
@@ -90,7 +123,7 @@ def _walk_subclasses(cls, indent=0):
         _walk_subclasses(subclass, indent + 1)
 
 
-def main():
+def main():  # pragma: no cover
     """
     Entrypoint for::
 
@@ -108,6 +141,6 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     import sys
     sys.exit(main())

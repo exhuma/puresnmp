@@ -9,11 +9,11 @@ PureSNMP object instances.
 """
 
 from __future__ import print_function
-from logging import Handler, getLevelName, getLogger, WARNING
-import re
+
 import sys
 import unittest
 from datetime import timedelta
+from logging import WARNING, Handler, getLevelName, getLogger
 from unittest import skipUnless
 
 import six
@@ -49,39 +49,12 @@ from puresnmp.x690.types import (
     to_bytes
 )
 
-from . import ByteTester, readbytes
+from . import ByteTester, CapturingHandler, readbytes
 
 try:
     from unittest.mock import patch, call
 except ImportError:
-    from mock import patch, call  # pip install mock
-
-
-
-class CapturingHandler(Handler):
-
-    def __init__(self):
-        super(CapturingHandler, self).__init__()
-        self.captured_records = []
-
-    def emit(self, record):
-        self.captured_records.append(record)
-
-    def assertContains(self, level, message_regex):
-        found = False
-        for record in self.captured_records:
-            matches_level = record.levelno == level
-            matches_re = re.search(message_regex, record.msg % record.args)
-            if matches_level and matches_re:
-                found = True
-                break
-        if not found:
-            print('--- Captured log messages:', file=sys.stderr)
-            for record in self.captured_records:
-                print('Level:', getLevelName(record.levelno), 'Message:',
-                      record.msg % record.args, file=sys.stderr)
-            raise AssertionError('Pattern %r was not found with level %r in '
-                                 'the log records' % (message_regex, level))
+    from mock import patch, call  # type: ignore
 
 
 
@@ -485,6 +458,22 @@ class TestGetBulkWalk(unittest.TestCase):
                           ['1.2.3'],
                           bulk_size=2))
             mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
+
+    def test_get_call_args_issue_22(self):
+        data = readbytes('dummy.hex')  # any dump would do
+        packet = Sequence(
+            Integer(Version.V2C),
+            OctetString('public'),
+            BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
+        )
+        with patch('puresnmp.api.raw.send') as mck, \
+                patch('puresnmp.api.raw.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+
+            with six.assertRaisesRegex(self, TypeError, 'OIDS.*list'):
+                # we need to wrap this in a list to consume the generator.
+                list(bulkwalk('::1', 'public', '1.2.3', bulk_size=2))
 
     @patch('puresnmp.api.raw.send')
     @patch('puresnmp.api.raw.get_request_id')

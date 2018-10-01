@@ -2,10 +2,23 @@ Changelog
 =========
 
 
+Release 1.4.0
+~~~~~~~~~~~~~
+
+* **[new]** asyncio support via :py:mod:`puresnmp.aio` (Thanks to @acspike).
+* **[new]** Much better error detail if the SNMP agent returns a response with
+  an error-code. See :py:exc:`puresnmp.exc.ErrorResponse`.
+* **[new]** The ``ObjectIdentifier`` class now has two convenience methods
+  :py:meth:`~puresnmp.x690.types.ObjectIdentifier.childof` and
+  :py:meth:`~puresnmp.x690.types.ObjectIdentifier.parentof`. They merely
+  delegat to ``__contains__`` but can make code more readable.
+
+
 Release 1.3.2
 ~~~~~~~~~~~~~
 
 * **[fix]** Fixed a regression introduced by `v1.3.1` for Python < 3.6.
+
 
 Release 1.3.1
 ~~~~~~~~~~~~~
@@ -14,6 +27,7 @@ Release 1.3.1
   SNMP implementations. This will now raise a `FaultySNMPImplementation`
   exception unless `errors=puresnmp.api.raw.ERRORS_WARN` is passed to `walk`
   operations.
+
 
 Release 1.3.0
 ~~~~~~~~~~~~~
@@ -45,6 +59,8 @@ Release 1.3.0
 
     ObjectIdentifier(1, 2, 3)[1] == ObjectIdentifier(2)
 
+* **[new]** The SNMP type ``IpAddress`` is now properly transcoded to the
+  Python ``IPv4Address`` type (via RFC3416).
 * **[changed]** ``NonASN1Type`` is now deprectated. Use ``UnknownType`` instead
   (Royce Mitchell).
 * **[fix]** ``ObjectIdentifier(0)`` is now correctly detected & transcoded.
@@ -54,6 +70,7 @@ Release 1.3.0
 * **[code-quality]** Improved type-hints.
 * **[code-quality]** Update contribution guide, adding code-style rules. Added
   an appropriate ``pylintrc`` and fixed some style violations.
+
 
 Release 1.2.1
 ~~~~~~~~~~~~~
