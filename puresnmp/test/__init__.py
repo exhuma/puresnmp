@@ -1,20 +1,52 @@
 # pylint: skip-file
 
-import six
+import re
 import sys
+import unittest
+from logging import Handler, getLevelName
+from os.path import dirname, join
+
+import six
+
+from ..x690.util import to_bytes
+
 try:
     from itertools import zip_longest
 except ImportError:
     from itertools import izip_longest as zip_longest  # type: ignore
-from os.path import dirname, join
-import unittest
-from ..x690.util import to_bytes
 
 
 DATA_DIR = join(dirname(__file__), 'data')
 
 __unittest = True  # <- This disables stack traces in unittest output for
                    # everything in this module.
+
+
+class CapturingHandler(Handler):
+
+    def __init__(self):
+        super(CapturingHandler, self).__init__()
+        self.captured_records = []
+
+    def emit(self, record):
+        self.captured_records.append(record)
+
+    def assertContains(self, level, message_regex):
+        found = False
+        for record in self.captured_records:
+            matches_level = record.levelno == level
+            matches_re = re.search(message_regex, record.msg % record.args)
+            if matches_level and matches_re:
+                found = True
+                break
+        if not found:
+            print('--- Captured log messages:', file=sys.stderr)
+            for record in self.captured_records:
+                print('Level:', getLevelName(record.levelno), 'Message:',
+                      record.msg % record.args, file=sys.stderr)
+            raise AssertionError('Pattern %r was not found with level %r in '
+                                 'the log records' % (message_regex, level))
+
 
 
 class ByteTester(unittest.TestCase):
