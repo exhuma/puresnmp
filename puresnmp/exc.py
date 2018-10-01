@@ -54,7 +54,7 @@ class ErrorResponse(SnmpError):
 
     def __init__(self, error_status, offending_oid, message=''):
         # type: (int, ObjectIdentifier, str) -> None
-        super().__init__('%s (status-code: %r) on OID %s' % (
+        super(ErrorResponse, self).__init__('%s (status-code: %r) on OID %s' % (
             message or self.DEFAULT_MESSAGE, error_status,  offending_oid))
         self.error_status = error_status
         self.offending_oid = offending_oid
@@ -68,7 +68,7 @@ class TooBig(ErrorResponse):
     DEFAULT_MESSAGE = 'SNMP response was too big!'
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super().__init__(1, offending_oid)
+        super(TooBig, self).__init__(1, offending_oid)
 
 
 class NoSuchOID(ErrorResponse):
@@ -85,7 +85,7 @@ class NoSuchOID(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super().__init__(2, offending_oid, message)
+        super(NoSuchOID, self).__init__(2, offending_oid, message)
 
 
 class BadValue(ErrorResponse):
@@ -98,7 +98,7 @@ class BadValue(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super().__init__(3, offending_oid, message)
+        super(BadValue, self).__init__(3, offending_oid, message)
 
 
 class ReadOnly(ErrorResponse):
@@ -110,7 +110,7 @@ class ReadOnly(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super().__init__(4, offending_oid, message)
+        super(ReadOnly, self).__init__(4, offending_oid, message)
 
 
 class GenErr(ErrorResponse):
@@ -123,7 +123,7 @@ class GenErr(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super().__init__(5, offending_oid, message)
+        super(GenErr, self).__init__(5, offending_oid, message)
 
 
 class EmptyMessage(SnmpError):
