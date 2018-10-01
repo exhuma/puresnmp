@@ -624,3 +624,29 @@ class TestAllTypes(ByteTester):
         result = repr(obj)
         expected = 'Type(10)'
         self.assertEqual(result, expected)
+
+    def test_childof(self):
+        a = ObjectIdentifier(1, 2, 3)
+        b = ObjectIdentifier(1, 2, 3, 1)
+        c = ObjectIdentifier(1, 2, 4)
+        d = ObjectIdentifier(1)
+        self.assertTrue(b.childof(a))
+        self.assertFalse(a.childof(b))
+        self.assertTrue(a.childof(a))
+        self.assertFalse(c.childof(a))
+        self.assertFalse(a.childof(c))
+        self.assertFalse(d.childof(c))
+        self.assertTrue(c.childof(d))
+
+    def test_parentdf(self):
+        a = ObjectIdentifier(1, 2, 3)
+        b = ObjectIdentifier(1, 2, 3, 1)
+        c = ObjectIdentifier(1, 2, 4)
+        d = ObjectIdentifier(1)
+        self.assertFalse(b.parentof(a))
+        self.assertTrue(a.parentof(b))
+        self.assertTrue(a.parentof(a))
+        self.assertFalse(c.parentof(a))
+        self.assertFalse(a.parentof(c))
+        self.assertTrue(d.parentof(c))
+        self.assertFalse(c.parentof(d))

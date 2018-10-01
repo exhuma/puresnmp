@@ -659,6 +659,20 @@ class ObjectIdentifier(Type):
     def pythonize(self):
         return '.'.join([unicode(_) for _ in self.identifiers])
 
+    def parentof(self, other):
+        # type: (ObjectIdentifier) -> bool
+        """
+        Convenience method to check whether this OID is a parent of another OID
+        """
+        return other in self
+
+    def childof(self, other):
+        # type: (ObjectIdentifier) -> bool
+        """
+        Convenience method to check whether this OID is a child of another OID
+        """
+        return self in other
+
 
 class ObjectDescriptor(Type):
     TAG = 0x07
