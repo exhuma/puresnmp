@@ -245,7 +245,7 @@ class TestError(ByteTester):
             error_status=5,
             error_index=1)
 
-        with self.assertRaisesRegex(SnmpError, 'genErr.*1.2.3') as exc:
+        with six.assertRaisesRegex(self, SnmpError, 'genErr.*1.2.3') as exc:
             PDU.decode(to_bytes(pdu))
 
         self.assertEqual(exc.exception.error_status, 5)
@@ -259,7 +259,7 @@ class TestError(ByteTester):
             VarBind(ObjectIdentifier.from_string('1.2.3'), Integer(1))],
             error_status=7,
             error_index=1)
-        with self.assertRaisesRegex(SnmpError, 'unknown.*error.*1.2.3') as exc:
+        with six.assertRaisesRegex(self, SnmpError, 'unknown.*error.*1.2.3') as exc:
             PDU.decode(to_bytes(pdu))
         self.assertEqual(exc.exception.error_status, 7)
         self.assertEqual(
