@@ -50,7 +50,7 @@ class ErrorResponse(SnmpError):
             return ReadOnly(offending_oid)
         if error_status == 5:
             return GenErr(offending_oid)
-        raise ValueError('%r is an invalid error-status!', error_status)
+        return ErrorResponse(error_status, offending_oid, message)
 
     def __init__(self, error_status, offending_oid, message=''):
         # type: (int, ObjectIdentifier, str) -> None

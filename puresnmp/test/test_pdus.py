@@ -253,3 +253,16 @@ class TestError(ByteTester):
             exc.exception.offending_oid,
             ObjectIdentifier.from_string('1.2.3')
         )
+
+    def test_non_standard_error(self):
+        pdu = PDU(123, [
+            VarBind(ObjectIdentifier.from_string('1.2.3'), Integer(1))],
+            error_status=7,
+            error_index=1)
+        with self.assertRaisesRegex(SnmpError, 'unknown.*error.*1.2.3') as exc:
+            PDU.decode(to_bytes(pdu))
+        self.assertEqual(exc.exception.error_status, 7)
+        self.assertEqual(
+            exc.exception.offending_oid,
+            ObjectIdentifier.from_string('1.2.3')
+        )
