@@ -240,13 +240,16 @@ class TestError(ByteTester):
     '''
 
     def test_gen_error(self):
-        data = readbytes('generr.hex')
+        pdu = PDU(123, [
+            VarBind(ObjectIdentifier.from_string('1.2.3'), Integer(1))],
+            error_status=5,
+            error_index=1)
 
-        with self.assertRaisesRegex(SnmpError, 'genErr.*6486.800.1.2') as exc:
-            PDU.decode(data)
+        with self.assertRaisesRegex(SnmpError, 'genErr.*1.2.3') as exc:
+            PDU.decode(to_bytes(pdu))
 
         self.assertEqual(exc.exception.error_status, 5)
         self.assertEqual(
             exc.exception.offending_oid,
-            ObjectIdentifier.from_string('1.3.6.1.4.1.6486.800.1.2.1.50.1.1.1.4.1.3.67.67.67.67.95.73.73.73.73.73.73.45.49.49.49.49.49.49.49.49.49.49')
+            ObjectIdentifier.from_string('1.2.3')
         )
