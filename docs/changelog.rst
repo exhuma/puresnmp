@@ -5,8 +5,9 @@ Changelog
 Release 1.4.0
 ~~~~~~~~~~~~~
 
+* **[new]** asyncio support via :py:mod:`puresnmp.aio` (Thanks to @acspike).
 * **[new]** Much better error detail if the SNMP agent returns a response with
-  an error-code.
+  an error-code. See :py:exc:`puresnmp.exc.ErrorResponse`.
 * **[new]** The ``ObjectIdentifier`` class now has two convenience methods
   :py:meth:`~puresnmp.x690.types.ObjectIdentifier.childof` and
   :py:meth:`~puresnmp.x690.types.ObjectIdentifier.parentof`. They merely
