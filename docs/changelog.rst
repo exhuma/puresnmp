@@ -2,6 +2,17 @@ Changelog
 =========
 
 
+Release 1.4.0
+~~~~~~~~~~~~~
+
+* **[new]** Much better error detail if the SNMP agent returns a response with
+  an error-code.
+* **[new]** The ``ObjectIdentifier`` class now has two convenience methods
+  :py:meth:`~puresnmp.x690.types.ObjectIdentifier.childof` and
+  :py:meth:`~puresnmp.x690.types.ObjectIdentifier.parentof`. They merely
+  delegat to ``__contains__`` but can make code more readable.
+
+
 Release 1.3.2
 ~~~~~~~~~~~~~
 
