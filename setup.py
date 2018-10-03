@@ -47,6 +47,9 @@ setup(
     provides=['puresnmp'],
     license="MIT",
     include_package_data=True,
+    package_data={
+        'puresnmp': ['py.typed']
+    },
     install_requires=DEPENDENCIES,
     extras_require={
         'dev': [],
