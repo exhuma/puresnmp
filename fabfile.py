@@ -23,6 +23,7 @@ def doc():
 
 @fab.task
 def publish():
+    fab.local('rm -rf dist')
     fab.local('python3 setup.py bdist_wheel --universal')
     fab.local('python3 setup.py sdist')
     fab.local('twine upload dist/*')
