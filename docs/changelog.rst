@@ -2,6 +2,12 @@ Changelog
 =========
 
 
+Release 1.4.1
+~~~~~~~~~~~~~
+
+* **[fix]** Fixed a regression which was introduced in ``v1.3.2``
+
+
 Release 1.4.0
 ~~~~~~~~~~~~~
 
