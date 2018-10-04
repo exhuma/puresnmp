@@ -21,6 +21,10 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
     Takes a list of varbinds and a list of base OIDs and returns a mapping from
     those base IDs to lists of varbinds.
 
+    Varbinds returned from a walk operation which targets multiple OIDs is
+    returned as "interleaved" list. This functions extracts these interleaved
+    items into a more usable dictionary.
+
     :param varbinds: A list of VarBind instances.
     :param effective_roots: The list of OIDs that were requested from the SNMP
         agent.
@@ -30,18 +34,25 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
         requested by the user. This list will keep track of the original OIDs
         to determine when the walk needs to terminate.
     """
-    roots = user_roots or effective_roots
+    user_roots = user_roots or []
+    n = len(effective_roots)
 
     results = {}
-    for varbind in varbinds:
-        containment = [base for base in roots if varbind.oid in base]
-        if len(containment) > 1:
-            raise RuntimeError('Unexpected OID result. A value was '
-                               'contained in more than one base than '
-                               'should be possible!')
-        if not containment:
-            continue
-        results.setdefault(containment[0], []).append(varbind)
+    for i in range(n):
+        results[effective_roots[i]] = varbinds[i::n]
+
+    if user_roots:
+        new_results = {}
+        for key, value in results.items():
+            containment = [base for base in user_roots if key in base]
+            if len(containment) > 1:
+                raise RuntimeError('Unexpected OID result. A value was '
+                                   'contained in more than one base than '
+                                   'should be possible!')
+            if not containment:
+                continue
+            new_results[containment[0]] = value
+            results = new_results
 
     return results
 
