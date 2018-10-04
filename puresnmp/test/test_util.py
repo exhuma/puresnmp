@@ -6,12 +6,18 @@ OID = ObjectIdentifier.from_string
 
 
 def test_group_varbinds():
+    '''
+    "group_varbinds" should convert an interleaved list of OIDs into a more
+    usable dictionary.
+    '''
     varbinds = [
         VarBind(OID('1.1.1'), Null()),
-        VarBind(OID('1.1.2'), Null()),
-        VarBind(OID('1.1.3'), Null()),
         VarBind(OID('2.2.1'), Null()),
+        VarBind(OID('3.3.1'), Null()),
+        VarBind(OID('1.1.2'), Null()),
         VarBind(OID('2.2.2'), Null()),
+        VarBind(OID('3.3.2'), Null()),
+        VarBind(OID('1.1.3'), Null()),
         VarBind(OID('2.2.3'), Null()),
         VarBind(OID('3.3.3'), Null()),
     ]
@@ -33,6 +39,8 @@ def test_group_varbinds():
             VarBind(OID('2.2.3'), Null()),
         ],
         OID('3.3'): [
+            VarBind(OID('3.3.1'), Null()),
+            VarBind(OID('3.3.2'), Null()),
             VarBind(OID('3.3.3'), Null()),
         ],
     }
