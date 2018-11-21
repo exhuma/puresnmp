@@ -116,14 +116,37 @@ class ByteTester(unittest.TestCase):
                 '\n'.join(comparisons))
 
 
+def parse_meta_lines(lines):
+    pattern = re.compile(r'-\*-(.*?)-\*-')
+    for line in lines:
+        match = pattern.search(line)
+        if not match:
+            continue
+        values = match.groups()[0]
+        key, _, value = values.partition(':')
+        if key.strip() == 'ascii-cols':
+            start, _, end = value.partition('-')
+            yield key.strip(), (int(start), int(end))
+        else:
+            yield key.strip(), value.strip()
+
+
 def readbytes_multiple(filename):
     with open(join(DATA_DIR, filename)) as fp:
         lines = fp.readlines()
 
-    ascii_position = 56 if ':' in lines[0] else 50
-    without_ascii = [line[:ascii_position] for line in lines]
-    without_comments = [line for line in without_ascii if not line.startswith('#')]
-    nonempty = [line for line in without_comments if line.strip()]
+    meta_lines = [line for line in lines if '-*-' in line]
+    args = dict(parse_meta_lines(meta_lines))
+
+    if 'ascii-cols' in args:
+        ascii_start, ascii_end = args['ascii-cols']
+    else:
+        ascii_end = 56 if ':' in lines[0] else 50
+        ascii_start = 0
+
+    without_comments = [line for line in lines if not line.startswith('#')]
+    without_ascii = [line[ascii_start:ascii_end] for line in without_comments]
+    nonempty = [line for line in without_ascii if line.strip()]
 
     str_bytes = []
     for line in nonempty:
