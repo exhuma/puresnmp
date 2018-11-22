@@ -402,10 +402,11 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
     expected_max_varbinds = n + (m * r)
 
-    if len(raw_response[2].varbinds) > expected_max_varbinds:
+    n_retrieved_varbinds = len(raw_response[2].varbinds)
+    if n_retrieved_varbinds > expected_max_varbinds:
         raise SnmpError('Unexpected response. Expected no more than %d '
                         'varbinds, but got %d!' % (
-                            expected_max_varbinds, len(oids)))
+                            expected_max_varbinds, n_retrieved_varbinds))
 
     # cut off the scalar OIDs from the listing(s)
     scalar_tmp = raw_response[2].varbinds[0:len(scalar_oids)]
