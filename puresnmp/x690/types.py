@@ -418,6 +418,9 @@ class Sequence(Type):
         item_repr = [repr(item) for item in self]
         return 'Sequence(%s)' % ', '.join(item_repr)
 
+    def __len__(self):
+        return len(self.items)
+
     def __iter__(self):
         return iter(self.items)
 
