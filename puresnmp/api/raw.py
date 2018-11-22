@@ -424,15 +424,17 @@ def bulkget(
     r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
     expected_max_varbinds = n + (m * r)
 
-    n_retrieved_varbinds = len(raw_response[2].varbinds)
+
+    _, _, get_response = raw_response
+    n_retrieved_varbinds = len(get_response.varbinds)
     if n_retrieved_varbinds > expected_max_varbinds:
         raise SnmpError('Unexpected response. Expected no more than %d '
                         'varbinds, but got %d!' % (
                             expected_max_varbinds, n_retrieved_varbinds))
 
     # cut off the scalar OIDs from the listing(s)
-    scalar_tmp = raw_response[2].varbinds[0:len(scalar_oids)]
-    repeating_tmp = raw_response[2].varbinds[len(scalar_oids):]
+    scalar_tmp = get_response.varbinds[0:len(scalar_oids)]
+    repeating_tmp = get_response.varbinds[len(scalar_oids):]
 
     # prepare output for scalar OIDs
     scalar_out = {
