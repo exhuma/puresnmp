@@ -21,5 +21,11 @@ class Length:
 
     INDEFINITE = "indefinite"
 
+#: Maximum number of usable varbinds as defined in RFC 3416
+MAX_VARBINDS = 2147483647
 
-MAX_VARBINDS = 2147483647  # Defined in RFC 3416
+#: A magic value used to detect strict error-handling
+ERRORS_STRICT = 'strict'
+
+#: A magic value used to detect lenient error-handling
+ERRORS_WARN = 'warn'

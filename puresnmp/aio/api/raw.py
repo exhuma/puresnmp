@@ -21,7 +21,7 @@ from ...pdu import (
     VarBind,
     END_OF_MIB_VIEW,
 )
-from ...const import Version
+from ...const import Version, ERRORS_WARN, ERRORS_STRICT
 from ..transport import send, get_request_id
 from ...util import (
     BulkResult,  # NOQA (must be here for type detection)
