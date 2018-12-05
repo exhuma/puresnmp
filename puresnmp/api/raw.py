@@ -30,6 +30,7 @@ from ..pdu import (
     GetRequest,
     SetRequest,
     VarBind,
+    END_OF_MIB_VIEW,
 )
 from ..const import Version
 from ..transport import send, get_request_id
@@ -144,7 +145,13 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
         raise SnmpError(
             'Invalid response! Expected exactly %d varbind, '
             'but got %d' % (len(oids), len(response_object.varbinds)))
-    output = [VarBind(oid, value) for oid, value in response_object.varbinds]
+
+    output = []
+    for oid, value in response_object.varbinds:
+        if value is END_OF_MIB_VIEW:
+            break
+        output.append(VarBind(oid, value))
+
 
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
@@ -421,6 +428,8 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     # prepare output for listing
     repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
+        if value is END_OF_MIB_VIEW:
+            break
         repeating_out[unicode(oid)] = value
 
     return BulkResult(scalar_out, repeating_out)

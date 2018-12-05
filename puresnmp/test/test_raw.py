@@ -49,7 +49,7 @@ from puresnmp.x690.types import (
     to_bytes
 )
 
-from . import ByteTester, CapturingHandler, readbytes
+from . import ByteTester, CapturingHandler, readbytes, readbytes_multiple
 
 try:
     from unittest.mock import patch, call
@@ -225,6 +225,32 @@ class TestMultiWalk(unittest.TestCase):
                     '1.2.3',
                     '2.3.4',
                 ]))
+
+    def test_eom(self):
+        '''
+        A test for a walk operation which runs into the endOfMibView marker
+        '''
+
+        data_generator = readbytes_multiple('x690/multiwalk_endofmibview.hex')
+
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.side_effect = data_generator
+            result = multiwalk('::1', 'public', [
+                '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
+            ])
+
+        root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
+        expected = [
+            (root+'0', 1),
+            (root+'1', 1),
+            (root+'2', 1),
+        ]
+
+        simplified_result = [
+           (str(oid), value.pythonize()) for oid, value in result
+        ]
+
+        self.assertEqual(simplified_result, expected)
 
 
 class TestMultiSet(unittest.TestCase):
@@ -437,6 +463,30 @@ class TestGetBulkGet(unittest.TestCase):
                              ['1.3.6.1.2.1.3.1'],
                              max_list_size=5)
         self.assertEqual(result, expected)
+
+    def test_eom(self):
+        '''
+        Test a bulg-get operation which runs into the "endOfMibView" marker.
+        '''
+
+        data = readbytes('x690/bulk_get_eom_response.hex')
+        with patch('puresnmp.api.raw.send') as mck, \
+                patch('puresnmp.api.raw.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+            result = bulkget('::1', 'public', [], ['1.2.4'], max_list_size=10)
+
+        expected_scalars = {}
+        self.assertEqual(result.scalars, expected_scalars)
+
+        root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
+        expected_listing = {
+            root + '0': Integer(1),
+            root + '1': Integer(1),
+            root + '2': Integer(1),
+        }
+
+        self.assertEqual(result.listing, expected_listing)
 
 
 class TestGetBulkWalk(unittest.TestCase):
