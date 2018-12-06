@@ -1,10 +1,14 @@
 from puresnmp.test import readbytes
-from unittest.mock import patch
 from puresnmp.pdu import PDU
 from puresnmp.x690.types import OctetString, Integer
 
 from puresnmp.api.raw import bulkget
 import pytest
+
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch  # type: ignore
 
 
 def test_54_endofmibview():

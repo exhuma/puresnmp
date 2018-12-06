@@ -235,22 +235,20 @@ class TestMultiWalk(unittest.TestCase):
 
         with patch('puresnmp.api.raw.send') as mck:
             mck.side_effect = data_generator
-            result = multiwalk('::1', 'public', [
-                '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
+            result = multiwalk(u'::1', u'public', [
+                u'1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
             ])
+        result = list(result)
 
+        OID = ObjectIdentifier.from_string
         root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
         expected = [
-            (root+'0', 1),
-            (root+'1', 1),
-            (root+'2', 1),
+            VarBind(OID(root+'0'), Integer(1)),
+            VarBind(OID(root+'1'), Integer(1)),
+            VarBind(OID(root+'2'), Integer(1)),
         ]
 
-        simplified_result = [
-           (str(oid), value.pythonize()) for oid, value in result
-        ]
-
-        self.assertEqual(simplified_result, expected)
+        self.assertEqual(result, expected)
 
 
 class TestMultiSet(unittest.TestCase):
