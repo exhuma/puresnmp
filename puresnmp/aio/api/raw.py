@@ -407,7 +407,6 @@ async def bulkget(
 
     response = await send(ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
-    assert remainder == b''  # TODO raise a proper error
 
     # See RFC=3416 for details of the following calculation
     n = min(non_repeaters, len(oids))
