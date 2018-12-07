@@ -49,7 +49,7 @@ from puresnmp.x690.types import (
     to_bytes
 )
 
-from . import ByteTester, CapturingHandler, readbytes
+from . import ByteTester, CapturingHandler, readbytes, readbytes_multiple
 
 try:
     from unittest.mock import patch, call
@@ -226,6 +226,30 @@ class TestMultiWalk(unittest.TestCase):
                     '2.3.4',
                 ]))
 
+    def test_eom(self):
+        '''
+        A test for a walk operation which runs into the endOfMibView marker
+        '''
+
+        data_generator = readbytes_multiple('x690/multiwalk_endofmibview.hex')
+
+        with patch('puresnmp.api.raw.send') as mck:
+            mck.side_effect = data_generator
+            result = multiwalk(u'::1', u'public', [
+                u'1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
+            ])
+        result = list(result)
+
+        OID = ObjectIdentifier.from_string
+        root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
+        expected = [
+            VarBind(OID(root+'0'), Integer(1)),
+            VarBind(OID(root+'1'), Integer(1)),
+            VarBind(OID(root+'2'), Integer(1)),
+        ]
+
+        self.assertEqual(result, expected)
+
 
 class TestMultiSet(unittest.TestCase):
 
@@ -264,7 +288,7 @@ class TestGetNext(unittest.TestCase):
             mck2.return_value = 0
             mck.return_value = data
             getnext('::1', 'public', '1.2.3')
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
 
     def test_getnext(self):
         data = readbytes('getnext_response.hex')
@@ -414,7 +438,7 @@ class TestGetBulkGet(unittest.TestCase):
                     ['1.2.3'],
                     ['1.2.4'],
                     max_list_size=2)
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
 
     def test_bulkget(self):
         data = readbytes('bulk_get_response.hex')
@@ -438,6 +462,30 @@ class TestGetBulkGet(unittest.TestCase):
                              max_list_size=5)
         self.assertEqual(result, expected)
 
+    def test_eom(self):
+        '''
+        Test a bulg-get operation which runs into the "endOfMibView" marker.
+        '''
+
+        data = readbytes('x690/bulk_get_eom_response.hex')
+        with patch('puresnmp.api.raw.send') as mck, \
+                patch('puresnmp.api.raw.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+            result = bulkget('::1', 'public', [], ['1.2.4'], max_list_size=10)
+
+        expected_scalars = {}
+        self.assertEqual(result.scalars, expected_scalars)
+
+        root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
+        expected_listing = {
+            root + '0': Integer(1),
+            root + '1': Integer(1),
+            root + '2': Integer(1),
+        }
+
+        self.assertEqual(result.listing, expected_listing)
+
 
 class TestGetBulkWalk(unittest.TestCase):
 
@@ -457,7 +505,7 @@ class TestGetBulkWalk(unittest.TestCase):
             list(bulkwalk('::1', 'public',
                           ['1.2.3'],
                           bulk_size=2))
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=2)
+            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
 
     def test_get_call_args_issue_22(self):
         data = readbytes('dummy.hex')  # any dump would do
@@ -496,9 +544,9 @@ class TestGetBulkWalk(unittest.TestCase):
                                bulk_size=20))
 
         self.assertEqual(mck_send.mock_calls, [
-            call('127.0.0.1', 161, req1, timeout=2),
-            call('127.0.0.1', 161, req2, timeout=2),
-            call('127.0.0.1', 161, req3, timeout=2),
+            call('127.0.0.1', 161, req1, timeout=6),
+            call('127.0.0.1', 161, req2, timeout=6),
+            call('127.0.0.1', 161, req3, timeout=6),
         ])
 
         expected = [

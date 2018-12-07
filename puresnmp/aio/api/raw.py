@@ -12,15 +12,16 @@ from ...x690.types import (
     Type,
 )
 from ...x690.util import to_bytes, tablify
-from ...exc import SnmpError, NoSuchOID
+from ...exc import SnmpError, NoSuchOID, FaultySNMPImplementation
 from ...pdu import (
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
     SetRequest,
     VarBind,
+    END_OF_MIB_VIEW,
 )
-from ...const import Version
+from ...const import Version, ERRORS_WARN, ERRORS_STRICT
 from ..transport import send, get_request_id
 from ...util import (
     BulkResult,  # NOQA (must be here for type detection)
@@ -55,7 +56,9 @@ async def get(ip, community, oid, port=161, timeout=6):
         >>> await get('192.168.1.1', 'private', '1.2.3.4')
         'non-functional example'
     """
-    return (await multiget(ip, community, [oid], port, timeout=timeout))[0]
+    result = await multiget(
+        ip, community, [oid], port, timeout=timeout)
+    return result[0]
 
 
 async def multiget(ip, community, oids, port=161, timeout=6):
@@ -100,7 +103,9 @@ async def getnext(ip, community, oid, port=161, timeout=6):
         >>> await getnext('192.168.1.1', 'private', '1.2.3')
         VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
     """
-    return (await multigetnext(ip, community, [oid], port, timeout=timeout))[0]
+    result = await multigetnext(
+        ip, community, [oid], port, timeout=timeout)
+    return result[0]
 
 
 async def multigetnext(ip, community, oids, port=161, timeout=6):
@@ -125,19 +130,34 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
         OctetString(community),
         request
     )
-    response = await send(ip, port, to_bytes(packet), timeout=timeout)
+    response = await send(
+        ip, port, to_bytes(packet), timeout=timeout)
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
         raise SnmpError(
             'Invalid response! Expected exactly %d varbind, '
             'but got %d' % (len(oids), len(response_object.varbinds)))
-    output = [VarBind(oid, value) for oid, value in response_object.varbinds]
+
+    output = []
+    for oid, value in response_object.varbinds:
+        if value is END_OF_MIB_VIEW:
+            break
+        output.append(VarBind(oid, value))
+
+
+    # Verify that the OIDs we retrieved are successors of the requested OIDs.
+    for requested, retrieved in zip(oids, output):
+        if not OID(requested) < retrieved.oid:
+            stringified = unicode(retrieved.oid)  # TODO remove when Py2 is dropped
+            raise FaultySNMPImplementation(
+                'The OID %s is not a successor of %s!' %
+                (stringified, requested))
     return output
 
 
-async def walk(ip, community, oid, port=161, timeout=6):
-    # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
+async def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
+    # type: (str, str, str, int, int, str) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an async_generator
     over :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -151,7 +171,7 @@ async def walk(ip, community, oid, port=161, timeout=6):
         <async_generator object walk at 0x7fa2f775cf68>
 
         >>> from pprint import pprint
-        >>> gen = walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')
+        >>> result = walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')
         >>> res = []
         >>> async for x in gen:
         ...     res.append(x)
@@ -162,14 +182,17 @@ async def walk(ip, community, oid, port=161, timeout=6):
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
     """
 
-    gen = multiwalk(ip, community, [oid], port, timeout=timeout)
+    gen = multiwalk(ip, community, [oid], port, timeout=timeout,
+                     errors=errors)
     async for varbind in gen:
         yield varbind
 
 
-async def multiwalk(ip, community, oids,
-                    port=161, timeout=6, fetcher=multigetnext):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
+async def multiwalk(
+        ip, community, oids,
+        port=161, timeout=6, fetcher=multigetnext,
+        errors=ERRORS_STRICT):
+    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]], str) -> Generator[VarBind, None, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an async_generator
     over :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -179,8 +202,8 @@ async def multiwalk(ip, community, oids,
 
     Example::
 
-        >>> multiwalk('127.0.0.1', 'private',
-        ...           ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
+        >>> multiwalk('127.0.0.1', 'private', [
+        ...     '1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
         <async_generator object multiwalk at 0x7fa2f775cf68>
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)
@@ -193,10 +216,13 @@ async def multiwalk(ip, community, oids,
               len(unfinished_oids),
               len(oids))
     yielded = _set([])  # type: ignore
-    for var in group_varbinds(varbinds, requested_oids).values():
+    for var in sorted(grouped_oids.values()):
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
             if not any(containment) or varbind.oid in yielded:  # type: ignore
+                LOG.debug('Unexpected device response: Returned VarBind %s '
+                          'was either not contained in the requested tree or '
+                          'appeared more than once. Skipping!', varbind)
                 continue
             yielded.add(varbind.oid)  # type: ignore
             yield varbind
@@ -205,14 +231,21 @@ async def multiwalk(ip, community, oids,
     # those.
     while unfinished_oids:
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
+        next_fetches_str = [unicode(_) for _ in next_fetches]
         try:
-            varbinds = await fetcher(ip, community,
-                                     [unicode(_) for _ in next_fetches],
-                                     port,
-                                     timeout)
+            varbinds = await fetcher(
+                ip, community, next_fetches_str, port, timeout)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
+        except FaultySNMPImplementation as exc:
+            if errors == ERRORS_WARN:
+                LOG.warning('SNMP walk aborted prematurely due to faulty SNMP '
+                            'implementation on device %r! Upon running a '
+                            'GetNext on OIDs %r it returned the following '
+                            'error: %s', ip, next_fetches_str, exc)
+                break
+            raise
         grouped_oids = group_varbinds(varbinds,
                                       next_fetches,
                                       user_roots=requested_oids)
@@ -220,7 +253,7 @@ async def multiwalk(ip, community, oids,
         LOG.debug('%d of %d OIDs need to be continued',
                   len(unfinished_oids),
                   len(oids))
-        for var in group_varbinds(varbinds, next_fetches).values():
+        for var in sorted(grouped_oids.values()):
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
                 if not any(containment) or varbind.oid in yielded:  # type: ignore
@@ -243,8 +276,8 @@ async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disabl
         b'I am contact'
     """
 
-    result = await multiset(ip, community, [(oid, value)],
-                            port, timeout=timeout)
+    result = await multiset(
+        ip, community, [(oid, value)], port, timeout=timeout)
     return result[oid]
 
 
@@ -257,9 +290,10 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
 
     Fake Example::
 
-        >>> await multiset('127.0.0.1', 'private',
-        ...                [('1.2.3', OctetString(b'foo')),
-        ...                 ('2.3.4', OctetString(b'bar'))])
+        >>> await multiset(
+        ...     '127.0.0.1', 'private',
+        ...     [('1.2.3', OctetString(b'foo')),
+        ...     ('2.3.4', OctetString(b'bar'))])
         {'1.2.3': b'foo', '2.3.4': b'bar'}
     """
 
@@ -286,8 +320,9 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
     return output
 
 
-async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-                  port=161, timeout=6):
+async def bulkget(
+        ip, community, scalar_oids, repeating_oids, max_list_size=1,
+        port=161, timeout=6):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
     A coroutine that runs a "bulk" get operation and returns a
@@ -317,13 +352,14 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
         >>> ip = '192.168.1.1'
         >>> community = 'private'
-        >>> result = await bulkget(ip,
-        ...                        community,
-        ...                        scalar_oids=['1.3.6.1.2.1.1.1',
-        ...                                     '1.3.6.1.2.1.1.2'],
-        ...                        repeating_oids=['1.3.6.1.2.1.3.1',
-        ...                                        '1.3.6.1.2.1.5.1'],
-        ...                        max_list_size=10)
+        >>> result = await bulkget(
+        ...     ip,
+        ...     community,
+        ...     scalar_oids=['1.3.6.1.2.1.1.1',
+        ...                  '1.3.6.1.2.1.1.2'],
+        ...     repeating_oids=['1.3.6.1.2.1.3.1',
+        ...                     '1.3.6.1.2.1.5.1'],
+        ...     max_list_size=10)
         BulkResult(
             scalars={'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
                      '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
@@ -378,14 +414,17 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
     expected_max_varbinds = n + (m * r)
 
-    if len(raw_response[2].varbinds) > expected_max_varbinds:
+
+    _, _, get_response = raw_response
+    n_retrieved_varbinds = len(get_response.varbinds)
+    if n_retrieved_varbinds > expected_max_varbinds:
         raise SnmpError('Unexpected response. Expected no more than %d '
                         'varbinds, but got %d!' % (
-                            expected_max_varbinds, len(oids)))
+                            expected_max_varbinds, n_retrieved_varbinds))
 
     # cut off the scalar OIDs from the listing(s)
-    scalar_tmp = raw_response[2].varbinds[0:len(scalar_oids)]
-    repeating_tmp = raw_response[2].varbinds[len(scalar_oids):]
+    scalar_tmp = get_response.varbinds[0:len(scalar_oids)]
+    repeating_tmp = get_response.varbinds[len(scalar_oids):]
 
     # prepare output for scalar OIDs
     scalar_out = {
@@ -396,6 +435,8 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     # prepare output for listing
     repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
+        if value is END_OF_MIB_VIEW:
+            break
         repeating_out[unicode(oid)] = value
 
     return BulkResult(scalar_out, repeating_out)
@@ -406,15 +447,18 @@ def _bulkwalk_fetcher(bulk_size=10):
     """
     Create a bulk fetcher coroutine with a fixed limit on "repeatable" OIDs.
     """
+
     async def fetcher(ip, community, oids, port=161, timeout=6):
         '''
         Executes a SNMP BulkGet request.
         '''
-        result = await bulkget(ip, community, [], oids,
-                               max_list_size=bulk_size,
-                               port=port, timeout=timeout)
+        result = await bulkget(
+            ip, community, [], oids,
+            max_list_size=bulk_size,
+            port=port, timeout=timeout)
         return [VarBind(OID(k), v)
                 for k, v in result.listing.items()]
+
     if sys.version_info < (3, 0):
         fetcher.__name__ = str('_bulkwalk_fetcher(%d)' % bulk_size)
     else:

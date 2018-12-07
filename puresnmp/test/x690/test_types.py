@@ -520,6 +520,16 @@ class TestSequence(ByteTester):
         expected = 'Sequence(Integer(10))'
         self.assertEqual(result, expected)
 
+    def test_length_empty(self):
+        result = len(Sequence())
+        expected = 0
+        self.assertEqual(result, expected)
+
+    def test_length_nonempty(self):
+        result = len(Sequence(Integer(1), Integer(2)))
+        expected = 2
+        self.assertEqual(result, expected)
+
 
 class TestNull(ByteTester):
 

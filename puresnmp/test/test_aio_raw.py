@@ -22,7 +22,7 @@ from puresnmp.util import BulkResult
 from puresnmp.x690.types import (Integer, ObjectIdentifier, OctetString,
                                  Sequence, to_bytes)
 
-from . import readbytes
+from . import readbytes, readbytes_multiple
 from .asyncmock import AsyncMock
 
 try:
@@ -172,6 +172,36 @@ class TestMultiWalk(object):
         assert len(result) == len(expected)
 
 
+    @pytest.mark.asyncio
+    async def test_eom(self):
+        '''
+        A test for a walk operation which runs into the endOfMibView marker
+        '''
+
+        data_generator = readbytes_multiple('x690/multiwalk_endofmibview.hex')
+
+        with patch('puresnmp.api.raw.send', new_callable=AsyncMock) as mck:
+            mck.side_effect = data_generator
+            result = []
+            async for row in multiwalk('::1', 'public', [
+                '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
+            ]):
+                result.append(row)
+
+        root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
+        expected = [
+            (root+'0', 1),
+            (root+'1', 1),
+            (root+'2', 1),
+        ]
+
+        simplified_result = [
+           (str(oid), value.pythonize()) for oid, value in result
+        ]
+
+        assert simplified_result == expected
+
+
 class TestMultiSet(object):
 
     @pytest.mark.asyncio
@@ -268,6 +298,31 @@ class TestGetBulkGet(object):
                              ['1.3.6.1.2.1.3.1'],
                              max_list_size=5)
         assert result == expected
+
+    @pytest.mark.asyncio
+    async def test_eom(self):
+        '''
+        Test a bulg-get operation which runs into the "endOfMibView" marker.
+        '''
+
+        data = readbytes('x690/bulk_get_eom_response.hex')
+        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck, \
+                patch('puresnmp.aio.api.raw.get_request_id') as mck2:
+            mck2.return_value = 0
+            mck.return_value = data
+            result = await bulkget('::1', 'public', [], ['1.2.4'],
+                                   max_list_size=10)
+
+        expected_scalars = {}
+        assert result.scalars == expected_scalars
+
+        root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
+        expected_listing = {
+            root + '0': Integer(1),
+            root + '1': Integer(1),
+            root + '2': Integer(1),
+        }
+        assert result.listing == expected_listing
 
 
 class TestGetBulkWalk(object):
