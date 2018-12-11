@@ -10,7 +10,7 @@ from io import StringIO
 
 def test_readbytes_multiple():
     data = StringIO(dedent(
-        '''\
+        u'''\
         #
         # This is a comment
         #
@@ -42,7 +42,7 @@ def test_readbytes_multiple_byte_positions():
     If ASCII columns are defined, we should still properly split the packets
     '''
     data = StringIO(dedent(
-        '''\
+        u'''\
         # -*- ascii-cols: 6-56 -*-
         # Sequence of responses for an SNMP Walk operation which eventually falls into
         # a special "endOfMibView" marker (a varbind with binary *value* 0x82 0x00).
@@ -67,7 +67,7 @@ def test_readbytes_multiple_byte_positions():
 
 def test_readbytes():
     data = StringIO(dedent(
-        '''\
+        u'''\
         0000: 30 29 02 01  01 04 07 70  72 69 76 61  74 65 A5 1B    0).....private..
         '''
     ))
