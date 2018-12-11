@@ -147,6 +147,7 @@ class TestMultiGet(unittest.TestCase):
                 '1.3.6.1.2.1.1.2.0',
                 '1.3.6.1.2.1.1.1.0',
             ])
+            result = list(result)
         self.assertEqual(result, expected)
 
 
@@ -238,7 +239,7 @@ class TestMultiWalk(unittest.TestCase):
             result = multiwalk(u'::1', u'public', [
                 u'1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
             ])
-        result = list(result)
+            result = list(result)
 
         OID = ObjectIdentifier.from_string
         root = '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1.'
