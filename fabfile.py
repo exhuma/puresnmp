@@ -1,29 +1,29 @@
-import fabric.api as fab
+from invoke import task
 
 
-def generate_type_hierarchy():
+def generate_type_hierarchy(ctx):
     """
     Generate a document containing the available variable types.
     """
-    fab.local('./env/bin/python -m puresnmp.types > docs/typetree.rst')
+    ctx.run('./env/bin/python -m puresnmp.types > docs/typetree.rst')
 
 
-@fab.task
-def doc():
-    generate_type_hierarchy()
-    fab.local('sphinx-apidoc '
-              '-o docs/developer_guide/api '
-              '-f '
-              '-e '
-              'puresnmp '
-              'puresnmp/test')
-    with fab.lcd('docs'):
-        fab.local('make html')
+@task
+def doc(ctx):
+    generate_type_hierarchy(ctx)
+    ctx.run('sphinx-apidoc '
+            '-o docs/developer_guide/api '
+            '-f '
+            '-e '
+            'puresnmp '
+            'puresnmp/test')
+    with ctx.cd('docs'):
+        ctx.run('make html')
 
 
-@fab.task
-def publish():
-    fab.local('rm -rf dist')
-    fab.local('python3 setup.py bdist_wheel --universal')
-    fab.local('python3 setup.py sdist')
-    fab.local('twine upload dist/*')
+@task
+def publish(ctx):
+    ctx.run('rm -rf dist')
+    ctx.run('python3 setup.py bdist_wheel --universal')
+    ctx.run('python3 setup.py sdist')
+    ctx.run('twine upload dist/*')
