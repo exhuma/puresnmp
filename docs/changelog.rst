@@ -6,6 +6,8 @@ Release 1.4.2
 ~~~~~~~~~~~~~
 
 * **[fix]** Properly handle ``endOfMibView`` markers in responses (Issue #54)
+* **[fix]** Synced bugfixes of the non-async code with the async code. They
+  should now behave identically.
 
 
 Release 1.4.1
