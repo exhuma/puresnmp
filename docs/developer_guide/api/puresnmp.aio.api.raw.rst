@@ -1,5 +1,5 @@
-puresnmp.aio.api.raw module
-===========================
+puresnmp\.aio\.api\.raw module
+==============================
 
 .. automodule:: puresnmp.aio.api.raw
     :members:

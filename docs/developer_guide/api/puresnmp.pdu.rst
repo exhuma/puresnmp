@@ -1,5 +1,5 @@
-puresnmp.pdu module
-===================
+puresnmp\.pdu module
+====================
 
 .. automodule:: puresnmp.pdu
     :members:

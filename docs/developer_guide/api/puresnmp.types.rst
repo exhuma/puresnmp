@@ -1,5 +1,5 @@
-puresnmp.types module
-=====================
+puresnmp\.types module
+======================
 
 .. automodule:: puresnmp.types
     :members:

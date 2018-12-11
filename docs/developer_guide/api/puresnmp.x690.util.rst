@@ -1,5 +1,5 @@
-puresnmp.x690.util module
-=========================
+puresnmp\.x690\.util module
+===========================
 
 .. automodule:: puresnmp.x690.util
     :members:
