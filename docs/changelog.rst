@@ -5,8 +5,7 @@ Changelog
 Release 1.4.2
 ~~~~~~~~~~~~~
 
-* **[fix]** Properly handle ``endOfMibView`` markers in bulk requsts
-  (Issue #54)
+* **[fix]** Properly handle ``endOfMibView`` markers in responses (Issue #54)
 
 
 Release 1.4.1
