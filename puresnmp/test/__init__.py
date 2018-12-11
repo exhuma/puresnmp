@@ -131,38 +131,86 @@ def parse_meta_lines(lines):
             yield key.strip(), value.strip()
 
 
+def chunker(lines, is_boundary):
+    # type: (List[T], Callable[[T], bool) -> Generator[List[T], None, None]
+    '''
+    Transforms a list of strings into a generator of new lists of strings by
+    looking for special boundary lines. Boundary lines are detected with the
+    help of an "is_boundary" callable.
+
+    Example:
+
+        >>> data = [1, 2, -1, 3, 4]
+        >>> for chunk in chunker(data, is_boundary=lambda x: x == -1):
+        ...     print(chunk)
+        [1, 2]
+        [3, 4]
+    '''
+    if not lines:
+        return []
+
+    collected = []
+    for item in lines:
+        if is_boundary(item):
+            if collected:
+                yield collected
+            collected = []
+            continue
+        else:
+            collected.append(item)
+    if collected:
+        yield collected
+
+
+
+def detect_ascii_slice(lines):
+    # type: (List[str]) -> slice
+    '''
+    Given a list of strings, this will return the most likely positions of byte
+    positions. They are returned slice which should be able to extract the
+    columns from each line.
+    '''
+    for line in lines:
+        # if the content contains a ":" character, it contains the byte offset
+        # in the beginning. This is the case for libsnmp command output using
+        # the "-d" switch. We need to remove the offset
+        match = re.match(r'^\d{4}:', line)
+        if ':' in line:
+            return slice(6, 56)
+        else:
+            return slice(0, 50)
+    return slice(0, -1)
+
+
 def readbytes_multiple(filename):
-    with open(join(DATA_DIR, filename)) as fp:
-        lines = fp.readlines()
+    if isinstance(filename, str):
+        with open(join(DATA_DIR, filename)) as fp:
+            lines = fp.readlines()
+    else:
+        lines = filename.readlines()
 
     meta_lines = [line for line in lines if '-*-' in line]
     args = dict(parse_meta_lines(meta_lines))
 
     if 'ascii-cols' in args:
-        ascii_start, ascii_end = args['ascii-cols']
+        ascii_slice = slice(*args['ascii-cols'])
     else:
-        ascii_end = 56 if ':' in lines[0] else 50
-        ascii_start = 0
+        ascii_slice = detect_ascii_slice(lines)
 
-    without_comments = [line for line in lines if not line.startswith('#')]
-    without_ascii = [line[ascii_start:ascii_end] for line in without_comments]
-    nonempty = [line for line in without_ascii if line.strip()]
+    for chunk in chunker(lines, is_boundary=lambda x: x.strip() == '----'):
+        wo_comments = [line for line in chunk if not line.startswith('#')]
+        without_ascii = [line[ascii_slice] for line in wo_comments]
+        nonempty = [line for line in without_ascii if line.strip()]
 
-    str_bytes = []
-    for line in nonempty:
-        # if the content contains a ":" character, it contains the byte offset
-        # in the beginning. This is the case for libsnmp command output using
-        # the "-d" switch. We need to remove the offset
-        if ':' in line:
-            line = line.split(':')[1]
-        if line.startswith('----'):
-            values = [int(char, 16) for char in str_bytes]
-            yield to_bytes(values)
-            del str_bytes[:]
-        else:
+        str_bytes = []
+        for line in nonempty:
             str_bytes.extend(line.split())
-    values = [int(char, 16) for char in str_bytes]
-    yield to_bytes(values)
+
+
+        values = [int(char, 16) for char in str_bytes]
+
+        yield to_bytes(values)
+        del str_bytes[:]
 
 
 def readbytes(filename):
