@@ -1,5 +1,5 @@
-puresnmp.x690 package
-=====================
+puresnmp\.x690 package
+======================
 
 Submodules
 ----------

@@ -1,5 +1,5 @@
-puresnmp.aio.api package
-========================
+puresnmp\.aio\.api package
+==========================
 
 Submodules
 ----------

@@ -52,7 +52,7 @@ setup(
     },
     install_requires=DEPENDENCIES,
     extras_require={
-        'dev': [],
+        'dev': ['sphinx-rtd-theme'],
         'test': TEST_DEPENDENCIES
     },
     packages=find_packages(exclude=["tests.*", "tests", "docs"]),

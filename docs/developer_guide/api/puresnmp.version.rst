@@ -1,5 +1,5 @@
-puresnmp.version module
-=======================
+puresnmp\.version module
+========================
 
 .. automodule:: puresnmp.version
     :members:

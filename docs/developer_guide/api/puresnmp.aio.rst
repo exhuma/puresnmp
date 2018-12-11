@@ -1,5 +1,5 @@
-puresnmp.aio package
-====================
+puresnmp\.aio package
+=====================
 
 Subpackages
 -----------
