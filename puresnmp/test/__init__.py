@@ -147,7 +147,7 @@ def chunker(lines, is_boundary):
         [3, 4]
     '''
     if not lines:
-        return []
+        return
 
     collected = []
     for item in lines:
