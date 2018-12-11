@@ -180,7 +180,7 @@ class TestMultiWalk(object):
 
         data_generator = readbytes_multiple('x690/multiwalk_endofmibview.hex')
 
-        with patch('puresnmp.api.raw.send', new_callable=AsyncMock) as mck:
+        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
             mck.side_effect = data_generator
             result = []
             async for row in multiwalk('::1', 'public', [
