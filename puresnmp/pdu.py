@@ -44,6 +44,10 @@ if six.PY3:
     unicode = str  # pylint: disable=invalid-name
 
 
+#: Sentinel value to detect endOfMibView
+END_OF_MIB_VIEW = object()
+
+
 class VarBind(namedtuple('VarBind', 'oid, value')):
     '''
     A "VarBind" is a 2-tuple containing an object-identifier and the
@@ -113,7 +117,14 @@ class PDU(Type):
             raise exception
 
         values, data = pop_tlv(data)
-        varbinds = [VarBind(*encoded_varbind) for encoded_varbind in values]
+        varbinds = []
+        for oid, value in values:
+            # NOTE: this uses the "is" check to make 100% sure we check against
+            # the sentinel object defined in this module!
+            if value is END_OF_MIB_VIEW:
+                varbinds.append(VarBind(oid, END_OF_MIB_VIEW))
+                break
+            varbinds.append(VarBind(oid, value))
 
         return cls(
             request_id,
@@ -209,6 +220,13 @@ class GetResponse(PDU):
         Try decoding the response. If nothing was returned (the message was
         empty), raise a :py:exc:`~puresnmp.exc.NoSuchOID` exception.
         """
+        # TODO This is not reslly clean, but it should work. A GetResponse has
+        #      the same type identifier as a "endOfMibView" *value*. The way
+        #      puresnmp is structured (recursively calling "pop_tlv") makes it
+        #      difficult to distinguish between a valid GetResponse object and
+        #      an endOfMibView value, except that the endOfMibView had no data.
+        if not data:
+            return END_OF_MIB_VIEW
         try:
             return super(GetResponse, cls).decode(data)
         except EmptyMessage as exc:
