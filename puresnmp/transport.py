@@ -21,6 +21,10 @@ from .x690.util import visible_octets
 LOG = logging.getLogger(__name__)
 RETRIES = 3
 
+#: Low-level socket buffer-size. If you run into timeouts you may want to
+#: increase this
+BUFFER_SIZE = 4096  # 4 KiB
+
 
 def recv_all(sock):
     '''
@@ -38,12 +42,11 @@ def recv_all(sock):
 
     See https://stackoverflow.com/a/17697651/160665
     '''
-    buffer_size = 4096 # 4 KiB
     chunks = []
     while True:
-        chunk = sock.recv(buffer_size)
+        chunk = sock.recv(BUFFER_SIZE)
         chunks.append(chunk)
-        if len(chunk) < buffer_size:
+        if len(chunk) < BUFFER_SIZE:
             # either 0 or end of data
             break
     data = b''.join(chunks)
