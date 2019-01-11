@@ -19,6 +19,7 @@ class SnmpError(Exception):
     error inherits from this class.
     """
 
+
 class ErrorResponse(SnmpError):
     """
     A superclass used when the SNMP agent responded with additional error
