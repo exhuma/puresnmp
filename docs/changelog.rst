@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Release 1.5.1
+~~~~~~~~~~~~~
+
+* **[fixed]** Socket connections no longer read multiple times from the same
+  UDP socket. An appropriate error is now raised
+  ``puresnmp.x690.exc.InvalidValueLength`` when a returned package is larger
+  than the default buffer-size.
+
+  To increase the buffer size, simply set the appropriate value to
+  ``puresnmp.transport.BUFFER_SIZE``.
+
 
 Release 1.5.0
 ~~~~~~~~~~~~~
