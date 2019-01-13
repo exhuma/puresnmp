@@ -4,6 +4,11 @@ References
 This document contains various references which were helpful in the development
 of this library.
 
+.. TODO SNMP v2c
+.. TODO     RFCs 1901-1908
+.. TODO SNMP v3
+.. TODO     RFCs 2571-2574
+
 X.690
     https://www.itu.int/rec/T-REC-X.690/en
 
