@@ -8,6 +8,8 @@ of this library.
 .. TODO     RFCs 1901-1908
 .. TODO SNMP v3
 .. TODO     RFCs 2571-2574
+.. TODO Coexistence of v1, v2 and v3
+.. TODO     https://tools.ietf.org/html/rfc3584
 
 X.690
     https://www.itu.int/rec/T-REC-X.690/en
