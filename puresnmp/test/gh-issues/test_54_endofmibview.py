@@ -13,8 +13,9 @@ except ImportError:
 
 def test_54_endofmibview():
     data = readbytes('gh-issues/54-endofmibview.hex')
-    with patch('puresnmp.api.raw.send') as ptch:
-        ptch.return_value = data
+    with patch('puresnmp.api.raw.Transport') as ptch:
+        ptch().send.return_value = data
+        ptch().get_request_id.return_value = 123
         result = bulkget('192.0.2.1', 'private', [], ['1.2.3'],
                  max_list_size=10)
     assert result.scalars == {}

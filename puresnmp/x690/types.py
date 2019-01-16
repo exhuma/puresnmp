@@ -54,6 +54,7 @@ from .util import (
     int_from_bytes,
     to_bytes
 )
+from .exc import InvalidValueLength
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import
@@ -151,6 +152,9 @@ class Type(object):
         """
         Given a bytes object, this method reads the type information and length
         and uses it to convert the bytes representation into a python object.
+
+        :raises puresnmp.x690.exc.InvalidValueLength: If the packet-length does
+            not match the expected length reported in the package header.
         """
 
         if not data:
@@ -158,10 +162,11 @@ class Type(object):
         cls.validate(data)
         expected_length, data = decode_length(data[1:])
         if len(data) != expected_length:
-            raise ValueError('Corrupt packet: Unexpected length for {0} '
-                             'Expected {1} (0x{1:02x}) '
-                             'but got {2} (0x{2:02x})'.format(
-                                 cls, expected_length, len(data)))
+            raise InvalidValueLength(
+                'Corrupt packet: Unexpected length for {0} Expected {1} '
+                '(0x{1:02x}) but got {2} (0x{2:02x}). Consider increasing '
+                'puresnmp.transport.BUFFER_SIZE.'.format(
+                    cls, expected_length, len(data)))
         return cls.decode(data)
 
     @classmethod

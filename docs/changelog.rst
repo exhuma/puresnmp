@@ -1,13 +1,34 @@
 Changelog
 =========
 
-
-Release 1.4.2
+Release 1.5.1
 ~~~~~~~~~~~~~
 
+* **[fixed]** Socket connections no longer read multiple times from the same
+  UDP socket. An appropriate error is now raised
+  ``puresnmp.x690.exc.InvalidValueLength`` when a returned package is larger
+  than the default buffer-size.
+
+  To increase the buffer size, simply set the appropriate value to
+  ``puresnmp.transport.BUFFER_SIZE``.
+
+
+Release 1.5.0
+~~~~~~~~~~~~~
+
+* **[new]** The buffer-size of low-level socket calls can now be modified via
+  the global variable ``puresnmp.transport.BUFFER_SIZE``.
+* **[new]** ``Sequence`` instances are now "sized" (it is now possible to call
+  ``len()`` on a sequence).
+* **[new]** Applied missing bugfixes to the async code (ensured that the aio
+  API behaves the same way as the normal API).
 * **[fix]** Properly handle ``endOfMibView`` markers in responses (Issue #54)
 * **[fix]** Synced bugfixes of the non-async code with the async code. They
   should now behave identically.
+* **[fix]** An error message in ``bulkget`` responses now shows the proper OID
+  count.
+* **[support]** Reading "ASCII/Hex" files in unit-tests is now a bit more
+  flexible and can read more formats.
 
 
 Release 1.4.1

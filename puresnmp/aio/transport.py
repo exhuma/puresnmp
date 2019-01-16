@@ -16,7 +16,7 @@ import logging
 
 from ..exc import Timeout
 from ..x690.util import visible_octets
-from ..transport import get_request_id
+from ..transport import Transport as SyncTransport
 
 LOG = logging.getLogger(__name__)
 
@@ -91,24 +91,26 @@ class SNMPClientProtocol:
             raise Timeout("{} second timeout exceeded".format(timeout))
 
 
-async def send(ip, port, packet, timeout=6, loop=None):  # pragma: no cover
-    # type: ( str, int, bytes, int ) -> bytes
-    """
-    A coroutine that opens a UDP socket to *ip:port*, sends a packet with
-    *bytes* and returns the raw bytes as returned from the remote host.
+class Transport(SyncTransport):
 
-    If the connection fails due to a timeout, a Timeout exception is raised.
-    """
-    if loop is None:
-        loop = asyncio.get_event_loop()
+    async def send(self, ip, port, packet, timeout=6, loop=None):  # pragma: no cover
+        # type: ( str, int, bytes, int ) -> bytes
+        """
+        A coroutine that opens a UDP socket to *ip:port*, sends a packet with
+        *bytes* and returns the raw bytes as returned from the remote host.
 
-    # family could be specified here (and is in the sync implementation),
-    # is it needed? are retries necessary for async implementation?
-    transport, protocol = await loop.create_datagram_endpoint(
-        lambda: SNMPClientProtocol(packet, loop),
-        remote_addr=(ip, port)
-    )
+        If the connection fails due to a timeout, a Timeout exception is raised.
+        """
+        if loop is None:
+            loop = asyncio.get_event_loop()
 
-    response = await protocol.get_data(timeout)
+        # family could be specified here (and is in the sync implementation),
+        # is it needed? are retries necessary for async implementation?
+        transport, protocol = await loop.create_datagram_endpoint(
+            lambda: SNMPClientProtocol(packet, loop),
+            remote_addr=(ip, port)
+        )
 
-    return response
+        response = await protocol.get_data(timeout)
+
+        return response
