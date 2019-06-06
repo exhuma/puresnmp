@@ -287,7 +287,7 @@ def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=rede
 
     result = multiset(
         ip, community, [(oid, value)], port, timeout=timeout)
-    return result[oid]
+    return result[oid.lstrip('.')]
 
 
 def multiset(ip, community, mappings, port=161, timeout=6):

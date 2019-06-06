@@ -82,6 +82,16 @@ class TestSet(object):
             result = await set('::1', 'private', '1.2.3', OctetString(b'foo'))
         assert result == expected
 
+    @pytest.mark.asyncio
+    async def test_set_string_absolute(self):
+        expected = (b'foo')
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
+            mck.multiset.return_value = {
+                ObjectIdentifier.from_string('1.2.3'): OctetString(b'foo')
+            }
+            result = await set('::1', 'private', '.1.2.3', OctetString(b'foo'))
+        assert result == expected
+
 
 class TestWalk(object):
 
@@ -186,6 +196,23 @@ class TestMultiSet(object):
             result = await multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
                 ('1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
+            ])
+        expected = {
+            '1.3.6.1.2.1.1.4.0': b'hello@world.com',
+            '1.3.6.1.2.1.1.5.0': b'hello@world.com',
+        }
+        assert result == expected
+
+    @pytest.mark.asyncio
+    async def test_multiset_absolute(self):
+        with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncMock) as mck:
+            mck.multiset.return_value = {
+                '1.3.6.1.2.1.1.4.0': OctetString(b'hello@world.com'),
+                '1.3.6.1.2.1.1.5.0': OctetString(b'hello@world.com'),
+            }
+            result = await multiset('::1', 'private', [
+                ('.1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
+                ('.1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
             ])
         expected = {
             '1.3.6.1.2.1.1.4.0': b'hello@world.com',
