@@ -77,6 +77,15 @@ class TestSet(ByteTester):
             result = set('::1', 'private', '1.2.3', OctetString(b'foo'))
         self.assertEqual(result, expected)
 
+    def test_set_string_absolute(self):
+        expected = (b'foo')
+        with patch('puresnmp.api.pythonic.raw') as mck:
+            mck.multiset.return_value = {
+                ObjectIdentifier.from_string('1.2.3'): OctetString(b'foo')
+            }
+            result = set('::1', 'private', '.1.2.3', OctetString(b'foo'))
+        self.assertEqual(result, expected)
+
 
 class TestWalk(unittest.TestCase):
 
@@ -169,6 +178,22 @@ class TestMultiSet(unittest.TestCase):
             result = multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
                 ('1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
+            ])
+        expected = {
+            '1.3.6.1.2.1.1.4.0': b'hello@world.com',
+            '1.3.6.1.2.1.1.5.0': b'hello@world.com',
+        }
+        self.assertEqual(result, expected)
+
+    def test_multiset_absolute(self):
+        with patch('puresnmp.api.pythonic.raw') as mck:
+            mck.multiset.return_value = {
+                '1.3.6.1.2.1.1.4.0': OctetString(b'hello@world.com'),
+                '1.3.6.1.2.1.1.5.0': OctetString(b'hello@world.com'),
+            }
+            result = multiset('::1', 'private', [
+                ('.1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
+                ('.1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
             ])
         expected = {
             '1.3.6.1.2.1.1.4.0': b'hello@world.com',
