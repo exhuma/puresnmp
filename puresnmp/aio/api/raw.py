@@ -280,7 +280,7 @@ async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disabl
 
     result = await multiset(
         ip, community, [(oid, value)], port, timeout=timeout)
-    return result[oid]
+    return result[oid.lstrip('.')]
 
 
 async def multiset(ip, community, mappings, port=161, timeout=6):

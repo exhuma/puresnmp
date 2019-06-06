@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Release 1.5.2
+~~~~~~~~~~~~~
+
+* **[fixed]** No longer raise an exception when using ``snmp.set`` with an
+  absolute OID (an OID with leading dot).
+
+
 Release 1.5.1
 ~~~~~~~~~~~~~
 
