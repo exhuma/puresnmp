@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Release 1.5.2.post1
+~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** Add missing file for PEP-561 compliance.
+
+
 Release 1.5.2
 ~~~~~~~~~~~~~
 
