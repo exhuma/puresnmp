@@ -239,7 +239,8 @@ def decode_length(data):
     if data0 == 0b11111111:
         # reserved
         raise NotImplementedError('This is a reserved case in X690')
-    elif data0 & 0b10000000 == 0:
+
+    if data0 & 0b10000000 == 0:
         # definite short form
         output = int_from_bytes([data0], 'big')
         data = data[1:]
