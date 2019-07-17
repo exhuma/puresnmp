@@ -586,7 +586,7 @@ class TestUnknownType(ByteTester):
 
     def test_repr(self):
         result = repr(UnknownType(99, b'abc'))
-        typeinfo = TypeInfo('application', 'constructed', 3)
+        typeinfo = TypeInfo(u'application', u'constructed', 3)
         if not six.PY2:
             expected = "UnknownType(99, b'abc', typeinfo=%r)" % (typeinfo,)
         else:
