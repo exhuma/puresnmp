@@ -1,7 +1,7 @@
-puresnmp\.util module
-=====================
+puresnmp.util module
+====================
 
 .. automodule:: puresnmp.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

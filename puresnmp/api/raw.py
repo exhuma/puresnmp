@@ -551,7 +551,7 @@ def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
     Creates a generator for SNMPv2 traps.
 
     Each item in the generator will be a simpla puresnmp "PDU" type object
-    representing the trap. As per RFC 1905 Section 4.2.6, the first two
+    representing the trap. As per :rfc:`3416#section-4.2.6`, the first two
     varbinds are the system uptime and the trap OID. The following varbinds are
     the body of the trap
     """

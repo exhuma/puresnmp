@@ -16,7 +16,11 @@ Type Tree
 
         *  :py:class:`puresnmp.pdu.GetResponse`
 
+        *  :py:class:`puresnmp.pdu.InformRequest`
+
         *  :py:class:`puresnmp.pdu.SetRequest`
+
+        *  :py:class:`puresnmp.pdu.Trap`
 
      *  :py:class:`puresnmp.x690.types.BitString`
 

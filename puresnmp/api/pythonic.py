@@ -47,9 +47,20 @@ LOG = logging.getLogger(__name__)
 
 class TrapInfo:
     """
-    This class wraps a :py:class:`puresnmp.pdu.Trap` instance and makes values
-    available as "pythonic" values.
+    This class wraps a :py:class:`puresnmp.pdu.Trap` instance (accessible via
+    ``raw_trap`` and makes values available as "pythonic" values.
     """
+
+    #: The raw Trap PDU.
+    #:
+    #: .. warning::
+    #:     This will leak data-types which are used internally by ``puresnmp``
+    #:     and may change even in minor updates. You should, if possible use
+    #:     the values from the properties on this object.  This exist mainly to
+    #:     expose values which can be helpful in debugging.  If something is
+    #:     missing from the properties, please open a corresponding support
+    #:     ticket!
+    raw_trap = None
 
     def __init__(self, raw_trap):
         # type: (Trap) -> None
@@ -62,16 +73,26 @@ class TrapInfo:
     @property
     def uptime(self):
         # type: () -> timedelta
+        """
+        Returns the uptime of the device.
+        """
         return self.raw_trap.varbinds[0].value.pythonize()
 
     @property
     def oid(self):
         # type: () -> str
+        """
+        Returns the Trap-OID
+        """
         return str(self.raw_trap.varbinds[1].value.pythonize())
 
     @property
     def values(self):
         # type: () -> Dict[str, Any]
+        """
+        Returns all the values contained in this trap as dictionary mapping
+        OIDs to values.
+        """
         output = {}
         for oid, value in self.raw_trap.varbinds[2:]:
             output[str(oid)] = value.pythonize()
@@ -236,5 +257,8 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
 
 def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
     # type (str, int, int) -> Generator[TrapInfo, None, None]
+    """
+    A "pythonic" wrapper around :py:func:`puresnmp.api.raw.traps` output.
+    """
     for raw_trap in raw.traps(listen_address, port, buffer_size):
         yield TrapInfo(raw_trap)

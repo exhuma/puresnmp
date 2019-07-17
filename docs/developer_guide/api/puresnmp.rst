@@ -6,9 +6,9 @@ Subpackages
 
 .. toctree::
 
-    puresnmp.aio
-    puresnmp.api
-    puresnmp.x690
+   puresnmp.aio
+   puresnmp.api
+   puresnmp.x690
 
 Submodules
 ----------
@@ -27,6 +27,6 @@ Module contents
 ---------------
 
 .. automodule:: puresnmp
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
