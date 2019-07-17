@@ -86,6 +86,34 @@ class Transport(object):
 
         return response
 
+    def listen(self, bind_address='0.0.0.0', port=162):  # pragma: no cover
+        # type: (str, int) -> Generates[bytes, None, None]
+        """
+        Sets up a listening UDP socket and returns a generator over recevied
+        packets::
+
+            >>> transport = Transport()
+            >>> for seq, packet in enumerate(transport.listen()):
+            ...     print(seq, repr(packet))
+            0, b'...'
+            1, b'...'
+            2, b'...'
+
+        .. note::
+
+            This defaults to the standard SNMP Trap port 162. This is a
+            privileged port so processes using this port must run as root!
+        """
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.bind((bind_address, port))
+            while True:
+                request, _ = sock.recvfrom(self.buffer_size)
+                if LOG.isEnabledFor(logging.DEBUG):
+                    hexdump = visible_octets(request)
+                    LOG.debug('Received packet:\n%s', hexdump)
+
+                yield request
+
 
     def get_request_id(self):  # pragma: no cover
         # type: () -> int
