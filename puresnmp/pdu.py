@@ -125,10 +125,10 @@ class PDU(Type):
             varbinds.append(VarBind(oid, value))
 
         return cls(
-            request_id,
+            request_id.value,
             varbinds,
-            error_status,
-            error_index
+            error_status.value,
+            error_index.value
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):

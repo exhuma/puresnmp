@@ -84,7 +84,7 @@ class TestGet(ByteTester):
             Integer(Version.V2C),
             OctetString('public'),
             GetResponse(
-                Integer(1913359423),  # request-id
+                1913359423,  # request-id
                 [VarBind(
                     ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0),
                     ObjectIdentifier(1, 3, 6, 1, 4, 1, 8072, 3, 2, 10)
@@ -140,7 +140,7 @@ class TestGet(ByteTester):
             Integer(Version.V2C),
             OctetString('public'),
             GetResponse(
-                Integer(1913359423),  # request-id
+                1913359423,  # request-id
                 [
                     VarBind(
                         ObjectIdentifier.from_string('1.3.6.1.2.1.1.2.0'),
