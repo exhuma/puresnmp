@@ -17,27 +17,20 @@ from typing import TYPE_CHECKING
 import six
 
 from .const import MAX_VARBINDS
-from .exc import (
-    EmptyMessage,
-    ErrorResponse,
-    NoSuchOID,
-    SnmpError,
-    TooManyVarbinds
-)
+from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
 from .x690.types import (
     Integer,
     Null,
     ObjectIdentifier,
     Sequence,
     Type,
-    encode_length,
     pop_tlv
 )
-from .x690.util import TypeInfo, to_bytes
+from .x690.util import TypeInfo, encode_length, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import List, Union
+    from typing import Any, List, Union, Tuple
 
 
 if six.PY3:
@@ -55,7 +48,8 @@ class VarBind(namedtuple('VarBind', 'oid, value')):
     '''
 
     def __new__(cls, oid, value):
-        if not isinstance(oid, (ObjectIdentifier,) + six.string_types):
+        # type: (Union[ObjectIdentifier, str], Any) -> VarBind
+        if not isinstance(oid, (ObjectIdentifier,) + six.string_types):  # type: ignore
             raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
                             ' instances! Your value: %r' % oid)
         if isinstance(oid, six.string_types):
@@ -109,6 +103,10 @@ class PDU(Type):
         error_index, data = pop_tlv(data)
         if error_status.value:
             error_detail, data = pop_tlv(data)
+            if not isinstance(error_detail, Sequence):
+                raise TypeError(
+                    'error-detail should be a sequence but got %r' %
+                    type(error_detail))
             varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
             offending_oid = varbinds[error_index.value-1].oid
             assert data == b''
@@ -117,6 +115,10 @@ class PDU(Type):
             raise exception
 
         values, data = pop_tlv(data)
+        if not isinstance(values, Sequence):
+            raise TypeError('PDUs can only be decoded from sequences but got '
+                            '%r instead' % type(values))
+
         varbinds = []
         for oid, value in values:
             # NOTE: this uses the "is" check to make 100% sure we check against
@@ -134,7 +136,7 @@ class PDU(Type):
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
-        # type: (int, Union[tuple, List[VarBind]], int, int) -> None
+        # type: (int, Union[Tuple[Any, Any], List[VarBind]], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index
@@ -144,6 +146,7 @@ class PDU(Type):
             self.varbinds = varbinds
 
     def __bytes__(self):
+        # type: () -> bytes
         wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
         data = [
             Integer(self.request_id),
@@ -158,11 +161,13 @@ class PDU(Type):
         return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
+        # type: () -> str
         return '%s(%r, %r)' % (
             self.__class__.__name__,
             self.request_id, self.varbinds)
 
     def __eq__(self, other):
+        # type: (Any) -> bool
         # pylint: disable=unidiomatic-typecheck
         return (type(other) == type(self) and
                 self.request_id == other.request_id and
@@ -268,6 +273,7 @@ class BulkGetRequest(Type):
             self.varbinds.append(VarBind(oid, Null()))
 
     def __bytes__(self):
+        # type: () -> bytes
         wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
         data = [
             Integer(self.request_id),
@@ -282,6 +288,7 @@ class BulkGetRequest(Type):
         return to_bytes(tinfo) + length + payload
 
     def __repr__(self):
+        # type: () -> str
         oids = [repr(oid) for oid, _ in self.varbinds]
         return '%s(%r, %r, %r, %s)' % (
             self.__class__.__name__,
@@ -291,6 +298,7 @@ class BulkGetRequest(Type):
             ', '.join(oids))
 
     def __eq__(self, other):
+        # type: (Any) -> bool
         # pylint: disable=unidiomatic-typecheck
         return (type(other) == type(self) and
                 self.request_id == other.request_id and
@@ -299,7 +307,7 @@ class BulkGetRequest(Type):
                 self.varbinds == other.varbinds)
 
     def pretty(self):  # pragma: no cover
-        # type () -> str
+        # type: () -> str
         """
         Returns a "prettified" string representing the SNMP message.
         """

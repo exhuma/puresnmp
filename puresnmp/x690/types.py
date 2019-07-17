@@ -57,8 +57,10 @@ from .util import (
 from .exc import InvalidValueLength
 
 if TYPE_CHECKING:  # pragma: no cover
-    # pylint: disable=unused-import
-    from typing import Any, Callable, Dict, Tuple
+    # pylint: disable=unused-import, invalid-name
+    from typing import Any, Callable, Dict, Tuple, List, TypeVar
+    from puresnmp.pdu import Trap
+    T = TypeVar('T', bound='Type')
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -71,8 +73,8 @@ class Registry(type):
 
     __registry = {}  # type: Dict[Tuple[str, int], TypeType[Type]]
 
-    def __new__(mcs, name, parents, dict_):  # type: ignore
-        new_cls = super(Registry, mcs).__new__(mcs, name, parents, dict_)
+    def __new__(cls, name, parents, dict_):  # type: ignore
+        new_cls = super(Registry, cls).__new__(cls, name, parents, dict_)
         if hasattr(new_cls, 'TAG'):
             Registry.__registry[(new_cls.TYPECLASS, new_cls.TAG)] = new_cls
         return new_cls
@@ -127,7 +129,7 @@ class Type(object):
     """
     TYPECLASS = TypeInfo.UNIVERSAL
     TAG = 0
-    value = None
+    value = None  # type: Any
 
     @classmethod
     def validate(cls, data):
@@ -148,7 +150,7 @@ class Type(object):
 
     @classmethod
     def from_bytes(cls, data):
-        # type: (bytes) -> Type
+        # type: (TypeType[T], bytes) -> T
         """
         Given a bytes object, this method reads the type information and length
         and uses it to convert the bytes representation into a python object.

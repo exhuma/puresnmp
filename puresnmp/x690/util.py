@@ -18,13 +18,25 @@ if TYPE_CHECKING:  # pragma: no cover
 
 if six.PY2:  # pragma: no cover
 
-    def to_bytes(x):
-        if hasattr(x, '__bytes__'):
-            return bytes(x)
+    def to_bytes(obj):
+        # type: (Any) -> bytes
+        """
+        Converts an object to bytes.
+
+        If it has a ``__bytes__`` attribute, uses this for conversion,
+        otherwise converts first to ``bytearray``. This was only implemented
+        for Python 2/3 consistency
+        """
+        if hasattr(obj, '__bytes__'):
+            return bytes(obj)
         else:
-            return bytes(bytearray(x))
+            return bytes(bytearray(obj))
 
     def int_from_bytes(bytes_, byteorder, signed=False):
+        # type: (bytes, str, bool) -> int
+        """
+        Converts a number to bytes
+        """
         bytes_ = bytearray(bytes_)
         if byteorder == 'little':
             little_ordered = list(bytes_)
@@ -36,15 +48,19 @@ if six.PY2:  # pragma: no cover
         return n
 
 else:
-    # pylint: disable=invalid-name
-    unicode = str
-    int_from_bytes = int.from_bytes
+    unicode = str  # pylint: disable=invalid-name
+    int_from_bytes = int.from_bytes  # pylint: disable=invalid-name
 
-    def to_bytes(x):
+    def to_bytes(obj):
+        # type: (Any) -> bytes
+        """
+        Converts an instance to bytes, and if it does not work, adds helpful
+        details to the raised ``TypeError``
+        """
         try:
-            return bytes(x)
-        except TypeError as e:
-            raise TypeError(e.args[0] + ' on type {}'.format(type(x)))
+            return bytes(obj)
+        except TypeError as exc:
+            raise TypeError(exc.args[0] + ' on type {}'.format(type(obj)))
 
 LengthValue = namedtuple('LengthValue', 'length value')
 
@@ -115,10 +131,11 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
         priv_const = TypeInfo.CONSTRUCTED if pc_hint else TypeInfo.PRIMITIVE
 
         instance = TypeInfo(cls, priv_const, value)
-        instance._raw_value = data  # type: ignore
+        instance._raw_value = data
         return instance
 
     def __bytes__(self):
+        # type: () -> bytes
         # pylint: disable=invalid-name
         if self.cls == TypeInfo.UNIVERSAL:
             cls = 0b00
@@ -149,6 +166,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
             return self.__bytes__()
 
 def encode_length(value):
+    # type: (int) -> bytes
     """
     This function encodes the length of a variable into bytes conforming to the
     rules defined in :term:`X.690`: The "length" field must be specially
@@ -179,7 +197,7 @@ def encode_length(value):
     if value < 127:
         return to_bytes([value])
 
-    output = []
+    output = []  # type: List[int]
     while value > 0:
         value, remainder = value // 256, value % 256
         output.insert(0, remainder)
@@ -284,7 +302,7 @@ def visible_octets(data):
 
 
 def tablify(varbinds, num_base_nodes=0):
-    # type: ( List[Tuple[Any, Any]], int ) -> list
+    # type: ( List[Tuple[Any, Any]], int ) -> List[Dict[str, Any]]
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By

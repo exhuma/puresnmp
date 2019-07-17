@@ -228,12 +228,12 @@ def multiwalk(
     for var in sorted(grouped_oids.values()):
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
-            if not any(containment) or varbind.oid in yielded:  # type: ignore
+            if not any(containment) or varbind.oid in yielded:
                 LOG.debug('Unexpected device response: Returned VarBind %s '
                           'was either not contained in the requested tree or '
                           'appeared more than once. Skipping!', varbind)
                 continue
-            yielded.add(varbind.oid)  # type: ignore
+            yielded.add(varbind.oid)
             yield varbind
 
     # As long as we have unfinished OIDs, we need to continue the walk for
@@ -265,9 +265,9 @@ def multiwalk(
         for var in sorted(grouped_oids.values()):
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
-                if not any(containment) or varbind.oid in yielded:  # type: ignore
+                if not any(containment) or varbind.oid in yielded:
                     continue
-                yielded.add(varbind.oid)  # type: ignore
+                yielded.add(varbind.oid)
                 yield varbind
 
 
@@ -461,6 +461,7 @@ def _bulkwalk_fetcher(bulk_size=10):
     """
 
     def fetcher(ip, community, oids, port=161, timeout=6):
+        # type: (str, str, List[str], int, int) -> List[VarBind]
         '''
         Executes a SNMP BulkGet request.
         '''
@@ -525,7 +526,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type (str, str, str, int, int) ->
+    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     Run a series of GETNEXT requests on an OID and construct a table from the
     result.
@@ -544,7 +545,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
 
 
 def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
-    # type (str, int, int) -> Generator[Trap, None, None]
+    # type: (str, int, int) -> Generator[Trap, None, None]
     """
     Creates a generator for SNMPv2 traps.
 
