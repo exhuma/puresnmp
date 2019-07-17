@@ -301,7 +301,8 @@ class TestGetNext(unittest.TestCase):
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
             getnext('::1', 'public', '1.2.3')
-            mck().send.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck.assert_called_with(timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet))
 
     def test_getnext(self):
         data = readbytes('getnext_response.hex')
@@ -454,7 +455,8 @@ class TestGetBulkGet(unittest.TestCase):
                     ['1.2.3'],
                     ['1.2.4'],
                     max_list_size=2)
-            mck().send.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck.assert_called_with(timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet))
 
     def test_bulkget(self):
         data = readbytes('bulk_get_response.hex')
@@ -520,7 +522,8 @@ class TestGetBulkWalk(unittest.TestCase):
             list(bulkwalk('::1', 'public',
                           ['1.2.3'],
                           bulk_size=2))
-            mck().send.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck.assert_called_with(timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet))
 
     def test_get_call_args_issue_22(self):
         data = readbytes('dummy.hex')  # any dump would do
@@ -556,10 +559,11 @@ class TestGetBulkWalk(unittest.TestCase):
         result = list(bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
                                bulk_size=20))
 
+        mck_transport.assert_called_with(timeout=6)
         self.assertEqual(mck_transport().send.mock_calls, [
-            call('127.0.0.1', 161, req1, timeout=6),
-            call('127.0.0.1', 161, req2, timeout=6),
-            call('127.0.0.1', 161, req3, timeout=6),
+            call('127.0.0.1', 161, req1),
+            call('127.0.0.1', 161, req2),
+            call('127.0.0.1', 161, req3),
         ])
 
         expected = [

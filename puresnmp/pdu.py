@@ -230,7 +230,9 @@ class GetResponse(PDU):
         try:
             return super(GetResponse, cls).decode(data)
         except EmptyMessage as exc:
-            raise NoSuchOID('Nothing found at the given OID (%s)' % exc)
+            raise NoSuchOID(
+                ObjectIdentifier(0),
+                'Nothing found at the given OID (%s)' % exc)
 
 
 class GetNextRequest(GetRequest):
