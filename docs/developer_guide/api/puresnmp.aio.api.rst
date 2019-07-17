@@ -13,6 +13,6 @@ Module contents
 ---------------
 
 .. automodule:: puresnmp.aio.api
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

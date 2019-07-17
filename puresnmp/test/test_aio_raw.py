@@ -42,8 +42,10 @@ class TestGet(object):
         expected = OctetString(
             b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
             b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = await get('::1', 'private', '1.2.3')
         assert result == expected
 
@@ -51,8 +53,10 @@ class TestGet(object):
     async def test_get_oid(self):
         data = readbytes('get_sysoid_01.hex')
         expected = ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10')
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = await get('::1', 'private', '1.2.3')
         assert result == expected
 
@@ -62,8 +66,10 @@ class TestGet(object):
         A "GET" response should only return one varbind.
         """
         data = readbytes('get_sysoid_01_error.hex')
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             with pytest.raises(SnmpError, match='varbind'):
                 await get('::1', 'private', '1.2.3')
 
@@ -74,8 +80,10 @@ class TestGet(object):
         exception.
         """
         data = readbytes('get_non_existing.hex')
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             with pytest.raises(NoSuchOID):
                 await get('::1', 'private', '1.2.3')
 
@@ -96,8 +104,10 @@ class TestWalk(object):
             Gauge(4294967295)
         )]
 
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.side_effect = [response_1, response_2, response_3]
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.side_effect = [response_1, response_2, response_3]
+            mck().get_request_id.return_value = 0
             result = []
             async for x in walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'):
                 result.append(x)
@@ -109,8 +119,10 @@ class TestWalk(object):
         A "WALK" response should only return one varbind.
         """
         data = readbytes('get_sysoid_01_error.hex')
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             with pytest.raises(SnmpError, match='varbind'):
                 async for x in walk('::1', 'private', '1.2.3'):
                     pass
@@ -127,8 +139,10 @@ class TestMultiGet(object):
                         b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
                         b"UTC 2016 x86_64")
         ]
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
             result = await multiget('::1', 'private', [
                 '1.3.6.1.2.1.1.2.0',
                 '1.3.6.1.2.1.1.1.0',
@@ -160,8 +174,10 @@ class TestMultiWalk(object):
             OctetString(b'eth0')
         )]
 
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.side_effect = [response_1, response_2, response_3]
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.side_effect = [response_1, response_2, response_3]
             result = []
             async for x in multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
@@ -180,8 +196,10 @@ class TestMultiWalk(object):
 
         data_generator = readbytes_multiple('x690/multiwalk_endofmibview.hex')
 
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.side_effect = data_generator
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.side_effect = data_generator
             result = []
             async for row in multiwalk('::1', 'public', [
                 '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
@@ -213,8 +231,10 @@ class TestMultiSet(object):
               unit-testing. It probably has a different type in the real world!
         """
         data = readbytes('multiset_response.hex')
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
             result = await multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
                 ('1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
@@ -236,20 +256,23 @@ class TestGetNext(object):
             OctetString('public'),
             GetNextRequest(0, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck, \
-                patch('puresnmp.aio.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
             await getnext('::1', 'public', '1.2.3')
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck().send.assert_called_with(
+                '::1', 161, to_bytes(packet), timeout=6)
 
     @pytest.mark.asyncio
     async def test_getnext(self):
         data = readbytes('getnext_response.hex')
         expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
 
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
             result = await getnext('::1', 'private', '1.3.6.1.5')
         assert result == expected
 
@@ -266,15 +289,16 @@ class TestGetBulkGet(object):
                            ObjectIdentifier(1, 2, 3),
                            ObjectIdentifier(1, 2, 4))
         )
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck, \
-                patch('puresnmp.aio.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
             await bulkget('::1', 'public',
                     ['1.2.3'],
                     ['1.2.4'],
                     max_list_size=2)
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck().send.assert_called_with(
+                '::1', 161, to_bytes(packet), timeout=6)
 
     @pytest.mark.asyncio
     async def test_bulkget(self):
@@ -291,8 +315,10 @@ class TestGetBulkGet(object):
              '1.3.6.1.2.1.4.1.0': Integer(1),
              '1.3.6.1.2.1.4.3.0': Counter(57)})
 
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck:
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
             result = await bulkget('::1', 'public',
                              ['1.3.6.1.2.1.1.1'],
                              ['1.3.6.1.2.1.3.1'],
@@ -306,10 +332,10 @@ class TestGetBulkGet(object):
         '''
 
         data = readbytes('x690/bulk_get_eom_response.hex')
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck, \
-                patch('puresnmp.aio.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
             result = await bulkget('::1', 'public', [], ['1.2.4'],
                                    max_list_size=10)
 
@@ -335,17 +361,18 @@ class TestGetBulkWalk(object):
             OctetString('public'),
             BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck, \
-                patch('puresnmp.aio.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().get_request_id.return_value = 0
+            mck().send.return_value = data
 
             # we need to wrap this in a list to consume the generator.
             async for x in bulkwalk('::1', 'public',
                           ['1.2.3'],
                           bulk_size=2):
                  pass
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck().send.assert_called_with(
+                '::1', 161, to_bytes(packet), timeout=6)
 
     @pytest.mark.asyncio
     async def test_get_call_args_issue_22(self):
@@ -355,10 +382,10 @@ class TestGetBulkWalk(object):
             OctetString('public'),
             BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck, \
-                patch('puresnmp.aio.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
 
             with pytest.raises(TypeError, match=r'OIDS.*list'):
                 # we need to wrap this in a list to consume the generator.
@@ -376,19 +403,19 @@ class TestGetBulkWalk(object):
             readbytes('bulkwalk_response_2.hex'),
             readbytes('bulkwalk_response_3.hex'),
         ]
-        with patch('puresnmp.aio.api.raw.send', new_callable=AsyncMock) as mck_send, \
-                patch('puresnmp.aio.api.raw.get_request_id') as mck_rid:
-            mck_send.side_effect = responses
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.side_effect = responses
 
             request_ids = [1001613222, 1001613223, 1001613224]
-            mck_rid.side_effect = request_ids
+            mck().get_request_id.side_effect = request_ids
 
             result = []
             async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
                                    bulk_size=20):
                 result.append(x)
 
-            assert mck_send.mock_calls == [
+            assert mck().send.mock_calls == [
                 call('127.0.0.1', 161, req1, timeout=6),
                 call('127.0.0.1', 161, req2, timeout=6),
                 call('127.0.0.1', 161, req3, timeout=6),

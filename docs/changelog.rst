@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Release 1.6.0
+~~~~~~~~~~~~~
+
+* **[new]** SNMPv2 Trap support (see the cookbook for an example).
+* **[internal]** Network transport functions are now wrapped by a class.
+
+
 Release 1.5.2.post1
 ~~~~~~~~~~~~~~~~~~~
 
@@ -36,6 +43,8 @@ Release 1.5.0
 * **[new]** Applied missing bugfixes to the async code (ensured that the aio
   API behaves the same way as the normal API).
 * **[fix]** Properly handle ``endOfMibView`` markers in responses (Issue #54)
+* **[fix]** Synced bugfixes of the non-async code with the async code. They
+  should now behave identically.
 * **[fix]** An error message in ``bulkget`` responses now shows the proper OID
   count.
 * **[support]** Reading "ASCII/Hex" files in unit-tests is now a bit more

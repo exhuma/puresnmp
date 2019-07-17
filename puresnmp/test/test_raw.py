@@ -28,7 +28,8 @@ from puresnmp.api.raw import (
     multiwalk,
     set,
     table,
-    walk
+    traps,
+    walk,
 )
 from puresnmp.const import Version
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -65,16 +66,18 @@ class TestGet(ByteTester):
         expected = OctetString(
             b'Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP '
             b'Fri Jun 24 10:09:13 UTC 2016 x86_64')
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
 
     def test_get_oid(self):
         data = readbytes('get_sysoid_01.hex')
         expected = ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10')
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = get('::1', 'private', '1.2.3')
         self.assertEqual(result, expected)
 
@@ -83,8 +86,9 @@ class TestGet(ByteTester):
         A "GET" response should only return one varbind.
         """
         data = readbytes('get_sysoid_01_error.hex')
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 get('::1', 'private', '1.2.3')
 
@@ -94,8 +98,9 @@ class TestGet(ByteTester):
         exception.
         """
         data = readbytes('get_non_existing.hex')
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             with self.assertRaises(NoSuchOID):
                 get('::1', 'private', '1.2.3')
 
@@ -115,8 +120,9 @@ class TestWalk(unittest.TestCase):
             Gauge(4294967295)
         )]
 
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.side_effect = [response_1, response_2, response_3]
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.side_effect = [response_1, response_2, response_3]
+            mck().get_request_id.return_value = 0
             result = list(walk('::1', 'public', '1.3.6.1.2.1.2.2.1.5'))
         self.assertEqual(result, expected)
 
@@ -125,8 +131,9 @@ class TestWalk(unittest.TestCase):
         A "WALK" response should only return one varbind.
         """
         data = readbytes('get_sysoid_01_error.hex')
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 next(walk('::1', 'private', '1.2.3'))
 
@@ -141,8 +148,9 @@ class TestMultiGet(unittest.TestCase):
                         b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
                         b"UTC 2016 x86_64")
         ]
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = multiget('::1', 'private', [
                 '1.3.6.1.2.1.1.2.0',
                 '1.3.6.1.2.1.1.1.0',
@@ -170,8 +178,9 @@ class TestMultiWalk(unittest.TestCase):
             OctetString(b'eth0')
         )]
 
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.side_effect = [response_1, response_2, response_3]
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.side_effect = [response_1, response_2, response_3]
+            mck().get_request_id.return_value = 0
             result = list(multiwalk('::1', 'public', [
                 '1.3.6.1.2.1.2.2.1.1',
                 '1.3.6.1.2.1.2.2.1.2'
@@ -198,8 +207,9 @@ class TestMultiWalk(unittest.TestCase):
                 ]
             )
         )
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.side_effect = [to_bytes(response)]
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.side_effect = [to_bytes(response)]
+            mck().get_request_id.return_value = 0
             with self.assertRaises(FaultySNMPImplementation):
                 list(multiwalk('::1', 'public', [
                     '1.2.3',
@@ -219,8 +229,9 @@ class TestMultiWalk(unittest.TestCase):
                 ]
             )
         )
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.side_effect = [to_bytes(response)]
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.side_effect = [to_bytes(response)]
+            mck().get_request_id.return_value = 0
             with self.assertRaises(FaultySNMPImplementation):
                 list(multiwalk('::1', 'public', [
                     '1.2.3',
@@ -234,8 +245,9 @@ class TestMultiWalk(unittest.TestCase):
 
         data_generator = readbytes_multiple('x690/multiwalk_endofmibview.hex')
 
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.side_effect = data_generator
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.side_effect = data_generator
+            mck().get_request_id.return_value = 0
             result = multiwalk(u'::1', u'public', [
                 u'1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
             ])
@@ -262,8 +274,9 @@ class TestMultiSet(unittest.TestCase):
               unit-testing. It probably has a different type in the real world!
         """
         data = readbytes('multiset_response.hex')
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = multiset('::1', 'private', [
                 ('1.3.6.1.2.1.1.4.0', OctetString(b'hello@world.com')),
                 ('1.3.6.1.2.1.1.5.0', OctetString(b'hello@world.com')),
@@ -284,19 +297,19 @@ class TestGetNext(unittest.TestCase):
             OctetString('public'),
             GetNextRequest(0, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.api.raw.send') as mck, \
-                patch('puresnmp.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             getnext('::1', 'public', '1.2.3')
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
 
     def test_getnext(self):
         data = readbytes('getnext_response.hex')
         expected = VarBind('1.3.6.1.6.3.1.1.6.1.0', Integer(354522558))
 
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = getnext('::1', 'private', '1.3.6.1.5')
         self.assertEqual(result, expected)
 
@@ -317,8 +330,9 @@ class TestGetNext(unittest.TestCase):
         )
         response_bytes = to_bytes(response_object)
 
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = response_bytes
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = response_bytes
+            mck().get_request_id.return_value = 0
             with self.assertRaises(FaultySNMPImplementation):
                 getnext('::1', 'private', '1.2.3.4')
 
@@ -351,8 +365,9 @@ class TestGetNext(unittest.TestCase):
         ]
         response_bytes = [to_bytes(packet) for packet in response_packets]
 
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.side_effect = response_bytes
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.side_effect = response_bytes
+            mck().get_request_id.return_value = 0
             result = list(walk('::1', 'private', '1.2', errors='warn'))
 
 
@@ -401,8 +416,9 @@ class TestGetNext(unittest.TestCase):
         handler = CapturingHandler()
         logger = getLogger('puresnmp')
         logger.addHandler(handler)
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.side_effect = response_bytes
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.side_effect = response_bytes
+            mck().get_request_id.return_value = 0
             result = list(walk('::1', 'private', '1.2', errors='warn'))
         logger.removeHandler(handler)
 
@@ -431,15 +447,14 @@ class TestGetBulkGet(unittest.TestCase):
                            ObjectIdentifier(1, 2, 3),
                            ObjectIdentifier(1, 2, 4))
         )
-        with patch('puresnmp.api.raw.send') as mck, \
-                patch('puresnmp.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             bulkget('::1', 'public',
                     ['1.2.3'],
                     ['1.2.4'],
                     max_list_size=2)
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
 
     def test_bulkget(self):
         data = readbytes('bulk_get_response.hex')
@@ -455,8 +470,9 @@ class TestGetBulkGet(unittest.TestCase):
              '1.3.6.1.2.1.4.1.0': Integer(1),
              '1.3.6.1.2.1.4.3.0': Counter(57)})
 
-        with patch('puresnmp.api.raw.send') as mck:
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = bulkget('::1', 'public',
                              ['1.3.6.1.2.1.1.1'],
                              ['1.3.6.1.2.1.3.1'],
@@ -469,10 +485,9 @@ class TestGetBulkGet(unittest.TestCase):
         '''
 
         data = readbytes('x690/bulk_get_eom_response.hex')
-        with patch('puresnmp.api.raw.send') as mck, \
-                patch('puresnmp.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
             result = bulkget('::1', 'public', [], ['1.2.4'], max_list_size=10)
 
         expected_scalars = {}
@@ -497,16 +512,15 @@ class TestGetBulkWalk(unittest.TestCase):
             OctetString('public'),
             BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.api.raw.send') as mck, \
-                patch('puresnmp.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
 
             # we need to wrap this in a list to consume the generator.
             list(bulkwalk('::1', 'public',
                           ['1.2.3'],
                           bulk_size=2))
-            mck.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet), timeout=6)
 
     def test_get_call_args_issue_22(self):
         data = readbytes('dummy.hex')  # any dump would do
@@ -515,18 +529,16 @@ class TestGetBulkWalk(unittest.TestCase):
             OctetString('public'),
             BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3))
         )
-        with patch('puresnmp.api.raw.send') as mck, \
-                patch('puresnmp.api.raw.get_request_id') as mck2:
-            mck2.return_value = 0
-            mck.return_value = data
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
 
             with six.assertRaisesRegex(self, TypeError, 'OIDS.*list'):
                 # we need to wrap this in a list to consume the generator.
                 list(bulkwalk('::1', 'public', '1.2.3', bulk_size=2))
 
-    @patch('puresnmp.api.raw.send')
-    @patch('puresnmp.api.raw.get_request_id')
-    def test_bulkwalk(self, mck_rid, mck_send):
+    @patch('puresnmp.api.raw.Transport')
+    def test_bulkwalk(self, mck_transport):
         req1 = readbytes('bulkwalk_request_1.hex')
         req2 = readbytes('bulkwalk_request_2.hex')
         req3 = readbytes('bulkwalk_request_3.hex')
@@ -536,15 +548,15 @@ class TestGetBulkWalk(unittest.TestCase):
             readbytes('bulkwalk_response_2.hex'),
             readbytes('bulkwalk_response_3.hex'),
         ]
-        mck_send.side_effect = responses
+        mck_transport().send.side_effect = responses
 
         request_ids = [1001613222, 1001613223, 1001613224]
-        mck_rid.side_effect = request_ids
+        mck_transport().get_request_id.side_effect = request_ids
 
         result = list(bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
                                bulk_size=20))
 
-        self.assertEqual(mck_send.mock_calls, [
+        self.assertEqual(mck_transport().send.mock_calls, [
             call('127.0.0.1', 161, req1, timeout=6),
             call('127.0.0.1', 161, req2, timeout=6),
             call('127.0.0.1', 161, req3, timeout=6),
@@ -597,4 +609,36 @@ class TestGetBulkWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.22.1', ObjectIdentifier(0, 0)),
             VarBind('1.3.6.1.2.1.2.2.1.22.10', ObjectIdentifier(0, 0))
         ]
+        self.assertEqual(result, expected)
+
+
+class TestTraps(unittest.TestCase):
+
+    def test_traps(self):
+        data_generator = readbytes_multiple('trap_requests.hex')
+        expected = [
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)),
+                    TimeTicks(794602)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
+                    ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1))),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                    Integer(123456)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)),
+                    TimeTicks(795345)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
+                    ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1))),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                    Integer(123457)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)),
+                    TimeTicks(795538)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
+                    ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1))),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                    Integer(123459)),
+        ]
+        result = []
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().listen.return_value = data_generator
+            for trap in traps():
+                result.extend(trap.varbinds)
         self.assertEqual(result, expected)

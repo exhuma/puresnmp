@@ -28,11 +28,18 @@ from puresnmp.api.pythonic import (
     multiwalk,
     set,
     table,
+    traps,
     walk
 )
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError, NoSuchOID
-from puresnmp.pdu import GetRequest, VarBind, GetNextRequest, BulkGetRequest
+from puresnmp.pdu import (
+    GetRequest,
+    VarBind,
+    GetNextRequest,
+    BulkGetRequest,
+    Trap
+)
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
     Integer,
@@ -291,3 +298,33 @@ class TestTable(unittest.TestCase):
             {'0': '2', '1': b'test-21', '2': b'test-22'},
         ]
         six.assertCountEqual(self, result, expected)
+
+
+class TestTraps(unittest.TestCase):
+
+    def test_traps(self):
+        with patch('puresnmp.api.pythonic.raw') as mck:
+            oid = ObjectIdentifier.from_string
+            mck.traps.return_value = [Trap(
+                request_id=1,
+                error_status=0,
+                error_index=0,
+                varbinds=[
+                    VarBind(oid('1.2.1.1'), OctetString(b'fake-uptime')),
+                    VarBind(oid('1.2.1.2'), ObjectIdentifier(1, 2, 3, 4)),
+                    VarBind(oid('1.2.1.3'), Integer(13)),
+                    VarBind(oid('1.2.1.4'), OctetString(b'fake-value-2')),
+                ]
+            )]
+            result = []
+            for trap in traps():
+                result.append((trap.uptime, trap.oid, trap.values))
+        expected = [(
+            b'fake-uptime',
+            '1.2.3.4',
+            {
+                '1.2.1.3': 13,
+                '1.2.1.4': b'fake-value-2',
+            }
+        )]
+        self.assertEqual(result, expected)
