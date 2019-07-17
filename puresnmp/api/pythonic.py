@@ -95,7 +95,7 @@ class TrapInfo:
         """
         output = {}
         for oid, value in self.raw_trap.varbinds[2:]:
-            output[str(oid)] = value.pythonize()
+            output[oid.pythonize()] = value.pythonize()
         return output
 
 
