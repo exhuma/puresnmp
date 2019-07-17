@@ -290,6 +290,7 @@ class NonASN1Type(UnknownType):  # pragma: no cover
 
 class Boolean(Type):
     TAG = 0x01
+    value = False
 
     @staticmethod
     def decode(data):
@@ -360,6 +361,7 @@ class Null(Type):
 
 class OctetString(Type):
     TAG = 0x04
+    value = b''
 
     @classmethod
     def decode(cls, data):
@@ -396,6 +398,7 @@ class Sequence(Type):
     indexable.
     """
     TAG = 0x10
+    value = []  # type: List[Type]
 
     @classmethod
     def decode(cls, data):
@@ -453,6 +456,7 @@ class Sequence(Type):
 
 class Integer(Type):
     TAG = 0x02
+    value = 0
 
     @classmethod
     def decode(cls, data):
@@ -505,6 +509,7 @@ class ObjectIdentifier(Type):
         False
     """
     TAG = 0x06
+    value = b''
 
     @staticmethod
     def decode_large_value(current_char, stream):
@@ -746,6 +751,7 @@ class External(Type):
 
 class Real(Type):
     TAG = 0x09
+    value = 0.0
 
 
 class Enumerated(Type):
@@ -758,6 +764,7 @@ class EmbeddedPdv(Type):
 
 class Utf8String(Type):
     TAG = 0x0c
+    value = ''
 
 
 class RelativeOid(Type):
@@ -774,6 +781,7 @@ class NumericString(Type):
 
 class PrintableString(Type):
     TAG = 0x13
+    value = ''
 
 
 class T61String(Type):
