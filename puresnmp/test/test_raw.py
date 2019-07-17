@@ -28,7 +28,8 @@ from puresnmp.api.raw import (
     multiwalk,
     set,
     table,
-    walk
+    traps,
+    walk,
 )
 from puresnmp.const import Version
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -608,4 +609,36 @@ class TestGetBulkWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.22.1', ObjectIdentifier(0, 0)),
             VarBind('1.3.6.1.2.1.2.2.1.22.10', ObjectIdentifier(0, 0))
         ]
+        self.assertEqual(result, expected)
+
+
+class TestTraps(unittest.TestCase):
+
+    def test_traps(self):
+        data_generator = readbytes_multiple('trap_requests.hex')
+        expected = [
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)),
+                    TimeTicks(794602)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
+                    ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1))),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                    Integer(123456)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)),
+                    TimeTicks(795345)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
+                    ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1))),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                    Integer(123457)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)),
+                    TimeTicks(795538)),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
+                    ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1))),
+            VarBind(ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                    Integer(123459)),
+        ]
+        result = []
+        with patch('puresnmp.api.raw.Transport') as mck:
+            mck().listen.return_value = data_generator
+            for trap in traps():
+                result.extend(trap.varbinds)
         self.assertEqual(result, expected)
