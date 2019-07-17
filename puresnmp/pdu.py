@@ -37,10 +37,6 @@ if six.PY3:
     unicode = str  # pylint: disable=invalid-name
 
 
-#: Sentinel value to detect endOfMibView
-END_OF_MIB_VIEW = object()
-
-
 class VarBind(namedtuple('VarBind', 'oid, value')):
     '''
     A "VarBind" is a 2-tuple containing an object-identifier and the
@@ -189,6 +185,21 @@ class PDU(Type):
             lines.append('        %s: %s' % (bind.oid, bind.value))
 
         return '\n'.join(lines)
+
+
+class EndOfMibView(PDU):
+    """
+    Sentinel value to detect endOfMibView
+    """
+    # This subclassesPDU for type-consistency
+
+    def __init__(self):
+        # type: () -> None
+        super().__init__(-1, [], 0, 0)
+
+
+#: Singleton instance of "EndOfMibView"
+END_OF_MIB_VIEW = EndOfMibView()
 
 
 class GetRequest(PDU):
