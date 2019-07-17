@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Release 1.6.1
+~~~~~~~~~~~~~
+
+* **[fixed]** Regression caused in 1.6.0 due to socket timeout argument.
+
 Release 1.6.0
 ~~~~~~~~~~~~~
 
