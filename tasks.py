@@ -11,7 +11,7 @@ def generate_type_hierarchy(ctx):
 @task
 def doc(ctx):
     generate_type_hierarchy(ctx)
-    ctx.run('sphinx-apidoc '
+    ctx.run('./env/bin/sphinx-apidoc '
             '-o docs/developer_guide/api '
             '-f '
             '-e '
