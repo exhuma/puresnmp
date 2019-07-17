@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Release 1.6.0
+~~~~~~~~~~~~~
+
+* **[new]** SNMPv2 Trap support (see the cookbook for an example).
+* **[internal]** Network transport functions are now wrapped by a class.
+
+
 Release 1.5.2.post1
 ~~~~~~~~~~~~~~~~~~~
 
