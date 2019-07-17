@@ -84,7 +84,7 @@ def multiget(ip, community, oids, port=161, timeout=6):
         >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
         ['non-functional example', 'second value']
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
 
     parsed_oids = [OID(oid) for oid in oids]
 
@@ -94,7 +94,7 @@ def multiget(ip, community, oids, port=161, timeout=6):
         GetRequest(transport.get_request_id(), *parsed_oids)
     )
 
-    response = transport.send(ip, port, to_bytes(packet), timeout=timeout)
+    response = transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
 
     output = [value for _, value in raw_response[2].varbinds]
@@ -135,15 +135,14 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
             VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
         ]
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
     request = GetNextRequest(transport.get_request_id(), *oids)
     packet = Sequence(
         Integer(Version.V2C),
         OctetString(community),
         request
     )
-    response = transport.send(
-        ip, port, to_bytes(packet), timeout=timeout)
+    response = transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
@@ -187,15 +186,14 @@ def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
         >>> res = []
         >>> for x in gen:
         ...     res.append(x)
-        ... 
+        ...
         >>> pprint(res)
         [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
     """
 
-    gen = multiwalk(ip, community, [oid], port, timeout=timeout,
-                     errors=errors)
+    gen = multiwalk(ip, community, [oid], port, timeout=timeout, errors=errors)
     return gen
 
 
@@ -230,12 +228,12 @@ def multiwalk(
     for var in sorted(grouped_oids.values()):
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
-            if not any(containment) or varbind.oid in yielded:  # type: ignore
+            if not any(containment) or varbind.oid in yielded:
                 LOG.debug('Unexpected device response: Returned VarBind %s '
                           'was either not contained in the requested tree or '
                           'appeared more than once. Skipping!', varbind)
                 continue
-            yielded.add(varbind.oid)  # type: ignore
+            yielded.add(varbind.oid)
             yield varbind
 
     # As long as we have unfinished OIDs, we need to continue the walk for
@@ -267,9 +265,9 @@ def multiwalk(
         for var in sorted(grouped_oids.values()):
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
-                if not any(containment) or varbind.oid in yielded:  # type: ignore
+                if not any(containment) or varbind.oid in yielded:
                     continue
-                yielded.add(varbind.oid)  # type: ignore
+                yielded.add(varbind.oid)
                 yield varbind
 
 
@@ -307,7 +305,7 @@ def multiset(ip, community, mappings, port=161, timeout=6):
         ...     ('2.3.4', OctetString(b'bar'))])
         {'1.2.3': b'foo', '2.3.4': b'bar'}
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
 
     if any([not isinstance(v, Type) for k, v in mappings]):
         raise TypeError('SNMP requires typing information. The value for a '
@@ -320,7 +318,7 @@ def multiset(ip, community, mappings, port=161, timeout=6):
     packet = Sequence(Integer(Version.V2C),
                       OctetString(community),
                       request)
-    response = transport.send(ip, port, to_bytes(packet), timeout=timeout)
+    response = transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
     output = {
         unicode(oid): value
@@ -399,7 +397,7 @@ def bulkget(
                 ('1.3.6.1.2.1.4.8.0', b'\x00'),
                 ('1.3.6.1.2.1.5.10.0', b'\x00')]))
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
 
     scalar_oids = scalar_oids or []  # protect against empty values
     repeating_oids = repeating_oids or []  # protect against empty values
@@ -419,7 +417,7 @@ def bulkget(
             transport.get_request_id(), non_repeaters, max_list_size, *oids)
     )
 
-    response = transport.send(ip, port, to_bytes(packet), timeout=timeout)
+    response = transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
 
     # See RFC=3416 for details of the following calculation
@@ -463,6 +461,7 @@ def _bulkwalk_fetcher(bulk_size=10):
     """
 
     def fetcher(ip, community, oids, port=161, timeout=6):
+        # type: (str, str, List[str], int, int) -> List[VarBind]
         '''
         Executes a SNMP BulkGet request.
         '''
@@ -527,7 +526,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type (str, str, str, int, int) ->
+    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     Run a series of GETNEXT requests on an OID and construct a table from the
     result.
@@ -546,7 +545,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
 
 
 def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
-    # type (str, int, int) -> Generator[Trap, None, None]
+    # type: (str, int, int) -> Generator[Trap, None, None]
     """
     Creates a generator for SNMPv2 traps.
 

@@ -73,7 +73,7 @@ async def multiget(ip, community, oids, port=161, timeout=6):
         >>> await multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
         ['non-functional example', 'second value']
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
 
     parsed_oids = [OID(oid) for oid in oids]
 
@@ -83,7 +83,7 @@ async def multiget(ip, community, oids, port=161, timeout=6):
         GetRequest(transport.get_request_id(), *parsed_oids)
     )
 
-    response = await transport.send(ip, port, to_bytes(packet), timeout=timeout)
+    response = await transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
 
     output = [value for _, value in raw_response[2].varbinds]
@@ -125,15 +125,14 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
             VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
         ]
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
     request = GetNextRequest(transport.get_request_id(), *oids)
     packet = Sequence(
         Integer(Version.V2C),
         OctetString(community),
         request
     )
-    response = await transport.send(
-        ip, port, to_bytes(packet), timeout=timeout)
+    response = await transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
@@ -298,7 +297,7 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
         ...     ('2.3.4', OctetString(b'bar'))])
         {'1.2.3': b'foo', '2.3.4': b'bar'}
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
 
     if any([not isinstance(v, Type) for k, v in mappings]):
         raise TypeError('SNMP requires typing information. The value for a '
@@ -311,7 +310,7 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
     packet = Sequence(Integer(Version.V2C),
                       OctetString(community),
                       request)
-    response = await transport.send(ip, port, to_bytes(packet), timeout=timeout)
+    response = await transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
     output = {
         unicode(oid): value
@@ -390,7 +389,7 @@ async def bulkget(
                 ('1.3.6.1.2.1.4.8.0', b'\x00'),
                 ('1.3.6.1.2.1.5.10.0', b'\x00')]))
     """
-    transport = Transport()
+    transport = Transport(timeout=timeout)
 
     scalar_oids = scalar_oids or []  # protect against empty values
     repeating_oids = repeating_oids or []  # protect against empty values
@@ -410,7 +409,7 @@ async def bulkget(
             transport.get_request_id(), non_repeaters, max_list_size, *oids)
     )
 
-    response = await transport.send(ip, port, to_bytes(packet), timeout=timeout)
+    response = await transport.send(ip, port, to_bytes(packet))
     raw_response = Sequence.from_bytes(response)
 
     # See RFC=3416 for details of the following calculation

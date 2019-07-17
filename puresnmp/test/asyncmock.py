@@ -1,5 +1,6 @@
 # pylint: skip-file
 
+
 try:
     from unittest.mock import MagicMock
 except ImportError:

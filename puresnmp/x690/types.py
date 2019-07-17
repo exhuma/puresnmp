@@ -57,8 +57,10 @@ from .util import (
 from .exc import InvalidValueLength
 
 if TYPE_CHECKING:  # pragma: no cover
-    # pylint: disable=unused-import
-    from typing import Any, Callable, Dict, Tuple
+    # pylint: disable=unused-import, invalid-name
+    from typing import Any, Callable, Dict, Tuple, List, TypeVar
+    from puresnmp.pdu import Trap
+    T = TypeVar('T', bound='Type')
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -71,8 +73,8 @@ class Registry(type):
 
     __registry = {}  # type: Dict[Tuple[str, int], TypeType[Type]]
 
-    def __new__(mcs, name, parents, dict_):  # type: ignore
-        new_cls = super(Registry, mcs).__new__(mcs, name, parents, dict_)
+    def __new__(cls, name, parents, dict_):  # type: ignore
+        new_cls = super(Registry, cls).__new__(cls, name, parents, dict_)
         if hasattr(new_cls, 'TAG'):
             Registry.__registry[(new_cls.TYPECLASS, new_cls.TAG)] = new_cls
         return new_cls
@@ -127,7 +129,7 @@ class Type(object):
     """
     TYPECLASS = TypeInfo.UNIVERSAL
     TAG = 0
-    value = None
+    value = None  # type: Any
 
     @classmethod
     def validate(cls, data):
@@ -148,7 +150,7 @@ class Type(object):
 
     @classmethod
     def from_bytes(cls, data):
-        # type: (bytes) -> Type
+        # type: (TypeType[T], bytes) -> T
         """
         Given a bytes object, this method reads the type information and length
         and uses it to convert the bytes representation into a python object.
@@ -288,6 +290,7 @@ class NonASN1Type(UnknownType):  # pragma: no cover
 
 class Boolean(Type):
     TAG = 0x01
+    value = False
 
     @staticmethod
     def decode(data):
@@ -358,6 +361,7 @@ class Null(Type):
 
 class OctetString(Type):
     TAG = 0x04
+    value = b''
 
     @classmethod
     def decode(cls, data):
@@ -394,6 +398,7 @@ class Sequence(Type):
     indexable.
     """
     TAG = 0x10
+    value = []  # type: List[Type]
 
     @classmethod
     def decode(cls, data):
@@ -451,6 +456,7 @@ class Sequence(Type):
 
 class Integer(Type):
     TAG = 0x02
+    value = 0
 
     @classmethod
     def decode(cls, data):
@@ -503,6 +509,7 @@ class ObjectIdentifier(Type):
         False
     """
     TAG = 0x06
+    value = b''
 
     @staticmethod
     def decode_large_value(current_char, stream):
@@ -744,6 +751,7 @@ class External(Type):
 
 class Real(Type):
     TAG = 0x09
+    value = 0.0
 
 
 class Enumerated(Type):
@@ -756,6 +764,7 @@ class EmbeddedPdv(Type):
 
 class Utf8String(Type):
     TAG = 0x0c
+    value = ''
 
 
 class RelativeOid(Type):
@@ -772,6 +781,7 @@ class NumericString(Type):
 
 class PrintableString(Type):
     TAG = 0x13
+    value = ''
 
 
 class T61String(Type):

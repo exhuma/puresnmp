@@ -4,12 +4,17 @@ from __future__ import print_function
 import re
 import sys
 import unittest
-from logging import Handler, getLevelName
+from logging import Handler, LogRecord, getLevelName
 from os.path import dirname, join
+from typing import TYPE_CHECKING
 
 import six
 
 from ..x690.util import to_bytes
+
+if TYPE_CHECKING:
+    from typing import Any, Callable, Generator, List, Tuple, TypeVar, Union
+    T = TypeVar('T')
 
 try:
     from itertools import zip_longest
@@ -20,19 +25,22 @@ except ImportError:
 DATA_DIR = join(dirname(__file__), 'data')
 
 __unittest = True  # <- This disables stack traces in unittest output for
-                   # everything in this module.
+# everything in this module.
 
 
 class CapturingHandler(Handler):
 
     def __init__(self):
+        # type: () -> None
         super(CapturingHandler, self).__init__()
-        self.captured_records = []
+        self.captured_records = []  # type: List[LogRecord]
 
     def emit(self, record):
+        # type: (LogRecord) -> None
         self.captured_records.append(record)
 
     def assertContains(self, level, message_regex):
+        # type: (int, str) -> None
         found = False
         for record in self.captured_records:
             matches_level = record.levelno == level
@@ -49,13 +57,14 @@ class CapturingHandler(Handler):
                                  'the log records' % (message_regex, level))
 
 
-
 class ByteTester(unittest.TestCase):
     def assertBytesEqual(self, a, b):
+        # type: (Union[bytes, bytearray], Union[bytes, bytearray]) -> None
         """
         Helper method to compare bytes with more helpful output.
         """
         def is_bytes(x):
+            # type: (Union[bytes, bytearray]) -> bool
             return isinstance(x, (bytes, bytearray))
         if not is_bytes(a) or not is_bytes(b):
             raise ValueError('assertBytesEqual requires two bytes objects!')
@@ -68,6 +77,7 @@ class ByteTester(unittest.TestCase):
             b = bytearray(b)
 
             def char_repr(c):
+                # type: (bytes) -> str
                 if 0x1f < char_a < 0x80:
                     # bytearray to prevent accidental pre-mature str conv
                     # str to prevent b'' suffix in repr's output
@@ -117,6 +127,7 @@ class ByteTester(unittest.TestCase):
 
 
 def parse_meta_lines(lines):
+    # type: (List[str]) -> Generator[Tuple[str, Any], None, None]
     pattern = re.compile(r'-\*-(.*?)-\*-')
     for line in lines:
         match = pattern.search(line)
@@ -132,11 +143,11 @@ def parse_meta_lines(lines):
 
 
 def chunker(lines, is_boundary):
-    # type: (List[T], Callable[[T], bool) -> Generator[List[T], None, None]
+    # type: (List[T], Callable[[T], bool]) -> Generator[List[T], None, None]
     '''
-    Transforms a list of strings into a generator of new lists of strings by
-    looking for special boundary lines. Boundary lines are detected with the
-    help of an "is_boundary" callable.
+    Transforms a list of items into a generator of new lists of items of the
+    same type by looking for special boundary lines. Boundary lines are
+    detected with the help of an "is_boundary" callable.
 
     Example:
 
@@ -149,7 +160,7 @@ def chunker(lines, is_boundary):
     if not lines:
         return
 
-    collected = []
+    collected = []  # type: List[T]
     for item in lines:
         if is_boundary(item):
             if collected:
@@ -160,7 +171,6 @@ def chunker(lines, is_boundary):
             collected.append(item)
     if collected:
         yield collected
-
 
 
 def detect_ascii_slice(lines):
@@ -183,6 +193,7 @@ def detect_ascii_slice(lines):
 
 
 def readbytes_multiple(filename):
+    # type: (str) -> Generator[bytes, None, None]
     if isinstance(filename, str):
         with open(join(DATA_DIR, filename)) as fp:
             lines = fp.readlines()
@@ -206,7 +217,6 @@ def readbytes_multiple(filename):
         for line in nonempty:
             str_bytes.extend(line.split())
 
-
         values = [int(char, 16) for char in str_bytes]
 
         yield to_bytes(values)
@@ -214,5 +224,6 @@ def readbytes_multiple(filename):
 
 
 def readbytes(filename):
+    # type: (str) -> bytes
     packets = readbytes_multiple(filename)
     return next(packets)

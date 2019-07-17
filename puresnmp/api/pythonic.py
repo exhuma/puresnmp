@@ -26,13 +26,12 @@ from typing import TYPE_CHECKING
 from . import raw
 from ..pdu import VarBind, Trap
 from ..util import BulkResult
-from ..x690.types import Sequence, Type
 from ..x690.util import tablify
+from ..x690.types import Type
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
-    from ..x690.types import Type
     Pythonized = Union[str, bytes, int, datetime, timedelta]
 
 try:
@@ -76,7 +75,7 @@ class TrapInfo:
         """
         Returns the uptime of the device.
         """
-        return self.raw_trap.varbinds[0].value.pythonize()
+        return self.raw_trap.varbinds[0].value.pythonize()  # type: ignore
 
     @property
     def oid(self):
@@ -84,7 +83,7 @@ class TrapInfo:
         """
         Returns the Trap-OID
         """
-        return str(self.raw_trap.varbinds[1].value.pythonize())
+        return self.raw_trap.varbinds[1].value.pythonize()  # type: ignore
 
     @property
     def values(self):
@@ -94,7 +93,7 @@ class TrapInfo:
         OIDs to values.
         """
         output = {}
-        for oid, value in self.raw_trap.varbinds[2:]:
+        for oid, value in self.raw_trap.varbinds[2:]:  # type: ignore
             output[oid.pythonize()] = value.pythonize()
         return output
 
@@ -108,7 +107,7 @@ def get(ip, community, oid, port=161, timeout=2):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_value = raw.get(ip, community, oid, port, timeout=timeout)
-    return raw_value.pythonize()
+    return raw_value.pythonize()  # type: ignore
 
 
 def multiget(ip, community, oids, port=161, timeout=2):
@@ -245,7 +244,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type (str, str, str, int, int) ->
+    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     Converts a "walk" result into a pseudo-table. See
     :py:func:`puresnmp.api.raw.table` for more information.
