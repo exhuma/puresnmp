@@ -543,3 +543,19 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
         tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
+
+
+def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
+    # type (str, int, int) -> Generator[Trap, None, None]
+    """
+    Creates a generator for SNMPv2 traps.
+
+    Each item in the generator will be a simpla puresnmp "PDU" type object
+    representing the trap. As per :rfc:`3416#section-4.2.6`, the first two
+    varbinds are the system uptime and the trap OID. The following varbinds are
+    the body of the trap
+    """
+    transport = Transport(buffer_size=buffer_size)
+    for data in transport.listen(listen_address, port):
+        obj = Sequence.from_bytes(data)
+        yield obj[2]

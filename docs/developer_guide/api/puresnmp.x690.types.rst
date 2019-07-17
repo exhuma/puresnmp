@@ -1,7 +1,7 @@
-puresnmp\.x690\.types module
-============================
+puresnmp.x690.types module
+==========================
 
 .. automodule:: puresnmp.x690.types
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

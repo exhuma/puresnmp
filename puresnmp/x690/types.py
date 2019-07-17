@@ -232,14 +232,16 @@ class UnknownType(Type):
     * ``tag``: The *unparsed* "tag". This is the type ID as defined in the
       reference document. See :py:class:`~puresnmp.x690.util.TypeInfo` for
       details.
-    * ``length``: The length of the value.
+    * ``typeinfo``: unused (derived from *tag* and only here for consistency
+      with ``__repr__`` of this class).
     """
 
-    def __init__(self, tag, value):
-        # type: (int, Any) -> None
+    def __init__(self, tag, value, typeinfo=None):
+        # type: (int, Any, Optional[TypeInfo]) -> None
         self.value = value
         self.tag = tag
         self.length = len(value)
+        self.typeinfo = TypeInfo.from_bytes(tag)
 
     def __bytes__(self):
         # type: () -> bytes
@@ -247,7 +249,8 @@ class UnknownType(Type):
 
     def __repr__(self):
         # type: () -> str
-        return '%s(%r, %r)' % (self.__class__.__name__, self.tag, self.value)
+        return '%s(%r, %r, typeinfo=%r)' % (
+            self.__class__.__name__, self.tag, self.value, self.typeinfo)
 
     def __eq__(self, other):  # type: ignore
         # pylint: disable=unidiomatic-typecheck

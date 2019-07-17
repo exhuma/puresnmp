@@ -312,3 +312,17 @@ class BulkGetRequest(Type):
             lines.append('        %s: %s' % (bind.oid, bind.value))
 
         return '\n'.join(lines)
+
+
+class InformRequest(PDU):
+    """
+    Represents an SNMP Inform request
+    """
+    TAG = 6
+
+
+class Trap(PDU):
+    """
+    Represents an SNMP Trap
+    """
+    TAG = 7

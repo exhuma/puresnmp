@@ -1,5 +1,5 @@
-puresnmp\.api package
-=====================
+puresnmp.api package
+====================
 
 Submodules
 ----------
@@ -13,6 +13,6 @@ Module contents
 ---------------
 
 .. automodule:: puresnmp.api
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

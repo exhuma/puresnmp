@@ -1,7 +1,7 @@
-puresnmp\.exc module
-====================
+puresnmp.exc module
+===================
 
 .. automodule:: puresnmp.exc
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
