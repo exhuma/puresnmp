@@ -13,7 +13,7 @@ from ..const import Length
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
-    from typing import Any, Dict, List, Union, Tuple
+    from typing import Any, Dict, Iterable, List, Union, Tuple
     from .types import Type
 
 if six.PY2:  # pragma: no cover
@@ -303,7 +303,7 @@ def visible_octets(data):
 
 
 def tablify(varbinds, num_base_nodes=0):
-    # type: ( List[Tuple[Any, Any]], int ) -> List[Dict[str, Any]]
+    # type: ( Iterable[Tuple[Any, Any]], int ) -> List[Dict[str, Any]]
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
