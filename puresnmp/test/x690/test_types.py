@@ -8,6 +8,7 @@ try:
 except NameError:
     unicode = str
 
+from ...x690.util import TypeInfo
 from ...x690.types import (
     Boolean,
     Integer,
@@ -585,10 +586,11 @@ class TestUnknownType(ByteTester):
 
     def test_repr(self):
         result = repr(UnknownType(99, b'abc'))
+        typeinfo = TypeInfo('application', 'constructed', 3)
         if not six.PY2:
-            expected = "UnknownType(99, b'abc')"
+            expected = "UnknownType(99, b'abc', typeinfo=%r)" % (typeinfo,)
         else:
-            expected = "UnknownType(99, 'abc')"
+            expected = "UnknownType(99, 'abc', typeinfo=%r)" % (typeinfo,)
         self.assertEqual(result, expected)
 
 
