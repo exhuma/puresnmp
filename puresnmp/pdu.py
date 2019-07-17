@@ -195,7 +195,7 @@ class EndOfMibView(PDU):
 
     def __init__(self):
         # type: () -> None
-        super().__init__(-1, [], 0, 0)
+        super(EndOfMibView, self).__init__(-1, [], 0, 0)
 
 
 #: Singleton instance of "EndOfMibView"
