@@ -321,10 +321,10 @@ class TestTraps(unittest.TestCase):
                 result.append((trap.uptime, trap.oid, trap.values))
         expected = [(
             b'fake-uptime',
-            '1.2.3.4',
+            u'1.2.3.4',
             {
-                '1.2.1.3': 13,
-                '1.2.1.4': b'fake-value-2',
+                u'1.2.1.3': 13,
+                u'1.2.1.4': b'fake-value-2',
             }
         )]
         self.assertEqual(result, expected)
