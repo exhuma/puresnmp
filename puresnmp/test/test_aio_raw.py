@@ -261,8 +261,9 @@ class TestGetNext(object):
             mck().get_request_id.return_value = 0
             mck().send.return_value = data
             await getnext('::1', 'public', '1.2.3')
+            mck.assert_called_with(timeout=6)
             mck().send.assert_called_with(
-                '::1', 161, to_bytes(packet), timeout=6)
+                '::1', 161, to_bytes(packet))
 
     @pytest.mark.asyncio
     async def test_getnext(self):
@@ -297,8 +298,8 @@ class TestGetBulkGet(object):
                     ['1.2.3'],
                     ['1.2.4'],
                     max_list_size=2)
-            mck().send.assert_called_with(
-                '::1', 161, to_bytes(packet), timeout=6)
+            mck.assert_called_with(timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet))
 
     @pytest.mark.asyncio
     async def test_bulkget(self):
@@ -371,8 +372,8 @@ class TestGetBulkWalk(object):
                           ['1.2.3'],
                           bulk_size=2):
                  pass
-            mck().send.assert_called_with(
-                '::1', 161, to_bytes(packet), timeout=6)
+            mck.assert_called_with(timeout=6)
+            mck().send.assert_called_with('::1', 161, to_bytes(packet))
 
     @pytest.mark.asyncio
     async def test_get_call_args_issue_22(self):
@@ -415,10 +416,11 @@ class TestGetBulkWalk(object):
                                    bulk_size=20):
                 result.append(x)
 
+            mck.assert_called_with(timeout=6)
             assert mck().send.mock_calls == [
-                call('127.0.0.1', 161, req1, timeout=6),
-                call('127.0.0.1', 161, req2, timeout=6),
-                call('127.0.0.1', 161, req3, timeout=6),
+                call('127.0.0.1', 161, req1),
+                call('127.0.0.1', 161, req2),
+                call('127.0.0.1', 161, req3),
             ]
 
             expected = [
