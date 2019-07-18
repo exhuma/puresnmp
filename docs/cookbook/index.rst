@@ -15,8 +15,8 @@ Cookbook
     work in progress!
 
     Additionally, not *all* core types are yet supported. In this case a
-    ``NonASN1Type`` will be returned. This instance contains the type
-    information byte and the raw bytes value.
+    :py:class:`puresnmp.x690.types.NonASN1Type` will be returned. This instance
+    contains the type information byte and the raw bytes value.
 
 
 "Raw" vs. "Pythonic" API
@@ -54,11 +54,14 @@ most use-cases very easy to work with and future updates to the library more
 robust and easier to upgrade for users.
 
 The downside is that there is a slight overhead due to type conversions, and
-some interesting information may be lost. These downsides can be remedies by
-using the "raw" interface.
+some interesting information may be lost. If this is an issue, the "raw"
+interface can be used instad, but there is a higher risk that it changes
+between ``puresnmp`` releases.
 
 It is up to the end-user to decide which API is more appropriate for the task
-at hand. In *general* using the "pythonic" interface should be preferred.
+at hand. In *general* using the "pythonic" interface should be preferred as I
+try to be as careful as possible to keep this API stable across ``puresnmp``
+releases.
 
 
 Recipes
