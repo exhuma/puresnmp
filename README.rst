@@ -11,6 +11,10 @@
     :target: https://github.com/exhuma/puresnmp
     :alt: Github Project
 
+.. image:: https://img.shields.io/pypi/v/puresnmp.svg
+    :alt: PyPI
+    :target: https://pypi.org/project/puresnmp/
+
 .. <<< Shields <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 ----
