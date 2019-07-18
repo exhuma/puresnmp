@@ -10,6 +10,8 @@ Type Tree
 
      *  :py:class:`puresnmp.pdu.PDU`
 
+        *  :py:class:`puresnmp.pdu.EndOfMibView`
+
         *  :py:class:`puresnmp.pdu.GetRequest`
 
            *  :py:class:`puresnmp.pdu.GetNextRequest`

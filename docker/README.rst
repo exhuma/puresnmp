@@ -34,6 +34,25 @@ To manually bind the port to something else run::
 This will expose the client port ``161`` on the host as port ``161`` as well.
 
 
+Using the image to send SNMP traps
+==================================
+
+The image contains a dummy helper script in ``/usr/local/bin/send_trap``. For
+one-shot you can run it directly via docker::
+
+   docker run --rm --network="host" dummy-snmp send_trap
+
+For sending more traps for testing it may by useful to run an interactive shell
+in the container and run ``send_trap`` from there::
+
+   docker run -it --rm --network="host" dummy-snmp bash
+   root@devbox:/opt/app# send_trap
+
+The script will always send to ``localhost`` so using ``--network=host`` will
+send the trap to the docker-host. If you want to change anything look into
+``/usr/local/bin/send_trap``
+
+
 Using libsnmp Commands on a Custom Port
 =======================================
 
