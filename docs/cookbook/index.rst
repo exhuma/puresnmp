@@ -60,6 +60,10 @@ using the "raw" interface.
 It is up to the end-user to decide which API is more appropriate for the task
 at hand. In *general* using the "pythonic" interface should be preferred.
 
+
+Recipes
+-------
+
 .. toctree::
    :maxdepth: 1
    :glob:
