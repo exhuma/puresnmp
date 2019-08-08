@@ -1,6 +1,19 @@
 Changelog
 =========
 
+Release 1.6.2
+~~~~~~~~~~~~~
+
+* **[fixed]** Counter32 and Counter64 values no longer increase above max-value
+  and properly wrap back to ``0`` as defined in `RFC-2578 Section 7.1.6
+  <https://tools.ietf.org/html/rfc2578#section-7.1.6>`_ and `RFC-2578 Section
+  7.1.10 <https://tools.ietf.org/html/rfc2578#section-7.1.10>`_.
+
+  If a value is more than one unit above the max-value the behaviour is
+  undefine in that RFC as it assumes monotonically increasing values. As a
+  design decision I decided to initialise the value using the overflow amount.
+  So a counter initialised to ``40`` above maximum, will have the value ``40``.
+
 Release 1.6.1
 ~~~~~~~~~~~~~
 
