@@ -60,6 +60,14 @@ class Counter(Integer):
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x01
 
+    def __init__(self, value):
+        # type: (int) -> None
+        while value >= 2**32:
+            value = value - (2**32)
+        if value <= 0:
+            value = 0
+        super(Counter, self).__init__(value)
+
 
 class Gauge(Integer):
     """
@@ -102,6 +110,14 @@ class Counter64(Integer):
     """
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x06
+
+    def __init__(self, value):
+        # type: (int) -> None
+        while value >= 2**64:
+            value = value - (2**64)
+        if value <= 0:
+            value = 0
+        super(Counter64, self).__init__(value)
 
 
 def _walk_subclasses(cls, indent=0):  # pragma: no cover
