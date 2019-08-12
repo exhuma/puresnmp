@@ -58,7 +58,7 @@ from .exc import InvalidValueLength
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
-    from typing import Any, Callable, Dict, Tuple, List, TypeVar
+    from typing import Any, Callable, Dict, Iterator, List, Tuple, TypeVar
     from puresnmp.pdu import Trap
     T = TypeVar('T', bound='Type')
 
@@ -513,6 +513,7 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def decode_large_value(current_char, stream):
+        # type: (int, Iterator[int]) -> int
         """
         If we encounter a value larger than 127, we have to consume from the
         stram until we encounter a value below 127 and recombine them.
@@ -530,6 +531,7 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def encode_large_value(value):
+        # type: (int) -> List[int]
         """
         Inverse function of :py:meth:`~.ObjectIdentifier.decode_large_value`
         """
@@ -606,7 +608,7 @@ class ObjectIdentifier(Type):
             first_output = (40*first) + second
         else:
             first_output = identifiers[0]
-            rest = []  # type: List[int]
+            rest = tuple()
 
         # Values above 127 need a special encoding. They get split up into
         # multiple positions.
@@ -646,6 +648,7 @@ class ObjectIdentifier(Type):
             return '.'.join([unicode(_) for _ in self.identifiers])
     else:
         def __str__(self):
+            # type: () -> str
             return '.'.join([unicode(_) for _ in self.identifiers])
 
         def __bytes__(self):
@@ -667,6 +670,7 @@ class ObjectIdentifier(Type):
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
 
     def __len__(self):
+        # type: () -> int
         return len(self.identifiers)
 
     def __contains__(self, other):
@@ -693,7 +697,7 @@ class ObjectIdentifier(Type):
         #   2. drop identical items from the front (leaving us with "tail")
         #   3. compare both tails
         zipped = zip_longest(a, b, fillvalue=None)
-        tail = []
+        tail = []  # type: List[Tuple[int, int]]
         for tmp_a, tmp_b in zipped:
             if tmp_a == tmp_b and not tail:
                 continue
@@ -711,19 +715,24 @@ class ObjectIdentifier(Type):
         return False
 
     def __lt__(self, other):
+        # type: (ObjectIdentifier) -> bool
         return self.identifiers < other.identifiers
 
     def __hash__(self):
+        # type: () -> int
         return hash(self.identifiers)
 
     def __add__(self, other):
+        # type: (ObjectIdentifier) -> ObjectIdentifier
         nodes = self.identifiers + other.identifiers
         return ObjectIdentifier(*nodes)
 
     def __getitem__(self, index):
+        # type: (int) -> ObjectIdentifier
         return ObjectIdentifier(self.identifiers[index])
 
     def pythonize(self):
+        # type: () -> str
         return '.'.join([unicode(_) for _ in self.identifiers])
 
     def parentof(self, other):
