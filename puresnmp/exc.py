@@ -56,8 +56,9 @@ class ErrorResponse(SnmpError):
 
     def __init__(self, error_status, offending_oid, message=''):
         # type: (int, ObjectIdentifier, str) -> None
-        super(ErrorResponse, self).__init__('%s (status-code: %r) on OID %s' % (
-            message or self.DEFAULT_MESSAGE, error_status, offending_oid))
+        super(ErrorResponse, self).__init__(
+            '%s (status-code: %r) on OID %s' % (
+                message or self.DEFAULT_MESSAGE, error_status, offending_oid))
         self.error_status = error_status
         self.offending_oid = offending_oid
 

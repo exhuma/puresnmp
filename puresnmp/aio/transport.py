@@ -15,8 +15,8 @@ import asyncio
 import logging
 
 from ..exc import Timeout
-from ..x690.util import visible_octets
 from ..transport import Transport as SyncTransport
+from ..x690.util import visible_octets
 
 LOG = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class SNMPClientProtocol:
     based API.
 
     """
+
     def __init__(self, packet, loop):
         self.packet = packet
         self.transport = None
@@ -93,13 +94,15 @@ class SNMPClientProtocol:
 
 class Transport(SyncTransport):
 
-    async def send(self, ip, port, packet, timeout=6, loop=None):  # pragma: no cover
+    async def send(
+            self, ip, port, packet, timeout=6, loop=None):  # pragma: no cover
         # type: ( str, int, bytes, int ) -> bytes
         """
         A coroutine that opens a UDP socket to *ip:port*, sends a packet with
         *bytes* and returns the raw bytes as returned from the remote host.
 
-        If the connection fails due to a timeout, a Timeout exception is raised.
+        If the connection fails due to a timeout, a Timeout exception is
+        raised.
         """
         if loop is None:
             loop = asyncio.get_event_loop()
