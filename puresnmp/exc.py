@@ -4,7 +4,6 @@ Exceptions for the puresnmp package.
 from __future__ import unicode_literals
 
 import socket
-from warnings import warn
 
 from puresnmp.const import MAX_VARBINDS
 
