@@ -14,6 +14,7 @@ hard to test.
 import logging
 import socket
 from ipaddress import ip_address
+from typing import Generator
 
 from .exc import Timeout
 from .x690.util import visible_octets
@@ -88,7 +89,7 @@ class Transport(object):
         return response
 
     def listen(self, bind_address='0.0.0.0', port=162):  # pragma: no cover
-        # type: (str, int) -> Generates[bytes, None, None]
+        # type: (str, int) -> Generator[bytes, None, None]
         """
         Sets up a listening UDP socket and returns a generator over recevied
         packets::

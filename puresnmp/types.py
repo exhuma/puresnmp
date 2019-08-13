@@ -16,6 +16,7 @@ import sys
 from datetime import timedelta
 from ipaddress import IPv4Address
 from struct import pack
+from typing import Union
 
 from .x690.types import Integer, OctetString
 from .x690.util import TypeInfo
@@ -29,6 +30,7 @@ class IpAddress(OctetString):
     TAG = 0x00
 
     def __init__(self, value):
+        # type: (bytes) -> None
         if isinstance(value, IPv4Address):
             remainder = int(value)
             octet_4, remainder = remainder & 0xff, remainder >> 8
@@ -39,6 +41,7 @@ class IpAddress(OctetString):
         super(IpAddress, self).__init__(value)
 
     def pythonize(self):
+        # type: () -> bytes
         return self.value
 
         # TODO The following code breaks backwards compatbility and should be
@@ -85,11 +88,15 @@ class TimeTicks(Integer):
     TAG = 0x03
 
     def __init__(self, value):
+        # type: (Union[timedelta, int]) -> None
         if isinstance(value, timedelta):
-            value = int(value.total_seconds() * 100)
-        super(TimeTicks, self).__init__(value)
+            value_int = int(value.total_seconds() * 100)
+        else:
+            value_int = value
+        super(TimeTicks, self).__init__(value_int)
 
     def pythonize(self):
+        # type: () -> timedelta
         seconds = self.value / 100.0  # see rfc2578#section-7.1.8
         return timedelta(seconds=seconds)
 
@@ -121,6 +128,7 @@ class Counter64(Integer):
 
 
 def _walk_subclasses(cls, indent=0):  # pragma: no cover
+    # type: (type, int) -> None
     '''
     Recursively walk over the :py:class:`Type` hierarchy and print out ReST
     formatted text on stdout.
@@ -140,6 +148,7 @@ def _walk_subclasses(cls, indent=0):  # pragma: no cover
 
 
 def main():  # pragma: no cover
+    # type: () -> int
     """
     Entrypoint for::
 

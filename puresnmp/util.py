@@ -1,18 +1,23 @@
 '''
 Colleciton of utility functions for the puresnmp package.
 '''
-from collections import namedtuple
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Dict, List, Optional, Tuple
+    from typing import Optional, Tuple
     from .pdu import VarBind
     from .x690.types import ObjectIdentifier
 
 
-WalkRow = namedtuple('WalkRow', 'value unfinished')
-BulkResult = namedtuple('BulkResult', 'scalars listing')
+WalkRow = NamedTuple('WalkRow', [
+    ('value', Any),
+    ('unfinished', bool),
+])
+BulkResult = NamedTuple('BulkResult', [
+    ('scalars', Dict[str, Any]),
+    ('listing', Dict[str, Any]),
+])
 
 
 def group_varbinds(varbinds, effective_roots, user_roots=None):

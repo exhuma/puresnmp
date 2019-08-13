@@ -10,35 +10,28 @@ but loses type information which may be useful in some edge-cases. In such a
 case it's recommended to use :py:mod:`puresnmp.api.raw`.
 '''
 from __future__ import unicode_literals
-from collections import OrderedDict
-from typing import TYPE_CHECKING
+
 import logging
 import sys
+from collections import OrderedDict
+from typing import TYPE_CHECKING
 
-from ..x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    Type,
-)
-from ..x690.util import to_bytes, tablify
-from ..exc import SnmpError, NoSuchOID, FaultySNMPImplementation
+from ..const import ERRORS_STRICT, ERRORS_WARN, Version
+from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
+    END_OF_MIB_VIEW,
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
     SetRequest,
-    VarBind,
-    END_OF_MIB_VIEW,
+    Trap,
+    VarBind
 )
-from ..const import Version, ERRORS_WARN, ERRORS_STRICT
 from ..transport import Transport
-from ..util import (
-    BulkResult,  # NOQA (must be here for type detection)
-    get_unfinished_walk_oids,
-    group_varbinds,
-)
+from ..util import BulkResult  # NOQA (must be here for type detection)
+from ..util import get_unfinished_walk_oids, group_varbinds
+from ..x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
+from ..x690.util import tablify, to_bytes
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
@@ -426,17 +419,16 @@ def bulkget(
     r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
     expected_max_varbinds = n + (m * r)
 
-
     _, _, get_response = raw_response
-    n_retrieved_varbinds = len(get_response.varbinds)
+    n_retrieved_varbinds = len(get_response.varbinds)  # type: ignore
     if n_retrieved_varbinds > expected_max_varbinds:
         raise SnmpError('Unexpected response. Expected no more than %d '
                         'varbinds, but got %d!' % (
                             expected_max_varbinds, n_retrieved_varbinds))
 
     # cut off the scalar OIDs from the listing(s)
-    scalar_tmp = get_response.varbinds[0:len(scalar_oids)]
-    repeating_tmp = get_response.varbinds[len(scalar_oids):]
+    scalar_tmp = get_response.varbinds[0:len(scalar_oids)]  # type: ignore
+    repeating_tmp = get_response.varbinds[len(scalar_oids):]  # type: ignore
 
     # prepare output for scalar OIDs
     scalar_out = {

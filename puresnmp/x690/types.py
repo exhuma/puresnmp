@@ -58,7 +58,16 @@ from .exc import InvalidValueLength
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
-    from typing import Any, Callable, Dict, Iterator, List, Tuple, TypeVar
+    from typing import (
+        Any,
+        Callable,
+        Dict,
+        Iterator,
+        List,
+        Optional,
+        Tuple,
+        TypeVar
+    )
     from puresnmp.pdu import Trap
     T = TypeVar('T', bound='Type')
 
@@ -239,7 +248,7 @@ class UnknownType(Type):
     """
 
     def __init__(self, tag, value, typeinfo=None):
-        # type: (int, Any, Optional[TypeInfo]) -> None
+        # type: (int, bytes, Optional[TypeInfo]) -> None
         self.value = value
         self.tag = tag
         self.length = len(value)
@@ -386,6 +395,7 @@ class OctetString(Type):
         return type(self) == type(other) and self.value == other.value
 
     def pythonize(self):
+        # type: () -> bytes
         """
         Convert this object in an appropriate python object
         """
@@ -432,15 +442,19 @@ class Sequence(Type):
         return 'Sequence(%s)' % ', '.join(item_repr)
 
     def __len__(self):
+        # type: () -> int
         return len(self.items)
 
     def __iter__(self):
+        # type: () -> Iterator[int]
         return iter(self.items)
 
     def __getitem__(self, idx):
+        # type: (int) -> Any
         return self.items[idx]
 
     def pythonize(self):
+        # type: () -> List[Any]
         return [obj.pythonize() for obj in self]
 
     def pretty(self):  # pragma: no cover
