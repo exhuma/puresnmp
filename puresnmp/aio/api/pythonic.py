@@ -200,7 +200,7 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
 
 async def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type (str, str, str, int, int) ->
+    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     Converts a "walk" result into a pseudo-table. See
     :py:func:`puresnmp.aio.api.raw.table` for more information.

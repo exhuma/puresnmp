@@ -10,7 +10,7 @@ from __future__ import unicode_literals
 
 from collections import namedtuple
 
-import verlib
+import verlib  # type: ignore
 
 # !!! DO NOT REMOVE !!! The following import triggers the processing of SNMP
 # Types and thus populates the Registry. If this is not included, Non x.690

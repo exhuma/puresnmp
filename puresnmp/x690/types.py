@@ -39,14 +39,16 @@ Depending on type, you may also want to override certain methods. See
 
 from __future__ import division, print_function, unicode_literals
 
+import logging
 import warnings
+from typing import TYPE_CHECKING
 from typing import Type as TypeType
-from typing import TYPE_CHECKING, Union
+from typing import TypeVar, Union, cast
 
 import six
-
 from six.moves import zip_longest
 
+from .exc import InvalidValueLength
 from .util import (
     TypeInfo,
     decode_length,
@@ -54,7 +56,6 @@ from .util import (
     int_from_bytes,
     to_bytes
 )
-from .exc import InvalidValueLength
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
@@ -62,11 +63,11 @@ if TYPE_CHECKING:  # pragma: no cover
         Any,
         Callable,
         Dict,
+        Generic,
         Iterator,
         List,
         Optional,
         Tuple,
-        TypeVar
     )
     from puresnmp.pdu import Trap
     T = TypeVar('T', bound='Type')
@@ -78,14 +79,25 @@ except NameError:
     unicode = str  # type: Callable[[Any], str]
 
 
+TSnmpType = TypeVar('TSnmpType', bound='TypeType[Type]')
+TPythonType = TypeVar('TPythonType', bound='TypeType[Type]')
+LOG = logging.getLogger(__name__)
+
+
 class Registry(type):
 
     __registry = {}  # type: Dict[Tuple[str, int], TypeType[Type]]
 
     def __new__(cls, name, parents, dict_):  # type: ignore
-        new_cls = super(Registry, cls).__new__(cls, name, parents, dict_)
-        if hasattr(new_cls, 'TAG'):
+        new_cls = cast(
+            'TypeType[Type]',
+            super(Registry, cls).__new__(cls, name, parents, dict_)
+        )
+        if hasattr(new_cls, 'TAG') and hasattr(new_cls, 'TYPECLASS'):
             Registry.__registry[(new_cls.TYPECLASS, new_cls.TAG)] = new_cls
+        else:
+            LOG.warning('Ignoring class %r. It is missing either the '
+                        'TYPECLASS or TAG class attribute!', new_cls)
         return new_cls
 
     @staticmethod
@@ -133,6 +145,7 @@ def pop_tlv(data):
 
 @six.add_metaclass(Registry)
 class Type(object):
+    # type: (Generic[TPythonType]) -> None
     """
     The superclass for all supported types.
     """
@@ -159,7 +172,7 @@ class Type(object):
 
     @classmethod
     def from_bytes(cls, data):
-        # type: (TypeType[T], bytes) -> T
+        # type: (bytes) -> Type
         """
         Given a bytes object, this method reads the type information and length
         and uses it to convert the bytes representation into a python object.
@@ -246,6 +259,8 @@ class UnknownType(Type):
     * ``typeinfo``: unused (derived from *tag* and only here for consistency
       with ``__repr__`` of this class).
     """
+
+    value = b''
 
     def __init__(self, tag, value, typeinfo=None):
         # type: (int, bytes, Optional[TypeInfo]) -> None
@@ -446,7 +461,7 @@ class Sequence(Type):
         return len(self.items)
 
     def __iter__(self):
-        # type: () -> Iterator[int]
+        # type: () -> Iterator[Type]
         return iter(self.items)
 
     def __getitem__(self, idx):

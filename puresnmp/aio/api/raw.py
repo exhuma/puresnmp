@@ -1,45 +1,42 @@
 from __future__ import unicode_literals
-from collections import OrderedDict
-from typing import TYPE_CHECKING
+
 import logging
 import sys
+from collections import OrderedDict
+from typing import TYPE_CHECKING, Any, Tuple, cast
 
+from ...const import ERRORS_STRICT, ERRORS_WARN, Version
+from ...exc import FaultySNMPImplementation, NoSuchOID, SnmpError
+from ...pdu import (
+    END_OF_MIB_VIEW,
+    BulkGetRequest,
+    GetNextRequest,
+    GetRequest,
+    GetResponse,
+    SetRequest,
+    VarBind
+)
+from ...util import BulkResult  # NOQA (must be here for type detection)
+from ...util import get_unfinished_walk_oids, group_varbinds
 from ...x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
-    Type,
+    Type
 )
-from ...x690.util import to_bytes, tablify
-from ...exc import SnmpError, NoSuchOID, FaultySNMPImplementation
-from ...pdu import (
-    BulkGetRequest,
-    GetNextRequest,
-    GetRequest,
-    SetRequest,
-    VarBind,
-    END_OF_MIB_VIEW,
-)
-from ...const import Version, ERRORS_WARN, ERRORS_STRICT
+from ...x690.util import tablify, to_bytes
 from ..transport import Transport
-from ...util import (
-    BulkResult,  # NOQA (must be here for type detection)
-    get_unfinished_walk_oids,
-    group_varbinds,
-)
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
     from typing import (
-        Any,
         AsyncGenerator,
         Callable,
         Coroutine,
         Dict,
         List,
         Set,
-        Tuple,
         Union,
     )
 
@@ -94,7 +91,10 @@ async def multiget(ip, community, oids, port=161, timeout=6):
     )
 
     response = await transport.send(ip, port, to_bytes(packet))
-    raw_response = Sequence.from_bytes(response)
+    raw_response = cast(
+        Tuple[Any, Any, GetResponse],
+        Sequence.from_bytes(response)
+    )
 
     output = [value for _, value in raw_response[2].varbinds]
     if len(output) != len(oids):
@@ -143,7 +143,10 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
         request
     )
     response = await transport.send(ip, port, to_bytes(packet))
-    raw_response = Sequence.from_bytes(response)
+    raw_response = cast(
+        Tuple[Any, Any, GetResponse],
+        Sequence.from_bytes(response)
+    )
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
         raise SnmpError(
@@ -230,12 +233,12 @@ async def multiwalk(
     for var in sorted(grouped_oids.values()):
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
-            if not any(containment) or varbind.oid in yielded:  # type: ignore
+            if not any(containment) or varbind.oid in yielded:
                 LOG.debug('Unexpected device response: Returned VarBind %s '
                           'was either not contained in the requested tree or '
                           'appeared more than once. Skipping!', varbind)
                 continue
-            yielded.add(varbind.oid)  # type: ignore
+            yielded.add(varbind.oid)
             yield varbind
 
     # As long as we have unfinished OIDs, we need to continue the walk for
@@ -267,9 +270,9 @@ async def multiwalk(
         for var in sorted(grouped_oids.values()):
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
-                if not any(containment) or varbind.oid in yielded:  # type: ignore
+                if not any(containment) or varbind.oid in yielded:
                     continue
-                yielded.add(varbind.oid)  # type: ignore
+                yielded.add(varbind.oid)
                 yield varbind
 
 
@@ -324,7 +327,7 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
     raw_response = Sequence.from_bytes(response)
     output = {
         unicode(oid): value
-        for oid, value in raw_response[2].varbinds
+        for oid, value in raw_response[2].varbinds  # type: ignore
     }
     if len(output) != len(mappings):
         raise SnmpError('Unexpected response. Expected %d varbinds, '
@@ -420,7 +423,10 @@ async def bulkget(
     )
 
     response = await transport.send(ip, port, to_bytes(packet))
-    raw_response = Sequence.from_bytes(response)
+    raw_response = cast(
+        Tuple[Any, Any, GetResponse],
+        Sequence.from_bytes(response)
+    )
 
     # See RFC=3416 for details of the following calculation
     n = min(non_repeaters, len(oids))
@@ -528,7 +534,7 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
 
 async def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type (str, str, str, int, int) ->
+    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     A coroutine that runs a series of GETNEXT requests on an OID and constructs
     a table from the result.

@@ -14,7 +14,7 @@ from __future__ import unicode_literals
 import logging
 import sys
 from collections import OrderedDict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Tuple, cast
 
 from ..const import ERRORS_STRICT, ERRORS_WARN, Version
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -23,6 +23,7 @@ from ..pdu import (
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
+    GetResponse,
     SetRequest,
     Trap,
     VarBind
@@ -88,7 +89,10 @@ def multiget(ip, community, oids, port=161, timeout=6):
     )
 
     response = transport.send(ip, port, to_bytes(packet))
-    raw_response = Sequence.from_bytes(response)
+    raw_response = cast(
+        Tuple[Any, Any, GetResponse],
+        Sequence.from_bytes(response)
+    )
 
     output = [value for _, value in raw_response[2].varbinds]
     if len(output) != len(oids):
@@ -136,7 +140,10 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
         request
     )
     response = transport.send(ip, port, to_bytes(packet))
-    raw_response = Sequence.from_bytes(response)
+    raw_response = cast(
+        Tuple[Any, Any, GetResponse],
+        Sequence.from_bytes(response)
+    )
     response_object = raw_response[2]
     if len(response_object.varbinds) != len(oids):
         raise SnmpError(
@@ -312,7 +319,10 @@ def multiset(ip, community, mappings, port=161, timeout=6):
                       OctetString(community),
                       request)
     response = transport.send(ip, port, to_bytes(packet))
-    raw_response = Sequence.from_bytes(response)
+    raw_response = cast(
+        Tuple[Any, Any, GetResponse],
+        Sequence.from_bytes(response)
+    )
     output = {
         unicode(oid): value
         for oid, value in raw_response[2].varbinds
@@ -411,7 +421,10 @@ def bulkget(
     )
 
     response = transport.send(ip, port, to_bytes(packet))
-    raw_response = Sequence.from_bytes(response)
+    raw_response = cast(
+        Tuple[Any, Any, GetResponse],
+        Sequence.from_bytes(response)
+    )
 
     # See RFC=3416 for details of the following calculation
     n = min(non_repeaters, len(oids))
@@ -420,15 +433,15 @@ def bulkget(
     expected_max_varbinds = n + (m * r)
 
     _, _, get_response = raw_response
-    n_retrieved_varbinds = len(get_response.varbinds)  # type: ignore
+    n_retrieved_varbinds = len(get_response.varbinds)
     if n_retrieved_varbinds > expected_max_varbinds:
         raise SnmpError('Unexpected response. Expected no more than %d '
                         'varbinds, but got %d!' % (
                             expected_max_varbinds, n_retrieved_varbinds))
 
     # cut off the scalar OIDs from the listing(s)
-    scalar_tmp = get_response.varbinds[0:len(scalar_oids)]  # type: ignore
-    repeating_tmp = get_response.varbinds[len(scalar_oids):]  # type: ignore
+    scalar_tmp = get_response.varbinds[0:len(scalar_oids)]
+    repeating_tmp = get_response.varbinds[len(scalar_oids):]
 
     # prepare output for scalar OIDs
     scalar_out = {
@@ -548,5 +561,8 @@ def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
     """
     transport = Transport(buffer_size=buffer_size)
     for data in transport.listen(listen_address, port):
-        obj = Sequence.from_bytes(data)
+        obj = cast(
+            Tuple[Any, Any, Trap],
+            Sequence.from_bytes(data)
+        )
         yield obj[2]
