@@ -31,7 +31,7 @@ from ...x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
-    from typing import Any, Callable, Dict, Generator, List, Tuple, Union
+    from typing import Any, AsyncGenerator, Callable, Dict, List, Tuple, Union
     Pythonized = Union[str, bytes, int, datetime, timedelta]
 
 try:
@@ -94,7 +94,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
 
 
 async def walk(ip, community, oid, port=161, timeout=6):
-    # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
+    # type: (str, str, str, int, int) -> AsyncGenerator[VarBind, None]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.walk` but returns simple
     Python types.
@@ -109,7 +109,7 @@ async def walk(ip, community, oid, port=161, timeout=6):
 
 async def multiwalk(ip, community, oids, port=161, timeout=6,
                     fetcher=multigetnext):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> AsyncGenerator[VarBind, None]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiwalk` but returns simple
     Python types.
@@ -175,7 +175,7 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
 
 async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
-    # type: (str, str, List[str], int, int) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int) -> AsyncGenerator[VarBind, None]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.bulkwalk` but returns simple
     Python types.

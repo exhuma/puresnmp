@@ -31,7 +31,16 @@ from ...util import (
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
-    from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
+    from typing import (
+        Any,
+        AsyncGenerator,
+        Callable,
+        Dict,
+        List,
+        Set,
+        Tuple,
+        Union,
+    )
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -158,7 +167,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
 
 
 async def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
-    # type: (str, str, str, int, int, str) -> Generator[VarBind, None, None]
+    # type: (str, str, str, int, int, str) -> AsyncGenerator[VarBind, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an async_generator
     over :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -193,7 +202,7 @@ async def multiwalk(
         ip, community, oids,
         port=161, timeout=6, fetcher=multigetnext,
         errors=ERRORS_STRICT):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]], str) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]], str) -> AsyncGenerator[VarBind, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an async_generator
     over :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -471,7 +480,7 @@ def _bulkwalk_fetcher(bulk_size=10):
 
 
 async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
-    # type: (str, str, List[str], int, int) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int) -> AsyncGenerator[VarBind, None]
     """
     More efficient implementation of :py:func:`~.walk`. It uses
     :py:func:`~.bulkget` under the hood instead of :py:func:`~.getnext`.
