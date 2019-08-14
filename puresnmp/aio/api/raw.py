@@ -35,6 +35,7 @@ if TYPE_CHECKING:  # pragma: no cover
         Any,
         AsyncGenerator,
         Callable,
+        Coroutine,
         Dict,
         List,
         Set,
@@ -202,7 +203,7 @@ async def multiwalk(
         ip, community, oids,
         port=161, timeout=6, fetcher=multigetnext,
         errors=ERRORS_STRICT):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]], str) -> AsyncGenerator[VarBind, None]
+    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], Coroutine[Any, Any, List[VarBind]]], str) -> AsyncGenerator[VarBind, None]
     """
     Executes a sequence of SNMP GETNEXT requests and returns an async_generator
     over :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -456,12 +457,13 @@ async def bulkget(
 
 
 def _bulkwalk_fetcher(bulk_size=10):
-    # type: (int) -> Callable[[str, str, List[str], int, int], List[VarBind]]
+    # type: (int) -> Callable[[str, str, List[str], int, int], Coroutine[ Any, Any, List[VarBind]]]
     """
     Create a bulk fetcher coroutine with a fixed limit on "repeatable" OIDs.
     """
 
     async def fetcher(ip, community, oids, port=161, timeout=6):
+        # type: (str, str, List[str], int, int) -> List[VarBind]
         '''
         Executes a SNMP BulkGet request.
         '''

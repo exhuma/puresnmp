@@ -31,7 +31,16 @@ from ...x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
-    from typing import Any, AsyncGenerator, Callable, Dict, List, Tuple, Union
+    from typing import (
+        Any,
+        AsyncGenerator,
+        Callable,
+        Coroutine,
+        Dict,
+        List,
+        Tuple,
+        Union,
+    )
     Pythonized = Union[str, bytes, int, datetime, timedelta]
 
 try:
@@ -53,7 +62,7 @@ async def get(ip, community, oid, port=161, timeout=6):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_value = await raw.get(ip, community, oid, port, timeout=timeout)
-    return raw_value.pythonize()
+    return raw_value.pythonize()  # type: ignore
 
 
 async def multiget(ip, community, oids, port=161, timeout=6):
@@ -109,7 +118,7 @@ async def walk(ip, community, oid, port=161, timeout=6):
 
 async def multiwalk(ip, community, oids, port=161, timeout=6,
                     fetcher=multigetnext):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> AsyncGenerator[VarBind, None]
+    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], Coroutine[Any, Any, List[VarBind]]]) -> AsyncGenerator[VarBind, None]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiwalk` but returns simple
     Python types.
