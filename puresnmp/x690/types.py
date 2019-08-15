@@ -394,10 +394,10 @@ class OctetString(Type):
 
     def __init__(self, value):
         # type: (Union[str, bytes]) -> None
-        if isinstance(value, unicode):
-            self.value = value.encode('ascii')
+        if isinstance(value, unicode):  # type: ignore (python-2)
+            self.value = value.encode('ascii')  # type: ignore (python-2)
         else:
-            self.value = value
+            self.value = value  # type: ignore (python-2)
         self.length = encode_length(len(self.value))
 
     def __bytes__(self):

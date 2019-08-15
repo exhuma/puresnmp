@@ -12,7 +12,7 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       "puresnmp.get", "puresnmp.walk" & co.
 
 from collections import namedtuple
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Tuple, cast
 
 import six
 
@@ -98,7 +98,10 @@ class PDU(Type):
         error_status, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
         if error_status.value:
-            error_detail, data = pop_tlv(data)
+            error_detail, data = cast(
+                Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+                pop_tlv(data)
+            )
             if not isinstance(error_detail, Sequence):
                 raise TypeError(
                     'error-detail should be a sequence but got %r' %
@@ -110,7 +113,10 @@ class PDU(Type):
                 error_status.value, offending_oid)
             raise exception
 
-        values, data = pop_tlv(data)
+        values, data = cast(
+            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+            pop_tlv(data)
+        )
         if not isinstance(values, Sequence):
             raise TypeError('PDUs can only be decoded from sequences but got '
                             '%r instead' % type(values))
