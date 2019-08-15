@@ -156,7 +156,6 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
             break
         output.append(VarBind(oid, value))
 
-
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
         if not OID(requested) < retrieved.oid:
