@@ -20,7 +20,7 @@ from __future__ import unicode_literals
 
 import logging
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from . import raw
@@ -32,7 +32,7 @@ from ..x690.types import Type
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
-    Pythonized = Union[str, bytes, int, datetime, timedelta]
+    from puresnmp.typevars import PyType
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -99,7 +99,7 @@ class TrapInfo:
 
 
 def get(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int, int) -> Pythonized
+    # type: (str, str, str, int, int) -> PyType
     """
     Delegates to :py:func:`~puresnmp.api.raw.get` but returns simple Python
     types.
@@ -111,7 +111,7 @@ def get(ip, community, oid, port=161, timeout=2):
 
 
 def multiget(ip, community, oids, port=161, timeout=2):
-    # type: (str, str, List[str], int, int) -> List[Pythonized]
+    # type: (str, str, List[str], int, int) -> List[PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiget` but returns simple
     Python types.
@@ -178,7 +178,7 @@ def multiwalk(ip, community, oids, port=161, timeout=2,
 
 
 def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type, int, int) -> Type
+    # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.set` but returns simple Python
     types.
@@ -191,7 +191,7 @@ def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=rede
 
 
 def multiset(ip, community, mappings, port=161, timeout=2):
-    # type: (str, str, List[Tuple[str, Type]], int, int) -> Dict[str, Type]
+    # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiset` but returns simple
     Python types.

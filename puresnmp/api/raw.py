@@ -37,6 +37,7 @@ from ..x690.util import tablify, to_bytes
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
+    from puresnmp.typevars import PyType
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -51,7 +52,7 @@ OID = ObjectIdentifier.from_string
 
 
 def get(ip, community, oid, port=161, timeout=6):
-    # type: ( str, str, str, int, int ) -> Type
+    # type: ( str, str, str, int, int ) -> Type[PyType]
     """
     Executes a simple SNMP GET request and returns a pure Python data
     structure.
@@ -67,7 +68,7 @@ def get(ip, community, oid, port=161, timeout=6):
 
 
 def multiget(ip, community, oids, port=161, timeout=6):
-    # type: ( str, str, List[str], int, int ) -> List[Type]
+    # type: ( str, str, List[str], int, int ) -> List[Type[PyType]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -271,7 +272,7 @@ def multiwalk(
 
 
 def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type, int, int) -> Type
+    # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
     data structure. The value must be a subclass of
@@ -290,7 +291,7 @@ def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=rede
 
 
 def multiset(ip, community, mappings, port=161, timeout=6):
-    # type: (str, str, List[Tuple[str, Type]], int, int) -> Dict[str, Type]
+    # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
     """
 
     Executes an SNMP SET request on multiple OIDs. The result is returned as
@@ -449,7 +450,7 @@ def bulkget(
     }
 
     # prepare output for listing
-    repeating_out = OrderedDict()  # type: Dict[str, Type]
+    repeating_out = OrderedDict()  # type: Dict[str, Type[PyType]]
     for oid, value in repeating_tmp:
         if value is END_OF_MIB_VIEW:
             break

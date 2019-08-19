@@ -15,6 +15,7 @@ if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
     from typing import Any, Dict, Iterable, List, Union, Tuple
     from .types import Type
+    from puresnmp.typevars import PyType
 
 if six.PY2:  # pragma: no cover
 
@@ -63,6 +64,7 @@ else:
             raise TypeError(exc.args[0] + ' on type {}'.format(type(obj)))
 
 LengthValue = namedtuple('LengthValue', 'length value')
+
 
 class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     """
@@ -164,6 +166,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
 
         def __str__(self):
             return self.__bytes__()
+
 
 def encode_length(value):
     # type: (int) -> bytes
@@ -351,7 +354,7 @@ def tablify(varbinds, num_base_nodes=0):
             {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
         ]
     """
-    rows = {}  # type: Dict[str, Dict[str, Type]]
+    rows = {}  # type: Dict[str, Dict[str, Type[PyType]]]
     for oid, value in varbinds:
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]

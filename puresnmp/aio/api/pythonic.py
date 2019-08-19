@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 
 import logging
 from collections import OrderedDict
-from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from . import raw
@@ -41,7 +40,7 @@ if TYPE_CHECKING:  # pragma: no cover
         Tuple,
         Union,
     )
-    Pythonized = Union[str, bytes, int, datetime, timedelta]
+    from puresnmp.typevars import PyType
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -52,9 +51,8 @@ except NameError:
 _set = set
 LOG = logging.getLogger(__name__)
 
-
 async def get(ip, community, oid, port=161, timeout=6):
-    # type: (str, str, str, int, int) -> Pythonized
+    # type: (str, str, str, int, int) -> PyType
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.get` but returns simple Python
     types.
@@ -66,7 +64,7 @@ async def get(ip, community, oid, port=161, timeout=6):
 
 
 async def multiget(ip, community, oids, port=161, timeout=6):
-    # type: (str, str, List[str], int, int) -> List[Pythonized]
+    # type: (str, str, List[str], int, int) -> List[PyType]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiget` but returns simple
     Python types.
@@ -133,7 +131,7 @@ async def multiwalk(ip, community, oids, port=161, timeout=6,
 
 
 async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type, int, int) -> Type
+    # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.set` but returns simple Python
     types.
@@ -147,7 +145,7 @@ async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disabl
 
 
 async def multiset(ip, community, mappings, port=161, timeout=6):
-    # type: (str, str, List[Tuple[str, Type]], int, int) -> Dict[str, Type]
+    # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiset` but returns simple
     Python types.

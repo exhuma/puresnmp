@@ -16,10 +16,13 @@ import sys
 from datetime import timedelta
 from ipaddress import IPv4Address
 from struct import pack
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 from .x690.types import Integer, OctetString
 from .x690.util import TypeInfo
+
+if TYPE_CHECKING:
+    from typing import Optional
 
 
 class IpAddress(OctetString):
@@ -41,7 +44,7 @@ class IpAddress(OctetString):
         super(IpAddress, self).__init__(value)
 
     def pythonize(self):
-        # type: () -> bytes
+        # type: () -> Optional[bytes]
         return self.value
 
         # TODO The following code breaks backwards compatbility and should be
@@ -96,7 +99,9 @@ class TimeTicks(Integer):
         super(TimeTicks, self).__init__(value_int)
 
     def pythonize(self):
-        # type: () -> timedelta
+        # type: () -> Optional[timedelta]
+        if self.value is None:
+            return None
         seconds = self.value / 100.0  # see rfc2578#section-7.1.8
         return timedelta(seconds=seconds)
 

@@ -1,3 +1,4 @@
+# type: ignore  (type-hinting is done in stub file)
 """
 Overview
 ========
@@ -41,9 +42,6 @@ from __future__ import division, print_function, unicode_literals
 
 import logging
 import warnings
-from typing import TYPE_CHECKING
-from typing import Type as TypeType
-from typing import TypeVar, Union, cast
 
 import six
 from six.moves import zip_longest
@@ -57,42 +55,22 @@ from .util import (
     to_bytes
 )
 
-if TYPE_CHECKING:  # pragma: no cover
-    # pylint: disable=unused-import, invalid-name
-    from typing import (
-        Any,
-        Callable,
-        Dict,
-        Generic,
-        Iterator,
-        List,
-        Optional,
-        Tuple,
-    )
-    from puresnmp.pdu import Trap
-    T = TypeVar('T', bound='Type')
-
 try:
-    unicode  # type: Callable[[Any], str]
+    unicode
 except NameError:
     # pylint: disable=invalid-name
-    unicode = str  # type: Callable[[Any], str]
+    unicode = str
 
 
-TSnmpType = TypeVar('TSnmpType', bound='TypeType[Type]')
-TPythonType = TypeVar('TPythonType', bound='TypeType[Type]')
 LOG = logging.getLogger(__name__)
 
 
 class Registry(type):
 
-    __registry = {}  # type: Dict[Tuple[str, int], TypeType[Type]]
+    __registry = {}
 
-    def __new__(cls, name, parents, dict_):  # type: ignore
-        new_cls = cast(
-            'TypeType[Type]',
-            super(Registry, cls).__new__(cls, name, parents, dict_)
-        )
+    def __new__(cls, name, parents, dict_):
+        new_cls = super(Registry, cls).__new__(cls, name, parents, dict_)
         if hasattr(new_cls, 'TAG') and hasattr(new_cls, 'TYPECLASS'):
             Registry.__registry[(new_cls.TYPECLASS, new_cls.TAG)] = new_cls
         else:
@@ -102,12 +80,10 @@ class Registry(type):
 
     @staticmethod
     def get(typeclass, typeid):
-        # type: (str, int) -> TypeType[Type]
         return Registry.__registry[(typeclass, typeid)]
 
 
 def pop_tlv(data):
-    # type: (bytes) -> Tuple[Type, bytes]
     """
     Given a :py:class:`bytes` object, inspects and parses the first octets (as
     many as required) to determine variable type (and corresponding Python
@@ -145,17 +121,15 @@ def pop_tlv(data):
 
 @six.add_metaclass(Registry)
 class Type(object):
-    # type: (Generic[TPythonType]) -> None
     """
     The superclass for all supported types.
     """
     TYPECLASS = TypeInfo.UNIVERSAL
     TAG = 0
-    value = None  # type: Any
+    value = None
 
     @classmethod
     def validate(cls, data):
-        # type: (bytes) -> None
         """
         Given a bytes object, checks if the given class *cls* supports decoding
         this object. If not, raises a ValueError.
@@ -172,7 +146,6 @@ class Type(object):
 
     @classmethod
     def from_bytes(cls, data):
-        # type: (bytes) -> Type
         """
         Given a bytes object, this method reads the type information and length
         and uses it to convert the bytes representation into a python object.
@@ -195,7 +168,6 @@ class Type(object):
 
     @classmethod
     def decode(cls, data):  # pragma: no cover
-        # type: (bytes) -> Type
         """
         This method takes a bytes object which contains the raw content octets
         of the object. That means, the octets *without* the type information
@@ -207,7 +179,6 @@ class Type(object):
             'Decoding is not yet implemented on %s' % cls)
 
     def __bytes__(self):  # pragma: no cover
-        # type: () -> bytes
         """
         Convert this instance into a bytes object. This must be implemented by
         subclasses.
@@ -215,12 +186,10 @@ class Type(object):
         raise NotImplementedError('Not yet implemented')
 
     def __repr__(self):
-        # type: () -> str
         # pylint: disable=no-member
         return '%s(%r)' % (self.__class__.__name__, self.value)
 
     def pythonize(self):
-        # type: () -> Any
         """
         Convert this instance to an appropriate pure Python object.
         """
@@ -228,7 +197,6 @@ class Type(object):
         return self.value
 
     def pretty(self):  # pragma: no cover
-        # type: () -> str
         """
         Returns a readable representation (possibly multiline) of the value.
 
@@ -263,30 +231,26 @@ class UnknownType(Type):
     value = b''
 
     def __init__(self, tag, value, typeinfo=None):
-        # type: (int, bytes, Optional[TypeInfo]) -> None
         self.value = value
         self.tag = tag
         self.length = len(value)
         self.typeinfo = TypeInfo.from_bytes(tag)
 
     def __bytes__(self):
-        # type: () -> bytes
         return to_bytes([self.tag]) + encode_length(self.length) + self.value
 
     def __repr__(self):
-        # type: () -> str
         return '%s(%r, %r, typeinfo=%r)' % (
             self.__class__.__name__, self.tag, self.value, self.typeinfo)
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
         return (type(self) == type(other) and
                 self.value == other.value and
                 self.tag == other.tag)
 
-    @staticmethod
-    def from_bytes(data):
-        # type: (bytes) -> Union[Null, UnknownType]
+    @classmethod
+    def from_bytes(cls, data):
         """
         Overrides typical conversion by removing type validation. As, by
         definition this class is used for unknown types, we cannot validate
@@ -306,7 +270,6 @@ class UnknownType(Type):
 
 class NonASN1Type(UnknownType):  # pragma: no cover
     def __init__(self, tag, value):
-        # type: (int, Any) -> None
         warnings.warn('puresnmp.x690.types.NonASN1Type is deprecated,'
                       ' replace it with UnknownType', stacklevel=2)
         super(NonASN1Type, self).__init__(tag, value)
@@ -318,26 +281,22 @@ class Boolean(Type):
 
     @staticmethod
     def decode(data):
-        # type: (bytes) -> Boolean
         return Boolean(data != b'\x00')
 
     @classmethod
     def validate(cls, data):
-        # type: (bytes) -> None
         super(Boolean, cls).validate(data)
         if six.indexbytes(data, 1) != 1:
             raise ValueError('Unexpected Boolean value. Length should be 1,'
                              ' it was %d' % six.indexbytes(data, 1))
 
     def __init__(self, value):
-        # type: (bool) -> None
         self.value = value
 
     def __bytes__(self):
-        # type: () -> bytes
         return to_bytes([1, 1, int(self.value)])
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.value == other.value
 
@@ -346,12 +305,10 @@ class Null(Type):
     TAG = 0x05
 
     def __init__(self):
-        # type: () -> None
         self.value = None
 
     @classmethod
     def validate(cls, data):
-        # type: (bytes) -> None
         super(Null, cls).validate(data)
         if six.indexbytes(data, 1) != 0:
             raise ValueError('Unexpected NULL value. Length should be 0, it '
@@ -359,27 +316,22 @@ class Null(Type):
 
     @classmethod
     def decode(cls, data):
-        # type: (Any) -> Null
         return Null()
 
     def __bytes__(self):
-        # type: () -> bytes
         return b'\x05\x00'
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other)
 
     def __repr__(self):
-        # type: () -> str
         return 'Null()'
 
     def __bool__(self):
-        # type: () -> bool
         return False
 
     def __nonzero__(self):  # pragma: no cover (__bool__ for py2)
-        # type: () -> bool
         return False
 
 
@@ -389,28 +341,24 @@ class OctetString(Type):
 
     @classmethod
     def decode(cls, data):
-        # type: (bytes) -> OctetString
         return cls(data)
 
     def __init__(self, value):
-        # type: (Union[str, bytes]) -> None
-        if isinstance(value, unicode):  # type: ignore (python-2)
-            self.value = value.encode('ascii')  # type: ignore (python-2)
+        if isinstance(value, unicode):
+            self.value = value.encode('ascii')
         else:
-            self.value = value  # type: ignore (python-2)
+            self.value = value
         self.length = encode_length(len(self.value))
 
     def __bytes__(self):
-        # type: () -> bytes
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
         return to_bytes(tinfo) + self.length + self.value
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.value == other.value
 
     def pythonize(self):
-        # type: () -> bytes
         """
         Convert this object in an appropriate python object
         """
@@ -423,11 +371,10 @@ class Sequence(Type):
     indexable.
     """
     TAG = 0x10
-    value = []  # type: List[Type]
+    value = []
 
     @classmethod
     def decode(cls, data):
-        # type: (bytes) -> Sequence
         output = []
         while data:
             value, data = pop_tlv(data)
@@ -435,11 +382,9 @@ class Sequence(Type):
         return Sequence(*output)
 
     def __init__(self, *items):
-        # type: (Type) -> None
         self.items = items
 
     def __bytes__(self):
-        # type: () -> bytes
         items = [to_bytes(item) for item in self]
         output = b''.join(items)
         length = encode_length(len(output))
@@ -447,33 +392,27 @@ class Sequence(Type):
                          Sequence.TAG)
         return to_bytes(tinfo) + length + output
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.items == other.items
 
     def __repr__(self):
-        # type: () -> str
         item_repr = [repr(item) for item in self]
         return 'Sequence(%s)' % ', '.join(item_repr)
 
     def __len__(self):
-        # type: () -> int
         return len(self.items)
 
     def __iter__(self):
-        # type: () -> Iterator[Type]
         return iter(self.items)
 
     def __getitem__(self, idx):
-        # type: (int) -> Any
         return self.items[idx]
 
     def pythonize(self):
-        # type: () -> List[Any]
         return [obj.pythonize() for obj in self]
 
     def pretty(self):  # pragma: no cover
-        # type: () -> str
         """
         Overrides :py:meth:`.Type.pretty`
         """
@@ -489,15 +428,12 @@ class Integer(Type):
 
     @classmethod
     def decode(cls, data):
-        # type: (bytes) -> Integer
         return cls(int_from_bytes(data, 'big', signed=True))
 
     def __init__(self, value):
-        # type: (int) -> None
         self.value = value
 
     def __bytes__(self):
-        # type: () -> bytes
         octets = [self.value & 0b11111111]
 
         # Append remaining octets for long integers.
@@ -519,7 +455,7 @@ class Integer(Type):
         tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
         return to_bytes(tinfo) + to_bytes([len(octets)]) + to_bytes(octets)
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck
         return type(self) == type(other) and self.value == other.value
 
@@ -542,7 +478,6 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def decode_large_value(current_char, stream):
-        # type: (int, Iterator[int]) -> int
         """
         If we encounter a value larger than 127, we have to consume from the
         stram until we encounter a value below 127 and recombine them.
@@ -560,7 +495,6 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def encode_large_value(value):
-        # type: (int) -> List[int]
         """
         Inverse function of :py:meth:`~.ObjectIdentifier.decode_large_value`
         """
@@ -576,8 +510,6 @@ class ObjectIdentifier(Type):
 
     @classmethod
     def decode(cls, data):
-        # type: (bytes) -> ObjectIdentifier
-
         # Special case for "empty" object identifiers which should be returned
         # as "0"
         if not data:
@@ -604,7 +536,6 @@ class ObjectIdentifier(Type):
 
     @staticmethod
     def from_string(value):
-        # type: (str) -> ObjectIdentifier
         """
         Create an OID from a string
         """
@@ -622,7 +553,6 @@ class ObjectIdentifier(Type):
         return ObjectIdentifier(*identifiers)
 
     def __init__(self, *identifiers):
-        # type: (int) -> None
         # pylint: disable=line-too-long
 
         # If the user hands in an iterable, instead of positional arguments,
@@ -641,7 +571,7 @@ class ObjectIdentifier(Type):
 
         # Values above 127 need a special encoding. They get split up into
         # multiple positions.
-        exploded_high_values = []  # type: List[int]
+        exploded_high_values = []
         for char in rest:
             if char > 127:
                 exploded_high_values.extend(
@@ -658,7 +588,6 @@ class ObjectIdentifier(Type):
         self.length = encode_length(len(self.__collapsed_identifiers))
 
     def __int__(self):
-        # type: () -> int
         if len(self.identifiers) != 1:
             raise ValueError('Only ObjectIdentifier with one node can be '
                              'converted to int. %r is not convertable' % self)
@@ -677,11 +606,9 @@ class ObjectIdentifier(Type):
             return '.'.join([unicode(_) for _ in self.identifiers])
     else:
         def __str__(self):
-            # type: () -> str
             return '.'.join([unicode(_) for _ in self.identifiers])
 
         def __bytes__(self):
-            # type: () -> bytes
             output = to_bytes([self.TAG])
             if self.__collapsed_identifiers == (0,):
                 output += b'\x00'
@@ -690,20 +617,17 @@ class ObjectIdentifier(Type):
             return output
 
     def __repr__(self):
-        # type: () -> str
         return 'ObjectIdentifier(%r)' % (self.identifiers, )
 
-    def __eq__(self, other):  # type: ignore
+    def __eq__(self, other):
         # pylint: disable=unidiomatic-typecheck, protected-access
         return (type(self) == type(other) and
                 self.__collapsed_identifiers == other.__collapsed_identifiers)
 
     def __len__(self):
-        # type: () -> int
         return len(self.identifiers)
 
     def __contains__(self, other):
-        # type: (ObjectIdentifier) -> bool
         """
         Check if one OID is a child of another.
 
@@ -726,7 +650,7 @@ class ObjectIdentifier(Type):
         #   2. drop identical items from the front (leaving us with "tail")
         #   3. compare both tails
         zipped = zip_longest(a, b, fillvalue=None)
-        tail = []  # type: List[Tuple[int, int]]
+        tail = []
         for tmp_a, tmp_b in zipped:
             if tmp_a == tmp_b and not tail:
                 continue
@@ -744,35 +668,28 @@ class ObjectIdentifier(Type):
         return False
 
     def __lt__(self, other):
-        # type: (ObjectIdentifier) -> bool
         return self.identifiers < other.identifiers
 
     def __hash__(self):
-        # type: () -> int
         return hash(self.identifiers)
 
     def __add__(self, other):
-        # type: (ObjectIdentifier) -> ObjectIdentifier
         nodes = self.identifiers + other.identifiers
         return ObjectIdentifier(*nodes)
 
     def __getitem__(self, index):
-        # type: (int) -> ObjectIdentifier
         return ObjectIdentifier(self.identifiers[index])
 
     def pythonize(self):
-        # type: () -> str
         return '.'.join([unicode(_) for _ in self.identifiers])
 
     def parentof(self, other):
-        # type: (ObjectIdentifier) -> bool
         """
         Convenience method to check whether this OID is a parent of another OID
         """
         return other in self
 
     def childof(self, other):
-        # type: (ObjectIdentifier) -> bool
         """
         Convenience method to check whether this OID is a child of another OID
         """
