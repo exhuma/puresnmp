@@ -12,12 +12,13 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       "puresnmp.get", "puresnmp.walk" & co.
 
 from collections import namedtuple
-from typing import TYPE_CHECKING, Iterable, Tuple, cast
+from typing import TYPE_CHECKING, Iterable, NamedTuple, Tuple, cast
 
 import six
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
+from .typevars import PyType
 from .x690.types import (
     Integer,
     Null,
@@ -30,27 +31,51 @@ from .x690.util import TypeInfo, encode_length, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, List, Union, Tuple
+    from typing import Any, Iterator, List, Union
 
 
 if six.PY3:
     unicode = str  # pylint: disable=invalid-name
 
 
-class VarBind(namedtuple('VarBind', 'oid, value')):
+class VarBind(object):
     '''
     A "VarBind" is a 2-tuple containing an object-identifier and the
     corresponding value.
     '''
 
-    def __new__(cls, oid, value):
-        # type: (Union[ObjectIdentifier, str], Any) -> VarBind
+    oid = ObjectIdentifier(0)
+    value = None  # type: PyType
+
+    def __init__(self, oid, value):
+        # type: (Union[ObjectIdentifier, str], PyType) -> None
         if not isinstance(oid, (ObjectIdentifier,) + six.string_types):  # type: ignore
             raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
                             ' instances! Your value: %r' % oid)
         if isinstance(oid, six.string_types):
             oid = ObjectIdentifier.from_string(oid)
-        return super(VarBind, cls).__new__(cls, oid, value)
+        self.oid = oid
+        self.value = value
+
+    def __iter__(self):
+        # type: () -> Iterator[Union[ObjectIdentifier, PyType]]
+        return iter([self.oid, self.value])
+
+    def __lt__(self, other):
+        # type: (Any) -> bool
+        return (self.oid, self.value) < (other.oid, other.value)
+
+    def __eq__(self, other):
+        # type: (Any) -> bool
+        return (self.oid, self.value) == (other.oid, other.value)
+
+    def __hash__(self):
+        # type: () -> int
+        return hash((self.oid, self.value))
+
+    def __repr__(self):
+        # type: () -> str
+        return 'VarBind(%r, %r)' % (self.oid, self.value)
 
 
 ERROR_MESSAGES = {
@@ -139,11 +164,11 @@ class PDU(Type):
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
-        # type: (int, Union[Tuple[Any, Any], List[VarBind]], int, int) -> None
+        # type: (int, Union[VarBind, List[VarBind]], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index
-        if isinstance(varbinds, tuple):
+        if isinstance(varbinds, VarBind):
             self.varbinds = [VarBind(*varbinds)]
         else:
             self.varbinds = varbinds
