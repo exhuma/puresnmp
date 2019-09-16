@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Release 1.6.3
+~~~~~~~~~~~~~
+
+* **[fixed]** Network socket is now properly closed when the maximum number of
+  retries has reached. This fixes emissions of Python resource warnings.
+
+
 Release 1.6.2
 ~~~~~~~~~~~~~
 
