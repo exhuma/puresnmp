@@ -1,8 +1,18 @@
 Changelog
 =========
 
+Release 1.6.3
+~~~~~~~~~~~~~
+
+* **[fixed]** Network socket is now properly closed when the maximum number of
+  retries has reached. This fixes emissions of Python resource warnings.
+
+
 Release 1.6.2
 ~~~~~~~~~~~~~
+
+* **[support]** *(1.6.2.post1)* - Type hints for
+  ``puresnmp.x690.types.ObjectIdentifier`` improved
 
 * **[fixed]** Counter32 and Counter64 values no longer increase above max-value
   and properly wrap back to ``0`` as defined in `RFC-2578 Section 7.1.6
