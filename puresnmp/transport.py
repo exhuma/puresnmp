@@ -77,6 +77,7 @@ class Transport(object):
                         (num_retry+1))  # TODO add detail
                 continue
         else:
+            sock.close()
             raise Timeout("Max of %d retries reached" % self.retries)
         sock.close()
 
