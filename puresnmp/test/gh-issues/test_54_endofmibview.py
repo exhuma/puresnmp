@@ -1,9 +1,8 @@
-from puresnmp.test import readbytes
-from puresnmp.pdu import PDU
-from puresnmp.x690.types import OctetString, Integer
+import pytest
 
 from puresnmp.api.raw import bulkget
-import pytest
+from puresnmp.test import readbytes
+from puresnmp.x690.types import Integer, OctetString
 
 try:
     from unittest.mock import patch

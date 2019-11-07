@@ -38,16 +38,24 @@ from puresnmp.pdu import (
     GetNextRequest,
     GetRequest,
     GetResponse,
-    VarBind
+    VarBind,
 )
-from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
+from puresnmp.types import (
+    Counter,
+    EndOfMibView,
+    Gauge,
+    IpAddress,
+    NoSuchInstance,
+    NoSuchObject,
+    TimeTicks,
+)
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
-    to_bytes
+    to_bytes,
 )
 
 from . import ByteTester, CapturingHandler, readbytes, readbytes_multiple
@@ -92,21 +100,36 @@ class TestGet(ByteTester):
             with six.assertRaisesRegex(self, SnmpError, 'varbind'):
                 get('::1', 'private', '1.2.3')
 
-    def test_get_non_existing_oid(self):
+    def test_get_non_existing_oid_80(self):
         """
         A "GET" response on a non-existing OID should raise an appropriate
         exception.
+
+        This tests the byte-marker 0x80  (TODO explain 0x80)
         """
-        data = readbytes('get_non_existing.hex')
+        data = readbytes('get_non_existing_80.hex')
         with patch('puresnmp.api.raw.Transport') as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
             with self.assertRaises(NoSuchOID):
                 get('::1', 'private', '1.2.3')
 
+    def test_get_non_existing_oid_81(self):
+        """
+        A "GET" response on a non-existing OID should raise an appropriate
+        exception.
+
+        This tests the byte-marker 0x81  (TODO explain 0x81)
+        """
+        data = readbytes("get_non_existing_81.hex")
+        with patch("puresnmp.api.raw.Transport") as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
+            with self.assertRaises(NoSuchOID):
+                get("::1", "private", "1.2.3")
+
 
 class TestWalk(unittest.TestCase):
-
     def test_walk(self):
         response_1 = readbytes('walk_response_1.hex')
         response_2 = readbytes('walk_response_2.hex')
@@ -143,24 +166,91 @@ class TestMultiGet(unittest.TestCase):
     def test_multiget(self):
         data = readbytes('multiget_response.hex')
         expected = [
-            ObjectIdentifier.from_string('1.3.6.1.4.1.8072.3.2.10'),
-            OctetString(b"Linux 7fbf2f0c363d 4.4.0-28-generic "
-                        b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
-                        b"UTC 2016 x86_64")
+            ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10"),
+            OctetString(
+                b"Linux 7fbf2f0c363d 4.4.0-28-generic "
+                b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
+                b"UTC 2016 x86_64"
+            ),
+        ]
+        with patch("puresnmp.api.raw.Transport") as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
+            result = multiget(
+                "::1", "private", ["1.3.6.1.2.1.1.2.0", "1.3.6.1.2.1.1.1.0"]
+            )
+            result = list(result)
+        self.assertEqual(result, expected)
+
+    def test_nosuchobject(self):
+        """
+        When running a multiget including OIDs which don't exist, the response
+        should not fail (no exception should be raised). Instead, a falsy
+        sentinel should be returned.
+        """
+        OID = ObjectIdentifier.from_string
+        data = readbytes("multiget_nosuchobject.hex")
+        expected = [
+            NoSuchObject(OID("1.2.3.4.5.6.7.8.9")),
+            NoSuchObject(OID("1.3.6.1.2.1.1.1.2.0")),
+            NoSuchObject(OID("1.3.6.1.2.1.1.2.0")),
+            Integer(2),
         ]
         with patch('puresnmp.api.raw.Transport') as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = multiget('::1', 'private', [
-                '1.3.6.1.2.1.1.2.0',
-                '1.3.6.1.2.1.1.1.0',
-            ])
+            result = multiget(
+                "::1",
+                "private",
+                [
+                    "1.2.3.4.5.6.7.8.9",
+                    "1.3.6.1.2.1.1.1.2.0",
+                    "1.3.6.1.2.1.1.2.0",
+                    "1.3.6.1.2.1.2.1.0",
+                ],
+            )
             result = list(result)
         self.assertEqual(result, expected)
+        self.assertFalse(result[0])
+        self.assertFalse(result[1])
+        self.assertFalse(result[2])
+
+    def test_nosuchinstance(self):
+        """
+        When running a multiget including OIDs which exists but where ther is
+        no data (yet) available, the response should not fail (no exception
+        should be raised). Instead, a falsy sentinel should be returned.
+        """
+
+        OID = ObjectIdentifier.from_string
+        data = readbytes("multiget_nosuchobject.hex")
+        expected = [
+            NoSuchObject(ObjectIdentifier("1.2.3.4.5.6.7.8.9")),
+            NoSuchInstance(ObjectIdentifier("1.3.6.1.2.1.1.1.2.0")),
+            ObjectIdentifier(".1.3.6.1.4.1.8072.3.2.10"),
+            Integer(2),
+        ]
+        with patch("puresnmp.api.raw.Transport") as mck:
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
+            result = multiget(
+                "::1",
+                "private",
+                [
+                    "1.2.3.4.5.6.7.8.9",
+                    "1.3.6.1.2.1.1.1.2.0",
+                    "1.3.6.1.2.1.1.2.0",
+                    "1.3.6.1.2.1.2.1.0",
+                ],
+            )
+            result = list(result)
+        self.assertEqual(result, expected)
+        self.assertFalse(result[0])
+        self.assertFalse(result[1])
+        self.assertFalse(result[2])
 
 
 class TestMultiWalk(unittest.TestCase):
-
     def test_multi_walk(self):
         response_1 = readbytes('multiwalk_response_1.hex')
         response_2 = readbytes('multiwalk_response_2.hex')

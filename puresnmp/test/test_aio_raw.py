@@ -74,12 +74,30 @@ class TestGet(object):
                 await get('::1', 'private', '1.2.3')
 
     @pytest.mark.asyncio
-    async def test_get_non_existing_oid(self):
+    async def test_get_non_existing_oid_80(self):
         """
         A "GET" response on a non-existing OID should raise an appropriate
         exception.
+
+        This tests the byte-marker 0x80  (TODO explain 0x80)
         """
-        data = readbytes('get_non_existing.hex')
+        data = readbytes('get_non_existing_80.hex')
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.return_value = data
+            mck().get_request_id.return_value = 0
+            with pytest.raises(NoSuchOID):
+                await get('::1', 'private', '1.2.3')
+
+    @pytest.mark.asyncio
+    async def test_get_non_existing_oid_81(self):
+        """
+        A "GET" response on a non-existing OID should raise an appropriate
+        exception.
+
+        This tests the byte-marker 0x81  (TODO explain 0x81)
+        """
+        data = readbytes('get_non_existing_81.hex')
         with patch('puresnmp.aio.api.raw.Transport') as mck:
             mck().send = AsyncMock()
             mck().send.return_value = data
@@ -210,7 +228,6 @@ class TestMultiWalk(object):
         expected = [
             (root+'0', 1),
             (root+'1', 1),
-            (root+'2', 1),
         ]
 
         simplified_result = [

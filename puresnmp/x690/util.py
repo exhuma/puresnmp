@@ -93,6 +93,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     PRIVATE = 'private'
     PRIMITIVE = 'primitive'
     CONSTRUCTED = 'constructed'
+    BOTH = 'both'
     _raw_value = None
 
     @staticmethod

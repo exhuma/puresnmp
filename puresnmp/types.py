@@ -14,11 +14,35 @@ for the definition of the new types.
 
 import sys
 from datetime import timedelta
-from ipaddress import ip_address, IPv4Address
+from ipaddress import IPv4Address
 from struct import pack
 
-from .x690.types import Integer, OctetString
+from .x690.types import Integer, Null, OctetString
 from .x690.util import TypeInfo
+
+
+class NoSuchInstance(Null):  # XXX Docs
+    """
+    A sentinel "nullish" value which marks the missing of a conrete value under
+    the given OID
+    """
+
+    TYPECLASS = TypeInfo.CONTEXT
+    TAG = 0x00
+
+
+class NoSuchObject(Null):  # XXX Docs
+    """
+    A sentinel "nullish" value which marks the missing of given OID
+    """
+
+    TYPECLASS = TypeInfo.CONTEXT
+    TAG = 0x01
+
+
+class EndOfMibView(Null):  # XXX Docs
+    TYPECLASS = TypeInfo.CONTEXT
+    TAG = 0x02
 
 
 class IpAddress(OctetString):

@@ -247,6 +247,7 @@ class GetRequest(PDU):
     Represents an SNMP Get Request.
     """
     TAG = 0
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
 
     def __init__(self, request_id, *oids):
         # type: (int, Union[str, ObjectIdentifier]) -> None
@@ -268,6 +269,7 @@ class GetResponse(PDU):
     than GET as well).
     """
     TAG = 2
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
 
     @classmethod
     def decode(cls, data):
@@ -296,6 +298,7 @@ class GetNextRequest(GetRequest):
     Represents an SNMP GetNext Request.
     """
     TAG = 1
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
 
 
 class SetRequest(PDU):
@@ -303,6 +306,7 @@ class SetRequest(PDU):
     Represents an SNMP SET Request.
     """
     TAG = 3
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
 
 
 class BulkGetRequest(Type):
@@ -311,6 +315,7 @@ class BulkGetRequest(Type):
     """
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 5
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
 
     def __init__(self, request_id, non_repeaters, max_repeaters, *oids):
         # type: (int, int, int, ObjectIdentifier) -> None
@@ -380,6 +385,7 @@ class InformRequest(PDU):
     Represents an SNMP Inform request
     """
     TAG = 6
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
 
 
 class Trap(PDU):
@@ -387,3 +393,4 @@ class Trap(PDU):
     Represents an SNMP Trap
     """
     TAG = 7
+    ENCODINGS = {TypeInfo.CONSTRUCTED}

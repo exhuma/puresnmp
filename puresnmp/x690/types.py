@@ -76,13 +76,28 @@ class Registry(type):
     def __new__(cls, name, parents, dict_):  # type: ignore
         new_cls = super(Registry, cls).__new__(cls, name, parents, dict_)
         if hasattr(new_cls, 'TAG'):
-            Registry.__registry[(new_cls.TYPECLASS, new_cls.TAG)] = new_cls
+            for encoding in new_cls.ENCODINGS:
+                typeinfo = TypeInfo(new_cls.TYPECLASS, encoding, new_cls.TAG)
+                if typeinfo not in Registry.__registry:
+                    Registry.__registry[typeinfo] = new_cls
+                else:
+                    # XXX TODO
+                    pass
+                    # XXX raise KeyError(
+                    # XXX     'Duplicate entry for class %r with type-info '
+                    # XXX     '%r. Existing class: %r' % (new_cls, typeinfo,
+                    # XXX             Registry.__registry[typeinfo]))
         return new_cls
 
     @staticmethod
-    def get(typeclass, typeid):
-        # type: (str, int) -> TypeType[Type]
-        return Registry.__registry[(typeclass, typeid)]
+    def keys():
+        # type: (TypeInfo) -> TypeType[Type]
+        return Registry.__registry.keys()  # XXX
+
+    @staticmethod
+    def get(typeinfo):
+        # type: (TypeInfo) -> TypeType[Type]
+        return Registry.__registry[(typeinfo)]
 
 
 def pop_tlv(data):
@@ -114,7 +129,7 @@ def pop_tlv(data):
     offset = len(data) - len(remainder)
     chunk = data[:length+offset]
     try:
-        cls = Registry.get(type_.cls, type_.tag)
+        cls = Registry.get(type_)
         value = cls.from_bytes(chunk)
     except KeyError:
         # Add context information
@@ -128,7 +143,8 @@ class Type(object):
     The superclass for all supported types.
     """
     TYPECLASS = TypeInfo.UNIVERSAL
-    TAG = 0
+    TAG = -1
+    ENCODINGS = {TypeInfo.PRIMITIVE}
     value = None  # type: Any
 
     @classmethod
@@ -336,7 +352,7 @@ class Null(Type):
     @classmethod
     def decode(cls, data):
         # type: (Any) -> Null
-        return Null()
+        return cls()
 
     def __bytes__(self):
         # type: () -> bytes
@@ -348,7 +364,7 @@ class Null(Type):
 
     def __repr__(self):
         # type: () -> str
-        return 'Null()'
+        return '%s()' % self.__class__.__name__
 
     def __bool__(self):
         # type: () -> bool
@@ -360,6 +376,7 @@ class Null(Type):
 
 
 class OctetString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x04
     value = b''
 
@@ -397,6 +414,7 @@ class Sequence(Type):
     Represents an X.690 sequence type. Instances of this class are iterable and
     indexable.
     """
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
     TAG = 0x10
     value = []  # type: List[Type]
 
@@ -405,7 +423,9 @@ class Sequence(Type):
         # type: (bytes) -> Sequence
         output = []
         while data:
+            print('\u001b[30;43m[debug-print-6dfa]\u001b[0m', repr(data[:10]))  # XXX debug statement
             value, data = pop_tlv(data)
+            print('\u001b[30;43m[debug-print-5b03]\u001b[0m', repr(value))  # XXX debug statement
             output.append(value)
         return Sequence(*output)
 
@@ -742,10 +762,12 @@ class ObjectIdentifier(Type):
 
 
 class ObjectDescriptor(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x07
 
 
 class External(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x08
 
 
@@ -759,10 +781,12 @@ class Enumerated(Type):
 
 
 class EmbeddedPdv(Type):
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
     TAG = 0x0b
 
 
 class Utf8String(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x0c
     value = ''
 
@@ -772,59 +796,73 @@ class RelativeOid(Type):
 
 
 class Set(Type):
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
     TAG = 0x11
 
 
 class NumericString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x12
 
 
 class PrintableString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x13
     value = ''
 
 
 class T61String(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x14
 
 
 class VideotexString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x15
 
 
 class IA5String(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x16
 
 
 class UtcTime(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x17
 
 
 class GeneralizedTime(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x18
 
 
 class GraphicString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x19
 
 
 class VisibleString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x1a
 
 
 class GeneralString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x1b
 
 
 class UniversalString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x1c
 
 
 class CharacterString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x1d
 
 
 class BmpString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x1e
 
 
@@ -833,4 +871,5 @@ class EOC(Type):
 
 
 class BitString(Type):
+    ENCODINGS = {TypeInfo.PRIMITIVE, TypeInfo.CONSTRUCTED}
     TAG = 0x03

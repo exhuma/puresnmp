@@ -24,6 +24,7 @@ from ..x690.types import (
 )
 from ..x690.util import to_bytes, tablify
 from ..exc import SnmpError, NoSuchOID, FaultySNMPImplementation
+from ..types import EndOfMibView
 from ..pdu import (
     BulkGetRequest,
     GetNextRequest,
@@ -151,10 +152,10 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
             'but got %d' % (len(oids), len(response_object.varbinds)))
 
     output = []
-    for oid, value in response_object.varbinds:
-        if value is END_OF_MIB_VIEW:
+    for varbind in response_object.varbinds:
+        if varbind.value == EndOfMibView():
             break
-        output.append(VarBind(oid, value))
+        output.append(varbind)
 
 
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
