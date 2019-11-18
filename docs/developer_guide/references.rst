@@ -11,8 +11,21 @@ of this library.
 .. TODO Coexistence of v1, v2 and v3
 .. TODO     https://tools.ietf.org/html/rfc3584
 
+Standards/RFCs
+--------------
+
+SMI-II
+    https://tools.ietf.org/html/rfc1213
+
+SNMP
+    https://tools.ietf.org/html/rfc1157
+
 X.690
     https://www.itu.int/rec/T-REC-X.690/en
+
+
+Direct Links
+------------
 
 List & Type identifiers of SMI types
     https://tools.ietf.org/html/rfc1155#section-6
