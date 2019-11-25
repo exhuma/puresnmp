@@ -8,16 +8,13 @@ to use.
 """
 
 from __future__ import unicode_literals
-import six
+
+import unittest
 from datetime import timedelta
 from ipaddress import ip_address
-try:
-    from unittest.mock import patch, call
-except ImportError:
-    from mock import patch, call  # pip install mock
-import unittest
 
-from puresnmp.types import Counter, Gauge, IpAddress
+import six
+
 from puresnmp.api.pythonic import (
     bulkget,
     bulkwalk,
@@ -32,13 +29,20 @@ from puresnmp.api.pythonic import (
     walk
 )
 from puresnmp.const import Version
-from puresnmp.exc import SnmpError, NoSuchOID
+from puresnmp.exc import NoSuchOID, SnmpError
 from puresnmp.pdu import (
-    GetRequest,
-    VarBind,
-    GetNextRequest,
     BulkGetRequest,
-    Trap
+    GetNextRequest,
+    GetRequest,
+    Trap,
+    VarBind
+)
+from puresnmp.types import (
+    Counter,
+    Gauge,
+    IpAddress,
+    NoSuchInstance,
+    NoSuchObject
 )
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
@@ -51,6 +55,10 @@ from puresnmp.x690.types import (
 
 from . import ByteTester
 
+try:
+    from unittest.mock import patch, call
+except ImportError:
+    from mock import patch, call  # pip install mock
 
 
 class TestGet(ByteTester):

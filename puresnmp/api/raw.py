@@ -10,36 +10,28 @@ but loses type information which may be useful in some edge-cases. In such a
 case it's recommended to use :py:mod:`puresnmp.api.raw`.
 '''
 from __future__ import unicode_literals
-from collections import OrderedDict
-from typing import TYPE_CHECKING
+
 import logging
 import sys
+from collections import OrderedDict
+from typing import TYPE_CHECKING
 
-from ..x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    Type,
-)
-from ..x690.util import to_bytes, tablify
-from ..exc import SnmpError, NoSuchOID, FaultySNMPImplementation
-from ..types import EndOfMibView
+from ..const import ERRORS_STRICT, ERRORS_WARN, Version
+from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
+    END_OF_MIB_VIEW,
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
     SetRequest,
-    VarBind,
-    END_OF_MIB_VIEW,
+    VarBind
 )
-from ..const import Version, ERRORS_WARN, ERRORS_STRICT
 from ..transport import Transport
-from ..util import (
-    BulkResult,  # NOQA (must be here for type detection)
-    get_unfinished_walk_oids,
-    group_varbinds,
-)
+from ..types import EndOfMibView, NoSuchInstance, NoSuchObject
+from ..util import BulkResult  # NOQA (must be here for type detection)
+from ..util import get_unfinished_walk_oids, group_varbinds
+from ..x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
+from ..x690.util import tablify, to_bytes
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
@@ -448,7 +440,14 @@ def bulkget(
     # prepare output for listing
     repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
-        if value is END_OF_MIB_VIEW:
+        if isinstance(value, EndOfMibView):
+            # An SNMP agent behaving correctly, will return the OIDs ordered,
+            # and running into an EndOfMibView marker means we have reached the
+            # end of an accessible tree.
+            # TODO: What if one of the trees walking over is a restricted
+            # MIB-View, but there are valid values *after* that view? Should we
+            # not use "continue" here for that? But what about non-compliant
+            # SNMP servers which return values unordered?
             break
         repeating_out[unicode(oid)] = value
 

@@ -102,31 +102,25 @@ class TestGet(ByteTester):
 
     def test_get_non_existing_oid_80(self):
         """
-        A "GET" response on a non-existing OID should raise an appropriate
-        exception.
-
-        This tests the byte-marker 0x80  (TODO explain 0x80)
+        The special "no such object" (0x80) value should be supported
         """
         data = readbytes('get_non_existing_80.hex')
         with patch('puresnmp.api.raw.Transport') as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            with self.assertRaises(NoSuchOID):
-                get('::1', 'private', '1.2.3')
+            result = get('::1', 'private', '1.2.3')
+            assert result == NoSuchObject()
 
     def test_get_non_existing_oid_81(self):
         """
-        A "GET" response on a non-existing OID should raise an appropriate
-        exception.
-
-        This tests the byte-marker 0x81  (TODO explain 0x81)
+        The special "no such instance" (0x81) value should be supported
         """
         data = readbytes("get_non_existing_81.hex")
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            with self.assertRaises(NoSuchOID):
-                get("::1", "private", "1.2.3")
+            result = get("::1", "private", "1.2.3")
+            assert result == NoSuchInstance()
 
 
 class TestWalk(unittest.TestCase):
@@ -223,11 +217,11 @@ class TestMultiGet(unittest.TestCase):
         """
 
         OID = ObjectIdentifier.from_string
-        data = readbytes("multiget_nosuchobject.hex")
+        data = readbytes("multiget_nosuchinstance.hex")
         expected = [
-            NoSuchObject(ObjectIdentifier("1.2.3.4.5.6.7.8.9")),
-            NoSuchInstance(ObjectIdentifier("1.3.6.1.2.1.1.1.2.0")),
-            ObjectIdentifier(".1.3.6.1.4.1.8072.3.2.10"),
+            NoSuchObject(None),
+            NoSuchInstance(None),
+            OID(".1.3.6.1.4.1.8072.3.2.10"),
             Integer(2),
         ]
         with patch("puresnmp.api.raw.Transport") as mck:
@@ -247,7 +241,6 @@ class TestMultiGet(unittest.TestCase):
         self.assertEqual(result, expected)
         self.assertFalse(result[0])
         self.assertFalse(result[1])
-        self.assertFalse(result[2])
 
 
 class TestMultiWalk(unittest.TestCase):
@@ -587,7 +580,7 @@ class TestGetBulkGet(unittest.TestCase):
         expected_listing = {
             root + '0': Integer(1),
             root + '1': Integer(1),
-            root + '2': Integer(1),
+            root + '2': Integer(1)
         }
 
         self.assertEqual(result.listing, expected_listing)

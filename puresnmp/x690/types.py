@@ -176,7 +176,7 @@ class Type(object):
         """
 
         if not data:
-            return Null()
+            return cls()
         cls.validate(data)
         expected_length, data = decode_length(data[1:])
         if len(data) != expected_length:
@@ -423,9 +423,7 @@ class Sequence(Type):
         # type: (bytes) -> Sequence
         output = []
         while data:
-            print('\u001b[30;43m[debug-print-6dfa]\u001b[0m', repr(data[:10]))  # XXX debug statement
             value, data = pop_tlv(data)
-            print('\u001b[30;43m[debug-print-5b03]\u001b[0m', repr(value))  # XXX debug statement
             output.append(value)
         return Sequence(*output)
 

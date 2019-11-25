@@ -3,7 +3,9 @@ Unit tests for types specified in RFC-2578
 """
 
 import pytest
+
 from puresnmp import types as t
+from puresnmp.x690.types import pop_tlv
 
 
 @pytest.mark.parametrize('value, expected', [
@@ -39,3 +41,29 @@ def test_counter64(value, expected):
     """
     instance = t.Counter64(value)
     assert instance.value == expected
+
+
+@pytest.mark.parametrize('data, expected', [
+    (b'\x80\x00', t.NoSuchObject()),
+    (b'\x81\x00', t.NoSuchInstance()),
+    (b'\x82\x00', t.EndOfMibView()),
+])
+def test_decode_simple_types(data, expected):
+    """
+    Decoding data into Python objects should yield the expected results
+    """
+    result = pop_tlv(data)
+    assert result[0] == expected
+
+
+@pytest.mark.parametrize('cls', [
+    t.NoSuchObject,
+    t.NoSuchInstance,
+    t.EndOfMibView
+])
+def test_nullish(cls):
+    """
+    Some types should be represented as "None" in Python
+    """
+    result = cls().pythonize()
+    assert result is None

@@ -1,28 +1,28 @@
 # pylint: skip-file
 
-import six
 import sys
 
-try:
-    unicode
-except NameError:
-    unicode = str
+import six
 
-from ...x690.util import TypeInfo
 from ...x690.types import (
     Boolean,
     Integer,
-    UnknownType,
     Null,
     ObjectIdentifier,
     OctetString,
     Sequence,
     Type,
+    UnknownType,
     pop_tlv,
     to_bytes
 )
-
+from ...x690.util import TypeInfo
 from .. import ByteTester
+
+try:
+    unicode
+except NameError:
+    unicode = str
 
 
 class TestBoolean(ByteTester):
@@ -620,11 +620,6 @@ class TestAllTypes(ByteTester):
     def test_validation_wrong_typeclass(self):
         with self.assertRaises(ValueError):
             Integer.validate(to_bytes([0b00111110]))
-
-    def test_null_from_bytes(self):
-        result = Type.from_bytes(b'')
-        expected = Null()
-        self.assertEqual(result, expected)
 
     def test_corrupt_length(self):
         with six.assertRaisesRegex(self, ValueError, 'length'):

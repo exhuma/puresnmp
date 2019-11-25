@@ -17,7 +17,7 @@ from puresnmp.aio.api.raw import (bulkget, bulkwalk, get, getnext, multiget,
 from puresnmp.const import Version
 from puresnmp.exc import NoSuchOID, SnmpError
 from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
-from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
+from puresnmp.types import NoSuchInstance, Counter, Gauge, IpAddress, TimeTicks, NoSuchObject
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (Integer, ObjectIdentifier, OctetString,
                                  Sequence, to_bytes)
@@ -86,24 +86,24 @@ class TestGet(object):
             mck().send = AsyncMock()
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            with pytest.raises(NoSuchOID):
-                await get('::1', 'private', '1.2.3')
+            result = await get('::1', 'private', '1.2.3')
+            assert not bool(result)
+            assert isinstance(result, NoSuchObject)
 
     @pytest.mark.asyncio
-    async def test_get_non_existing_oid_81(self):
+    async def test_get_nosuchinstance(self):
         """
-        A "GET" response on a non-existing OID should raise an appropriate
-        exception.
-
-        This tests the byte-marker 0x81  (TODO explain 0x81)
+        If we get a "noSuchInstance" (0x81) on an OID, we should get the
+        appropriate result.
         """
         data = readbytes('get_non_existing_81.hex')
         with patch('puresnmp.aio.api.raw.Transport') as mck:
             mck().send = AsyncMock()
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            with pytest.raises(NoSuchOID):
-                await get('::1', 'private', '1.2.3')
+            result = await get('::1', 'private', '1.2.3')
+            assert not bool(result)
+            assert isinstance(result, NoSuchInstance)
 
 
 class TestWalk(object):
@@ -228,6 +228,7 @@ class TestMultiWalk(object):
         expected = [
             (root+'0', 1),
             (root+'1', 1),
+            (root+'2', 1),
         ]
 
         simplified_result = [

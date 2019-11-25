@@ -14,35 +14,67 @@ for the definition of the new types.
 
 import sys
 from datetime import timedelta
-from ipaddress import IPv4Address, ip_address
+from ipaddress import IPv4Address
 from struct import pack
+from typing import Optional
 
-from .x690.types import Integer, Null, OctetString
+from .x690.types import Integer, Null, ObjectIdentifier, OctetString
 from .x690.util import TypeInfo
 
 
-class NoSuchInstance(Null):  # XXX Docs
-    """
-    A sentinel "nullish" value which marks the missing of a conrete value under
-    the given OID
-    """
-
-    TYPECLASS = TypeInfo.CONTEXT
-    TAG = 0x00
-
-
-class NoSuchObject(Null):  # XXX Docs
+class NoSuchObject(Null):
     """
     A sentinel "nullish" value which marks the missing of given OID
     """
+    # TODO: byte marker = 0x80
+    TYPECLASS = TypeInfo.CONTEXT
+    TAG = 0x00
 
+    def __init__(self, oid=None):
+        # type: (Optional[ObjectIdentifier]) -> None
+        super().__init__()
+        self.oid = oid
+
+    def __repr__(self):
+        # type: () -> str
+        return "NoSuchObject(%r)" % self.oid
+
+
+class NoSuchInstance(Null):
+    '''
+    A sentinel "nullish" value which marks the missing of a conrete value under
+    the given OID
+    '''
+    # TODO: byte marker = 0x81
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 0x01
 
+    def __init__(self, oid=None):
+        # type: (Optional[ObjectIdentifier]) -> None
+        super().__init__()
+        self.oid = oid
+
+    def __repr__(self):
+        # type: () -> str
+        return "NoSuchInstance(%r)" % self.oid
+
 
 class EndOfMibView(Null):  # XXX Docs
+    """
+    A sentinel "nullish" value which marks the end of a walk/getNext operation.
+    """
+    # TODO: byte marker = 0x82
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 0x02
+
+    def __init__(self, oid=None):
+        # type: (Optional[ObjectIdentifier]) -> None
+        super().__init__()
+        self.oid = oid
+
+    def __repr__(self):
+        # type: () -> str
+        return "EndOfMibView(%r)" % self.oid
 
 
 class IpAddress(OctetString):

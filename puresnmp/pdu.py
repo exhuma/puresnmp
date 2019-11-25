@@ -119,6 +119,8 @@ class PDU(Type):
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
     TYPECLASS = TypeInfo.CONTEXT
+    ENCODINGS = {TypeInfo.CONSTRUCTED}
+    TAG = 0x10
 
     @classmethod
     def decode(cls, data):
