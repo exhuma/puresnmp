@@ -526,6 +526,8 @@ class ObjectIdentifier(Type):
         >>> ObjectIdentifier(1, 2, 4, 5, 6) in ObjectIdentifier(1, 2, 3)
         False
     """
+    # TODO: The __repr__ of an ObjectIdentifier should be made more readable
+    # (using strings for OIDs)
     TAG = 0x06
     value = b''
 

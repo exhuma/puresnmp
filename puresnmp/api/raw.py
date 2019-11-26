@@ -146,6 +146,8 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
     output = []
     for varbind in response_object.varbinds:
         if varbind.value == EndOfMibView():
+            # TODO: Should this not be "continue" in case that other listings
+            # follow?
             break
         output.append(varbind)
 

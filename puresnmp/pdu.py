@@ -118,6 +118,8 @@ class PDU(Type):
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
+    # TODO (medium): The "PDU" type could be replaced by a new "Message" type
+    #                which is referenced by the SNMPv3 RFC.
     TYPECLASS = TypeInfo.CONTEXT
     ENCODINGS = {TypeInfo.CONSTRUCTED}
     TAG = 0x10
