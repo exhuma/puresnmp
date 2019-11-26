@@ -2,6 +2,7 @@ import pytest
 
 from puresnmp.api.raw import bulkget
 from puresnmp.test import readbytes
+from puresnmp.types import EndOfMibView
 from puresnmp.x690.types import Integer, OctetString
 
 try:
@@ -26,6 +27,7 @@ def test_54_endofmibview():
         '1.3.6.1.6.3.10.2.1.1.0': OctetString(b'\x80\x00\x08\xbe\x803740773355'),
         '1.3.6.1.6.3.10.2.1.2.0': Integer(1),
         '1.3.6.1.6.3.10.2.1.3.0': Integer(632),
-        '1.3.6.1.6.3.10.2.1.4.0': Integer(1500),
+        '1.3.6.1.6.3.10.2.1.4.0': Integer(1500)
+        # TODO verify if this should be true  "1.3.6.1.6.3.10.2.1.4.0": EndOfMibView(),
     }
     assert result.listing == expected_lists

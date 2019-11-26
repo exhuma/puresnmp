@@ -14,7 +14,7 @@ for the definition of the new types.
 
 import sys
 from datetime import timedelta
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, ip_address
 from struct import pack
 
 from .x690.types import Integer, Null, OctetString

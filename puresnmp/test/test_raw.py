@@ -305,8 +305,6 @@ class TestMultiWalk(unittest.TestCase):
                     '1.2.3',
                     '2.3.4',
                 ]))
-
-
         # Second case: Returned OIDs are smaller
         response = Sequence(
             Integer(1),

@@ -199,6 +199,69 @@ class TestMultiGet(unittest.TestCase):
             )
         self.assertEqual(result, expected)
 
+    def test_nosuchobject(self):
+        """
+        When running a multiget including OIDs which don't exist, the response
+        should not fail (no exception should be raised). Instead, a falsy
+        sentinel should be returned.
+        """
+        OID = ObjectIdentifier.from_string
+        expected = [
+            None,
+            None,
+            None,
+            2
+        ]
+        with patch("puresnmp.api.pythonic.raw") as mck:
+            mck.multiget.return_value = [
+                NoSuchObject(OID("1.2.3.4.5.6.7.8.9")),
+                NoSuchObject(OID("1.3.6.1.2.1.1.1.2.0")),
+                NoSuchObject(OID("1.3.6.1.2.1.1.2.0")),
+                Integer(2),
+            ]
+            result = multiget(
+                "::1",
+                "private",
+                [
+                    "1.2.3.4.5.6.7.8.9",
+                    "1.3.6.1.2.1.1.1.2.0",
+                    "1.3.6.1.2.1.1.2.0",
+                    "1.3.6.1.2.1.2.1.0",
+                ]
+            )
+        self.assertEqual(result, expected)
+
+    def test_nosuchinstance(self):
+        """
+        When running a multiget including OIDs which exists but where ther is
+        no data (yet) available, the response should not fail (no exception
+        should be raised). Instead, a falsy sentinel should be returned.
+        """
+        OID = ObjectIdentifier.from_string
+        expected = [
+            None,
+            None,
+            "1.3.6.1.4.1.8072.3.2.10",
+            2
+        ]
+        with patch("puresnmp.api.pythonic.raw") as mck:
+            mck.multiget.return_value = [
+                NoSuchObject(OID("1.2.3.4.5.6.7.8.9")),
+                NoSuchInstance(OID("1.3.6.1.2.1.1.1.2.0")),
+                OID("1.3.6.1.4.1.8072.3.2.10"),
+                Integer(2),
+            ]
+            result = multiget(
+                "::1",
+                "private",
+                [
+                    "1.2.3.4.5.6.7.8.9",
+                    "1.3.6.1.2.1.1.1.2.0",
+                    "1.3.6.1.2.1.1.2.0",
+                    "1.3.6.1.2.1.2.1.0",
+                ]
+            )
+        self.assertEqual(result, expected)
 
 class TestMultiWalk(unittest.TestCase):
     def test_multi_walk(self):
