@@ -175,7 +175,7 @@ async def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
         >>> res = []
         >>> async for x in gen:
         ...     res.append(x)
-        ... 
+        ...
         >>> pprint(res)
         [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
@@ -183,7 +183,7 @@ async def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
     """
 
     gen = multiwalk(ip, community, [oid], port, timeout=timeout,
-                     errors=errors)
+                    errors=errors)
     async for varbind in gen:
         yield varbind
 
@@ -416,7 +416,6 @@ async def bulkget(
     m = max_list_size
     r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
     expected_max_varbinds = n + (m * r)
-
 
     _, _, get_response = raw_response
     n_retrieved_varbinds = len(get_response.varbinds)

@@ -33,7 +33,7 @@ def test_54_endofmibview():
         ptch().send.return_value = data
         ptch().get_request_id.return_value = 123
         result = bulkget('192.0.2.1', 'private', [], ['1.2.3'],
-                 max_list_size=10)
+                         max_list_size=10)
     assert result.scalars == {}
 
     expected_lists = {

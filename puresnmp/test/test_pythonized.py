@@ -271,6 +271,7 @@ class TestMultiGet(unittest.TestCase):
             )
         self.assertEqual(result, expected)
 
+
 class TestMultiWalk(unittest.TestCase):
     def test_multi_walk(self):
         expected = [
@@ -391,7 +392,6 @@ class TestGetBulkGet(unittest.TestCase):
 
 class TestGetBulkWalk(unittest.TestCase):
 
-
     def test_bulkwalk(self):
         request_ids = [1001613222, 1001613223, 1001613224]
         with patch('puresnmp.api.pythonic.raw') as mck:
@@ -403,7 +403,7 @@ class TestGetBulkWalk(unittest.TestCase):
             ]
 
             result = list(bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                bulk_size=20))
+                                   bulk_size=20))
 
         expected = [
             VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),

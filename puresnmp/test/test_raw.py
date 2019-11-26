@@ -29,7 +29,7 @@ from puresnmp.api.raw import (
     set,
     table,
     traps,
-    walk,
+    walk
 )
 from puresnmp.const import Version
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -38,7 +38,7 @@ from puresnmp.pdu import (
     GetNextRequest,
     GetRequest,
     GetResponse,
-    VarBind,
+    VarBind
 )
 from puresnmp.types import (
     Counter,
@@ -47,7 +47,7 @@ from puresnmp.types import (
     IpAddress,
     NoSuchInstance,
     NoSuchObject,
-    TimeTicks,
+    TimeTicks
 )
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
@@ -55,7 +55,7 @@ from puresnmp.x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
-    to_bytes,
+    to_bytes
 )
 
 from . import ByteTester, CapturingHandler, readbytes, readbytes_multiple
@@ -64,7 +64,6 @@ try:
     from unittest.mock import patch, call
 except ImportError:
     from mock import patch, call  # type: ignore
-
 
 
 class TestGet(ByteTester):
@@ -452,7 +451,6 @@ class TestGetNext(unittest.TestCase):
             mck().get_request_id.return_value = 0
             result = list(walk('::1', 'private', '1.2', errors='warn'))
 
-
         # The last OID in the mocked responses is decreasing so we want to read
         # just up to that point.
         expected = [
@@ -465,7 +463,6 @@ class TestGetNext(unittest.TestCase):
         # We also want to make sure that we have a proper warning about this
         handler.assertContains(WARNING, r'.*1.2.1.*1.2.5.*')
         logger.removeHandler(handler)
-
 
     def test_walk_endless_loop(self):
         '''
@@ -503,7 +500,6 @@ class TestGetNext(unittest.TestCase):
             mck().get_request_id.return_value = 0
             result = list(walk('::1', 'private', '1.2', errors='warn'))
         logger.removeHandler(handler)
-
 
         # The last OID in the mocked responses is decreasing so we want to read
         # just up to that point.
@@ -660,7 +656,7 @@ class TestGetBulkWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.5.10',  Gauge(4294967295)),
             VarBind('1.3.6.1.2.1.2.2.1.6.1', OctetString(b"")),
             VarBind('1.3.6.1.2.1.2.2.1.6.10',
-                OctetString(b"\x02\x42\xAC\x11\x00\x02")),
+                    OctetString(b"\x02\x42\xAC\x11\x00\x02")),
             VarBind('1.3.6.1.2.1.2.2.1.7.1', Integer(1)),
             VarBind('1.3.6.1.2.1.2.2.1.7.10', Integer(1)),
             VarBind('1.3.6.1.2.1.2.2.1.8.1', Integer(1)),

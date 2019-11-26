@@ -149,7 +149,6 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
             break
         output.append(varbind)
 
-
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
         if not OID(requested) < retrieved.oid:
@@ -186,7 +185,8 @@ def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
          VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
     """
 
-    gen = multiwalk(ip, community, [oid], port, timeout=timeout, errors=errors)
+    gen = multiwalk(ip, community, [oid], port, timeout=timeout,
+                    errors=errors)
     return gen
 
 
@@ -418,7 +418,6 @@ def bulkget(
     m = max_list_size
     r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
     expected_max_varbinds = n + (m * r)
-
 
     _, _, get_response = raw_response
     n_retrieved_varbinds = len(get_response.varbinds)
