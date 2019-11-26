@@ -256,9 +256,9 @@ async def multiwalk(
         for var in sorted(grouped_oids.values()):
             for varbind in var:
                 containment = [varbind.oid in _ for _ in requested_oids]
-                if not any(containment) or varbind.oid in yielded:  # type: ignore
+                if not any(containment) or varbind.oid in yielded:
                     continue
-                yielded.add(varbind.oid)  # type: ignore
+                yielded.add(varbind.oid)
                 yield varbind
 
 
