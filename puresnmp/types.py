@@ -32,7 +32,7 @@ class NoSuchObject(Null):
 
     def __init__(self, oid=None):
         # type: (Optional[ObjectIdentifier]) -> None
-        super().__init__()
+        super(NoSuchObject, self).__init__()
         self.oid = oid
 
     def __repr__(self):
@@ -51,7 +51,7 @@ class NoSuchInstance(Null):
 
     def __init__(self, oid=None):
         # type: (Optional[ObjectIdentifier]) -> None
-        super().__init__()
+        super(NoSuchInstance, self).__init__()
         self.oid = oid
 
     def __repr__(self):
@@ -69,7 +69,7 @@ class EndOfMibView(Null):  # XXX Docs
 
     def __init__(self, oid=None):
         # type: (Optional[ObjectIdentifier]) -> None
-        super().__init__()
+        super(EndOfMibView, self).__init__()
         self.oid = oid
 
     def __repr__(self):
