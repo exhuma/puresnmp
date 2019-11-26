@@ -210,7 +210,7 @@ class TestMultiGet(unittest.TestCase):
 
     def test_nosuchinstance(self):
         """
-        When running a multiget including OIDs which exists but where ther is
+        When running a multiget including OIDs which exists but where there is
         no data (yet) available, the response should not fail (no exception
         should be raised). Instead, a falsy sentinel should be returned.
         """
