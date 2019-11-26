@@ -17,6 +17,7 @@ import six
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
+from .types import EndOfMibView
 from .x690.types import (
     Integer,
     Null,
@@ -161,8 +162,8 @@ class PDU(Type):
         for oid, value in values:
             # NOTE: this uses the "is" check to make 100% sure we check against
             # the sentinel object defined in this module!
-            if value is END_OF_MIB_VIEW:
-                varbinds.append(VarBind(oid, END_OF_MIB_VIEW))
+            if value is EndOfMibView():
+                varbinds.append(VarBind(oid, EndOfMibView()))
                 break
             varbinds.append(VarBind(oid, value))
 
@@ -231,21 +232,6 @@ class PDU(Type):
         return '\n'.join(lines)
 
 
-class EndOfMibView(PDU):
-    """
-    Sentinel value to detect endOfMibView
-    """
-    # This subclassesPDU for type-consistency
-
-    def __init__(self):
-        # type: () -> None
-        super(EndOfMibView, self).__init__(-1, [], 0, 0)
-
-
-#: Singleton instance of "EndOfMibView"
-END_OF_MIB_VIEW = EndOfMibView()
-
-
 class GetRequest(PDU):
     """
     Represents an SNMP Get Request.
@@ -288,7 +274,7 @@ class GetResponse(PDU):
         #      difficult to distinguish between a valid GetResponse object and
         #      an endOfMibView value, except that the endOfMibView had no data.
         if not data:
-            return END_OF_MIB_VIEW
+            return EndOfMibView()
         try:
             return super(GetResponse, cls).decode(data)
         except EmptyMessage as exc:

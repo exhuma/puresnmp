@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING
 from ..const import ERRORS_STRICT, ERRORS_WARN, Version
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
-    END_OF_MIB_VIEW,
     BulkGetRequest,
     GetNextRequest,
     GetRequest,
