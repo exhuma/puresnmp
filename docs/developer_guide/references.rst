@@ -14,6 +14,10 @@ of this library.
 Standards/RFCs
 --------------
 
+
+Protocol Operations for SNMPv2
+    https://tools.ietf.org/html/rfc1905
+
 SMI-II
     https://tools.ietf.org/html/rfc1213
 
