@@ -100,7 +100,7 @@ class TestSet(object):
 class TestWalk(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_walk(self):
         expected = [VarBind(
@@ -148,7 +148,7 @@ class TestMultiGet(object):
 class TestMultiWalk(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_multi_walk(self):
         expected = [
@@ -267,16 +267,16 @@ class TestGetBulkGet(object):
                 '1.3.6.1.2.1.4.3.0': Counter(57)
             })
             result = await bulkget('::1', 'public',
-                             ['1.3.6.1.2.1.1.1'],
-                             ['1.3.6.1.2.1.3.1'],
-                             max_list_size=5)
+                                   ['1.3.6.1.2.1.1.1'],
+                                   ['1.3.6.1.2.1.3.1'],
+                                   max_list_size=5)
         assert result == expected
 
 
 class TestGetBulkWalk(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_bulkwalk(self):
         request_ids = [1001613222, 1001613223, 1001613224]
@@ -290,7 +290,7 @@ class TestGetBulkWalk(object):
 
             result = []
             async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                bulk_size=20):
+                                    bulk_size=20):
                 result.append(x)
 
         expected = [
@@ -306,7 +306,7 @@ class TestGetBulkWalk(object):
 class TestTable(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_table(self):
         with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
@@ -323,4 +323,3 @@ class TestTable(object):
             {'0': '2', '1': b'test-21', '2': b'test-22'},
         ]
         assert len(result) == len(expected)
-
