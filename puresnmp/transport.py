@@ -69,13 +69,13 @@ class Transport(object):
                 if LOG.isEnabledFor(logging.DEBUG):
                     hexdump = visible_octets(packet)
                     LOG.debug('Sending packet to %s:%s (attempt %d/%d)\n%s',
-                            ip, port, (num_retry+1), self.retries, hexdump)
+                              ip, port, (num_retry+1), self.retries, hexdump)
                 sock.sendto(packet, (ip, port))
                 response = sock.recv(self.buffer_size)
                 break
             except socket.timeout:
                 LOG.debug('Timeout during attempt #%d',
-                        (num_retry+1))  # TODO add detail
+                          (num_retry+1))  # TODO add detail
                 continue
         else:
             raise Timeout("Max of %d retries reached" % self.retries)
@@ -114,7 +114,6 @@ class Transport(object):
                     LOG.debug('Received packet:\n%s', hexdump)
 
                 yield request
-
 
     def get_request_id(self):  # pragma: no cover
         # type: () -> int
