@@ -24,7 +24,7 @@ from .x690.util import TypeInfo
 
 class NoSuchObject(Null):
     """
-    A sentinel "nullish" value which marks the missing of given OID
+    A sentinel "nullish" value which marks the missing of given OID.
     """
     # TODO: byte marker = 0x80
     TYPECLASS = TypeInfo.CONTEXT
@@ -59,7 +59,7 @@ class NoSuchInstance(Null):
         return "NoSuchInstance(%r)" % self.oid
 
 
-class EndOfMibView(Null):  # XXX Docs
+class EndOfMibView(Null):
     """
     A sentinel "nullish" value which marks the end of a walk/getNext operation.
     """
