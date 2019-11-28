@@ -31,9 +31,8 @@ def test_data_type():
     We want to have a special data-type for noSuchInstance which behaves
     properly (like a varbind & implicit null).
     """
-    value = NoSuchInstance('1.2.3.4.5')
+    value = NoSuchInstance()
     assert bool(value) is False
-    assert value.oid == '1.2.3.4.5'
     assert value.value is None
 
 
@@ -47,7 +46,7 @@ def test_66_nosuchinstance_raw():
         ptch().send.return_value = data
         ptch().get_request_id.return_value = 123
         result = multiget('192.0.2.1', 'private', ['1.2.3', '2.3.4'])
-    assert result == [Integer(1), NoSuchInstance('1.2.3')]
+    assert result == [Integer(1), NoSuchInstance()]
 
 
 def test_66_nosuchinstance_pythonic():

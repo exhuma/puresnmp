@@ -16,9 +16,8 @@ import sys
 from datetime import timedelta
 from ipaddress import IPv4Address
 from struct import pack
-from typing import Optional
 
-from .x690.types import Integer, Null, ObjectIdentifier, OctetString
+from .x690.types import Integer, Null, OctetString
 from .x690.util import TypeInfo
 
 
@@ -30,14 +29,9 @@ class NoSuchObject(Null):
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 0x00
 
-    def __init__(self, oid=None):
-        # type: (Optional[ObjectIdentifier]) -> None
-        super(NoSuchObject, self).__init__()
-        self.oid = oid
-
     def __repr__(self):
         # type: () -> str
-        return "NoSuchObject(%r)" % self.oid
+        return "NoSuchObject()"
 
 
 class NoSuchInstance(Null):
@@ -49,14 +43,9 @@ class NoSuchInstance(Null):
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 0x01
 
-    def __init__(self, oid=None):
-        # type: (Optional[ObjectIdentifier]) -> None
-        super(NoSuchInstance, self).__init__()
-        self.oid = oid
-
     def __repr__(self):
         # type: () -> str
-        return "NoSuchInstance(%r)" % self.oid
+        return "NoSuchInstance()"
 
 
 class EndOfMibView(Null):
@@ -67,14 +56,9 @@ class EndOfMibView(Null):
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 0x02
 
-    def __init__(self, oid=None):
-        # type: (Optional[ObjectIdentifier]) -> None
-        super(EndOfMibView, self).__init__()
-        self.oid = oid
-
     def __repr__(self):
         # type: () -> str
-        return "EndOfMibView(%r)" % self.oid
+        return "EndOfMibView()"
 
 
 class IpAddress(OctetString):

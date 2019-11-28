@@ -222,9 +222,9 @@ class TestMultiGet(unittest.TestCase):
         ]
         with patch("puresnmp.api.pythonic.raw") as mck:
             mck.multiget.return_value = [
-                NoSuchObject(OID("1.2.3.4.5.6.7.8.9")),
-                NoSuchObject(OID("1.3.6.1.2.1.1.1.2.0")),
-                NoSuchObject(OID("1.3.6.1.2.1.1.2.0")),
+                NoSuchObject(),
+                NoSuchObject(),
+                NoSuchObject(),
                 Integer(2),
             ]
             result = multiget(
@@ -254,8 +254,8 @@ class TestMultiGet(unittest.TestCase):
         ]
         with patch("puresnmp.api.pythonic.raw") as mck:
             mck.multiget.return_value = [
-                NoSuchObject(OID("1.2.3.4.5.6.7.8.9")),
-                NoSuchInstance(OID("1.3.6.1.2.1.1.1.2.0")),
+                NoSuchObject(),
+                NoSuchInstance(),
                 OID("1.3.6.1.4.1.8072.3.2.10"),
                 Integer(2),
             ]

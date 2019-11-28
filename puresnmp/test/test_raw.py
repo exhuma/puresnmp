@@ -184,9 +184,9 @@ class TestMultiGet(unittest.TestCase):
         OID = ObjectIdentifier.from_string
         data = readbytes("multiget_nosuchobject.hex")
         expected = [
-            NoSuchObject(OID("1.2.3.4.5.6.7.8.9")),
-            NoSuchObject(OID("1.3.6.1.2.1.1.1.2.0")),
-            NoSuchObject(OID("1.3.6.1.2.1.1.2.0")),
+            NoSuchObject(),
+            NoSuchObject(),
+            NoSuchObject(),
             Integer(2),
         ]
         with patch('puresnmp.api.raw.Transport') as mck:
@@ -218,8 +218,8 @@ class TestMultiGet(unittest.TestCase):
         OID = ObjectIdentifier.from_string
         data = readbytes("multiget_nosuchinstance.hex")
         expected = [
-            NoSuchObject(None),
-            NoSuchInstance(None),
+            NoSuchObject(),
+            NoSuchInstance(),
             OID(".1.3.6.1.4.1.8072.3.2.10"),
             Integer(2),
         ]
