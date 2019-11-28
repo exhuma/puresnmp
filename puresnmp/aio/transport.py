@@ -89,7 +89,8 @@ class SNMPClientProtocol(asyncio.protocols.BaseProtocol):
         try:
             return await asyncio.wait_for(self.future, timeout, loop=self.loop)
         except asyncio.TimeoutError:
-            self.transport.abort()
+            if self.transport:
+                self.transport.abort()
             raise Timeout("{} second timeout exceeded".format(timeout))
 
 
