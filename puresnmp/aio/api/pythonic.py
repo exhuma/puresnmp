@@ -23,11 +23,11 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from . import raw
 from ...pdu import VarBind
 from ...util import BulkResult
 from ...x690.types import Type
 from ...x690.util import tablify
+from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name

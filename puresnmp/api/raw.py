@@ -27,7 +27,7 @@ from ..pdu import (
     VarBind
 )
 from ..transport import Transport
-from ..types import EndOfMibView, NoSuchInstance, NoSuchObject
+from ..types import EndOfMibView
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds
 from ..x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
