@@ -23,6 +23,7 @@ from ..pdu import (
     GetNextRequest,
     GetRequest,
     SetRequest,
+    Trap,
     VarBind
 )
 from ..transport import Transport

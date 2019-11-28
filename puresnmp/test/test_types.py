@@ -2,7 +2,7 @@
 Unit tests for types specified in RFC-2578
 """
 
-import pytest
+import pytest  # type: ignore
 
 from puresnmp import types as t
 from puresnmp.x690.types import pop_tlv

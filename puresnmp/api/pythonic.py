@@ -255,7 +255,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
 
 
 def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
-    # type (str, int, int) -> Generator[TrapInfo, None, None]
+    # type: (str, int, int) -> Generator[TrapInfo, None, None]
     """
     A "pythonic" wrapper around :py:func:`puresnmp.api.raw.traps` output.
     """

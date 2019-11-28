@@ -13,21 +13,23 @@ hard to test.
 
 import asyncio
 import logging
+from typing import Optional, cast
 
 from ..exc import Timeout
-from ..x690.util import visible_octets
 from ..transport import Transport as SyncTransport
+from ..x690.util import visible_octets
 
 LOG = logging.getLogger(__name__)
 
 
-class SNMPClientProtocol:
+class SNMPClientProtocol(asyncio.protocols.BaseProtocol):
     """
     An SNMP Client Protocol suitable for use with create_datagram_endpoint()
     that provide a method to convert the callback based API into a coroutine
     based API.
 
     """
+
     def __init__(self, packet, loop):
         self.packet = packet
         self.transport = None
@@ -80,7 +82,7 @@ class SNMPClientProtocol:
 
         self.future.set_exception(exc)
 
-    async def get_data(self, timeout):
+    async def get_data(self, timeout: int) -> bytes:
         """
         Retrieve the response data back into the calling coroutine.
         """
@@ -94,7 +96,7 @@ class SNMPClientProtocol:
 class Transport(SyncTransport):
 
     async def send(self, ip, port, packet, timeout=6, loop=None):  # pragma: no cover
-        # type: ( str, int, bytes, int ) -> bytes
+        # type: ( str, int, bytes, int, Optional[asyncio.events.AbstractEventLoop] ) -> bytes
         """
         A coroutine that opens a UDP socket to *ip:port*, sends a packet with
         *bytes* and returns the raw bytes as returned from the remote host.
@@ -110,6 +112,8 @@ class Transport(SyncTransport):
             lambda: SNMPClientProtocol(packet, loop),
             remote_addr=(ip, port)
         )
+
+        protocol = cast(SNMPClientProtocol, protocol)
 
         response = await protocol.get_data(timeout)
 

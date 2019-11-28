@@ -8,15 +8,12 @@ to use.
 """
 
 from __future__ import unicode_literals
-import pytest
+
 import sys
 from datetime import timedelta
-try:
-    from unittest.mock import patch, call
-except ImportError:
-    from mock import patch, call  # pip install mock
 
-from puresnmp.types import Counter, Gauge, IpAddress
+import pytest  # type: ignore
+
 from puresnmp.aio.api.pythonic import (
     bulkget,
     bulkwalk,
@@ -30,20 +27,27 @@ from puresnmp.aio.api.pythonic import (
     walk
 )
 from puresnmp.const import Version
-from puresnmp.exc import SnmpError, NoSuchOID
-from puresnmp.pdu import GetRequest, VarBind, GetNextRequest, BulkGetRequest
+from puresnmp.exc import NoSuchOID, SnmpError
+from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
+from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
-    Sequence,
-    to_bytes
+    Sequence
 )
+from puresnmp.x690.util import to_bytes
 
-from .asyncmock import AsyncMock, AsyncGenMock
+from .asyncmock import AsyncGenMock, AsyncMock
 
-pytestmark = pytest.mark.skipif(sys.version_info < (3,5),
+try:
+    from unittest.mock import patch, call
+except ImportError:
+    from mock import patch, call  # type: ignore
+
+
+pytestmark = pytest.mark.skipif(sys.version_info < (3, 5),
                                 reason="requires python3.5")
 
 
