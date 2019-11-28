@@ -43,15 +43,15 @@ class ErrorResponse(SnmpError):
         and if not specified, will use the default message for the given class.
         """
         if error_status == 1:
-            return TooBig(offending_oid)
+            return TooBig(offending_oid, message)
         if error_status == 2:
-            return NoSuchOID(offending_oid)
+            return NoSuchOID(offending_oid, message)
         if error_status == 3:
-            return BadValue(offending_oid)
+            return BadValue(offending_oid, message)
         if error_status == 4:
-            return ReadOnly(offending_oid)
+            return ReadOnly(offending_oid, message)
         if error_status == 5:
-            return GenErr(offending_oid)
+            return GenErr(offending_oid, message)
         return ErrorResponse(error_status, offending_oid, message)
 
     def __init__(self, error_status, offending_oid, message=''):
