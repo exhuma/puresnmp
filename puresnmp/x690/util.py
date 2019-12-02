@@ -305,8 +305,8 @@ def visible_octets(data):
     return '\n'.join(output)
 
 
-def tablify(varbinds, num_base_nodes=0):
-    # type: ( Iterable[Tuple[Any, Any]], int ) -> List[Dict[str, Any]]
+def tablify(varbinds, num_base_nodes=0, base_oid=''):
+    # type: ( Iterable[Tuple[Any, Any]], int, str ) -> List[Dict[str, Any]]
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
@@ -318,6 +318,9 @@ def tablify(varbinds, num_base_nodes=0):
 
     Using ``num_base_nodes=2`` this changes, in that ``3`` becomes the column
     index, and ``4.5`` becomes the row index.
+
+    Alternatively, the table OID can be specified which will automatically
+    determine *num_base_nodes*.
 
     The output should *not* be considered ordered in any way. If you need it
     sorted, you must sort it after retrieving the table from this function!
@@ -354,6 +357,14 @@ def tablify(varbinds, num_base_nodes=0):
             {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
         ]
     """
+    if isinstance(base_oid, str) and base_oid:
+        # This import needs to be delayed to avoid circular imports
+        from puresnmp.x690.types import ObjectIdentifier
+        base_oid_parsed = ObjectIdentifier.from_string(base_oid)
+        # Each table has a sub-index for the table "entry" so the number of
+        # base-nodes needs to be incremented by 1
+        num_base_nodes = len(base_oid_parsed) + 1  #  type: ignore
+
     rows = {}  # type: Dict[str, Dict[str, Type[PyType]]]
     for oid, value in varbinds:
         if num_base_nodes:
