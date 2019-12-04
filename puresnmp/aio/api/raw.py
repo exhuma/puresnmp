@@ -550,3 +550,18 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
         tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
+
+
+async def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
+    # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
+    """
+    Fetch an SNMP table using "bulk" requests.
+
+    See :py:func:`.table` for more information of the returned structure.
+    """
+    tmp = []
+    varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
+    async for varbind in varbinds:
+        tmp.append(varbind)
+    as_table = tablify(tmp, num_base_nodes=num_base_nodes)
+    return as_table

@@ -8,18 +8,16 @@ to use.
 """
 
 from __future__ import unicode_literals
-import six
+
+import unittest
 from datetime import timedelta
 from ipaddress import ip_address
-try:
-    from unittest.mock import patch, call
-except ImportError:
-    from mock import patch, call  # pip install mock
-import unittest
 
-from puresnmp.types import Counter, Gauge, IpAddress
+import six
+
 from puresnmp.api.pythonic import (
     bulkget,
+    bulktable,
     bulkwalk,
     get,
     getnext,
@@ -32,14 +30,15 @@ from puresnmp.api.pythonic import (
     walk
 )
 from puresnmp.const import Version
-from puresnmp.exc import SnmpError, NoSuchOID
+from puresnmp.exc import NoSuchOID, SnmpError
 from puresnmp.pdu import (
-    GetRequest,
-    VarBind,
-    GetNextRequest,
     BulkGetRequest,
-    Trap
+    GetNextRequest,
+    GetRequest,
+    Trap,
+    VarBind
 )
+from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
     Integer,
@@ -50,6 +49,11 @@ from puresnmp.x690.types import (
 )
 
 from . import ByteTester
+
+try:
+    from unittest.mock import patch, call
+except ImportError:
+    from mock import patch, call  # pip install mock
 
 
 class TestGet(ByteTester):
@@ -257,7 +261,6 @@ class TestGetBulkGet(unittest.TestCase):
 
 class TestGetBulkWalk(unittest.TestCase):
 
-
     def test_bulkwalk(self):
         request_ids = [1001613222, 1001613223, 1001613224]
         with patch('puresnmp.api.pythonic.raw') as mck:
@@ -296,6 +299,23 @@ class TestTable(unittest.TestCase):
         expected = [
             {'0': '1', '1': b'test-11', '2': b'test-21'},
             {'0': '2', '1': b'test-21', '2': b'test-22'},
+        ]
+        six.assertCountEqual(self, result, expected)
+
+
+class TestBulkTable(unittest.TestCase):
+
+    def test_bulktable(self):
+        with patch('puresnmp.api.pythonic.raw') as mck:
+            oid = ObjectIdentifier.from_string
+            mck.bulktable.return_value = [
+                {'0': '1', '1': Integer(1)},
+                {'0': '2', '1': Integer(2)},
+            ]
+            result = list(bulktable('1.2.3.4', 'private', ['1.2']))
+        expected = [
+            {'0': '1', '1': 1},
+            {'0': '2', '1': 2},
         ]
         six.assertCountEqual(self, result, expected)
 

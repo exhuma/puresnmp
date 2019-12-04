@@ -20,6 +20,7 @@ import six
 
 from puresnmp.api.raw import (
     bulkget,
+    bulktable,
     bulkwalk,
     get,
     getnext,
@@ -613,6 +614,70 @@ class TestGetBulkWalk(unittest.TestCase):
             VarBind('1.3.6.1.2.1.2.2.1.22.1', ObjectIdentifier(0, 0)),
             VarBind('1.3.6.1.2.1.2.2.1.22.10', ObjectIdentifier(0, 0))
         ]
+        self.assertEqual(result, expected)
+
+
+class TestBulkTable(unittest.TestCase):
+
+    @patch('puresnmp.api.raw.Transport')
+    def test_bulktable(self, mck_transport):
+        responses = readbytes_multiple('bulktable_response.hex')
+        mck_transport().send.side_effect = responses
+
+        request_ids = [1, 2, 3, 4, 5]
+        mck_transport().get_request_id.side_effect = request_ids
+
+        result = list(bulktable('127.0.0.1', 'private', '1.3.6.1.2.1.2.2'))
+
+        expected = [{
+            '0': '1',
+            '1': Integer(1),
+            '2': OctetString(b'lo'),
+            '3': Integer(24),
+            '4': Integer(65536),
+            '5': Gauge(10000000),
+            '6': OctetString(b''),
+            '7': Integer(1),
+            '8': Integer(1),
+            '9': TimeTicks(0),
+            '10': Counter(172),
+            '11': Counter(2),
+            '12': Counter(0),
+            '13': Counter(0),
+            '14': Counter(0),
+            '15': Counter(0),
+            '16': Counter(172),
+            '17': Counter(2),
+            '18': Counter(0),
+            '19': Counter(0),
+            '20': Counter(0),
+            '21': Gauge(0),
+            '22': ObjectIdentifier(0, 0),
+        }, {
+            '0': '4',
+            '1': Integer(4),
+            '2': OctetString(b'eth0'),
+            '3': Integer(6),
+            '4': Integer(1500),
+            '5': Gauge(4294967295),
+            '6': OctetString(b'\x02B\xac\x11\x00\x02'),
+            '7': Integer(1),
+            '8': Integer(1),
+            '9': TimeTicks(0),
+            '10': Counter(548760),
+            '11': Counter(3888),
+            '12': Counter(0),
+            '13': Counter(0),
+            '14': Counter(0),
+            '15': Counter(0),
+            '16': Counter(186660),
+            '17': Counter(1875),
+            '18': Counter(0),
+            '19': Counter(0),
+            '20': Counter(0),
+            '21': Gauge(0),
+            '22': ObjectIdentifier(0, 0),
+        }]
         self.assertEqual(result, expected)
 
 

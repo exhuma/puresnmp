@@ -19,6 +19,7 @@ except ImportError:
 from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.aio.api.pythonic import (
     bulkget,
+    bulktable,
     bulkwalk,
     get,
     getnext,
@@ -320,3 +321,25 @@ class TestTable(object):
         ]
         assert len(result) == len(expected)
 
+
+class TestBulkTable(object):
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3, 6),
+                        reason="requires python3.6")
+    async def test_table(self):
+        with patch('puresnmp.aio.api.pythonic.raw') as mck:
+            oid = ObjectIdentifier.from_string
+            mck.bulktable.return_value = [
+                {'0': '1', '1': Integer(1)},
+                {'0': '2', '1': Integer(2)},
+            ]
+            aio_result = bulktable('1.2.3.4', 'private', ['1.2'])
+            result = []
+            async for row in aio_result:
+                result.append(row)
+        expected = [
+            {'0': '1', '1': 1},
+            {'0': '2', '1': 2},
+        ]
+        assert result == expected

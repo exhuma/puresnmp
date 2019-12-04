@@ -13,7 +13,7 @@ from datetime import timedelta
 from unittest import skipUnless
 
 from puresnmp.aio.api.raw import (bulkget, bulkwalk, get, getnext, multiget,
-                              multiset, multiwalk, set, table, walk)
+                              multiset, multiwalk, set, bulktable, table, walk)
 from puresnmp.const import Version
 from puresnmp.exc import NoSuchOID, SnmpError
 from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
@@ -126,6 +126,73 @@ class TestWalk(object):
             with pytest.raises(SnmpError, match='varbind'):
                 async for x in walk('::1', 'private', '1.2.3'):
                     pass
+
+
+class TestBulkTable(object):
+
+    @pytest.mark.asyncio
+    async def test_bulktable(self):
+        responses = readbytes_multiple('bulktable_response.hex')
+
+        expected = [{
+            '0': '1',
+            '1': Integer(1),
+            '2': OctetString(b'lo'),
+            '3': Integer(24),
+            '4': Integer(65536),
+            '5': Gauge(10000000),
+            '6': OctetString(b''),
+            '7': Integer(1),
+            '8': Integer(1),
+            '9': TimeTicks(0),
+            '10': Counter(172),
+            '11': Counter(2),
+            '12': Counter(0),
+            '13': Counter(0),
+            '14': Counter(0),
+            '15': Counter(0),
+            '16': Counter(172),
+            '17': Counter(2),
+            '18': Counter(0),
+            '19': Counter(0),
+            '20': Counter(0),
+            '21': Gauge(0),
+            '22': ObjectIdentifier(0, 0),
+        }, {
+            '0': '4',
+            '1': Integer(4),
+            '2': OctetString(b'eth0'),
+            '3': Integer(6),
+            '4': Integer(1500),
+            '5': Gauge(4294967295),
+            '6': OctetString(b'\x02B\xac\x11\x00\x02'),
+            '7': Integer(1),
+            '8': Integer(1),
+            '9': TimeTicks(0),
+            '10': Counter(548760),
+            '11': Counter(3888),
+            '12': Counter(0),
+            '13': Counter(0),
+            '14': Counter(0),
+            '15': Counter(0),
+            '16': Counter(186660),
+            '17': Counter(1875),
+            '18': Counter(0),
+            '19': Counter(0),
+            '20': Counter(0),
+            '21': Gauge(0),
+            '22': ObjectIdentifier(0, 0),
+        }]
+
+        with patch('puresnmp.aio.api.raw.Transport') as mck:
+            mck().send = AsyncMock()
+            mck().send.side_effect = responses
+            mck().get_request_id.return_value = 0
+            result = []
+            table = await bulktable('127.0.0.1', 'private', '1.3.6.1.2.1.2.2')
+            for row in table:
+                result.append(row)
+        assert result == expected
 
 
 class TestMultiGet(object):

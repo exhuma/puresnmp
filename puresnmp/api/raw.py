@@ -533,17 +533,42 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 def table(ip, community, oid, port=161, num_base_nodes=0):
     # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
-    Run a series of GETNEXT requests on an OID and construct a table from the
-    result.
+    Fetch an SNMP table
 
-    The table is a row of dicts. The key of each dict is the row ID. By default
-    that is the **last** node of the OID tree.
+    The resulting output will be a list of dictionaries where each dictionary
+    corresponds to a row of the table.
 
-    If the rows are identified by multiple nodes, you need to secify the base
-    by setting *walk* to a non-zero value.
+    The index of the row will be contained in key ``'0'`` as a string
+    representing an OID. This key ``'0'`` is automatically injected by
+    ``puresnmp``. Table rows may or may not contain the row-index in other
+    columns. This depends on the requested table.
+
+    Each column ID is available as *string*.
+
+    Example output (using fake data):
+
+    >>> table('192.0.2.1', 'private', '1.3.6.1.2.1.2.2')
+    [{'0': '1', '1': Integer(1), '2': Counter(30)},
+     {'0': '2', '1': Integer(2), '2': Counter(123)}]
     """
     tmp = []
-    for varbind in walk(ip, community, oid, port=port):
+    varbinds = walk(ip, community, oid, port=port)
+    for varbind in varbinds:
+        tmp.append(varbind)
+    as_table = tablify(tmp, num_base_nodes=num_base_nodes)
+    return as_table
+
+
+def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
+    # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
+    """
+    Fetch an SNMP table using "bulk" requests.
+
+    See :py:func:`.table` for more information of the returned structure.
+    """
+    tmp = []
+    varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
+    for varbind in varbinds:
         tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
