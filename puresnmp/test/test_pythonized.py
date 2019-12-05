@@ -272,7 +272,7 @@ class TestGetBulkWalk(unittest.TestCase):
             ]
 
             result = list(bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                bulk_size=20))
+                                   bulk_size=20))
 
         expected = [
             VarBind('1.3.6.1.2.1.2.2.1.1.1', 1),
