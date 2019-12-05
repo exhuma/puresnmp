@@ -7,20 +7,37 @@ Test the external "raw" interface.
 PureSNMP object instances.
 """
 
-import pytest
 import sys
 from datetime import timedelta
 from unittest import skipUnless
 
-from puresnmp.aio.api.raw import (bulkget, bulkwalk, get, getnext, multiget,
-                              multiset, multiwalk, set, bulktable, table, walk)
+import pytest
+
+from puresnmp.aio.api.raw import (
+    bulkget,
+    bulktable,
+    bulkwalk,
+    get,
+    getnext,
+    multiget,
+    multiset,
+    multiwalk,
+    set,
+    table,
+    walk
+)
 from puresnmp.const import Version
 from puresnmp.exc import NoSuchOID, SnmpError
 from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.util import BulkResult
-from puresnmp.x690.types import (Integer, ObjectIdentifier, OctetString,
-                                 Sequence, to_bytes)
+from puresnmp.x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    to_bytes
+)
 
 from . import readbytes, readbytes_multiple
 from .asyncmock import AsyncMock
@@ -30,7 +47,7 @@ try:
 except ImportError:
     from mock import patch, call  # type: ignore
 
-pytestmark = pytest.mark.skipif(sys.version_info < (3,5),
+pytestmark = pytest.mark.skipif(sys.version_info < (3, 5),
                                 reason="requires python3.5")
 
 
@@ -254,7 +271,6 @@ class TestMultiWalk(object):
         # TODO (advanced): should order matter in the following result?
         assert len(result) == len(expected)
 
-
     @pytest.mark.asyncio
     async def test_eom(self):
         '''
@@ -281,7 +297,7 @@ class TestMultiWalk(object):
         ]
 
         simplified_result = [
-           (str(oid), value.pythonize()) for oid, value in result
+            (str(oid), value.pythonize()) for oid, value in result
         ]
 
         assert simplified_result == expected
@@ -362,9 +378,9 @@ class TestGetBulkGet(object):
             mck().get_request_id.return_value = 0
             mck().send.return_value = data
             await bulkget('::1', 'public',
-                    ['1.2.3'],
-                    ['1.2.4'],
-                    max_list_size=2)
+                          ['1.2.3'],
+                          ['1.2.4'],
+                          max_list_size=2)
             mck.assert_called_with(timeout=6)
             mck().send.assert_called_with('::1', 161, to_bytes(packet))
 
@@ -388,9 +404,9 @@ class TestGetBulkGet(object):
             mck().get_request_id.return_value = 0
             mck().send.return_value = data
             result = await bulkget('::1', 'public',
-                             ['1.3.6.1.2.1.1.1'],
-                             ['1.3.6.1.2.1.3.1'],
-                             max_list_size=5)
+                                   ['1.3.6.1.2.1.1.1'],
+                                   ['1.3.6.1.2.1.3.1'],
+                                   max_list_size=5)
         assert result == expected
 
     @pytest.mark.asyncio
@@ -436,9 +452,9 @@ class TestGetBulkWalk(object):
 
             # we need to wrap this in a list to consume the generator.
             async for x in bulkwalk('::1', 'public',
-                          ['1.2.3'],
-                          bulk_size=2):
-                 pass
+                                    ['1.2.3'],
+                                    bulk_size=2):
+                pass
             mck.assert_called_with(timeout=6)
             mck().send.assert_called_with('::1', 161, to_bytes(packet))
 
@@ -480,7 +496,7 @@ class TestGetBulkWalk(object):
 
             result = []
             async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                   bulk_size=20):
+                                    bulk_size=20):
                 result.append(x)
 
             mck.assert_called_with(timeout=6)
@@ -503,7 +519,7 @@ class TestGetBulkWalk(object):
                 VarBind('1.3.6.1.2.1.2.2.1.5.10',  Gauge(4294967295)),
                 VarBind('1.3.6.1.2.1.2.2.1.6.1', OctetString(b"")),
                 VarBind('1.3.6.1.2.1.2.2.1.6.10',
-                    OctetString(b"\x02\x42\xAC\x11\x00\x02")),
+                        OctetString(b"\x02\x42\xAC\x11\x00\x02")),
                 VarBind('1.3.6.1.2.1.2.2.1.7.1', Integer(1)),
                 VarBind('1.3.6.1.2.1.2.2.1.7.10', Integer(1)),
                 VarBind('1.3.6.1.2.1.2.2.1.8.1', Integer(1)),
@@ -538,4 +554,3 @@ class TestGetBulkWalk(object):
                 VarBind('1.3.6.1.2.1.2.2.1.22.10', ObjectIdentifier(0, 0))
             ]
         assert result == expected
-
