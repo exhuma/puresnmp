@@ -617,6 +617,47 @@ class TestGetBulkWalk(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
+class TestTable(unittest.TestCase):
+
+    @patch('puresnmp.api.raw.walk')
+    def test_table(self, mck_walk):
+        mck_walk.return_value = [
+            VarBind('1.2.1.1.1', OctetString(b'row 1 col 1')),
+            VarBind('1.2.1.1.2', OctetString(b'row 2 col 1')),
+            VarBind('1.2.1.2.1', OctetString(b'row 1 col 2')),
+            VarBind('1.2.1.2.2', OctetString(b'row 2 col 2')),
+        ]
+        result = table('192.0.2.1', 'private', '1.2')
+        expected = [
+            {'0': '1',
+             '1': OctetString('row 1 col 1'),
+             '2': OctetString('row 1 col 2')},
+            {'0': '2',
+             '1': OctetString('row 2 col 1'),
+             '2': OctetString('row 2 col 2')},
+        ]
+        self.assertEqual(result, expected)
+
+    @patch('puresnmp.api.raw.walk')
+    def test_table_complex_row_id(self, mck_walk):
+        mck_walk.return_value = [
+            VarBind('1.2.1.1.1.1', OctetString(b'row 1.1.1 col 1')),
+            VarBind('1.2.1.2.1.1', OctetString(b'row 2.1.1 col 1')),
+            VarBind('1.2.2.1.1.1', OctetString(b'row 1.1.1 col 2')),
+            VarBind('1.2.2.2.1.1', OctetString(b'row 2.1.1 col 2')),
+        ]
+        result = table('192.0.2.1', 'private', '1.2', num_base_nodes=2)
+        expected = [
+            {'0': '1.1.1',
+             '1': OctetString('row 1.1.1 col 1'),
+             '2': OctetString('row 1.1.1 col 2')},
+            {'0': '2.1.1',
+             '1': OctetString('row 2.1.1 col 1'),
+             '2': OctetString('row 2.1.1 col 2')},
+        ]
+        self.assertEqual(result, expected)
+
+
 class TestBulkTable(unittest.TestCase):
 
     @patch('puresnmp.api.raw.Transport')

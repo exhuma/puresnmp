@@ -313,12 +313,12 @@ class TestTable(object):
         with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             oid = ObjectIdentifier.from_string
             mck.walk.return_value = [
-                VarBind(oid('1.2.1.1'), OctetString(b'test-11')),
-                VarBind(oid('1.2.2.1'), OctetString(b'test-21')),
-                VarBind(oid('1.2.1.2'), OctetString(b'test-21')),
-                VarBind(oid('1.2.2.2'), OctetString(b'test-22')),
+                VarBind(oid('1.2.1.1.1'), OctetString(b'test-11')),
+                VarBind(oid('1.2.1.2.1'), OctetString(b'test-21')),
+                VarBind(oid('1.2.1.1.2'), OctetString(b'test-21')),
+                VarBind(oid('1.2.1.2.2'), OctetString(b'test-22')),
             ]
-            result = await table('1.2.3.4', 'private', ['1.2'])
+            result = await table('1.2.3.4', 'private', '1.2')
         expected = [
             {'0': '1', '1': b'test-11', '2': b'test-21'},
             {'0': '2', '1': b'test-21', '2': b'test-22'},
@@ -338,7 +338,7 @@ class TestBulkTable(object):
                 {'0': '1', '1': Integer(1)},
                 {'0': '2', '1': Integer(2)},
             ]
-            aio_result = bulktable('1.2.3.4', 'private', ['1.2'])
+            aio_result = bulktable('1.2.3.4', 'private', '1.2')
             result = []
             async for row in aio_result:
                 result.append(row)

@@ -295,7 +295,7 @@ class TestTable(unittest.TestCase):
                 VarBind(oid('1.2.1.2'), OctetString(b'test-21')),
                 VarBind(oid('1.2.2.2'), OctetString(b'test-22')),
             ]
-            result = table('1.2.3.4', 'private', ['1.2'])
+            result = table('1.2.3.4', 'private', '1.2')
         expected = [
             {'0': '1', '1': b'test-11', '2': b'test-21'},
             {'0': '2', '1': b'test-21', '2': b'test-22'},
@@ -312,7 +312,7 @@ class TestBulkTable(unittest.TestCase):
                 {'0': '1', '1': Integer(1)},
                 {'0': '2', '1': Integer(2)},
             ]
-            result = list(bulktable('1.2.3.4', 'private', ['1.2']))
+            result = list(bulktable('1.2.3.4', 'private', '1.2'))
         expected = [
             {'0': '1', '1': 1},
             {'0': '2', '1': 2},
