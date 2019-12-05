@@ -487,7 +487,7 @@ def _bulkwalk_fetcher(bulk_size=10):
     return fetcher
 
 
-async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
+async def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> AsyncGenerator[VarBind, None]
     """
     More efficient implementation of :py:func:`~.walk`. It uses
@@ -502,6 +502,7 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
     :param bulk_size: How many varbinds to request from the remote host with
         one request.
     :param port: The TCP port of the remote host.
+    :param timeout: The TCP timeout for network calls
 
     Example::
 
@@ -528,7 +529,8 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
         raise TypeError('OIDS need to be passed as list!')
 
     result = multiwalk(ip, community, oids, port=port,
-                       fetcher=_bulkwalk_fetcher(bulk_size))
+                       fetcher=_bulkwalk_fetcher(bulk_size),
+                       timeout=timeout)
     async for oid, value in result:
         yield VarBind(oid, value)
 

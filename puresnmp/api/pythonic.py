@@ -227,7 +227,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     return BulkResult(pythonized_scalars, pythonized_list)
 
 
-def bulkwalk(ip, community, oids, bulk_size=10, port=161):
+def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> Generator[VarBind, None, None]
     """
     Delegates to :py:func:`~puresnmp.api.raw.bulkwalk` but returns simple
@@ -238,7 +238,8 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
     result = multiwalk(
         ip, community, oids, port=port,
-        fetcher=raw._bulkwalk_fetcher(bulk_size))  # pylint: disable=protected-access
+        fetcher=raw._bulkwalk_fetcher(bulk_size),  # pylint: disable=protected-access
+        timeout=timeout)
     for oid, value in result:
         yield VarBind(oid, value)
 
