@@ -17,13 +17,13 @@ from puresnmp.aio.api.raw import (
     bulkget,
     bulktable,
     bulkwalk,
+    bulktable,
     get,
     getnext,
     multiget,
     multiset,
     multiwalk,
     set,
-    table,
     walk
 )
 from puresnmp.const import Version
