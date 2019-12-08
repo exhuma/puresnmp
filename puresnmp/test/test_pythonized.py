@@ -289,16 +289,14 @@ class TestTable(unittest.TestCase):
     def test_table(self):
         with patch('puresnmp.api.pythonic.raw') as mck:
             oid = ObjectIdentifier.from_string
-            mck.walk.return_value = [
-                VarBind(oid('1.2.1.1'), OctetString(b'test-11')),
-                VarBind(oid('1.2.2.1'), OctetString(b'test-21')),
-                VarBind(oid('1.2.1.2'), OctetString(b'test-21')),
-                VarBind(oid('1.2.2.2'), OctetString(b'test-22')),
+            mck.table.return_value = [
+                {'0': '1', '1': Integer(1)},
+                {'0': '2', '1': Integer(2)},
             ]
-            result = table('1.2.3.4', 'private', '1.2')
+            result = list(table('1.2.3.4', 'private', '1.2'))
         expected = [
-            {'0': '1', '1': b'test-11', '2': b'test-21'},
-            {'0': '2', '1': b'test-21', '2': b'test-22'},
+            {'0': '1', '1': 1},
+            {'0': '2', '1': 2},
         ]
         six.assertCountEqual(self, result, expected)
 

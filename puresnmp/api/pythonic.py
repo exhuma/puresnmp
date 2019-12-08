@@ -43,6 +43,7 @@ except NameError:
 
 _set = set
 LOG = logging.getLogger(__name__)
+OID = ObjectIdentifier.from_string
 
 
 class TrapInfo:
@@ -259,11 +260,15 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
         warn('Usage of "num_base_nodes" in table operations is no longer '
              'required', DeprecationWarning)
     else:
-        parsed_oid = ObjectIdentifier.from_string(oid)
-        num_base_nodes = len(parsed_oid)
-    tmp = walk(ip, community, oid, port=port)
-    as_table = tablify(tmp, num_base_nodes=num_base_nodes)
-    return as_table
+        parsed_oid = OID(oid)
+        num_base_nodes = len(parsed_oid) + 1
+    tmp = raw.table(ip, community, oid, port=port,
+                    num_base_nodes=num_base_nodes)
+    for row in tmp:
+        index = row.pop('0')
+        pythonized = {key: value.pythonize() for key, value in row.items()}
+        pythonized['0'] = index
+        yield pythonized
 
 
 def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):

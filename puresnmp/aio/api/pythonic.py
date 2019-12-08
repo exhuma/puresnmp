@@ -213,11 +213,13 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     else:
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1
-    tmp = []
-    async for varbind in walk(ip, community, oid, port=port):
-        tmp.append(varbind)
-    as_table = tablify(tmp, num_base_nodes=num_base_nodes)
-    return as_table
+    tmp = raw.table(ip, community, oid, port=port,
+                    num_base_nodes=num_base_nodes)
+    async for row in tmp:
+        index = row.pop('0')
+        pythonized = {key: value.pythonize() for key, value in row.items()}
+        pythonized['0'] = index
+        yield pythonized
 
 
 async def bulktable(ip, community, oid, port=161, num_base_nodes=0):
