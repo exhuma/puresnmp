@@ -21,11 +21,12 @@ from __future__ import unicode_literals
 import logging
 from collections import OrderedDict
 from typing import TYPE_CHECKING
+from warnings import warn
 
 from . import raw
 from ...pdu import VarBind
 from ...util import BulkResult
-from ...x690.types import Type
+from ...x690.types import Type, ObjectIdentifier
 from ...x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -50,6 +51,7 @@ except NameError:
 
 _set = set
 LOG = logging.getLogger(__name__)
+OID = ObjectIdentifier.from_string
 
 async def get(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> PyType
@@ -203,6 +205,12 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     Converts a "walk" result into a pseudo-table. See
     :py:func:`puresnmp.aio.api.raw.table` for more information.
     """
+    if num_base_nodes:
+        warn('Usage of "num_base_nodes" in table operations is no longer '
+             'required', DeprecationWarning)
+    else:
+        parsed_oid = OID(oid)
+        num_base_nodes = len(parsed_oid) + 1
     tmp = []
     async for varbind in walk(ip, community, oid, port=port):
         tmp.append(varbind)
@@ -216,7 +224,7 @@ async def bulktable(ip, community, oid, port=161, num_base_nodes=0):
     Converts a "bulkwalk" result into a pseudo-table. See
     :py:func:`puresnmp.api.raw.table` for more information.
     """
-    tmp = raw.bulktable(ip, community,oid, port, num_base_nodes)
+    tmp = raw.bulktable(ip, community,oid, port)
     for row in tmp:
         index = row.pop('0')
         pythonized = {key: value.pythonize() for key, value in row.items()}

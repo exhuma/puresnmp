@@ -22,12 +22,13 @@ import logging
 from collections import OrderedDict
 from datetime import timedelta
 from typing import TYPE_CHECKING
+from warnings import warn
 
-from . import raw
-from ..pdu import VarBind, Trap
+from ..pdu import Trap, VarBind
 from ..util import BulkResult
+from ..x690.types import ObjectIdentifier, Type
 from ..x690.util import tablify
-from ..x690.types import Type
+from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
@@ -253,6 +254,12 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     See :py:func:`puresnmp.api.raw.table` for more information of the returned
     structure.
     """
+    if num_base_nodes:
+        warn('Usage of "num_base_nodes" in table operations is no longer '
+             'required', DeprecationWarning)
+    else:
+        parsed_oid = ObjectIdentifier.from_string(oid)
+        num_base_nodes = len(parsed_oid)
     tmp = walk(ip, community, oid, port=port)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
@@ -267,9 +274,7 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
     See :py:func:`puresnmp.api.raw.table` for more information of the returned
     structure.
     """
-    tmp = raw.bulktable(ip, community, oid, port=port,
-                        num_base_nodes=num_base_nodes,
-                        bulk_size=bulk_size)
+    tmp = raw.bulktable(ip, community, oid, port=port, bulk_size=bulk_size)
     for row in tmp:
         index = row.pop('0')
         pythonized = {key: value.pythonize() for key, value in row.items()}

@@ -4,6 +4,7 @@ import logging
 import sys
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Tuple, cast
+from warnings import warn
 
 from ...const import ERRORS_STRICT, ERRORS_WARN, Version
 from ...exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -548,6 +549,12 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     by setting *walk* to a non-zero value.
     """
     tmp = []
+    if num_base_nodes:
+        warn('Usage of "num_base_nodes" in table operations is no longer '
+             'required', DeprecationWarning)
+    else:
+        parsed_oid = OID(oid)
+        num_base_nodes = len(parsed_oid) + 1
     async for varbind in walk(ip, community, oid, port=port):
         tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
@@ -562,6 +569,12 @@ async def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10
     See :py:func:`.table` for more information of the returned structure.
     """
     tmp = []
+    if num_base_nodes:
+        warn('Usage of "num_base_nodes" in table operations is no longer '
+             'required', DeprecationWarning)
+    else:
+        parsed_oid = OID(oid)
+        num_base_nodes = len(parsed_oid) + 1
     varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
     async for varbind in varbinds:
         tmp.append(varbind)
