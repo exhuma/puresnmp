@@ -208,7 +208,7 @@ class TestBulkTable(object):
             table = await bulktable('127.0.0.1', 'private', '1.3.6.1.2.1.2.2')
             for row in table:
                 result.append(row)
-        assert result == expected
+        assert sorted(result, key=lambda x: x['0']) == expected
 
 
 class TestMultiGet(object):

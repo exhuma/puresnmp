@@ -636,7 +636,7 @@ class TestTable(unittest.TestCase):
              '1': OctetString('row 2 col 1'),
              '2': OctetString('row 2 col 2')},
         ]
-        self.assertEqual(result, expected)
+        self.assertEqual(sorted(result, key=lambda x: x['0']), expected)
 
     @patch('puresnmp.api.raw.walk')
     def test_table_complex_row_id(self, mck_walk):
@@ -655,7 +655,7 @@ class TestTable(unittest.TestCase):
              '1': OctetString('row 2.1.1 col 1'),
              '2': OctetString('row 2.1.1 col 2')},
         ]
-        self.assertEqual(result, expected)
+        self.assertEqual(sorted(result, key=lambda x: x['0']), expected)
 
     @patch('puresnmp.api.raw.walk')
     def test_table_base_oid(self, mck_walk):
@@ -678,7 +678,7 @@ class TestTable(unittest.TestCase):
              '1': OctetString('row 2.1.1 col 1'),
              '2': OctetString('row 2.1.1 col 2')},
         ]
-        self.assertEqual(result, expected)
+        self.assertEqual(sorted(result, key=lambda x: x['0']), expected)
 
 
 class TestBulkTable(unittest.TestCase):
@@ -742,7 +742,7 @@ class TestBulkTable(unittest.TestCase):
             '21': Gauge(0),
             '22': ObjectIdentifier(0, 0),
         }]
-        self.assertEqual(result, expected)
+        self.assertEqual(sorted(result, key=lambda x: x['0']), expected)
 
 
 class TestTraps(unittest.TestCase):
