@@ -17,7 +17,7 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Tuple, cast
 from warnings import warn
 
-from ..const import ERRORS_STRICT, ERRORS_WARN, Version
+from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
     END_OF_MIB_VIEW,
@@ -53,7 +53,7 @@ LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
 
 
-def get(ip, community, oid, port=161, timeout=6):
+def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     # type: ( str, str, str, int, int ) -> Type[PyType]
     """
     Executes a simple SNMP GET request and returns a pure Python data
@@ -69,7 +69,7 @@ def get(ip, community, oid, port=161, timeout=6):
     return result[0]
 
 
-def multiget(ip, community, oids, port=161, timeout=6):
+def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     # type: ( str, str, List[str], int, int ) -> List[Type[PyType]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
@@ -104,7 +104,7 @@ def multiget(ip, community, oids, port=161, timeout=6):
     return output
 
 
-def getnext(ip, community, oid, port=161, timeout=6):
+def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, str, int, int) -> VarBind
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
@@ -119,7 +119,7 @@ def getnext(ip, community, oid, port=161, timeout=6):
     return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=6):
+def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
     Executes a single multi-oid GETNEXT request.
@@ -162,14 +162,16 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
         if not OID(requested) < retrieved.oid:
-            stringified = unicode(retrieved.oid)  # TODO remove when Py2 is dropped
+            # TODO remove when Py2 is dropped
+            stringified = unicode(retrieved.oid)
             raise FaultySNMPImplementation(
                 'The OID %s is not a successor of %s!' %
                 (stringified, requested))
     return output
 
 
-def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
+def walk(ip, community, oid, port=161,
+         timeout=DEFAULT_TIMEOUT, errors=ERRORS_STRICT):
     # type: (str, str, str, int, int, str) -> TWalkResponse
     """
     Executes a sequence of SNMP GETNEXT requests and returns a generator over
@@ -201,7 +203,7 @@ def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
 
 def multiwalk(
         ip, community, oids,
-        port=161, timeout=6, fetcher=multigetnext,
+        port=161, timeout=DEFAULT_TIMEOUT, fetcher=multigetnext,
         errors=ERRORS_STRICT):
     # type: (str, str, List[str], int, int, TFetcher, str) -> TWalkResponse
     """
@@ -273,7 +275,7 @@ def multiwalk(
                 yield varbind
 
 
-def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
+def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint: disable=redefined-builtin
     # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
@@ -292,7 +294,7 @@ def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=rede
     return result[oid.lstrip('.')]
 
 
-def multiset(ip, community, mappings, port=161, timeout=6):
+def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
     """
     Executes an SNMP SET request on multiple OIDs. The result is returned as
@@ -336,7 +338,7 @@ def multiset(ip, community, mappings, port=161, timeout=6):
 
 def bulkget(
         ip, community, scalar_oids, repeating_oids, max_list_size=1,
-        port=161, timeout=6):
+        port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
     Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
@@ -466,7 +468,7 @@ def _bulkwalk_fetcher(bulk_size=10):
     Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
     """
 
-    def fetcher(ip, community, oids, port=161, timeout=6):
+    def fetcher(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
         # type: (str, str, List[str], int, int) -> List[VarBind]
         '''
         Executes a SNMP BulkGet request.
@@ -485,7 +487,8 @@ def _bulkwalk_fetcher(bulk_size=10):
     return fetcher
 
 
-def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
+def bulkwalk(ip, community, oids, bulk_size=10, port=161,
+             timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[str], int, int) -> TWalkResponse
     """
     More efficient implementation of :py:func:`~.walk`. It uses

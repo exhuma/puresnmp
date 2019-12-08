@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING
 from warnings import warn
 
 from . import raw
+from ...const import DEFAULT_TIMEOUT
 from ...pdu import VarBind
 from ...util import BulkResult
 from ...x690.types import Type, ObjectIdentifier
@@ -58,7 +59,7 @@ _set = set
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
 
-async def get(ip, community, oid, port=161, timeout=6):
+async def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, str, int, int) -> PyType
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.get` but returns simple Python
@@ -70,7 +71,7 @@ async def get(ip, community, oid, port=161, timeout=6):
     return raw_value.pythonize()  # type: ignore
 
 
-async def multiget(ip, community, oids, port=161, timeout=6):
+async def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[str], int, int) -> List[PyType]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiget` but returns simple
@@ -83,7 +84,7 @@ async def multiget(ip, community, oids, port=161, timeout=6):
     return pythonized
 
 
-async def getnext(ip, community, oid, port=161, timeout=6):
+async def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, str, int, int) -> VarBind
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.getnext` but returns simple
@@ -95,7 +96,7 @@ async def getnext(ip, community, oid, port=161, timeout=6):
     return result[0]
 
 
-async def multigetnext(ip, community, oids, port=161, timeout=6):
+async def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multigetnext` but returns
@@ -108,7 +109,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
     return pythonized
 
 
-async def walk(ip, community, oid, port=161, timeout=6):
+async def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, str, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.walk` but returns simple
@@ -122,7 +123,7 @@ async def walk(ip, community, oid, port=161, timeout=6):
         yield VarBind(raw_oid, raw_value.pythonize())
 
 
-async def multiwalk(ip, community, oids, port=161, timeout=6,
+async def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
                     fetcher=multigetnext):
     # type: (str, str, List[str], int, int, TFetcher) -> TWalkResponse
     """
@@ -138,7 +139,7 @@ async def multiwalk(ip, community, oids, port=161, timeout=6,
         yield VarBind(oid, value)
 
 
-async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
+async def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint: disable=redefined-builtin
     # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.set` but returns simple Python
@@ -152,7 +153,7 @@ async def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disabl
     return result[oid.lstrip('.')]
 
 
-async def multiset(ip, community, mappings, port=161, timeout=6):
+async def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiset` but returns simple
@@ -168,7 +169,7 @@ async def multiset(ip, community, mappings, port=161, timeout=6):
 
 
 async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-                  port=161, timeout=6):
+                  port=161, timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.bulkget` but returns simple
@@ -189,7 +190,8 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     return BulkResult(pythonized_scalars, pythonized_list)
 
 
-async def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
+async def bulkwalk(ip, community, oids, bulk_size=10, port=161,
+                   timeout=DEFAULT_TIMEOUT):
     # type: (str, str, List[str], int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.bulkwalk` but returns simple
