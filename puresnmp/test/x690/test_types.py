@@ -12,12 +12,13 @@ from ...x690.util import TypeInfo
 from ...x690.types import (
     Boolean,
     Integer,
-    UnknownType,
     Null,
     ObjectIdentifier,
     OctetString,
     Sequence,
+    T61String,
     Type,
+    UnknownType,
     pop_tlv,
     to_bytes
 )
@@ -414,7 +415,7 @@ class TestIntegerValues(ByteTester):
         self.assertBytesEqual(result, expected)
 
 
-class TestString(ByteTester):
+class TestOctetString(ByteTester):
 
     def test_encoding(self):
         value = OctetString('hello')
@@ -430,6 +431,30 @@ class TestString(ByteTester):
     def test_pythonize(self):
         result = OctetString("hello").pythonize()
         expected = b"hello"
+        self.assertEqual(result, expected)
+
+
+class TestT61String(ByteTester):
+
+    def test_encoding(self):
+        value = T61String('hello Ω')
+        result = to_bytes(value)
+        expected = b'\x14\x07hello \xe0'
+        self.assertBytesEqual(result, expected)
+
+    def test_decoding(self):
+        result = T61String.from_bytes(b'\x14\x07hello \xe0')
+        expected = T61String('hello Ω')
+        self.assertEqual(result, expected)
+
+    def test_pythonize_from_string(self):
+        result = T61String("hello Ω").pythonize()
+        expected = "hello Ω"
+        self.assertEqual(result, expected)
+
+    def test_pythonize_from_bytes(self):
+        result = T61String(b"hello \xe0").pythonize()
+        expected = "hello Ω"
         self.assertEqual(result, expected)
 
 
