@@ -4,10 +4,10 @@ This module contains a high-level API to SNMP functions.
 The arguments and return values of these functions have types which are
 internal to ``puresnmp`` (subclasses of :py:class:`puresnmp.x690.Type`).
 
-Alternatively, there is :py:mod:`puresnmp.api.pythonic` which converts these
-values into pure Python types. This makes day-to-day programming a bit easier
-but loses type information which may be useful in some edge-cases. In such a
-case it's recommended to use :py:mod:`puresnmp.api.raw`.
+Alternatively, there is :py:mod:`puresnmp.api.pythonic` which converts
+these values into pure Python types. This makes day-to-day programming a bit
+easier but loses type information which may be useful in some edge-cases. In
+such a case it's recommended to use :py:mod:`puresnmp.api.raw`.
 '''
 from __future__ import unicode_literals
 
@@ -39,7 +39,8 @@ if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
     from puresnmp.typevars import PyType
-
+    TWalkResponse = Generator[VarBind, None, None]
+    TFetcher = Callable[[str, str, List[str], int, int], List[VarBind]]
 try:
     unicode  # type: Callable[[Any], str]
 except NameError:
@@ -121,7 +122,7 @@ def getnext(ip, community, oid, port=161, timeout=6):
 def multigetnext(ip, community, oids, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
-    Function to send a single multi-oid GETNEXT request.
+    Executes a single multi-oid GETNEXT request.
 
     The request sends one packet to the remote host requesting the value of the
     OIDs following one or more given OIDs.
@@ -169,9 +170,9 @@ def multigetnext(ip, community, oids, port=161, timeout=6):
 
 
 def walk(ip, community, oid, port=161, timeout=6, errors=ERRORS_STRICT):
-    # type: (str, str, str, int, int, str) -> Generator[VarBind, None, None]
+    # type: (str, str, str, int, int, str) -> TWalkResponse
     """
-    Executes a sequence of SNMP GETNEXT requests and returns an generator over
+    Executes a sequence of SNMP GETNEXT requests and returns a generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
 
     The generator stops when hitting an OID which is *not* a sub-node of the
@@ -202,9 +203,9 @@ def multiwalk(
         ip, community, oids,
         port=161, timeout=6, fetcher=multigetnext,
         errors=ERRORS_STRICT):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]], str) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int, TFetcher, str) -> TWalkResponse
     """
-    Executes a sequence of SNMP GETNEXT requests and returns an generator over
+    Executes a sequence of SNMP GETNEXT requests and returns a generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
 
     This is the same as :py:func:`~.walk` except that it is capable of
@@ -294,7 +295,6 @@ def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=rede
 def multiset(ip, community, mappings, port=161, timeout=6):
     # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
     """
-
     Executes an SNMP SET request on multiple OIDs. The result is returned as
     pure Python data structure.
 
@@ -486,7 +486,7 @@ def _bulkwalk_fetcher(bulk_size=10):
 
 
 def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
-    # type: (str, str, List[str], int, int) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int) -> TWalkResponse
     """
     More efficient implementation of :py:func:`~.walk`. It uses
     :py:func:`~.bulkget` under the hood instead of :py:func:`~.getnext`.

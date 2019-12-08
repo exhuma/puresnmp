@@ -239,7 +239,8 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
 
     result = multiwalk(
         ip, community, oids, port=port,
-        fetcher=raw._bulkwalk_fetcher(bulk_size),  # pylint: disable=protected-access
+        fetcher=raw._bulkwalk_fetcher(
+            bulk_size),  # pylint: disable=protected-access
         timeout=timeout)
     for oid, value in result:
         yield VarBind(oid, value)
