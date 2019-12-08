@@ -222,8 +222,8 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
         yield pythonized
 
 
-async def bulktable(ip, community, oid, port=161, num_base_nodes=0):
-    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
+async def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
+    # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
     """
     Converts a "bulkwalk" result into a pseudo-table. See
     :py:func:`puresnmp.api.raw.table` for more information.
