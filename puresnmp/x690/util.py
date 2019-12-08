@@ -316,17 +316,15 @@ def tablify(varbinds, num_base_nodes=0, base_oid=''):
     By default, for the table-cell at OID ``1.2.3.4.5``, ``4`` is the column
     index and ``5`` is the row index.
 
-    Using ``num_base_nodes=2`` this changes, in that ``3`` becomes the column
-    index, and ``4.5`` becomes the row index.
-
-    Alternatively, the table OID can be specified which will automatically
-    determine *num_base_nodes*.
+    Using ``num_base_nodes=2`` will only use the first two nodes (``1.2``) as
+    table-identifier, so ``3`` becomes the column index, and ``4.5`` becomes
+    the row index.
 
     The output should *not* be considered ordered in any way. If you need it
     sorted, you must sort it after retrieving the table from this function!
 
     Each element of the output is a dictionary where each key is the column
-    index. By default the index ``0`` represents the row ID.
+    index. By default the index ``0`` will be added, representing the row ID.
 
     Example::
 
