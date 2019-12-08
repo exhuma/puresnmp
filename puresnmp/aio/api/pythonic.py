@@ -183,8 +183,8 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     return BulkResult(pythonized_scalars, pythonized_list)
 
 
-async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
-    # type: (str, str, List[str], int, int) -> AsyncGenerator[VarBind, None]
+async def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
+    # type: (str, str, List[str], int, int, int) -> AsyncGenerator[VarBind, None]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.bulkwalk` but returns simple
     Python types.
@@ -194,7 +194,9 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161):
 
     result = multiwalk(
         ip, community, oids, port=port,
-        fetcher=raw._bulkwalk_fetcher(bulk_size))  # pylint: disable=protected-access
+        fetcher=raw._bulkwalk_fetcher(  # pylint: disable=protected-access
+            bulk_size),
+        timeout=timeout)
     async for oid, value in result:
         yield VarBind(oid, value)
 
