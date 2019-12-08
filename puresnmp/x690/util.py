@@ -363,7 +363,7 @@ def tablify(varbinds, num_base_nodes=0, base_oid=''):
         base_oid_parsed = ObjectIdentifier.from_string(base_oid)
         # Each table has a sub-index for the table "entry" so the number of
         # base-nodes needs to be incremented by 1
-        num_base_nodes = len(base_oid_parsed) + 1  #  type: ignore
+        num_base_nodes = len(base_oid_parsed)  #  type: ignore
 
     rows = {}  # type: Dict[str, Dict[str, Type[PyType]]]
     for oid, value in varbinds:

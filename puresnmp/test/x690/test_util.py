@@ -326,7 +326,7 @@ class TestHelpers(ByteTester):
         easier to pass in the base-oid instead.
         """
         OID = ObjectIdentifier.from_string
-        table_oid = '1.3.6.1.2.1.1.9'
+        table_entry_oid = '1.3.6.1.2.1.1.9.1'
 
         # Note: This is not a real table. For the test, the row-id suffix ".1"
         # was added
@@ -339,7 +339,7 @@ class TestHelpers(ByteTester):
             (OID('1.3.6.1.2.1.1.9.1.4.2.1'), 'row 2.1 col 4'),
         ]
 
-        result = tablify(data, base_oid=table_oid)
+        result = tablify(data, base_oid=table_entry_oid)
         expected = [
             {
                 '0': '1.1',
