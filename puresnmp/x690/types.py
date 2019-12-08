@@ -748,7 +748,7 @@ class T61String(Type):
         if not T61String.__INITIALISED:
             t61codec.register()
             self.__INITIALISED = True
-        if isinstance(value, unicode):
+        if isinstance(value, six.text_type):
             self.value = value.encode('t61')
         else:
             self.value = value

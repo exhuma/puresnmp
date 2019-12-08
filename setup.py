@@ -21,7 +21,7 @@ def get_version():
 VERSION = get_version()
 DEPENDENCIES = [
     'six',
-    't61codec',
+    't61codec >= 1.0.1',
     'verlib',
 ]
 if version_info < (3, 5):

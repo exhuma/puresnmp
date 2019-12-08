@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 # pylint: skip-file
 
 import six
@@ -437,24 +438,26 @@ class TestOctetString(ByteTester):
 class TestT61String(ByteTester):
 
     def test_encoding(self):
-        value = T61String('hello Ω')
+        value = T61String(u'hello Ω')
         result = to_bytes(value)
         expected = b'\x14\x07hello \xe0'
         self.assertBytesEqual(result, expected)
 
     def test_decoding(self):
         result = T61String.from_bytes(b'\x14\x07hello \xe0')
-        expected = T61String('hello Ω')
+        expected = T61String(u'hello Ω')
         self.assertEqual(result, expected)
 
     def test_pythonize_from_string(self):
-        result = T61String("hello Ω").pythonize()
-        expected = "hello Ω"
+        obj = T61String(u"hello Ω")
+        result = obj.pythonize()
+        expected = u"hello Ω"
         self.assertEqual(result, expected)
 
     def test_pythonize_from_bytes(self):
-        result = T61String(b"hello \xe0").pythonize()
-        expected = "hello Ω"
+        obj = T61String(b"hello \xe0")
+        result = obj.pythonize()
+        expected = u"hello Ω"
         self.assertEqual(result, expected)
 
 
