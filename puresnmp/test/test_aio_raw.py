@@ -17,7 +17,6 @@ from puresnmp.aio.api.raw import (
     bulkget,
     bulktable,
     bulkwalk,
-    bulktable,
     get,
     getnext,
     multiget,
