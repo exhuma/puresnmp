@@ -1,12 +1,15 @@
 """
 This module contains the high-level functions to access the library with
-asyncio. Care is taken to make this as pythonic as possible and hide as many
-of the gory implementations as possible.
+asyncio.
+
+Care is taken to make this as pythonic as possible and hide as many of the gory
+implementations as possible.
 
 This module provides "syntactic sugar" around the lower-level, but almost
-identical, module :py:mod:`puresnmp.aio.api.raw`. The "raw" module
-returns the variable types unmodified which are all subclasses of
-:py:class:`puresnmp.x690.types.Type`.
+identical, module :py:mod:`puresnmp.aio.api.raw`.
+
+The "raw" module returns the variable types unmodified which are all subclasses
+of :py:class:`puresnmp.x690.types.Type`.
 """
 
 # TODO (advanced): This module should not make use of it's own functions. The
@@ -27,7 +30,6 @@ from . import raw
 from ...pdu import VarBind
 from ...util import BulkResult
 from ...x690.types import Type, ObjectIdentifier
-from ...x690.util import tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
@@ -42,6 +44,9 @@ if TYPE_CHECKING:  # pragma: no cover
         Union,
     )
     from puresnmp.typevars import PyType
+    TWalkResponse = AsyncGenerator[VarBind, None]
+    TFetcher = Callable[[str, str, List[str], int, int],
+                        Coroutine[Any, Any, List[VarBind]]]
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -86,7 +91,8 @@ async def getnext(ip, community, oid, port=161, timeout=6):
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    return (await multigetnext(ip, community, [oid], port, timeout=timeout))[0]
+    result = await multigetnext(ip, community, [oid], port, timeout=timeout)
+    return result[0]
 
 
 async def multigetnext(ip, community, oids, port=161, timeout=6):
@@ -103,7 +109,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=6):
 
 
 async def walk(ip, community, oid, port=161, timeout=6):
-    # type: (str, str, str, int, int) -> AsyncGenerator[VarBind, None]
+    # type: (str, str, str, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.walk` but returns simple
     Python types.
@@ -118,7 +124,7 @@ async def walk(ip, community, oid, port=161, timeout=6):
 
 async def multiwalk(ip, community, oids, port=161, timeout=6,
                     fetcher=multigetnext):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], Coroutine[Any, Any, List[VarBind]]]) -> AsyncGenerator[VarBind, None]
+    # type: (str, str, List[str], int, int, TFetcher) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiwalk` but returns simple
     Python types.
@@ -184,7 +190,7 @@ async def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
 
 async def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
-    # type: (str, str, List[str], int, int, int) -> AsyncGenerator[VarBind, None]
+    # type: (str, str, List[str], int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.bulkwalk` but returns simple
     Python types.
@@ -204,8 +210,11 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
 async def table(ip, community, oid, port=161, num_base_nodes=0):
     # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
-    Converts a "walk" result into a pseudo-table. See
-    :py:func:`puresnmp.aio.api.raw.table` for more information.
+    Fetches a table from the SNMP agent. Each value will be converted to a
+    pure-python type.
+
+    See :py:func:`puresnmp.api.raw.table` for more information of the returned
+    structure.
     """
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '
@@ -225,8 +234,11 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
 async def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
     # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
     """
-    Converts a "bulkwalk" result into a pseudo-table. See
-    :py:func:`puresnmp.api.raw.table` for more information.
+    Fetch an SNMP table using "bulk" requests converting the values into pure
+    Python types.
+
+    See :py:func:`puresnmp.api.raw.table` for more information of the returned
+    structure.
     """
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '

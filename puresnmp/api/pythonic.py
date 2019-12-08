@@ -1,12 +1,14 @@
 """
-This module contains the high-level functions to access the library. Care is
-taken to make this as pythonic as possible and hide as many of the gory
+This module contains the high-level functions to access the library.
+
+Care is taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
 
 This module provides "syntactic sugar" around the lower-level, but almost
-identical, module :py:mod:`puresnmp.api.raw`. The "raw" module returns the
-variable types unmodified which are all subclasses of
-:py:class:`puresnmp.x690.types.Type`.
+identical, module :py:mod:`puresnmp.api.raw`.
+
+The "raw" module returns the variable types unmodified which are all subclasses
+of :py:class:`puresnmp.x690.types.Type`.
 """
 
 # TODO (advanced): This module should not make use of it's own functions. The
@@ -27,13 +29,15 @@ from warnings import warn
 from ..pdu import Trap, VarBind
 from ..util import BulkResult
 from ..x690.types import ObjectIdentifier, Type
-from ..x690.util import tablify
 from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
     from puresnmp.typevars import PyType
+    TWalkResponse = Generator[VarBind, None, None]
+    TFetcher = Callable[[str, str, List[str], int, int],
+               List[VarBind]]
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -112,7 +116,7 @@ def get(ip, community, oid, port=161, timeout=2):
     return raw_value.pythonize()  # type: ignore
 
 
-def multiget(ip, community, oids, port=161, timeout=2):
+def multiget(ip, community, oids, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> List[PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiget` but returns simple
@@ -125,7 +129,7 @@ def multiget(ip, community, oids, port=161, timeout=2):
     return pythonized
 
 
-def getnext(ip, community, oid, port=161, timeout=2):
+def getnext(ip, community, oid, port=161, timeout=6):
     # type: (str, str, str, int, int) -> VarBind
     """
     Delegates to :py:func:`~puresnmp.api.raw.getnext` but returns simple
@@ -133,10 +137,11 @@ def getnext(ip, community, oid, port=161, timeout=2):
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    return multigetnext(ip, community, [oid], port, timeout=timeout)[0]
+    result = multigetnext(ip, community, [oid], port, timeout=timeout)
+    return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=2):
+def multigetnext(ip, community, oids, port=161, timeout=6):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multigetnext` but returns simple
@@ -149,8 +154,8 @@ def multigetnext(ip, community, oids, port=161, timeout=2):
     return pythonized
 
 
-def walk(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int, int) -> Generator[VarBind, None, None]
+def walk(ip, community, oid, port=161, timeout=6):
+    # type: (str, str, str, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.walk` but returns simple Python
     types.
@@ -163,9 +168,9 @@ def walk(ip, community, oid, port=161, timeout=2):
         yield VarBind(raw_oid, raw_value.pythonize())
 
 
-def multiwalk(ip, community, oids, port=161, timeout=2,
+def multiwalk(ip, community, oids, port=161, timeout=6,
               fetcher=multigetnext):
-    # type: (str, str, List[str], int, int, Callable[[str, str, List[str], int, int], List[VarBind]]) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int, TFetcher) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiwalk` but returns simple
     Python types.
@@ -179,7 +184,7 @@ def multiwalk(ip, community, oids, port=161, timeout=2,
         yield VarBind(oid, value)
 
 
-def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=redefined-builtin
+def set(ip, community, oid, value, port=161, timeout=6):  # pylint: disable=redefined-builtin
     # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.set` but returns simple Python
@@ -188,11 +193,12 @@ def set(ip, community, oid, value, port=161, timeout=2):  # pylint: disable=rede
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = multiset(ip, community, [(oid, value)], port, timeout=timeout)
+    result = multiset(ip, community, [(oid, value)],
+                      port, timeout=timeout)
     return result[oid.lstrip('.')]
 
 
-def multiset(ip, community, mappings, port=161, timeout=2):
+def multiset(ip, community, mappings, port=161, timeout=6):
     # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiset` but returns simple
@@ -208,7 +214,7 @@ def multiset(ip, community, mappings, port=161, timeout=2):
 
 
 def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-            port=161, timeout=2):
+            port=161, timeout=6):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
     Delegates to :py:func:`~puresnmp.api.raw.mulkget` but returns simple
@@ -230,7 +236,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
 
 def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
-    # type: (str, str, List[str], int, int) -> Generator[VarBind, None, None]
+    # type: (str, str, List[str], int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.bulkwalk` but returns simple
     Python types.
@@ -240,8 +246,8 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161, timeout=6):
 
     result = multiwalk(
         ip, community, oids, port=port,
-        fetcher=raw._bulkwalk_fetcher(
-            bulk_size),  # pylint: disable=protected-access
+        fetcher=raw._bulkwalk_fetcher(  # pylint: disable=protected-access
+            bulk_size),
         timeout=timeout)
     for oid, value in result:
         yield VarBind(oid, value)
