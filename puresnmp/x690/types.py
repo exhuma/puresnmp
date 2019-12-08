@@ -44,6 +44,7 @@ import logging
 import warnings
 
 import six
+import t61codec
 from six.moves import zip_longest
 
 from .exc import InvalidValueLength
@@ -741,6 +742,35 @@ class PrintableString(Type):
 
 class T61String(Type):
     TAG = 0x14
+    __INITIALISED = False
+
+    def __init__(self, value):
+        if not T61String.__INITIALISED:
+            t61codec.register()
+            self.__INITIALISED = True
+        if isinstance(value, unicode):
+            self.value = value.encode('t61')
+        else:
+            self.value = value
+        self.length = encode_length(len(self.value))
+
+    def __bytes__(self):
+        tinfo = TypeInfo(self.TYPECLASS, TypeInfo.PRIMITIVE, self.TAG)
+        return to_bytes(tinfo) + self.length + self.value
+
+    def __eq__(self, other):
+        # pylint: disable=unidiomatic-typecheck
+        return type(self) == type(other) and self.value == other.value
+
+    @classmethod
+    def decode(cls, data):
+        return cls(data)
+
+    def pythonize(self):
+        """
+        Convert this object in an appropriate python object
+        """
+        return self.value.decode('t61')
 
 
 class VideotexString(Type):

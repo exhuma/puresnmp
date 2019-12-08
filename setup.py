@@ -20,8 +20,9 @@ def get_version():
 
 VERSION = get_version()
 DEPENDENCIES = [
-    'verlib',
     'six',
+    't61codec',
+    'verlib',
 ]
 if version_info < (3, 5):
     DEPENDENCIES.append('typing')
