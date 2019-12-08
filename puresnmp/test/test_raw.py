@@ -657,6 +657,29 @@ class TestTable(unittest.TestCase):
         ]
         self.assertEqual(result, expected)
 
+    @patch('puresnmp.api.raw.walk')
+    def test_table_base_oid(self, mck_walk):
+        """
+        The "table" function should be capable of detecting the
+        "num_base_nodes" value by itself
+        """
+        mck_walk.return_value = [
+            VarBind('1.2.1.1.1.1.1', OctetString(b'row 1.1.1 col 1')),
+            VarBind('1.2.1.1.2.1.1', OctetString(b'row 2.1.1 col 1')),
+            VarBind('1.2.1.2.1.1.1', OctetString(b'row 1.1.1 col 2')),
+            VarBind('1.2.1.2.2.1.1', OctetString(b'row 2.1.1 col 2')),
+        ]
+        result = table('192.0.2.1', 'private', '1.2')
+        expected = [
+            {'0': '1.1.1',
+             '1': OctetString('row 1.1.1 col 1'),
+             '2': OctetString('row 1.1.1 col 2')},
+            {'0': '2.1.1',
+             '1': OctetString('row 2.1.1 col 1'),
+             '2': OctetString('row 2.1.1 col 2')},
+        ]
+        self.assertEqual(result, expected)
+
 
 class TestBulkTable(unittest.TestCase):
 
