@@ -24,7 +24,7 @@ jobs:
     - name: Lint with pylint
       run: |
         pip install pylint
-        pylint --report=y puresnmp
+        pylint --reports=y puresnmp
     - name: Test with pytest
       run: |
         pip install pytest
