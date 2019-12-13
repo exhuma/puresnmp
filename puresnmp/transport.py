@@ -46,8 +46,8 @@ class Transport(object):
     def __init__(self, timeout=2, retries=RETRIES, buffer_size=BUFFER_SIZE):
         # type: (int, int, int) -> None
         self.timeout = timeout
-        self.retries = RETRIES
-        self.buffer_size = BUFFER_SIZE
+        self.retries = retries
+        self.buffer_size = buffer_size
 
     def send(
             self, ip, port, packet):  # pragma: no cover
