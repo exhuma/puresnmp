@@ -44,8 +44,11 @@ class VarBind(object):
     corresponding value.
     '''
 
-    oid = ObjectIdentifier(0)
-    value = None  # type: PyType
+    # TODO: This class should be split in two for both the raw and pythonic
+    #       API, that would simplify the typing of both "oid" and "value"a lot
+    #       and keep things explicit
+    oid = ObjectIdentifier(0)  # type: Union[str, ObjectIdentifier]
+    value = None  # type: Union[PyType, Type[PyType]]
 
     def __init__(self, oid, value):
         # type: (Union[ObjectIdentifier, str], PyType) -> None
@@ -59,7 +62,7 @@ class VarBind(object):
 
     def __iter__(self):
         # type: () -> Iterator[Union[ObjectIdentifier, PyType]]
-        return iter([self.oid, self.value])
+        return iter([self.oid, self.value])  # type: ignore
 
     def __lt__(self, other):
         # type: (Any) -> bool
@@ -101,7 +104,7 @@ ERROR_MESSAGES = {
 }
 
 
-class PDU(Type):
+class PDU(Type):  # type: ignore
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
@@ -175,7 +178,8 @@ class PDU(Type):
 
     def __bytes__(self):
         # type: () -> bytes
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
+        wrapped_varbinds = [Sequence(vb.oid, vb.value)  # type: ignore
+                            for vb in self.varbinds]
         data = [
             Integer(self.request_id),
             Integer(self.error_status),
@@ -214,7 +218,7 @@ class PDU(Type):
             '    Varbinds: ',
         ]
         for bind in self.varbinds:
-            lines.append('        %s: %s' % (bind.oid, bind.value))
+            lines.append('        %s: %s' % (bind.oid, bind.value))  # type: ignore
 
         return '\n'.join(lines)
 
@@ -250,8 +254,9 @@ class GetRequest(PDU):
                 wrapped_oids.append(ObjectIdentifier.from_string(oid))
             else:
                 wrapped_oids.append(oid)
-        super(GetRequest, self).__init__(request_id, [VarBind(oid, Null())
-                                                      for oid in wrapped_oids])
+        super(GetRequest, self).__init__(
+            request_id,
+            [VarBind(oid, Null()) for oid in wrapped_oids])  # type: ignore
 
 
 class GetResponse(PDU):
@@ -297,7 +302,7 @@ class SetRequest(PDU):
     TAG = 3
 
 
-class BulkGetRequest(Type):
+class BulkGetRequest(Type):  # type: ignore
     """
     Represents a SNMP GetBulk request
     """
@@ -313,11 +318,12 @@ class BulkGetRequest(Type):
         self.max_repeaters = max_repeaters
         self.varbinds = []  # type: List[VarBind]
         for oid in oids:
-            self.varbinds.append(VarBind(oid, Null()))
+            self.varbinds.append(VarBind(oid, Null()))  # type: ignore
 
     def __bytes__(self):
         # type: () -> bytes
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
+        wrapped_varbinds = [Sequence(vb.oid, vb.value)  # type: ignore
+                            for vb in self.varbinds]
         data = [
             Integer(self.request_id),
             Integer(self.non_repeaters),
@@ -362,7 +368,7 @@ class BulkGetRequest(Type):
             '    Varbinds: ',
         ]
         for bind in self.varbinds:
-            lines.append('        %s: %s' % (bind.oid, bind.value))
+            lines.append('        %s: %s' % (bind.oid, bind.value))  # type: ignore
 
         return '\n'.join(lines)
 

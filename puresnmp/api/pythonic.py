@@ -23,7 +23,7 @@ from __future__ import unicode_literals
 import logging
 from collections import OrderedDict
 from datetime import timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 from warnings import warn
 
 from ..const import DEFAULT_TIMEOUT
@@ -39,6 +39,7 @@ if TYPE_CHECKING:  # pragma: no cover
     TWalkResponse = Generator[VarBind, None, None]
     TFetcher = Callable[[str, str, List[str], int, int],
                         List[VarBind]]
+    T = TypeVar('T', bound=PyType)
 
 try:
     unicode  # type: Callable[[Any], str]
@@ -100,8 +101,10 @@ class TrapInfo:
         OIDs to values.
         """
         output = {}
-        for oid, value in self.raw_trap.varbinds[2:]:  # type: ignore
-            output[oid.pythonize()] = value.pythonize()
+        for oid_raw, value_raw in self.raw_trap.varbinds[2:]:  # type: ignore
+            oid = oid_raw.pythonize()  # type: ignore
+            value = value_raw.pythonize()  # type: ignore
+            output[oid] = value
         return output
 
 
@@ -151,7 +154,8 @@ def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_output = raw.multigetnext(ip, community, oids, port, timeout)
-    pythonized = [VarBind(oid, value.pythonize()) for oid, value in raw_output]
+    pythonized = [VarBind(oid, value.pythonize())  # type: ignore
+                  for oid, value in raw_output]
     return pythonized
 
 
@@ -166,7 +170,7 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
     raw_result = raw.walk(ip, community, oid, port, timeout)
     for raw_oid, raw_value in raw_result:
-        yield VarBind(raw_oid, raw_value.pythonize())
+        yield VarBind(raw_oid, raw_value.pythonize())  # type: ignore
 
 
 def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
@@ -182,11 +186,11 @@ def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
     for oid, value in raw_output:
         if isinstance(value, Type):
             value = value.pythonize()
-        yield VarBind(oid, value)
+        yield VarBind(oid, value)  # type: ignore
 
 
 def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
+    # type: (str, str, str, Type[T], int, int) -> T
     """
     Delegates to :py:func:`~puresnmp.api.raw.set` but returns simple Python
     types.
@@ -194,13 +198,13 @@ def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = multiset(ip, community, [(oid, value)],
+    result = multiset(ip, community, [(oid, value)],  # type: ignore
                       port, timeout=timeout)
-    return result[oid.lstrip('.')]
+    return result[oid.lstrip('.')]  # type: ignore
 
 
 def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
+    # type: (str, str, List[Tuple[str, raw.T]], int, int) -> Dict[str, PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiset` but returns simple
     Python types.
@@ -238,7 +242,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
 def bulkwalk(ip, community, oids, bulk_size=10, port=161,
              timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[str], int, int) -> TWalkResponse
+    # type: (str, str, List[str], int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.bulkwalk` but returns simple
     Python types.
@@ -252,11 +256,11 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161,
             bulk_size),
         timeout=timeout)
     for oid, value in result:
-        yield VarBind(oid, value)
+        yield VarBind(oid, value)  # type: ignore
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
+    # type: (str, str, str, int, int) -> Generator[Dict[str, Any], None, None]
     """
     Fetches a table from the SNMP agent. Each value will be converted to a
     pure-python type.
@@ -269,7 +273,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
              'required', DeprecationWarning)
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1
+        num_base_nodes = len(parsed_oid) + 1  # type: ignore
     tmp = raw.table(ip, community, oid, port=port,
                     num_base_nodes=num_base_nodes)
     for row in tmp:
@@ -280,7 +284,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
 
 
 def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
-    # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
+    # type: (str, str, str, int, int, int) -> Generator[Dict[str, Any], None, None]
     """
     Fetch an SNMP table using "bulk" requests converting the values into pure
     Python types.
@@ -293,7 +297,7 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
              'required', DeprecationWarning)
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1
+        num_base_nodes = len(parsed_oid) + 1  # type: ignore
     tmp = raw.bulktable(ip, community, oid, port=port, bulk_size=bulk_size)
     for row in tmp:
         index = row.pop('0')

@@ -84,7 +84,7 @@ def get_unfinished_walk_oids(grouped_oids):
 
     # Build a mapping from the originally requested OID to the last fetched OID
     # from that tree.
-    last_received_oids = {k: WalkRow(v[-1], v[-1].oid in k)
+    last_received_oids = {k: WalkRow(v[-1], v[-1].oid in k)  # type: ignore
                           for k, v in grouped_oids.items() if v}
 
     output = [item for item in sorted(last_received_oids.items())

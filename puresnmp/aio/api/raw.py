@@ -504,7 +504,7 @@ def _bulkwalk_fetcher(bulk_size=10):
 
 async def bulkwalk(ip, community, oids, bulk_size=10, port=161,
                    timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[str], int, int) -> TWalkResponse
+    # type: (str, str, List[str], int, int, int) -> TWalkResponse
     """
     More efficient implementation of :py:func:`~.walk`. It uses
     :py:func:`~.bulkget` under the hood instead of :py:func:`~.getnext`.

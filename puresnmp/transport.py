@@ -80,7 +80,8 @@ class Transport(object):
                 continue
         else:
             sock.close()
-            raise Timeout("Max of %d retries reached" % self.retries)
+            raise Timeout(
+                "Max of %d retries reached" % self.retries)  # type: ignore
         sock.close()
 
         if LOG.isEnabledFor(logging.DEBUG):
