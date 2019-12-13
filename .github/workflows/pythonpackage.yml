@@ -29,3 +29,9 @@ jobs:
       run: |
         pip install pytest
         pytest puresnmp
+    - name: Publish package
+      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@1.0.0a0
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_token }}
