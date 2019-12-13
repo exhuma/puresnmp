@@ -11,8 +11,7 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       and community). This can then replace some duplicated code in
 #       "puresnmp.get", "puresnmp.walk" & co.
 
-from collections import namedtuple
-from typing import TYPE_CHECKING, Iterable, NamedTuple, Tuple, cast
+from typing import TYPE_CHECKING, Iterable, Tuple, cast
 
 import six
 
