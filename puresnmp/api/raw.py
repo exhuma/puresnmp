@@ -45,7 +45,7 @@ if TYPE_CHECKING:  # pragma: no cover
     TFetcher = Callable[[str, str, List[str], int, int], List[VarBind]]
     T = TypeVar('T', bound=TType[PyType])  # pylint: disable=invalid-name
 try:
-    unicode  # type: Callable[[Any], str]
+    unicode = unicode  # type: Callable[[Any], str]
 except NameError:
     # pylint: disable=invalid-name
     unicode = str  # type: Callable[[Any], str]

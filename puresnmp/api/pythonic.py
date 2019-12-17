@@ -42,7 +42,7 @@ if TYPE_CHECKING:  # pragma: no cover
     T = TypeVar('T', bound=PyType)
 
 try:
-    unicode  # type: Callable[[Any], str]
+    unicode = unicode  # type: Callable[[Any], str]
 except NameError:
     # pylint: disable=invalid-name
     unicode = str  # type: Callable[[Any], str]
