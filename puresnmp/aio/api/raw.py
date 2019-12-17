@@ -57,7 +57,7 @@ if TYPE_CHECKING:  # pragma: no cover
                         Coroutine[Any, Any, List[VarBind]]]
 
 try:
-    unicode  # type: Callable[[Any], str]
+    unicode = unicode  # type: Callable[[Any], str]
 except NameError:
     # pylint: disable=invalid-name
     unicode = str  # type: Callable[[Any], str]
