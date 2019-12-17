@@ -45,7 +45,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union, Set
 
 try:
-    unicode  # type: Callable[[Any], str]
+    unicode = unicode  # type: Callable[[Any], str]
 except NameError:
     # pylint: disable=invalid-name
     unicode = str  # type: Callable[[Any], str]
