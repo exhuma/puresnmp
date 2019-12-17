@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Release 1.6.4
+~~~~~~~~~~~~~
+
+* **[fixed]** ``puresnmp`` is now also Python 3.8 compatible
+
+
 Release 1.6.3
 ~~~~~~~~~~~~~
 
