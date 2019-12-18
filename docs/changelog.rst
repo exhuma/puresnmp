@@ -30,7 +30,7 @@ Release 1.7.0
   base-nodes.
 * **[fixed]** The "retries" and "buffer_size" arguments were not properly
   handed over to the "transport" layer which is now fixed.
-* **[quality]** More automation via GitHub actions.
+* **[quality]** More automation via GitHub actions (fixed in ``1.7.0.post1``)
 * **[quality]** Code cleanup and type hint improvements. But there's still a
   lot of work to be done on the typing front.
 
