@@ -32,7 +32,7 @@ jobs:
     - name: Build distribution
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       run: |
-        pip install bdist_wheel
+        pip install wheel
         python setup.py sdist
         python setup.py bdist_wheel
     - name: Publish package
