@@ -4,7 +4,6 @@ Exceptions for the puresnmp package.
 from __future__ import unicode_literals
 
 import socket
-from warnings import warn
 
 from puresnmp.const import MAX_VARBINDS
 
@@ -44,21 +43,22 @@ class ErrorResponse(SnmpError):
         and if not specified, will use the default message for the given class.
         """
         if error_status == 1:
-            return TooBig(offending_oid)
+            return TooBig(offending_oid, message)
         if error_status == 2:
-            return NoSuchOID(offending_oid)
+            return NoSuchOID(offending_oid, message)
         if error_status == 3:
-            return BadValue(offending_oid)
+            return BadValue(offending_oid, message)
         if error_status == 4:
-            return ReadOnly(offending_oid)
+            return ReadOnly(offending_oid, message)
         if error_status == 5:
-            return GenErr(offending_oid)
+            return GenErr(offending_oid, message)
         return ErrorResponse(error_status, offending_oid, message)
 
     def __init__(self, error_status, offending_oid, message=''):
         # type: (int, ObjectIdentifier, str) -> None
-        super(ErrorResponse, self).__init__('%s (status-code: %r) on OID %s' % (
-            message or self.DEFAULT_MESSAGE, error_status, offending_oid))
+        super(ErrorResponse, self).__init__(
+            '%s (status-code: %r) on OID %s' % (
+                message or self.DEFAULT_MESSAGE, error_status, offending_oid))
         self.error_status = error_status
         self.offending_oid = offending_oid
 

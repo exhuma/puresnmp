@@ -15,6 +15,7 @@ if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, cyclic-import
     from typing import Any, Dict, Iterable, List, Union, Tuple
     from .types import Type
+    from puresnmp.typevars import PyType
 
 if six.PY2:  # pragma: no cover
 
@@ -63,6 +64,7 @@ else:
             raise TypeError(exc.args[0] + ' on type {}'.format(type(obj)))
 
 LengthValue = namedtuple('LengthValue', 'length value')
+
 
 class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
     """
@@ -164,6 +166,7 @@ class TypeInfo(namedtuple('TypeInfo', 'cls priv_const tag')):
 
         def __str__(self):
             return self.__bytes__()
+
 
 def encode_length(value):
     # type: (int) -> bytes
@@ -302,8 +305,8 @@ def visible_octets(data):
     return '\n'.join(output)
 
 
-def tablify(varbinds, num_base_nodes=0):
-    # type: ( Iterable[Tuple[Any, Any]], int ) -> List[Dict[str, Any]]
+def tablify(varbinds, num_base_nodes=0, base_oid=''):
+    # type: ( Iterable[Tuple[Any, Any]], int, str ) -> List[Dict[str, Any]]
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
@@ -313,14 +316,15 @@ def tablify(varbinds, num_base_nodes=0):
     By default, for the table-cell at OID ``1.2.3.4.5``, ``4`` is the column
     index and ``5`` is the row index.
 
-    Using ``num_base_nodes=2`` this changes, in that ``3`` becomes the column
-    index, and ``4.5`` becomes the row index.
+    Using ``num_base_nodes=2`` will only use the first two nodes (``1.2``) as
+    table-identifier, so ``3`` becomes the column index, and ``4.5`` becomes
+    the row index.
 
     The output should *not* be considered ordered in any way. If you need it
     sorted, you must sort it after retrieving the table from this function!
 
     Each element of the output is a dictionary where each key is the column
-    index. By default the index ``0`` represents the row ID.
+    index. By default the index ``0`` will be added, representing the row ID.
 
     Example::
 
@@ -351,7 +355,15 @@ def tablify(varbinds, num_base_nodes=0):
             {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
         ]
     """
-    rows = {}  # type: Dict[str, Dict[str, Type]]
+    if isinstance(base_oid, str) and base_oid:
+        # This import needs to be delayed to avoid circular imports
+        from puresnmp.x690.types import ObjectIdentifier
+        base_oid_parsed = ObjectIdentifier.from_string(base_oid)
+        # Each table has a sub-index for the table "entry" so the number of
+        # base-nodes needs to be incremented by 1
+        num_base_nodes = len(base_oid_parsed)  #  type: ignore
+
+    rows = {}  # type: Dict[str, Dict[str, Type[PyType]]]
     for oid, value in varbinds:
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]

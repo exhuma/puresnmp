@@ -11,13 +11,13 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       and community). This can then replace some duplicated code in
 #       "puresnmp.get", "puresnmp.walk" & co.
 
-from collections import namedtuple
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Tuple, cast
 
 import six
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
+from .typevars import PyType
 from .x690.types import (
     Integer,
     Null,
@@ -30,27 +30,54 @@ from .x690.util import TypeInfo, encode_length, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, List, Union, Tuple
+    from typing import Any, Iterator, List, Union
 
 
 if six.PY3:
     unicode = str  # pylint: disable=invalid-name
 
 
-class VarBind(namedtuple('VarBind', 'oid, value')):
+class VarBind(object):
     '''
     A "VarBind" is a 2-tuple containing an object-identifier and the
     corresponding value.
     '''
 
-    def __new__(cls, oid, value):
-        # type: (Union[ObjectIdentifier, str], Any) -> VarBind
+    # TODO: This class should be split in two for both the raw and pythonic
+    #       API, that would simplify the typing of both "oid" and "value"a lot
+    #       and keep things explicit
+    oid = ObjectIdentifier(0)  # type: Union[str, ObjectIdentifier]
+    value = None  # type: Union[PyType, Type[PyType]]
+
+    def __init__(self, oid, value):
+        # type: (Union[ObjectIdentifier, str], PyType) -> None
         if not isinstance(oid, (ObjectIdentifier,) + six.string_types):  # type: ignore
             raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
                             ' instances! Your value: %r' % oid)
         if isinstance(oid, six.string_types):
             oid = ObjectIdentifier.from_string(oid)
-        return super(VarBind, cls).__new__(cls, oid, value)
+        self.oid = oid
+        self.value = value
+
+    def __iter__(self):
+        # type: () -> Iterator[Union[ObjectIdentifier, PyType]]
+        return iter([self.oid, self.value])  # type: ignore
+
+    def __lt__(self, other):
+        # type: (Any) -> bool
+        return (self.oid, self.value) < (other.oid, other.value)
+
+    def __eq__(self, other):
+        # type: (Any) -> bool
+        return (self.oid, self.value) == (other.oid, other.value)
+
+    def __hash__(self):
+        # type: () -> int
+        return hash((self.oid, self.value))
+
+    def __repr__(self):
+        # type: () -> str
+        return 'VarBind(%r, %r)' % (self.oid, self.value)
 
 
 ERROR_MESSAGES = {
@@ -76,11 +103,12 @@ ERROR_MESSAGES = {
 }
 
 
-class PDU(Type):
+class PDU(Type):  # type: ignore
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
     TYPECLASS = TypeInfo.CONTEXT
+    TAG = 0
 
     @classmethod
     def decode(cls, data):
@@ -98,7 +126,10 @@ class PDU(Type):
         error_status, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
         if error_status.value:
-            error_detail, data = pop_tlv(data)
+            error_detail, data = cast(
+                Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+                pop_tlv(data)
+            )
             if not isinstance(error_detail, Sequence):
                 raise TypeError(
                     'error-detail should be a sequence but got %r' %
@@ -110,7 +141,10 @@ class PDU(Type):
                 error_status.value, offending_oid)
             raise exception
 
-        values, data = pop_tlv(data)
+        values, data = cast(
+            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+            pop_tlv(data)
+        )
         if not isinstance(values, Sequence):
             raise TypeError('PDUs can only be decoded from sequences but got '
                             '%r instead' % type(values))
@@ -132,18 +166,19 @@ class PDU(Type):
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
-        # type: (int, Union[Tuple[Any, Any], List[VarBind]], int, int) -> None
+        # type: (int, Union[VarBind, List[VarBind]], int, int) -> None
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index
-        if isinstance(varbinds, tuple):
+        if isinstance(varbinds, VarBind):
             self.varbinds = [VarBind(*varbinds)]
         else:
             self.varbinds = varbinds
 
     def __bytes__(self):
         # type: () -> bytes
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
+        wrapped_varbinds = [Sequence(vb.oid, vb.value)  # type: ignore
+                            for vb in self.varbinds]
         data = [
             Integer(self.request_id),
             Integer(self.error_status),
@@ -182,7 +217,7 @@ class PDU(Type):
             '    Varbinds: ',
         ]
         for bind in self.varbinds:
-            lines.append('        %s: %s' % (bind.oid, bind.value))
+            lines.append('        %s: %s' % (bind.oid, bind.value))  # type: ignore
 
         return '\n'.join(lines)
 
@@ -218,8 +253,9 @@ class GetRequest(PDU):
                 wrapped_oids.append(ObjectIdentifier.from_string(oid))
             else:
                 wrapped_oids.append(oid)
-        super(GetRequest, self).__init__(request_id, [VarBind(oid, Null())
-                                                      for oid in wrapped_oids])
+        super(GetRequest, self).__init__(
+            request_id,
+            [VarBind(oid, Null()) for oid in wrapped_oids])  # type: ignore
 
 
 class GetResponse(PDU):
@@ -265,7 +301,7 @@ class SetRequest(PDU):
     TAG = 3
 
 
-class BulkGetRequest(Type):
+class BulkGetRequest(Type):  # type: ignore
     """
     Represents a SNMP GetBulk request
     """
@@ -281,11 +317,12 @@ class BulkGetRequest(Type):
         self.max_repeaters = max_repeaters
         self.varbinds = []  # type: List[VarBind]
         for oid in oids:
-            self.varbinds.append(VarBind(oid, Null()))
+            self.varbinds.append(VarBind(oid, Null()))  # type: ignore
 
     def __bytes__(self):
         # type: () -> bytes
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
+        wrapped_varbinds = [Sequence(vb.oid, vb.value)  # type: ignore
+                            for vb in self.varbinds]
         data = [
             Integer(self.request_id),
             Integer(self.non_repeaters),
@@ -330,7 +367,7 @@ class BulkGetRequest(Type):
             '    Varbinds: ',
         ]
         for bind in self.varbinds:
-            lines.append('        %s: %s' % (bind.oid, bind.value))
+            lines.append('        %s: %s' % (bind.oid, bind.value))  # type: ignore
 
         return '\n'.join(lines)
 

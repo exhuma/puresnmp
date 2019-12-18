@@ -8,17 +8,15 @@ to use.
 """
 
 from __future__ import unicode_literals
-import pytest
+
 import sys
 from datetime import timedelta
-try:
-    from unittest.mock import patch, call
-except ImportError:
-    from mock import patch, call  # pip install mock
 
-from puresnmp.types import Counter, Gauge, IpAddress
+import pytest
+
 from puresnmp.aio.api.pythonic import (
     bulkget,
+    bulktable,
     bulkwalk,
     get,
     getnext,
@@ -30,8 +28,9 @@ from puresnmp.aio.api.pythonic import (
     walk
 )
 from puresnmp.const import Version
-from puresnmp.exc import SnmpError, NoSuchOID
-from puresnmp.pdu import GetRequest, VarBind, GetNextRequest, BulkGetRequest
+from puresnmp.exc import NoSuchOID, SnmpError
+from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
+from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
     Integer,
@@ -41,9 +40,15 @@ from puresnmp.x690.types import (
     to_bytes
 )
 
-from .asyncmock import AsyncMock, AsyncGenMock
+from .asyncmock import AsyncGenMock, AsyncMock
 
-pytestmark = pytest.mark.skipif(sys.version_info < (3,5),
+try:
+    from unittest.mock import patch, call
+except ImportError:
+    from mock import patch, call  # pip install mock
+
+
+pytestmark = pytest.mark.skipif(sys.version_info < (3, 5),
                                 reason="requires python3.5")
 
 
@@ -96,7 +101,7 @@ class TestSet(object):
 class TestWalk(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_walk(self):
         expected = [VarBind(
@@ -144,7 +149,7 @@ class TestMultiGet(object):
 class TestMultiWalk(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_multi_walk(self):
         expected = [
@@ -263,16 +268,16 @@ class TestGetBulkGet(object):
                 '1.3.6.1.2.1.4.3.0': Counter(57)
             })
             result = await bulkget('::1', 'public',
-                             ['1.3.6.1.2.1.1.1'],
-                             ['1.3.6.1.2.1.3.1'],
-                             max_list_size=5)
+                                   ['1.3.6.1.2.1.1.1'],
+                                   ['1.3.6.1.2.1.3.1'],
+                                   max_list_size=5)
         assert result == expected
 
 
 class TestGetBulkWalk(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_bulkwalk(self):
         request_ids = [1001613222, 1001613223, 1001613224]
@@ -286,7 +291,7 @@ class TestGetBulkWalk(object):
 
             result = []
             async for x in bulkwalk('127.0.0.1', 'private', ['1.3.6.1.2.1.2.2'],
-                                bulk_size=20):
+                                    bulk_size=20):
                 result.append(x)
 
         expected = [
@@ -302,21 +307,44 @@ class TestGetBulkWalk(object):
 class TestTable(object):
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(sys.version_info < (3,6),
+    @pytest.mark.skipif(sys.version_info < (3, 6),
                         reason="requires python3.6")
     async def test_table(self):
         with patch('puresnmp.aio.api.pythonic.raw', new_callable=AsyncGenMock) as mck:
             oid = ObjectIdentifier.from_string
-            mck.walk.return_value = [
-                VarBind(oid('1.2.1.1'), OctetString(b'test-11')),
-                VarBind(oid('1.2.2.1'), OctetString(b'test-21')),
-                VarBind(oid('1.2.1.2'), OctetString(b'test-21')),
-                VarBind(oid('1.2.2.2'), OctetString(b'test-22')),
+            mck.table.return_value = [
+                {'0': '1', '1': Integer(1)},
+                {'0': '2', '1': Integer(2)},
             ]
-            result = await table('1.2.3.4', 'private', ['1.2'])
+            aio_result = table('1.2.3.4', 'private', '1.2')
+            result = []
+            async for row in aio_result:
+                result.append(row)
         expected = [
-            {'0': '1', '1': b'test-11', '2': b'test-21'},
-            {'0': '2', '1': b'test-21', '2': b'test-22'},
+            {'0': '1', '1': 1},
+            {'0': '2', '1': 2},
         ]
         assert len(result) == len(expected)
 
+
+class TestBulkTable(object):
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(sys.version_info < (3, 6),
+                        reason="requires python3.6")
+    async def test_table(self):
+        with patch('puresnmp.aio.api.pythonic.raw') as mck:
+            oid = ObjectIdentifier.from_string
+            mck.bulktable.return_value = [
+                {'0': '1', '1': Integer(1)},
+                {'0': '2', '1': Integer(2)},
+            ]
+            aio_result = bulktable('1.2.3.4', 'private', '1.2')
+            result = []
+            async for row in aio_result:
+                result.append(row)
+        expected = [
+            {'0': '1', '1': 1},
+            {'0': '2', '1': 2},
+        ]
+        assert result == expected

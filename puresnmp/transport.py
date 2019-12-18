@@ -14,6 +14,7 @@ hard to test.
 import logging
 import socket
 from ipaddress import ip_address
+from typing import Generator
 
 from .exc import Timeout
 from .x690.util import visible_octets
@@ -45,10 +46,11 @@ class Transport(object):
     def __init__(self, timeout=2, retries=RETRIES, buffer_size=BUFFER_SIZE):
         # type: (int, int, int) -> None
         self.timeout = timeout
-        self.retries = RETRIES
-        self.buffer_size = BUFFER_SIZE
+        self.retries = retries
+        self.buffer_size = buffer_size
 
-    def send(self, ip, port, packet):  # pragma: no cover
+    def send(
+            self, ip, port, packet):  # pragma: no cover
         # type: ( str, int, bytes ) -> bytes
         """
         Opens a TCP connection to *ip:port*, sends a packet with *bytes* and
@@ -68,17 +70,18 @@ class Transport(object):
                 if LOG.isEnabledFor(logging.DEBUG):
                     hexdump = visible_octets(packet)
                     LOG.debug('Sending packet to %s:%s (attempt %d/%d)\n%s',
-                            ip, port, (num_retry+1), self.retries, hexdump)
+                              ip, port, (num_retry+1), self.retries, hexdump)
                 sock.sendto(packet, (ip, port))
                 response = sock.recv(self.buffer_size)
                 break
             except socket.timeout:
                 LOG.debug('Timeout during attempt #%d',
-                        (num_retry+1))  # TODO add detail
+                          (num_retry+1))  # TODO add detail
                 continue
         else:
             sock.close()
-            raise Timeout("Max of %d retries reached" % self.retries)
+            raise Timeout(
+                "Max of %d retries reached" % self.retries)  # type: ignore
         sock.close()
 
         if LOG.isEnabledFor(logging.DEBUG):
@@ -88,7 +91,7 @@ class Transport(object):
         return response
 
     def listen(self, bind_address='0.0.0.0', port=162):  # pragma: no cover
-        # type: (str, int) -> Generates[bytes, None, None]
+        # type: (str, int) -> Generator[bytes, None, None]
         """
         Sets up a listening UDP socket and returns a generator over recevied
         packets::
@@ -114,7 +117,6 @@ class Transport(object):
                     LOG.debug('Received packet:\n%s', hexdump)
 
                 yield request
-
 
     def get_request_id(self):  # pragma: no cover
         # type: () -> int

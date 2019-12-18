@@ -29,3 +29,6 @@ ERRORS_STRICT = 'strict'
 
 #: A magic value used to detect lenient error-handling
 ERRORS_WARN = 'warn'
+
+#: TCP timeout which is used if not manually overridden
+DEFAULT_TIMEOUT = 6
