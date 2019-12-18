@@ -30,7 +30,7 @@ jobs:
         pip install pytest
         pytest puresnmp
 
-  build:
+  publish:
 
     runs-on: ubuntu-latest
     strategy:
