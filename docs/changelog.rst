@@ -1,6 +1,39 @@
 Changelog
 =========
 
+Release 1.7.0
+~~~~~~~~~~~~~
+
+* **[added]** A new function ``bulktable`` is added to all external APIs:
+
+  * ``puresnmp.api.raw.bulktable``
+  * ``puresnmp.api.pythonic.bulktable``
+  * ``puresnmp.aio.api.raw.bulktable``
+  * ``puresnmp.aio.api.pythonic.bulktable``
+
+  This function returns a pseudo-table (just like the normal ``table``
+  function) but uses more efficient SNMP "bulk" requests under the hood.
+
+* **[added]** The library now knows how to deal with "T61" string encodings and
+  supports them if they are returned from a device (or sent to a device).
+* **[support]** The ``table`` and ``bulktable`` functions no longer require the
+  ``num_base_nodes`` argument as it was redundant with the OID. Now, if it is
+  used, it will emit a deprecation warning and will be removed in a future
+  release.
+* **[support]** The ``bulkwalk`` table now also takes an optional timeout
+  argument.
+* **[support]** The default TCP timeout is now set via the module-level
+  variable ``puresnmp.const.DEFAULT_TIMEOUT``. This can still be overridden by
+  using the ``timeout`` argument on function calls.
+* **[support]** (internal) The X.690 ``tablify`` function now optionally takes
+  an OID as table "base", which is easier than passing in the number of
+  base-nodes.
+* **[fixed]** The "retries" and "buffer_size" arguments were not properly
+  handed over to the "transport" layer which is now fixed.
+* **[quality]** More automation via GitHub actions.
+* **[quality]** Code cleanup and type hint improvements. But there's still a
+  lot of work to be done on the typing front.
+
 Release 1.6.4
 ~~~~~~~~~~~~~
 

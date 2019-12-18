@@ -291,6 +291,8 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
 
     See :py:func:`puresnmp.api.raw.table` for more information of the returned
     structure.
+
+    .. versionadded: 1.7.0
     """
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '

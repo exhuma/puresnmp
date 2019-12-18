@@ -580,6 +580,8 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
     Fetch an SNMP table using "bulk" requests.
 
     See :py:func:`.table` for more information of the returned structure.
+
+    .. versionadded: 1.7.0
     """
     tmp = []
     if num_base_nodes:
