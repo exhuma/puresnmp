@@ -21,14 +21,17 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .[test]
-    - name: Lint with flake8
+    - name: Lint with pylint
       run: |
-        pip install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        pip install pylint
+        pylint --reports=y --exit-zero puresnmp
     - name: Test with pytest
       run: |
         pip install pytest
         pytest puresnmp
+    - name: Publish package
+      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@e777b333
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_token }}
