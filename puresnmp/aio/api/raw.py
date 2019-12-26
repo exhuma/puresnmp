@@ -14,7 +14,7 @@ from __future__ import unicode_literals
 import logging
 import sys
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Tuple, cast
+from typing import TYPE_CHECKING, Any, Tuple, cast, List
 from warnings import warn
 
 from ...const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
@@ -28,7 +28,7 @@ from ...pdu import (
     SetRequest,
     VarBind
 )
-from ...typevars import PyType
+from ...typevars import PyType, TWrappedPyType
 from ...util import BulkResult  # NOQA (must be here for type detection)
 from ...util import get_unfinished_walk_oids, group_varbinds
 from ...x690.types import (
@@ -43,13 +43,14 @@ from ..transport import Transport
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
+    from typing import Type as TType
     from typing import (
         AsyncGenerator,
         Callable,
         Coroutine,
         Dict,
-        List,
         Set,
+        TypeVar,
         Union,
     )
     TWalkResponse = AsyncGenerator[VarBind, None]
@@ -172,7 +173,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     for oid, value in response_object.varbinds:
         if value is END_OF_MIB_VIEW:
             break
-        output.append(VarBind(oid, value))
+        output.append(VarBind(oid, value))  # type: ignore
 
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
@@ -291,7 +292,7 @@ async def multiwalk(
 
 
 async def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
+    # type: (str, str, str, TWrappedPyType, int, int) -> TWrappedPyType
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
     data structure. The value must be a subclass of
@@ -310,7 +311,7 @@ async def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # 
 
 
 async def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
+    # type: (str, str, List[Tuple[str, TWrappedPyType]], int, int) -> Dict[str, TWrappedPyType]
     """
     Executes an SNMP SET request on multiple OIDs. The result is returned as
     pure Python data structure.
@@ -468,7 +469,7 @@ async def bulkget(
     }
 
     # prepare output for listing
-    repeating_out = OrderedDict()  # type: Dict[str, Type[PyType]]
+    repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
         if value is END_OF_MIB_VIEW:
             break
@@ -548,7 +549,7 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161,
                        fetcher=_bulkwalk_fetcher(bulk_size),
                        timeout=timeout)
     async for oid, value in result:
-        yield VarBind(oid, value)
+        yield VarBind(oid, value)  # type: ignore
 
 
 async def table(ip, community, oid, port=161, num_base_nodes=0):
@@ -572,16 +573,16 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     [{'0': '1', '1': Integer(1), '2': Counter(30)},
      {'0': '2', '1': Integer(2), '2': Counter(123)}]
     """
-    tmp = []
+    tmp = []  # type: List[Tuple[str, Type]]
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '
              'required', DeprecationWarning)
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1
+        num_base_nodes = len(parsed_oid) + 1  # type: ignore
     varbinds = walk(ip, community, oid, port=port)
     async for varbind in varbinds:
-        tmp.append(varbind)
+        tmp.append(varbind)  # type: ignore
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
 
@@ -595,15 +596,16 @@ async def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10
 
     .. versionadded: 1.7.0
     """
-    tmp = []
+    tmp_raw = []
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '
              'required', DeprecationWarning)
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1
+        num_base_nodes = len(parsed_oid) + 1  # type: ignore
     varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
     async for varbind in varbinds:
-        tmp.append(varbind)
+        tmp_raw.append(varbind)
+    tmp = cast(List[Tuple[Any, Any]], tmp_raw)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table

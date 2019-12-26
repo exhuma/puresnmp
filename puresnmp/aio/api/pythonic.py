@@ -42,12 +42,15 @@ if TYPE_CHECKING:  # pragma: no cover
         Dict,
         List,
         Tuple,
+        TypeVar,
         Union,
     )
-    from puresnmp.typevars import PyType
+    from puresnmp.typevars import PyType, TWrappedPyType
+
     TWalkResponse = AsyncGenerator[VarBind, None]
     TFetcher = Callable[[str, str, List[str], int, int],
                         Coroutine[Any, Any, List[VarBind]]]
+    T = TypeVar('T', bound=PyType)  # pylint: disable=invalid-name
 
 try:
     unicode = unicode  # type: Callable[[Any], str]
@@ -105,7 +108,8 @@ async def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_output = await raw.multigetnext(ip, community, oids, port, timeout)
-    pythonized = [VarBind(oid, value.pythonize()) for oid, value in raw_output]
+    pythonized = [VarBind(oid, value.pythonize())  # type: ignore
+                  for oid, value in raw_output]
     return pythonized
 
 
@@ -120,7 +124,7 @@ async def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
     raw_result = raw.walk(ip, community, oid, port, timeout)
     async for raw_oid, raw_value in raw_result:
-        yield VarBind(raw_oid, raw_value.pythonize())
+        yield VarBind(raw_oid, raw_value.pythonize())  # type: ignore
 
 
 async def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
@@ -136,11 +140,11 @@ async def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
     async for oid, value in raw_output:
         if isinstance(value, Type):
             value = value.pythonize()
-        yield VarBind(oid, value)
+        yield VarBind(oid, value)  # type: ignore
 
 
 async def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type[PyType], int, int) -> Type[PyType]
+    # type: (str, str, str, Type[T], int, int) -> T
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.set` but returns simple Python
     types.
@@ -150,11 +154,11 @@ async def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # 
 
     result = await multiset(ip, community, [(oid, value)],
                             port, timeout=timeout)
-    return result[oid.lstrip('.')]
+    return result[oid.lstrip('.')]  # type: ignore
 
 
 async def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[Tuple[str, Type[PyType]]], int, int) -> Dict[str, Type[PyType]]
+    # type: (str, str, List[Tuple[str, Type[TWrappedPyType]]], int, int) -> Dict[str, TWrappedPyType]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiset` but returns simple
     Python types.
@@ -206,11 +210,11 @@ async def bulkwalk(ip, community, oids, bulk_size=10, port=161,
             bulk_size),
         timeout=timeout)
     async for oid, value in result:
-        yield VarBind(oid, value)
+        yield VarBind(oid, value)  # type: ignore
 
 
 async def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
+    # type: (str, str, str, int, int) -> AsyncGenerator[Dict[str, Any], None]
     """
     Fetches a table from the SNMP agent. Each value will be converted to a
     pure-python type.
@@ -223,7 +227,7 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
              'required', DeprecationWarning)
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1
+        num_base_nodes = len(parsed_oid) + 1  # type: ignore
     tmp = raw.table(ip, community, oid, port=port,
                     num_base_nodes=num_base_nodes)
     async for row in tmp:
@@ -234,7 +238,7 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
 
 
 async def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
-    # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
+    # type: (str, str, str, int, int, int) -> AsyncGenerator[Dict[str, Any], None]
     """
     Fetch an SNMP table using "bulk" requests converting the values into pure
     Python types.
@@ -249,7 +253,7 @@ async def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10
              'required', DeprecationWarning)
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1
+        num_base_nodes = len(parsed_oid) + 1  # type: ignore
     tmp = raw.bulktable(ip, community, oid, port=port, bulk_size=bulk_size)
     for row in tmp:
         index = row.pop('0')
