@@ -573,7 +573,7 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     [{'0': '1', '1': Integer(1), '2': Counter(30)},
      {'0': '2', '1': Integer(2), '2': Counter(123)}]
     """
-    tmp = []  # type: List[Tuple[str, Type]]
+    tmp = []  # type: List[Tuple[str, Type[Any]]]
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '
              'required', DeprecationWarning)

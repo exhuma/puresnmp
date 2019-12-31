@@ -73,7 +73,7 @@ class OctetString(Type[bytes]):
     def __init__(self, value: Union[unicode, bytes]) -> None: ...
 
 
-class Sequence(Type[List[Type[Any]]]):
+class Sequence(Type[List[Type[Any]]]):  # type: ignore
     def __init__(self, *items: Type[Any]) -> None: ...
 
 
@@ -110,7 +110,7 @@ class Real(Type[float]):
     ...
 
 
-class Enumerated(Type[List[Any]]):
+class Enumerated(Type[List[Any]]):  # type: ignore
     ...
 
 
