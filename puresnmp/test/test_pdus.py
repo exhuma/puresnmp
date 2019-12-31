@@ -266,3 +266,33 @@ class TestError(ByteTester):
             exc.exception.offending_oid,
             ObjectIdentifier.from_string('1.2.3')
         )
+
+
+class TestVarBind(ByteTester):
+    """
+    This class tests the necessary functionalities of VarBind instances
+    """
+
+    def setUp(self):
+        self.varbind = VarBind('1.2', 'world')
+
+    def test_unpacking(self):
+        """
+        VarBinds should be unpackagbe/destructuring should work
+        """
+        a, b = self.varbind
+        self.assertEqual((a, b), (ObjectIdentifier(1, 2), "world"))
+
+    def test_indexing(self):
+        """
+        Accessing values by index should work
+        """
+        a, b = self.varbind[0], self.varbind[1]
+        self.assertEqual((a, b), (ObjectIdentifier(1, 2), "world"))
+
+    def test_attrs(self):
+        """
+        Accessing values by attribute should work
+        """
+        a, b = self.varbind.oid, self.varbind.value
+        self.assertEqual((a, b), (ObjectIdentifier(1, 2), "world"))

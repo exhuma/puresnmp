@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Release 1.7.1
+~~~~~~~~~~~~~
+
+* **[fixed]** Version 1.7.0 introduced a regression which caused ``VarBind``
+  instances to lose the ability to be indexed. This is now fixed.
+
 Release 1.7.0
 ~~~~~~~~~~~~~
 
