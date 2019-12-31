@@ -63,6 +63,9 @@ class VarBind(object):
         # type: () -> Iterator[Union[ObjectIdentifier, PyType]]
         return iter([self.oid, self.value])  # type: ignore
 
+    def __getitem__(self, idx):
+        return list(self)[idx]
+
     def __lt__(self, other):
         # type: (Any) -> bool
         return (self.oid, self.value) < (other.oid, other.value)
