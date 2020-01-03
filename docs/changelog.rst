@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Release 1.7.2
+~~~~~~~~~~~~~
+
+* **[fixed]** Fixed a regression introduced in 1.6.3 (commit 7e559d5d) causing
+  modified values for ``BUFFER_SIZE`` and ``RETRIES`` to be ignored.
+
 Release 1.7.1
 ~~~~~~~~~~~~~
 
