@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Release 1.7.3
+~~~~~~~~~~~~~
+
+* **[support]** Make ``bulktable()`` available via the package root (#73)
+
 Release 1.7.2
 ~~~~~~~~~~~~~
 
