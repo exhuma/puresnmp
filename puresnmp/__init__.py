@@ -18,6 +18,7 @@ import verlib  # type: ignore
 import puresnmp.types
 from puresnmp.api.pythonic import (
     bulkget,
+    bulktable,
     bulkwalk,
     get,
     getnext,
