@@ -1,4 +1,5 @@
-# type: ignore  (type-hinting is done in stub file)
+# type: ignore
+# Type-Hinting is done in a stub file
 """
 Overview
 ========
