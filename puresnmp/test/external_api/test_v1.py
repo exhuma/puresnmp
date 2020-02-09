@@ -312,7 +312,7 @@ class TestGet(ByteTester):
             '8': 1,
             '9': datetime.timedelta(0)
         }]
-        six.assertCountEqual(self, result, expected)
+        self.assertEqual(result, expected)
         self.assertEqual(self.transport.send.call_count, 45)
         for row in result:
             self.assertIsInstance(row, dict)
