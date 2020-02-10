@@ -1,7 +1,7 @@
 Changelog
 =========
 
-Release 1.7.3
+Release 1.7.4
 ~~~~~~~~~~~~~
 
 * **[fixed]** Removed a regression from 1.7.0: Table outputs should be lists in
