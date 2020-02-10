@@ -425,12 +425,13 @@ class Sequence(Type):
 
 
 class Integer(Type):
+    SIGNED = True
     TAG = 0x02
     value = 0
 
     @classmethod
     def decode(cls, data):
-        return cls(int_from_bytes(data, 'big', signed=True))
+        return cls(int_from_bytes(data, 'big', signed=cls.SIGNED))
 
     def __init__(self, value):
         self.value = value
