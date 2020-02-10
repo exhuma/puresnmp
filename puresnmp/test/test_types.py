@@ -24,6 +24,18 @@ def test_counter(value, expected):
     assert instance.value == expected
 
 
+def test_counter_issue_75():
+    """
+    GitHub issue #75 reports incorrect counter decoding.
+
+    This test covers this issue.
+    """
+    data = b'\x41\x04\x84\x43\x20\xf8'
+    result = t.Counter.from_bytes(data)
+    expected = t.Counter(2218991864)
+    assert result == expected
+
+
 @pytest.mark.parametrize('value, expected', [
     (-42, 0),  # Underflow below threshold
     (-1, 0),  # Underflow at threshold

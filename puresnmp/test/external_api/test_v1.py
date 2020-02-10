@@ -263,6 +263,9 @@ class TestGet(ByteTester):
         responses = readbytes_multiple('apiv1/table_response.hex')
         self.transport.send.side_effect = responses
         result = snmp.table('127.0.0.1', 'private', '1.3.6.1.2.1.2.2')
+
+        # Sort the result for Python < 3.6 (unsorted dicts)
+        result = sorted(result, key=lambda item: item['0'])
         expected = [{
             '0': '1',
             '1': 1,
@@ -312,7 +315,7 @@ class TestGet(ByteTester):
             '8': 1,
             '9': datetime.timedelta(0)
         }]
-        six.assertCountEqual(self, result, expected)
+        self.assertEqual(result, expected)
         self.assertEqual(self.transport.send.call_count, 45)
         for row in result:
             self.assertIsInstance(row, dict)

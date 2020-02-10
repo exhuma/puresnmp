@@ -63,6 +63,7 @@ class Counter(Integer):
     """
     SNMP type for counters.
     """
+    SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x01
 
@@ -79,6 +80,7 @@ class Gauge(Integer):
     """
     SNMP type for gauges.
     """
+    SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x02
 
@@ -87,6 +89,7 @@ class TimeTicks(Integer):
     """
     SNMP type for time ticks.
     """
+    SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x03
 
@@ -120,6 +123,7 @@ class Counter64(Integer):
     """
     As defined in RFC 2578
     """
+    SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x06
 
