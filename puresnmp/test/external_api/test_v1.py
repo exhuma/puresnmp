@@ -263,6 +263,7 @@ class TestGet(ByteTester):
         responses = readbytes_multiple('apiv1/table_response.hex')
         self.transport.send.side_effect = responses
         result = snmp.table('127.0.0.1', 'private', '1.3.6.1.2.1.2.2')
+        result = sorted(result, key=lambda item: item['0'])
         expected = [{
             '0': '1',
             '1': 1,
