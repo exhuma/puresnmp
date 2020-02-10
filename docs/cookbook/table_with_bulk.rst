@@ -23,6 +23,11 @@ Python Code
 Output
 ~~~~~~
 
+.. warning::
+
+    Due to the nature of how tables are constructed, the ordering of rows is
+    *not* guaranteed in Python < 3.6!
+
 .. code-block:: python
 
     [{'0': '1',
