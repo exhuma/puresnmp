@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Release 1.7.4
+~~~~~~~~~~~~~
+
+* **[fixed]** Removed a regression from 1.7.0: Table outputs should be lists in
+  the 1.x branch as documented (#74)
+* **[fixed]** Removed a type-hint which tripped up mypy (#75)
+* **[fixed]** Fix decoding of unsigned integer values (#76)
+
+
 Release 1.7.3
 ~~~~~~~~~~~~~
 
