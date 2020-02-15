@@ -145,7 +145,7 @@ def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
+def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multigetnext` but returns simple
@@ -153,7 +153,7 @@ def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multigetnext(ip, community, oids, port, timeout)
+    raw_output = raw.multigetnext(ip, community, oids, port, timeout, version=version)
     pythonized = [VarBind(oid, value.pythonize())  # type: ignore
                   for oid, value in raw_output]
     return pythonized
@@ -174,7 +174,7 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
 
 def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
-              fetcher=multigetnext):
+              fetcher=multigetnext, version=Version.V2C):
     # type: (str, str, List[str], int, int, TFetcher) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiwalk` but returns simple
@@ -182,7 +182,7 @@ def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher)
+    raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher, version=version)
     for oid, value in raw_output:
         if isinstance(value, Type):
             value = value.pythonize()

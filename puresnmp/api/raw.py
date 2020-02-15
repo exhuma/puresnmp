@@ -122,7 +122,7 @@ def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
+def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
     # type: (str, str, List[str], int, int) -> List[VarBind]
     """
     Executes a single multi-oid GETNEXT request.
@@ -141,7 +141,7 @@ def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     transport = Transport(timeout=timeout)
     request = GetNextRequest(transport.get_request_id(), *oids)
     packet = Sequence(
-        Integer(Version.V2C),
+        Integer(version),
         OctetString(community),
         request
     )
@@ -207,7 +207,7 @@ def walk(ip, community, oid, port=161,
 def multiwalk(
         ip, community, oids,
         port=161, timeout=DEFAULT_TIMEOUT, fetcher=multigetnext,
-        errors=ERRORS_STRICT):
+        errors=ERRORS_STRICT, version=Version.V2C):
     # type: (str, str, List[str], int, int, TFetcher, str) -> TWalkResponse
     """
     Executes a sequence of SNMP GETNEXT requests and returns a generator over
@@ -224,7 +224,7 @@ def multiwalk(
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)
 
-    varbinds = fetcher(ip, community, oids, port, timeout)
+    varbinds = fetcher(ip, community, oids, port, timeout, version=version)
     requested_oids = [OID(oid) for oid in oids]
     grouped_oids = group_varbinds(varbinds, requested_oids)
     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
@@ -250,7 +250,7 @@ def multiwalk(
         next_fetches_str = [unicode(_) for _ in next_fetches]
         try:
             varbinds = fetcher(
-                ip, community, next_fetches_str, port, timeout)
+                ip, community, next_fetches_str, port, timeout, version=version)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
