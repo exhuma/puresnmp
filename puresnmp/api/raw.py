@@ -72,7 +72,7 @@ def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     return result[0]
 
 
-def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
+def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
     # type: ( str, str, List[str], int, int ) -> List[Type[PyType]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
@@ -89,7 +89,7 @@ def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     parsed_oids = [OID(oid) for oid in oids]
 
     packet = Sequence(
-        Integer(Version.V2C),
+        Integer(version),
         OctetString(community),
         GetRequest(transport.get_request_id(), *parsed_oids)
     )
@@ -341,7 +341,7 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
 
 def bulkget(
         ip, community, scalar_oids, repeating_oids, max_list_size=1,
-        port=161, timeout=DEFAULT_TIMEOUT):
+        port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
     """
     Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
@@ -420,7 +420,7 @@ def bulkget(
     non_repeaters = len(scalar_oids)
 
     packet = Sequence(
-        Integer(Version.V2C),
+        Integer(version),
         OctetString(community),
         BulkGetRequest(
             transport.get_request_id(), non_repeaters, max_list_size, *oids)
