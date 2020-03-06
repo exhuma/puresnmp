@@ -472,7 +472,7 @@ def _bulkwalk_fetcher(bulk_size=10):
     """
 
     def fetcher(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
-        # type: (str, str, List[str], int, int) -> List[VarBind]
+        # type: (str, str, List[str], int, int, int) -> List[VarBind]
         '''
         Executes a SNMP BulkGet request.
         '''
