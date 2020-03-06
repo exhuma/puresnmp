@@ -471,7 +471,7 @@ def _bulkwalk_fetcher(bulk_size=10):
     Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
     """
 
-    def fetcher(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
+    def fetcher(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
         # type: (str, str, List[str], int, int) -> List[VarBind]
         '''
         Executes a SNMP BulkGet request.
@@ -479,7 +479,7 @@ def _bulkwalk_fetcher(bulk_size=10):
         result = bulkget(
             ip, community, [], oids,
             max_list_size=bulk_size,
-            port=port, timeout=timeout)
+            port=port, timeout=timeout, version=version)
         return [VarBind(OID(k), v)
                 for k, v in result.listing.items()]
 

@@ -145,15 +145,15 @@ def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[str], int, int, int) -> List[VarBind]
+def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+    # type: (str, str, List[str], int, int) -> List[VarBind]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multigetnext` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multigetnext(ip, community, oids, port, timeout)
+    raw_output = raw.multigetnext(ip, community, oids, port, timeout, version=version)
     pythonized = [VarBind(oid, value.pythonize())  # type: ignore
                   for oid, value in raw_output]
     return pythonized
