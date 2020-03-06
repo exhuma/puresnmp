@@ -121,7 +121,7 @@ def get(ip, community, oid, port=161, timeout=2):
 
 
 def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
-    # type: (str, str, List[str], int, int) -> List[PyType]
+    # type: (str, str, List[str], int, int, int) -> List[PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiget` but returns simple
     Python types.
@@ -145,15 +145,15 @@ def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
-    # type: (str, str, List[str], int, int) -> List[VarBind]
+def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
+    # type: (str, str, List[str], int, int, int) -> List[VarBind]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multigetnext` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multigetnext(ip, community, oids, port, timeout, version=version)
+    raw_output = raw.multigetnext(ip, community, oids, port, timeout)
     pythonized = [VarBind(oid, value.pythonize())  # type: ignore
                   for oid, value in raw_output]
     return pythonized
@@ -175,7 +175,7 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
 def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
               fetcher=multigetnext, version=Version.V2C):
-    # type: (str, str, List[str], int, int, TFetcher) -> TWalkResponse
+    # type: (str, str, List[str], int, int, TFetcher, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiwalk` but returns simple
     Python types.
@@ -220,7 +220,7 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
 
 def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
             port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
-    # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
+    # type: (str, str, List[str], List[str], int, int, int, int) -> BulkResult
     """
     Delegates to :py:func:`~puresnmp.api.raw.mulkget` but returns simple
     Python types.

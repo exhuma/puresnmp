@@ -73,7 +73,7 @@ def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
 
 def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
-    # type: ( str, str, List[str], int, int ) -> List[Type[PyType]]
+    # type: ( str, str, List[str], int, int, int) -> List[Type[PyType]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -123,7 +123,7 @@ def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
 
 def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
-    # type: (str, str, List[str], int, int) -> List[VarBind]
+    # type: (str, str, List[str], int, int, int) -> List[VarBind]
     """
     Executes a single multi-oid GETNEXT request.
 
@@ -208,7 +208,7 @@ def multiwalk(
         ip, community, oids,
         port=161, timeout=DEFAULT_TIMEOUT, fetcher=multigetnext,
         errors=ERRORS_STRICT, version=Version.V2C):
-    # type: (str, str, List[str], int, int, TFetcher, str) -> TWalkResponse
+    # type: (str, str, List[str], int, int, TFetcher, str, int) -> TWalkResponse
     """
     Executes a sequence of SNMP GETNEXT requests and returns a generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -342,7 +342,7 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
 def bulkget(
         ip, community, scalar_oids, repeating_oids, max_list_size=1,
         port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
-    # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
+    # type: (str, str, List[str], List[str], int, int, int, int) -> BulkResult
     """
     Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
     instance.  This contains both a mapping for the scalar variables (the
