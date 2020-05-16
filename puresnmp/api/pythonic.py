@@ -260,7 +260,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161,
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
-    # type: (str, str, str, int, int) -> Generator[Dict[str, Any], None, None]
+    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     Fetches a table from the SNMP agent. Each value will be converted to a
     pure-python type.
@@ -276,15 +276,17 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
         num_base_nodes = len(parsed_oid) + 1  # type: ignore
     tmp = raw.table(ip, community, oid, port=port,
                     num_base_nodes=num_base_nodes)
+    output = []
     for row in tmp:
         index = row.pop('0')
         pythonized = {key: value.pythonize() for key, value in row.items()}
         pythonized['0'] = index
-        yield pythonized
+        output.append(pythonized)
+    return output
 
 
 def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
-    # type: (str, str, str, int, int, int) -> Generator[Dict[str, Any], None, None]
+    # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
     """
     Fetch an SNMP table using "bulk" requests converting the values into pure
     Python types.
@@ -301,11 +303,13 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1  # type: ignore
     tmp = raw.bulktable(ip, community, oid, port=port, bulk_size=bulk_size)
+    output = []
     for row in tmp:
         index = row.pop('0')
         pythonized = {key: value.pythonize() for key, value in row.items()}
         pythonized['0'] = index
-        yield pythonized
+        output.append(pythonized)
+    return output
 
 
 def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):

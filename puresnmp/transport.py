@@ -20,6 +20,8 @@ from .exc import Timeout
 from .x690.util import visible_octets
 
 LOG = logging.getLogger(__name__)
+
+#: The default number of retries for UDP packets
 RETRIES = 3
 
 #: Low-level socket buffer-size. If you run into timeouts you may want to
@@ -37,17 +39,19 @@ class Transport(object):
 
     :param timeout: How long to wait on the socket before retrying
     :param retries: The number of retries attempted if a low-level
-        socket-timeout occurs.
+        socket-timeout occurs. If set to ``None`` it will use
+        :py:data:`puresnmp.transport.RETRIES` as default.
     :param buffer_size: How much data to read from the socket. If this is too
         small, it may result in incomplete (corrupt) packages. This should be
-        kept as low as possible (see ``man(2) recv``).
+        kept as low as possible (see ``man(2) recv``). If set to ``None`` it
+        will use :py:data:`puresnmp.transport.BUFFER_SIZE` as default.
     """
 
-    def __init__(self, timeout=2, retries=RETRIES, buffer_size=BUFFER_SIZE):
-        # type: (int, int, int) -> None
+    def __init__(self, timeout=2, retries=None, buffer_size=None):
+        # type: (int, Optional[int], Optional[int]) -> None
         self.timeout = timeout
-        self.retries = retries
-        self.buffer_size = buffer_size
+        self.retries = retries or RETRIES
+        self.buffer_size = buffer_size or BUFFER_SIZE
 
     def send(
             self, ip, port, packet):  # pragma: no cover

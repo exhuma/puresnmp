@@ -1,6 +1,32 @@
 Changelog
 =========
 
+Release 1.7.4
+~~~~~~~~~~~~~
+
+* **[fixed]** Removed a regression from 1.7.0: Table outputs should be lists in
+  the 1.x branch as documented (#74)
+* **[fixed]** Removed a type-hint which tripped up mypy (#75)
+* **[fixed]** Fix decoding of unsigned integer values (#76)
+
+
+Release 1.7.3
+~~~~~~~~~~~~~
+
+* **[support]** Make ``bulktable()`` available via the package root (#73)
+
+Release 1.7.2
+~~~~~~~~~~~~~
+
+* **[fixed]** Fixed a regression introduced in 1.6.3 (commit 7e559d5d) causing
+  modified values for ``BUFFER_SIZE`` and ``RETRIES`` to be ignored.
+
+Release 1.7.1
+~~~~~~~~~~~~~
+
+* **[fixed]** Version 1.7.0 introduced a regression which caused ``VarBind``
+  instances to lose the ability to be indexed. This is now fixed.
+
 Release 1.7.0
 ~~~~~~~~~~~~~
 

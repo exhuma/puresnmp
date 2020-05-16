@@ -154,8 +154,14 @@ class TooManyVarbinds(SnmpError):
 class Timeout(socket.timeout):
     """
     Wrapper for network timeouts.
+
+    This wraps both "socket.timeout" and "asyncio.TimeoutError"
     """
-    # TODO: is this really needed? Why not bubble up socket.timeout?
+
+    def __init__(self, message):
+        # type: (str) -> None
+        super(Timeout, self).__init__()
+        self.message = message
 
 
 class FaultySNMPImplementation(SnmpError):
