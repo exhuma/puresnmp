@@ -192,10 +192,10 @@ def detect_ascii_slice(lines):
     return slice(0, -1)
 
 
-def readbytes_multiple(filename):
-    # type: (str) -> Generator[bytes, None, None]
+def readbytes_multiple(filename, base_dir=DATA_DIR):
+    # type: (str, str) -> Generator[bytes, None, None]
     if isinstance(filename, str):
-        with open(join(DATA_DIR, filename)) as fp:
+        with open(join(base_dir, filename)) as fp:
             lines = fp.readlines()
     else:
         lines = filename.readlines()
@@ -223,7 +223,7 @@ def readbytes_multiple(filename):
         del str_bytes[:]
 
 
-def readbytes(filename):
-    # type: (str) -> bytes
-    packets = readbytes_multiple(filename)
+def readbytes(filename, base_dir=DATA_DIR):
+    # type: (str, str) -> bytes
+    packets = readbytes_multiple(filename, base_dir)
     return next(packets)
