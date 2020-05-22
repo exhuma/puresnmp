@@ -40,3 +40,13 @@ Variable Length Quantity (encoding large numbers)
 
 Settable SNMP Values
     http://tomsalmon.eu/2012/02/net-snmp-writeable-attributes/
+
+
+SNMPv3
+------
+
+Example Sequence Diagram for Message Processing
+    https://tools.ietf.org/html/rfc3411#section-4.6.1
+
+SNMPv3 Message Structure
+    http://www.tcpipguide.com/free/t_SNMPVersion3SNMPv3MessageFormat.htm
