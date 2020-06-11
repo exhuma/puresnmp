@@ -608,9 +608,9 @@ def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
     the body of the trap
     """
     transport = Transport(buffer_size=buffer_size)
-    for data in transport.listen(listen_address, port):
+    for data, addr in transport.listen(listen_address, port):
         obj = cast(
             Tuple[Any, Any, Trap],
             Sequence.from_bytes(data)
         )
-        yield obj[2]
+        yield obj[2], addr

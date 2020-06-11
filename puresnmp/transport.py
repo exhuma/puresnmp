@@ -115,12 +115,12 @@ class Transport(object):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind((bind_address, port))
             while True:
-                request, _ = sock.recvfrom(self.buffer_size)
+                request, addr = sock.recvfrom(self.buffer_size)
                 if LOG.isEnabledFor(logging.DEBUG):
                     hexdump = visible_octets(request)
                     LOG.debug('Received packet:\n%s', hexdump)
 
-                yield request
+                yield request, addr
 
     def get_request_id(self):  # pragma: no cover
         # type: () -> int
