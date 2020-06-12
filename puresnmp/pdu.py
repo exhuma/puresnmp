@@ -323,5 +323,5 @@ class Trap(PDU):
 
     def __init__(self, *args, **kwargs):
         # type: (Any, Any) -> None
-        super().__init__(*args, **kwargs)
+        super(Trap, self).__init__(*args, **kwargs)
         self.source = None  # type: Optional[SocketInfo]
