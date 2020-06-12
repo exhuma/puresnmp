@@ -75,7 +75,23 @@ class TrapInfo:
 
     def __repr__(self):
         # type: () -> str
-        return '<TrapInfo on %s with %d values>' % (self.oid, len(self.values))
+        return "<TrapInfo from %s on %s with %d values>" % (
+            self.origin,
+            self.oid,
+            len(self.values),
+        )
+
+    @property
+    def origin(self):
+        # type: () -> str
+        """
+        Accesses the IP-Address from which the trap was sent
+
+        May be the empty string if the source is unknown
+        """
+        if self.raw_trap is None or self.raw_trap.source is None:
+            return ''
+        return self.raw_trap.source.address
 
     @property
     def uptime(self):
