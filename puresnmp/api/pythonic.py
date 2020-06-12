@@ -69,19 +69,13 @@ class TrapInfo:
     #:     ticket!
     raw_trap = None
 
-    def __init__(self, raw_trap, addr):
+    def __init__(self, raw_trap):
         # type: (Trap) -> None
         self.raw_trap = raw_trap
-        self.addr = addr
 
     def __repr__(self):
         # type: () -> str
-        return '<TrapInfo from %s on %s with %d values>' % (self.origin, self.oid, len(self.values))
-
-    @property
-    def origin(self):
-        return self.addr[0]
-    
+        return '<TrapInfo on %s with %d values>' % (self.oid, len(self.values))
 
     @property
     def uptime(self):
@@ -323,5 +317,5 @@ def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
     """
     A "pythonic" wrapper around :py:func:`puresnmp.api.raw.traps` output.
     """
-    for raw_trap, addr in raw.traps(listen_address, port, buffer_size):
-        yield TrapInfo(raw_trap, addr)
+    for raw_trap in raw.traps(listen_address, port, buffer_size):
+        yield TrapInfo(raw_trap)
