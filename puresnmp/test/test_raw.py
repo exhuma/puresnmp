@@ -41,6 +41,7 @@ from puresnmp.pdu import (
     GetResponse,
     VarBind
 )
+from puresnmp.transport import SocketInfo, SocketResponse
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
@@ -748,7 +749,12 @@ class TestBulkTable(unittest.TestCase):
 class TestTraps(unittest.TestCase):
 
     def test_traps(self):
-        data_generator = readbytes_multiple('trap_requests.hex')
+        data_generator = readbytes_multiple("trap_requests.hex")
+
+        def socket_response_generator():
+            for blob in data_generator:
+                yield SocketResponse(blob, SocketInfo("192.0.2.1", 64001))
+
         expected = [
             VarBind(ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)),
                     TimeTicks(794602)),
@@ -771,7 +777,24 @@ class TestTraps(unittest.TestCase):
         ]
         result = []
         with patch('puresnmp.api.raw.Transport') as mck:
-            mck().listen.return_value = data_generator
+            mck().listen.return_value = socket_response_generator()
             for trap in traps():
                 result.extend(trap.varbinds)
+        self.assertEqual(result, expected)
+
+    def test_traps_origin(self):
+        """
+        We want to see where a trap was sent from
+        """
+        data_generator = readbytes_multiple("trap_requests.hex")
+        def socket_response_generator():
+            for blob in data_generator:
+                yield SocketResponse(blob, SocketInfo("192.0.2.1", 64001))
+        # As we import "set" above we are no longer able to create empty sets -_-
+        result = {1}
+        with patch("puresnmp.api.raw.Transport") as mck:
+            mck().listen.return_value = socket_response_generator()
+            for trap in traps():
+                result.add(trap.source)
+        expected = {1, SocketInfo("192.0.2.1", 64001)}
         self.assertEqual(result, expected)

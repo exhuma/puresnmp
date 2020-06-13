@@ -17,8 +17,8 @@ import six
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
-from .typevars import PyType
 from .snmp import ERROR_MESSAGES, VarBind
+from .typevars import PyType, SocketInfo
 from .x690.types import (
     Integer,
     Null,
@@ -31,7 +31,7 @@ from .x690.util import TypeInfo, encode_length, to_bytes
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Iterator, List, Union
+    from typing import Any, Iterator, List, Union, Optional
 
 
 if six.PY3:
@@ -318,4 +318,10 @@ class Trap(PDU):
     """
     Represents an SNMP Trap
     """
+
     TAG = 7
+
+    def __init__(self, *args, **kwargs):
+        # type: (Any, Any) -> None
+        super(Trap, self).__init__(*args, **kwargs)
+        self.source = None  # type: Optional[SocketInfo]
