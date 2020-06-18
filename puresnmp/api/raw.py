@@ -563,7 +563,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     tmp = []
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '
-             'required', DeprecationWarning)
+             'required', DeprecationWarning, stacklevel=2)
     else:
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1  # type: ignore
@@ -586,7 +586,7 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
     tmp = []
     if num_base_nodes:
         warn('Usage of "num_base_nodes" in table operations is no longer '
-             'required', DeprecationWarning)
+             'required', DeprecationWarning, stacklevel=2)
     else:
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1  # type: ignore
