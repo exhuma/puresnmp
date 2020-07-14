@@ -39,6 +39,7 @@ from puresnmp.pdu import (
     VarBind
 )
 from puresnmp.types import Counter, Gauge, IpAddress
+from puresnmp.typevars import SocketInfo
 from puresnmp.util import BulkResult
 from puresnmp.x690.types import (
     Integer,
@@ -345,4 +346,20 @@ class TestTraps(unittest.TestCase):
                 u'1.2.1.4': b'fake-value-2',
             }
         )]
+        self.assertEqual(result, expected)
+
+    def test_trap_origins(self):
+        """
+        We want to be able to see where a trap was sent from
+        """
+        with patch("puresnmp.api.pythonic.raw") as mck:
+            oid = ObjectIdentifier.from_string
+            mck.traps.return_value = [
+                Trap(request_id=1, error_status=0, error_index=0, varbinds=[])
+            ]
+            mck.traps.return_value[-1].source = SocketInfo("192.0.2.1", 64001)
+            result = []
+            for trap in traps():
+                result.append(trap.origin)
+        expected = ["192.0.2.1"]
         self.assertEqual(result, expected)
