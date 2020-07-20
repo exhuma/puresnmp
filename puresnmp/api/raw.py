@@ -72,8 +72,8 @@ def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     return result[0]
 
 
-def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: ( str, str, List[str], int, int ) -> List[Type[PyType]]
+def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+    # type: ( str, str, List[str], int, int, int) -> List[Type[PyType]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -89,7 +89,7 @@ def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     parsed_oids = [OID(oid) for oid in oids]
 
     packet = Sequence(
-        Integer(Version.V2C),
+        Integer(version),
         OctetString(community),
         GetRequest(transport.get_request_id(), *parsed_oids)
     )
@@ -122,8 +122,8 @@ def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[str], int, int) -> List[VarBind]
+def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+    # type: (str, str, List[str], int, int, int) -> List[VarBind]
     """
     Executes a single multi-oid GETNEXT request.
 
@@ -141,7 +141,7 @@ def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     transport = Transport(timeout=timeout)
     request = GetNextRequest(transport.get_request_id(), *oids)
     packet = Sequence(
-        Integer(Version.V2C),
+        Integer(version),
         OctetString(community),
         request
     )
@@ -207,8 +207,8 @@ def walk(ip, community, oid, port=161,
 def multiwalk(
         ip, community, oids,
         port=161, timeout=DEFAULT_TIMEOUT, fetcher=multigetnext,
-        errors=ERRORS_STRICT):
-    # type: (str, str, List[str], int, int, TFetcher, str) -> TWalkResponse
+        errors=ERRORS_STRICT, version=Version.V2C):
+    # type: (str, str, List[str], int, int, TFetcher, str, int) -> TWalkResponse
     """
     Executes a sequence of SNMP GETNEXT requests and returns a generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -224,7 +224,7 @@ def multiwalk(
     """
     LOG.debug('Walking on %d OIDs using %s', len(oids), fetcher.__name__)
 
-    varbinds = fetcher(ip, community, oids, port, timeout)
+    varbinds = fetcher(ip, community, oids, port, timeout, version=version)
     requested_oids = [OID(oid) for oid in oids]
     grouped_oids = group_varbinds(varbinds, requested_oids)
     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
@@ -250,7 +250,7 @@ def multiwalk(
         next_fetches_str = [unicode(_) for _ in next_fetches]
         try:
             varbinds = fetcher(
-                ip, community, next_fetches_str, port, timeout)
+                ip, community, next_fetches_str, port, timeout, version=version)
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
             break
@@ -341,8 +341,8 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
 
 def bulkget(
         ip, community, scalar_oids, repeating_oids, max_list_size=1,
-        port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
+        port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+    # type: (str, str, List[str], List[str], int, int, int, int) -> BulkResult
     """
     Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
     instance.  This contains both a mapping for the scalar variables (the
@@ -420,7 +420,7 @@ def bulkget(
     non_repeaters = len(scalar_oids)
 
     packet = Sequence(
-        Integer(Version.V2C),
+        Integer(version),
         OctetString(community),
         BulkGetRequest(
             transport.get_request_id(), non_repeaters, max_list_size, *oids)
@@ -471,15 +471,15 @@ def _bulkwalk_fetcher(bulk_size=10):
     Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
     """
 
-    def fetcher(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
-        # type: (str, str, List[str], int, int) -> List[VarBind]
+    def fetcher(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+        # type: (str, str, List[str], int, int, int) -> List[VarBind]
         '''
         Executes a SNMP BulkGet request.
         '''
         result = bulkget(
             ip, community, [], oids,
             max_list_size=bulk_size,
-            port=port, timeout=timeout)
+            port=port, timeout=timeout, version=version)
         return [VarBind(OID(k), v)
                 for k, v in result.listing.items()]
 
@@ -608,9 +608,10 @@ def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
     the body of the trap
     """
     transport = Transport(buffer_size=buffer_size)
-    for data in transport.listen(listen_address, port):
+    for data, addr in transport.listen(listen_address, port):
         obj = cast(
             Tuple[Any, Any, Trap],
             Sequence.from_bytes(data)
         )
+        obj[2].source = addr
         yield obj[2]

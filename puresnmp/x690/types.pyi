@@ -1,12 +1,11 @@
 from datetime import datetime
 from sys import version_info
 from typing import Any, Dict, Generic, Iterator, List, Optional, Tuple
-from typing import Type as TypeType
+from typing import Type as TypeType, TypeVar
 from typing import TypeVar, Union
 
+from puresnmp.typevars import TWrappedPyType
 from puresnmp.x690.util import TypeInfo
-
-TPythonType = TypeVar('TPythonType')
 
 
 if version_info[0] == 3:
@@ -27,16 +26,16 @@ def pop_tlv(data: bytes) -> Tuple[Type[Any], bytes]: ...
 
 # Type --------
 
-class Type(Generic[TPythonType]):
-    value: Optional[TPythonType] = None
+class Type(Generic[TWrappedPyType]):
+    value: Optional[TWrappedPyType] = None
     @classmethod
     def validate(cls, data: bytes) -> None: ...
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Type[TPythonType]: ...
+    def from_bytes(cls, data: bytes) -> Type[TWrappedPyType]: ...
 
     @classmethod
-    def decode(cls, data: bytes) -> Type[TPythonType]: ...
+    def decode(cls, data: bytes) -> Type[TWrappedPyType]: ...
 
     def __bytes__(self) -> bytes: ...
     def __repr__(self) -> str: ...
@@ -74,7 +73,7 @@ class OctetString(Type[bytes]):
     def __init__(self, value: Union[unicode, bytes]) -> None: ...
 
 
-class Sequence(Type[List[Type[Any]]]):
+class Sequence(Type[List[Type[Any]]]):  # type: ignore
     def __init__(self, *items: Type[Any]) -> None: ...
 
 
@@ -111,7 +110,7 @@ class Real(Type[float]):
     ...
 
 
-class Enumerated(Type[List[Any]]):
+class Enumerated(Type[List[Any]]):  # type: ignore
     ...
 
 

@@ -14,9 +14,10 @@ hard to test.
 import logging
 import socket
 from ipaddress import ip_address
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
 
 from .exc import Timeout
+from .typevars import SocketInfo, SocketResponse
 from .x690.util import visible_octets
 
 LOG = logging.getLogger(__name__)
@@ -27,6 +28,10 @@ RETRIES = 3
 #: Low-level socket buffer-size. If you run into timeouts you may want to
 #: increase this
 BUFFER_SIZE = 4096  # 4 KiB
+
+
+if TYPE_CHECKING:
+    from typing import Optional
 
 
 class Transport(object):
@@ -95,7 +100,7 @@ class Transport(object):
         return response
 
     def listen(self, bind_address='0.0.0.0', port=162):  # pragma: no cover
-        # type: (str, int) -> Generator[bytes, None, None]
+        # type: (str, int) -> Generator[SocketResponse, None, None]
         """
         Sets up a listening UDP socket and returns a generator over recevied
         packets::
@@ -115,12 +120,12 @@ class Transport(object):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.bind((bind_address, port))
             while True:
-                request, _ = sock.recvfrom(self.buffer_size)
+                request, addr = sock.recvfrom(self.buffer_size)
                 if LOG.isEnabledFor(logging.DEBUG):
                     hexdump = visible_octets(request)
                     LOG.debug('Received packet:\n%s', hexdump)
 
-                yield request
+                yield SocketResponse(request, SocketInfo(addr[0], addr[1]))
 
     def get_request_id(self):  # pragma: no cover
         # type: () -> int
