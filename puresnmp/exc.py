@@ -160,7 +160,7 @@ class Timeout(socket.timeout):
 
     def __init__(self, message):
         # type: (str) -> None
-        super(Timeout, self).__init__()
+        super(Timeout, self).__init__(message)
         self.message = message
 
 

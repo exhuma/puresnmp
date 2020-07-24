@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Release 1.9.1
+~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** Fix a regression introduced by 1.9 causing exception message to
+  get dropped (#85)
+
 Release 1.9.0.post1
 ~~~~~~~~~~~~~~~~~~~
 
