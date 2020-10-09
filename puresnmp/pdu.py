@@ -34,10 +34,6 @@ if TYPE_CHECKING:
     from typing import Any, Iterator, List, Union, Optional
 
 
-if six.PY3:
-    unicode = str  # pylint: disable=invalid-name
-
-
 class PDU(Type):  # type: ignore
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)

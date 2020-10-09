@@ -20,6 +20,10 @@ from .exc import Timeout
 from .typevars import SocketInfo, SocketResponse
 from .x690.util import visible_octets
 
+if TYPE_CHECKING:
+    from typing import Optional
+
+
 LOG = logging.getLogger(__name__)
 
 #: The default number of retries for UDP packets
@@ -28,10 +32,6 @@ RETRIES = 3
 #: Low-level socket buffer-size. If you run into timeouts you may want to
 #: increase this
 BUFFER_SIZE = 4096  # 4 KiB
-
-
-if TYPE_CHECKING:
-    from typing import Optional
 
 
 class Transport(object):

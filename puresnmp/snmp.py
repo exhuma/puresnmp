@@ -24,6 +24,7 @@ from .x690.types import (
     pop_tlv
 )
 
+# Error messages as defined in https://tools.ietf.org/html/rfc3416#section-3
 ERROR_MESSAGES = {
     0: '(noError)',
     1: '(tooBig)',

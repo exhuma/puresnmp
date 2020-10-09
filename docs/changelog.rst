@@ -1,6 +1,37 @@
 Changelog
 =========
 
+Release 1.9.1
+~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** Fix a regression introduced by 1.9 causing exception message to
+  get dropped (#85)
+
+Release 1.9.0.post1
+~~~~~~~~~~~~~~~~~~~
+
+* **[docs]** Add dummy changelog entry for 1.8.0
+
+Release 1.9.0
+~~~~~~~~~~~~~
+
+* **[added]** Added ``TrapInfo.origin`` containing the IP-address of the host
+  emitting the SNMP Trap (See #79, by Richard Smith).
+* **[added]** Allow specifying the SNMP version on "set" operations (See #77,
+  by Mischa Spiegelmock).
+* **[added]** Support for SNMPv1 for ``multigetnext`` (by Mischa Spiegelmock)
+* **[support]** Better(?) type hinting
+* **[support]** Introdce ``puresnmp.snmp`` with SNMP-specific data structures
+  (refactored out from ``puresnmp.pdu``.
+* **[support]** Some unit-test house-keeping for Python < 3.6
+
+
+Release 1.8.0
+~~~~~~~~~~~~~
+
+This release never existed due to a mixup with the package version in a
+pull-request.
+
 Release 1.7.4
 ~~~~~~~~~~~~~
 
