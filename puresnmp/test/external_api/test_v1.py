@@ -33,7 +33,7 @@ else:
     from mock import patch
 
 OID = ObjectIdentifier.from_string
-TESTS_SHOULD_RUN = snmp.__version__.startswith('1')
+TESTS_SHOULD_RUN = True  # TODO should use importlib-metadata for this
 
 
 def assert_of_types(values, types):
