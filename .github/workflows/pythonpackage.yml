@@ -28,8 +28,7 @@ jobs:
         pylint --reports=y --exit-zero puresnmp
     - name: Test with pytest
       run: |
-        pip install pytest
-        pytest puresnmp
+        poetry run pytest puresnmp
 
   publish:
 
