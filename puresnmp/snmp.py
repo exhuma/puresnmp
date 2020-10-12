@@ -46,7 +46,7 @@ class VarBind:
 
     def __init__(self, oid, value):
         # type: (Union[ObjectIdentifier, str], PyType) -> None
-        if not isinstance(oid, (ObjectIdentifier,) + (str,)):
+        if not isinstance(oid, (ObjectIdentifier, str)):
             raise TypeError(
                 "OIDs for VarBinds must be ObjectIdentifier or str"
                 " instances! Your value: %r" % oid
