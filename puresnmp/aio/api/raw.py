@@ -11,7 +11,6 @@ such a case it's recommended to use :py:mod:`puresnmp.aio.api.raw`.
 """
 
 import logging
-import sys
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, List, Tuple, cast
 from warnings import warn
@@ -45,12 +44,6 @@ if TYPE_CHECKING:  # pragma: no cover
     TFetcher = Callable[
         [str, str, List[str], int, int], Coroutine[Any, Any, List[VarBind]]
     ]
-
-try:
-    unicode = unicode  # type: Callable[[Any], str]
-except NameError:
-    # pylint: disable=invalid-name
-    unicode = str  # type: Callable[[Any], str]
 
 _set = set
 
@@ -162,7 +155,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
         if not OID(requested) < retrieved.oid:
-            stringified = unicode(
+            stringified = str(
                 retrieved.oid
             )  # TODO remove when Py2 is dropped
             raise FaultySNMPImplementation(
@@ -256,7 +249,7 @@ async def multiwalk(
     # those.
     while unfinished_oids:
         next_fetches = [_[1].value.oid for _ in unfinished_oids]
-        next_fetches_str = [unicode(_) for _ in next_fetches]
+        next_fetches_str = [str(_) for _ in next_fetches]
         try:
             varbinds = await fetcher(
                 ip, community, next_fetches_str, port, timeout
@@ -347,7 +340,7 @@ async def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
-    output = {unicode(oid): value for oid, value in raw_response[2].varbinds}
+    output = {str(oid): value for oid, value in raw_response[2].varbinds}
     if len(output) != len(mappings):
         raise SnmpError(
             "Unexpected response. Expected %d varbinds, "
@@ -366,6 +359,7 @@ async def bulkget(
     timeout=DEFAULT_TIMEOUT,
 ):
     # type: (str, str, List[str], List[str], int, int, int) -> BulkResult
+    # pylint: disable=too-many-locals
     """
     Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
     instance.  This contains both a mapping for the scalar variables (the
@@ -473,14 +467,14 @@ async def bulkget(
     repeating_tmp = get_response.varbinds[len(scalar_oids) :]
 
     # prepare output for scalar OIDs
-    scalar_out = {unicode(oid): value for oid, value in scalar_tmp}
+    scalar_out = {str(oid): value for oid, value in scalar_tmp}
 
     # prepare output for listing
     repeating_out = OrderedDict()  # type: Dict[str, Type]
     for oid, value in repeating_tmp:
         if value is END_OF_MIB_VIEW:
             break
-        repeating_out[unicode(oid)] = value
+        repeating_out[str(oid)] = value
 
     return BulkResult(scalar_out, repeating_out)
 

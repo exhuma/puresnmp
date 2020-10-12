@@ -33,7 +33,7 @@ from ..util import BulkResult
 from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
-    # pylint: disable=unused-import, invalid-name
+    # pylint: disable=unused-import, invalid-name, ungrouped-imports
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
 
     from puresnmp.typevars import PyType
@@ -41,12 +41,6 @@ if TYPE_CHECKING:  # pragma: no cover
     TWalkResponse = Generator[VarBind, None, None]
     TFetcher = Callable[[str, str, List[str], int, int], List[VarBind]]
     T = TypeVar("T", bound=PyType)
-
-try:
-    unicode = unicode  # type: Callable[[Any], str]
-except NameError:
-    # pylint: disable=invalid-name
-    unicode = str  # type: Callable[[Any], str]
 
 _set = set
 LOG = logging.getLogger(__name__)
@@ -119,8 +113,8 @@ class TrapInfo:
         """
         output = {}
         for oid_raw, value_raw in self.raw_trap.varbinds[2:]:  # type: ignore
-            oid = oid_raw.pythonize()  # type: ignore
-            value = value_raw.pythonize()  # type: ignore
+            oid = oid_raw.pythonize()
+            value = value_raw.pythonize()
             output[oid] = value
         return output
 
@@ -252,7 +246,7 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
 
     raw_output = raw.multiset(ip, community, mappings, port, timeout)
     pythonized = {
-        unicode(oid): value.pythonize() for oid, value in raw_output.items()
+        str(oid): value.pythonize() for oid, value in raw_output.items()
     }
     return pythonized
 
@@ -268,6 +262,7 @@ def bulkget(
     version=Version.V2C,
 ):
     # type: (str, str, List[str], List[str], int, int, int, int) -> BulkResult
+    # pylint: disable=unused-argument
     """
     Delegates to :py:func:`~puresnmp.api.raw.mulkget` but returns simple
     Python types.
@@ -309,9 +304,9 @@ def bulkwalk(
         community,
         oids,
         port=port,
-        fetcher=raw._bulkwalk_fetcher(
+        fetcher=raw._bulkwalk_fetcher(  # pylint: disable=protected-access
             bulk_size
-        ),  # pylint: disable=protected-access
+        ),
         timeout=timeout,
     )
     for oid, value in result:

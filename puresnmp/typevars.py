@@ -14,10 +14,16 @@ TWrappedPyType = TypeVar("TWrappedPyType", bound=PyType)
 
 
 class SocketInfo(NamedTuple):
+    """
+    A simple tuple containing an IP address and port number
+    """
     address: str
     port: int
 
 
 class SocketResponse(NamedTuple):
+    """
+    Metadata for socket responses
+    """
     data: bytes
     info: SocketInfo

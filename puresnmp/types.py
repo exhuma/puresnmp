@@ -12,20 +12,19 @@ for the definition of the new types.
 """
 # TODO: Implement IPv6 via https://tools.ietf.org/html/rfc2465
 
-import sys
 from datetime import timedelta
 from ipaddress import IPv4Address
 from struct import pack
 from typing import TYPE_CHECKING, Union
 
 from x690.types import Integer, OctetString, Type  # type: ignore
-from x690.util import TypeInfo  # type: ignore
+from x690.util import TypeInfo
 
 if TYPE_CHECKING:
     from typing import Optional
 
 
-class IpAddress(OctetString):
+class IpAddress(OctetString):  # type: ignore
     """
     SNMP Type for IPv4 Addresses
     """
@@ -46,7 +45,7 @@ class IpAddress(OctetString):
 
     def pythonize(self):
         # type: () -> Optional[bytes]
-        return self.value
+        return self.value  # type: ignore
 
         # TODO The following code breaks backwards compatbility and should be
         # released in the next mator verion
@@ -60,7 +59,7 @@ class IpAddress(OctetString):
         # TODO v2.0.0 return ip_address(intvalue)
 
 
-class Counter(Integer):
+class Counter(Integer):  # type: ignore
     """
     SNMP type for counters.
     """
@@ -78,7 +77,7 @@ class Counter(Integer):
         super().__init__(value)
 
 
-class Gauge(Integer):
+class Gauge(Integer):  # type: ignore
     """
     SNMP type for gauges.
     """
@@ -88,7 +87,7 @@ class Gauge(Integer):
     TAG = 0x02
 
 
-class TimeTicks(Integer):
+class TimeTicks(Integer):  # type: ignore
     """
     SNMP type for time ticks.
     """
@@ -113,17 +112,26 @@ class TimeTicks(Integer):
         return timedelta(seconds=seconds)
 
 
-class Opaque(OctetString):
+class Opaque(OctetString):  # type: ignore
+    """
+    The Opaque type is to be considered to carry "any" binary data.
+
+    It is up to the application to know how to interpret this data and is
+    passed through transparently by the SNMP protocol.
+    """
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x04
 
 
-class NsapAddress(Integer):
+class NsapAddress(Integer):  # type: ignore
+    """
+    Wrapped type for an NSAP Address
+    """
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x05
 
 
-class Counter64(Integer):
+class Counter64(Integer):  # type: ignore
     """
     As defined in RFC 2578
     """
@@ -182,6 +190,5 @@ def main():  # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover
-    import sys
-
+    import sys  # pylint: disable=ungrouped-imports
     sys.exit(main())

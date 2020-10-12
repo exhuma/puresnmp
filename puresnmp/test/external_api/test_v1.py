@@ -9,7 +9,7 @@ compatible with 1.0. This includes call signatures *including* return types!
 
 import datetime
 from collections import OrderedDict
-from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 from x690.types import ObjectIdentifier, OctetString
 
@@ -19,12 +19,6 @@ from puresnmp.pdu import VarBind
 from puresnmp.util import BulkResult
 
 from .. import ByteTester, readbytes, readbytes_multiple
-
-if TYPE_CHECKING:
-    # pylint: disable=unused-import
-    from typing import Type
-
-from unittest.mock import patch
 
 OID = ObjectIdentifier.from_string
 TESTS_SHOULD_RUN = True  # TODO should use importlib-metadata for this
@@ -42,15 +36,17 @@ def assert_of_types(values, types):
         >>> assert_of_types(values, expected_types)
     """
     for result, expected in zip(values, types):
-        for a, b in zip(result, expected):
-            if not isinstance(a, b):
-                raise AssertionError("%r is not of type %r" % (a, b))
+        for result_value, result_type in zip(result, expected):
+            if not isinstance(result_value, result_type):
+                raise AssertionError(
+                    "%r is not of type %r" % (result_value, result_type)
+                )
 
 
 class TestGet(ByteTester):
     def setUp(self):
         patcher = patch("puresnmp.api.raw.Transport")
-        Transport = patcher.start()
+        Transport = patcher.start()  # pylint: disable=invalid-name
         self.transport = Transport()
         self.transport.get_request_id.return_value = 1
         self.addCleanup(lambda: patcher.stop)

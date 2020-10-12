@@ -14,6 +14,7 @@ hard to test.
 import logging
 import socket
 from ipaddress import ip_address
+from time import time
 from typing import TYPE_CHECKING, Generator
 
 from x690.util import visible_octets
@@ -59,8 +60,8 @@ class Transport:
         self.retries = retries or RETRIES
         self.buffer_size = buffer_size or BUFFER_SIZE
 
-    def send(self, ip, port, packet):  # pragma: no cover
-        # type: ( str, int, bytes ) -> bytes
+    def send(self, ip, port, packet, timeout=2):  # pragma: no cover
+        # type: ( str, int, bytes, int ) -> bytes
         """
         Opens a TCP connection to *ip:port*, sends a packet with *bytes* and
         returns the raw bytes as returned from the remote host.
@@ -72,7 +73,7 @@ class Transport:
             address_family = socket.AF_INET6
 
         sock = socket.socket(address_family, socket.SOCK_DGRAM)
-        sock.settimeout(self.timeout)
+        sock.settimeout(timeout or self.timeout)
 
         for num_retry in range(self.retries):
             try:
@@ -96,7 +97,7 @@ class Transport:
                 continue
         else:
             sock.close()
-            raise Timeout("Max of %d retries reached" % self.retries)  # type: ignore
+            raise Timeout("Max of %d retries reached" % self.retries)
         sock.close()
 
         if LOG.isEnabledFor(logging.DEBUG):
@@ -135,6 +136,7 @@ class Transport:
 
     def get_request_id(self):  # pragma: no cover
         # type: () -> int
+        # pylint: disable=no-self-use
         """
         Generates a SNMP request ID. This value should be unique for each
         request.
@@ -142,6 +144,5 @@ class Transport:
         # TODO check if this is good enough. My gut tells me "no"! Depends if
         # it has to be unique across all clients, or just one client. If it's
         # just one client it *may* be enough.
-        from time import time
 
         return int(time())

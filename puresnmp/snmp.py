@@ -2,19 +2,9 @@
 This module contains data-types and helpers which are proper to the SNMP
 protocol and independent of X.690
 """
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterable,
-    Iterator,
-    List,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, Iterator, Union
 
-import six
-from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
+from x690.types import ObjectIdentifier, Type
 
 # Error messages as defined in https://tools.ietf.org/html/rfc3416#section-3
 ERROR_MESSAGES = {

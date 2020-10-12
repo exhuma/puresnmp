@@ -1,6 +1,8 @@
-import sys
+"""
+Global configuration for pytest
+"""
 
-collect_ignore = []
-if sys.version_info < (3, 6):
-    collect_ignore.append("test_aio_pythonized.py")
-    collect_ignore.append("test_aio_raw.py")
+collect_ignore = [
+    "test_aio_pythonized.py",
+    "test_aio_raw.py",
+]

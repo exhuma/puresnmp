@@ -97,17 +97,23 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         """
         try:
             return await asyncio.wait_for(self.future, timeout, loop=self.loop)
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as exc:
             if self.transport:
                 self.transport.abort()
-            raise Timeout(f"{timeout} second timeout exceeded")
+            raise Timeout(f"{timeout} second timeout exceeded") from exc
 
 
 class Transport(SyncTransport):
+    """
+    An async variant of the synchronous TCP transport
+    """
+    # pylint: disable=invalid-overridden-method
+
     async def send(  # type: ignore
         self, ip, port, packet, timeout=6, loop=None
     ):  # pragma: no cover
         # type: ( str, int, bytes, int, Optional[AbstractEventLoop] ) -> bytes
+        # pylint: disable=arguments-differ
         """
         A coroutine that opens a UDP socket to *ip:port*, sends a packet with
         *bytes* and returns the raw bytes as returned from the remote host.
@@ -120,7 +126,7 @@ class Transport(SyncTransport):
 
         # family could be specified here (and is in the sync implementation),
         # is it needed? are retries necessary for async implementation?
-        transport, protocol = await loop.create_datagram_endpoint(
+        _, protocol = await loop.create_datagram_endpoint(
             lambda: SNMPClientProtocol(packet, loop),  # type: ignore
             remote_addr=(ip, port),
         )

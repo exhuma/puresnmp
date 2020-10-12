@@ -1,3 +1,6 @@
+"""
+Unit-tests for utility functions
+"""
 from x690.types import Null, ObjectIdentifier
 
 from puresnmp.pdu import VarBind
@@ -50,6 +53,10 @@ def test_group_varbinds():
 
 
 def test_get_unfinished_walk_oids():
+    """
+    Using get_unfinished_walk_oids should tell us which OIDs are not yet
+    completed in the existing OID groups (by looking at the OIDs)
+    """
     oid_groups = {
         OID("1.1"): [
             VarBind(OID("1.1.1"), Null()),

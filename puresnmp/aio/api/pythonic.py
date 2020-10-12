@@ -32,7 +32,7 @@ from ...util import BulkResult
 from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
-    # pylint: disable=unused-import, invalid-name
+    # pylint: disable=unused-import, invalid-name, ungrouped-imports
     from typing import (
         Any,
         AsyncGenerator,
@@ -53,11 +53,6 @@ if TYPE_CHECKING:  # pragma: no cover
     ]
     T = TypeVar("T", bound=PyType)  # pylint: disable=invalid-name
 
-try:
-    unicode = unicode  # type: Callable[[Any], str]
-except NameError:
-    # pylint: disable=invalid-name
-    unicode = str  # type: Callable[[Any], str]
 
 _set = set
 LOG = logging.getLogger(__name__)
@@ -175,7 +170,7 @@ async def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
 
     raw_output = await raw.multiset(ip, community, mappings, port, timeout)
     pythonized = {
-        unicode(oid): value.pythonize() for oid, value in raw_output.items()
+        str(oid): value.pythonize() for oid, value in raw_output.items()
     }
     return pythonized
 
@@ -231,9 +226,9 @@ async def bulkwalk(
         community,
         oids,
         port=port,
-        fetcher=raw._bulkwalk_fetcher(
+        fetcher=raw._bulkwalk_fetcher(  # pylint: disable=protected-access
             bulk_size
-        ),  # pylint: disable=protected-access
+        ),
         timeout=timeout,
     )
     async for oid, value in result:
@@ -262,7 +257,7 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
     tmp = raw.table(
         ip, community, oid, port=port, num_base_nodes=num_base_nodes
     )
-    async for row in tmp:
+    async for row in tmp:  # pylint: disable=not-an-iterable
         index = row.pop("0")
         pythonized = {key: value.pythonize() for key, value in row.items()}
         pythonized["0"] = index

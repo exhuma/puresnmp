@@ -13,14 +13,13 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 
 from typing import TYPE_CHECKING, Iterable, Tuple, cast
 
-import six
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
 from x690.util import TypeInfo, encode_length, to_bytes
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
-from .snmp import ERROR_MESSAGES, VarBind
-from .typevars import PyType, SocketInfo
+from .snmp import VarBind
+from .typevars import SocketInfo
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
@@ -217,7 +216,7 @@ class GetResponse(PDU):
         except EmptyMessage as exc:
             raise NoSuchOID(
                 ObjectIdentifier(0), "Nothing found at the given OID (%s)" % exc
-            )
+            ) from exc
 
 
 class GetNextRequest(GetRequest):
@@ -240,6 +239,7 @@ class BulkGetRequest(Type):  # type: ignore
     """
     Represents a SNMP GetBulk request
     """
+    # pylint: disable=abstract-method
 
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 5
