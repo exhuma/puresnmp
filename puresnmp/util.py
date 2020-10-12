@@ -1,7 +1,8 @@
 """
 Colleciton of utility functions for the puresnmp package.
 """
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple, Type
+from dataclasses import dataclass
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
 
 from x690.types import ObjectIdentifier  # type: ignore
 
@@ -10,7 +11,8 @@ from puresnmp.typevars import PyType
 from .snmp import VarBind
 
 
-class WalkRow(NamedTuple):
+@dataclass
+class WalkRow:
     """
     A wrapper around an SNMP Walk item.
 
@@ -22,7 +24,8 @@ class WalkRow(NamedTuple):
     unfinished: bool
 
 
-class BulkResult(NamedTuple):
+@dataclass
+class BulkResult:
     """
     A representation for results of a "bulk" request.
 

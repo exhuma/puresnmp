@@ -658,7 +658,7 @@ def traps(listen_address="0.0.0.0", port=162, buffer_size=1024):
     the body of the trap
     """
     transport = Transport(buffer_size=buffer_size)
-    for data, addr in transport.listen(listen_address, port):
-        obj = cast(Tuple[Any, Any, Trap], Sequence.from_bytes(data))
-        obj[2].source = addr
+    for sockinfo in transport.listen(listen_address, port):
+        obj = cast(Tuple[Any, Any, Trap], Sequence.from_bytes(sockinfo.data))
+        obj[2].source = sockinfo.info
         yield obj[2]

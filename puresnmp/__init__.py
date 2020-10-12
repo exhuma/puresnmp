@@ -7,8 +7,6 @@ implementations as possible.
 """
 
 
-from collections import namedtuple
-
 # !!! DO NOT REMOVE !!! The following import triggers the processing of SNMP
 # Types and thus populates the Registry. If this is not included, Non x.690
 # SNMP types will not be properly detected!

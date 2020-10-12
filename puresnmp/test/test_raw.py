@@ -845,11 +845,10 @@ class TestTraps(unittest.TestCase):
             for blob in data_generator:
                 yield SocketResponse(blob, SocketInfo("192.0.2.1", 64001))
 
-        # As we import "set" above we are no longer able to create empty sets -_-
-        result = {1}
+        result = []
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().listen.return_value = socket_response_generator()
             for trap in traps():
-                result.add(trap.source)
-        expected = {1, SocketInfo("192.0.2.1", 64001)}
-        self.assertEqual(result, expected)
+                result.append(trap.source)
+        expected = [SocketInfo("192.0.2.1", 64001)] * 3
+        self.assertEquals(result, expected)
