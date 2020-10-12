@@ -24,10 +24,11 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, TypeVar
 from warnings import warn
 
-from x690.types import ObjectIdentifier, Type
+from x690.types import ObjectIdentifier, Type  # type: ignore
 
 from ..const import DEFAULT_TIMEOUT, Version
-from ..pdu import Trap, VarBind
+from ..pdu import Trap
+from ..snmp import VarBind
 from ..util import BulkResult
 from . import raw
 

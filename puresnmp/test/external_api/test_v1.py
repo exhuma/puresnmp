@@ -8,11 +8,9 @@ compatible with 1.0. This includes call signatures *including* return types!
 
 
 import datetime
-import sys
 from collections import OrderedDict
 from typing import TYPE_CHECKING
 
-import six
 from x690.types import ObjectIdentifier, OctetString
 
 import puresnmp as snmp
@@ -278,7 +276,6 @@ class TestGet(ByteTester):
             (ObjectIdentifier, int),
         ]
         returned_values = [(row.oid, row.value) for row in result]
-        returned_types = [(type(row.oid), type(row.value)) for row in result]
         assert_of_types(returned_values, expected_types)
 
     def test_multigetnext_v1(self):
@@ -301,7 +298,6 @@ class TestGet(ByteTester):
             (ObjectIdentifier, int),
         ]
         returned_values = [(row.oid, row.value) for row in result]
-        returned_types = [(type(row.oid), type(row.value)) for row in result]
         assert_of_types(returned_values, expected_types)
 
     def test_multiset(self):

@@ -1,22 +1,44 @@
 """
 Colleciton of utility functions for the puresnmp package.
 """
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NamedTuple
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Type,
+)
 
-if TYPE_CHECKING:
-    # pylint: disable=unused-import
-    from typing import Optional, Tuple
+from x690.types import ObjectIdentifier  # type: ignore
 
-    from .pdu import VarBind
-    from .x690.types import ObjectIdentifier
+from puresnmp.typevars import PyType
+
+from .snmp import VarBind
 
 
 class WalkRow(NamedTuple):
+    """
+    A wrapper around an SNMP Walk item.
+
+    This also keeps track whether this walk result should be considered the
+    last row or not.
+    """
+
     value: Any
     unfinished: bool
 
 
 class BulkResult(NamedTuple):
+    """
+    A representation for results of a "bulk" request.
+
+    These requests get both "non-repeating values" (scalars) and "repeating
+    values" (lists). This wrapper makes these terms a bit friendlier to use.
+    """
+
     scalars: Dict[str, Any]
     listing: Dict[str, Any]
 
@@ -88,9 +110,7 @@ def get_unfinished_walk_oids(grouped_oids):
     # Build a mapping from the originally requested OID to the last fetched OID
     # from that tree.
     last_received_oids = {
-        k: WalkRow(v[-1], v[-1].oid in k)  # type: ignore
-        for k, v in grouped_oids.items()
-        if v
+        k: WalkRow(v[-1], v[-1].oid in k) for k, v in grouped_oids.items() if v
     }
 
     output = [
@@ -153,13 +173,11 @@ def tablify(varbinds, num_base_nodes=0, base_oid=""):
     """
 
     if isinstance(base_oid, str) and base_oid:
-        # This import needs to be delayed to avoid circular imports
-        from puresnmp.x690.types import ObjectIdentifier
 
         base_oid_parsed = ObjectIdentifier.from_string(base_oid)
         # Each table has a sub-index for the table "entry" so the number of
         # base-nodes needs to be incremented by 1
-        num_base_nodes = len(base_oid_parsed)  #  type: ignore
+        num_base_nodes = len(base_oid_parsed)
 
     rows = {}  # type: Dict[str, Dict[str, Type[PyType]]]
     for oid, value in varbinds:
