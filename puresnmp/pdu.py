@@ -11,9 +11,16 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       and community). This can then replace some duplicated code in
 #       "puresnmp.get", "puresnmp.walk" & co.
 
-from typing import TYPE_CHECKING, Iterable, Tuple, cast
+from typing import TYPE_CHECKING, Any, Iterable, List, Tuple, Union, cast
 
-from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
+from x690.types import (  # type: ignore
+    Integer,
+    Null,
+    ObjectIdentifier,
+    Sequence,
+    Type,
+    pop_tlv,
+)
 from x690.util import TypeInfo, encode_length, to_bytes
 
 from .const import MAX_VARBINDS
@@ -23,7 +30,7 @@ from .typevars import SocketInfo
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Iterator, List, Optional, Union
+    from typing import Any, Iterator, Optional
 
 
 class PDU(Type):  # type: ignore
@@ -34,9 +41,13 @@ class PDU(Type):  # type: ignore
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 0
 
+    request_id: int
+    error_status: int
+    error_index: int
+    varbinds: List[VarBind]
+
     @classmethod
-    def decode(cls, data):
-        # type: (bytes) -> PDU
+    def decode(cls, data: bytes) -> "PDU":
         """
         This method takes a :py:class:`bytes` object and converts it to
         an application object. This is callable from each subclass of
@@ -89,8 +100,13 @@ class PDU(Type):  # type: ignore
             request_id.value, varbinds, error_status.value, error_index.value
         )
 
-    def __init__(self, request_id, varbinds, error_status=0, error_index=0):
-        # type: (int, Union[VarBind, List[VarBind]], int, int) -> None
+    def __init__(
+        self,
+        request_id: int,
+        varbinds: Union[VarBind, List[VarBind]],
+        error_status: int = 0,
+        error_index: int = 0,
+    ) -> None:
         self.request_id = request_id
         self.error_status = error_status
         self.error_index = error_index
@@ -99,10 +115,9 @@ class PDU(Type):  # type: ignore
         else:
             self.varbinds = varbinds
 
-    def __bytes__(self):
-        # type: () -> bytes
+    def __bytes__(self) -> bytes:
         wrapped_varbinds = [
-            Sequence(vb.oid, vb.value) for vb in self.varbinds  # type: ignore
+            Sequence(vb.oid, vb.value) for vb in self.varbinds
         ]
         data = [
             Integer(self.request_id),
@@ -116,16 +131,14 @@ class PDU(Type):  # type: ignore
         length = encode_length(len(payload))
         return to_bytes(tinfo) + length + payload
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         return "%s(%r, %r)" % (
             self.__class__.__name__,
             self.request_id,
             self.varbinds,
         )
 
-    def __eq__(self, other):
-        # type: (Any) -> bool
+    def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
         return (
             type(other) == type(self)
@@ -133,8 +146,7 @@ class PDU(Type):  # type: ignore
             and self.varbinds == other.varbinds
         )
 
-    def pretty(self):  # pragma: no cover
-        # type: () -> str
+    def pretty(self) -> str:  # pragma: no cover
         """
         Returns a "prettified" string representing the SNMP message.
         """
@@ -158,8 +170,7 @@ class EndOfMibView(PDU):
 
     # This subclassesPDU for type-consistency
 
-    def __init__(self):
-        # type: () -> None
+    def __init__(self) -> None:
         super().__init__(-1, [], 0, 0)
 
 
@@ -174,8 +185,9 @@ class GetRequest(PDU):
 
     TAG = 0
 
-    def __init__(self, request_id, *oids):
-        # type: (int, Union[str, ObjectIdentifier]) -> None
+    def __init__(
+        self, request_id: int, *oids: Union[str, ObjectIdentifier]
+    ) -> None:
         if len(oids) > MAX_VARBINDS:
             raise TooManyVarbinds(len(oids))
         wrapped_oids = []
@@ -186,7 +198,7 @@ class GetRequest(PDU):
                 wrapped_oids.append(oid)
         super().__init__(
             request_id, [VarBind(oid, Null()) for oid in wrapped_oids]
-        )  # type: ignore
+        )
 
 
 class GetResponse(PDU):
@@ -239,6 +251,7 @@ class BulkGetRequest(Type):  # type: ignore
     """
     Represents a SNMP GetBulk request
     """
+
     # pylint: disable=abstract-method
 
     TYPECLASS = TypeInfo.CONTEXT
@@ -253,12 +266,11 @@ class BulkGetRequest(Type):  # type: ignore
         self.max_repeaters = max_repeaters
         self.varbinds = []  # type: List[VarBind]
         for oid in oids:
-            self.varbinds.append(VarBind(oid, Null()))  # type: ignore
+            self.varbinds.append(VarBind(oid, Null()))
 
-    def __bytes__(self):
-        # type: () -> bytes
+    def __bytes__(self) -> bytes:
         wrapped_varbinds = [
-            Sequence(vb.oid, vb.value) for vb in self.varbinds  # type: ignore
+            Sequence(vb.oid, vb.value) for vb in self.varbinds
         ]
         data = [
             Integer(self.request_id),

@@ -1,16 +1,7 @@
 """
 Colleciton of utility functions for the puresnmp package.
 """
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-)
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple, Type
 
 from x690.types import ObjectIdentifier  # type: ignore
 

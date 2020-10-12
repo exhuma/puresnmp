@@ -4,7 +4,9 @@ protocol and independent of X.690
 """
 from typing import Any, Iterator, Union
 
-from x690.types import ObjectIdentifier, Type
+from x690.types import ObjectIdentifier, Type  # type: ignore
+
+from puresnmp.typevars import PyType
 
 # Error messages as defined in https://tools.ietf.org/html/rfc3416#section-3
 ERROR_MESSAGES = {
@@ -39,12 +41,12 @@ class VarBind:
     # TODO: This class should be split in two for both the raw and pythonic
     #       API, that would simplify the typing of both "oid" and "value"a lot
     #       and keep things explicit
-    oid = ObjectIdentifier(0)  # type: Union[str, ObjectIdentifier]
-    value = None  # type: Union[PyType, Type[PyType]]
+    oid: ObjectIdentifier = ObjectIdentifier(0)
+    value: Union[PyType, Type, None] = None
 
     def __init__(self, oid, value):
         # type: (Union[ObjectIdentifier, str], PyType) -> None
-        if not isinstance(oid, (ObjectIdentifier,) + (str,)):  # type: ignore
+        if not isinstance(oid, (ObjectIdentifier,) + (str,)):
             raise TypeError(
                 "OIDs for VarBinds must be ObjectIdentifier or str"
                 " instances! Your value: %r" % oid
@@ -54,11 +56,10 @@ class VarBind:
         self.oid = oid
         self.value = value
 
-    def __iter__(self):
-        # type: () -> Iterator[Union[ObjectIdentifier, PyType]]
-        return iter([self.oid, self.value])  # type: ignore
+    def __iter__(self) -> Iterator[Union[ObjectIdentifier, PyType]]:
+        return iter([self.oid, self.value])
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Union[PyType, Type, None]:
         return list(self)[idx]
 
     def __lt__(self, other):

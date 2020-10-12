@@ -4,7 +4,7 @@ Exceptions for the puresnmp package.
 
 import socket
 
-from x690.types import ObjectIdentifier
+from x690.types import ObjectIdentifier  # type: ignore
 
 from puresnmp.const import MAX_VARBINDS
 
@@ -160,9 +160,8 @@ class Timeout(socket.timeout):
     This wraps both "socket.timeout" and "asyncio.TimeoutError"
     """
 
-    def __init__(self, message):
-        # type: (str) -> None
-        super().__init__(message)
+    def __init__(self, message: str) -> None:
+        super().__init__()
         self.message = message
 
 

@@ -21,31 +21,22 @@ of :py:class:`x690.types.Type`.
 
 import logging
 from collections import OrderedDict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import Type as TType
 from warnings import warn
 
-from x690.types import ObjectIdentifier, Type
+from x690.types import ObjectIdentifier, Type  # type: ignore
+
+from puresnmp.typevars import PyType, TWrappedPyType
 
 from ...const import DEFAULT_TIMEOUT
-from ...pdu import VarBind
+from ...snmp import VarBind
 from ...util import BulkResult
 from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
-    from typing import (
-        Any,
-        AsyncGenerator,
-        Callable,
-        Coroutine,
-        Dict,
-        List,
-        Tuple,
-        TypeVar,
-        Union,
-    )
-
-    from puresnmp.typevars import PyType, TWrappedPyType
+    from typing import AsyncGenerator, Callable, Coroutine, TypeVar, Union
 
     TWalkResponse = AsyncGenerator[VarBind, None]
     TFetcher = Callable[
@@ -139,7 +130,7 @@ async def multiwalk(
     async for oid, value in raw_output:
         if isinstance(value, Type):
             value = value.pythonize()
-        yield VarBind(oid, value)  # type: ignore
+        yield VarBind(oid, value)
 
 
 async def set(
@@ -159,8 +150,13 @@ async def set(
     return result[oid.lstrip(".")]  # type: ignore
 
 
-async def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[Tuple[str, Type[TWrappedPyType]]], int, int) -> Dict[str, TWrappedPyType]
+async def multiset(
+    ip: str,
+    community: str,
+    mappings: List[Tuple[str, TWrappedPyType]],
+    port: int = 161,
+    timeout: int = DEFAULT_TIMEOUT,
+) -> Dict[str, TWrappedPyType]:
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiset` but returns simple
     Python types.
@@ -232,7 +228,7 @@ async def bulkwalk(
         timeout=timeout,
     )
     async for oid, value in result:
-        yield VarBind(oid, value)  # type: ignore
+        yield VarBind(oid, value)
 
 
 async def table(ip, community, oid, port=161, num_base_nodes=0):
@@ -253,11 +249,11 @@ async def table(ip, community, oid, port=161, num_base_nodes=0):
         )
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
-    tmp = raw.table(
+        num_base_nodes = len(parsed_oid) + 1
+    tmp = await raw.table(
         ip, community, oid, port=port, num_base_nodes=num_base_nodes
     )
-    async for row in tmp:  # pylint: disable=not-an-iterable
+    for row in tmp:  # pylint: disable=not-an-iterable
         index = row.pop("0")
         pythonized = {key: value.pythonize() for key, value in row.items()}
         pythonized["0"] = index
@@ -286,8 +282,10 @@ async def bulktable(
         )
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
-    tmp = raw.bulktable(ip, community, oid, port=port, bulk_size=bulk_size)
+        num_base_nodes = len(parsed_oid) + 1
+    tmp = await raw.bulktable(
+        ip, community, oid, port=port, bulk_size=bulk_size
+    )
     for row in tmp:
         index = row.pop("0")
         pythonized = {key: value.pythonize() for key, value in row.items()}

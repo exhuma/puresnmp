@@ -12,12 +12,18 @@ such a case it's recommended to use :py:mod:`puresnmp.api.raw`.
 
 import logging
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any, Callable, List, Tuple
 from typing import Type as TType
 from typing import TypeVar, cast
 from warnings import warn
 
-from x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
+from x690.types import (  # type: ignore
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    Type,
+)
 from x690.util import to_bytes
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
@@ -30,26 +36,26 @@ from ..pdu import (
     GetResponse,
     SetRequest,
     Trap,
-    VarBind,
 )
+from ..snmp import VarBind
 from ..transport import Transport
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
-    from typing import Callable, Dict, Generator, List, Set, Union
+    from typing import Dict, Generator, Set, Union
 
     from puresnmp.typevars import PyType
 
     TWalkResponse = Generator[VarBind, None, None]
-    TFetcher = Callable[[str, str, List[str], int, int], List[VarBind]]
     T = TypeVar("T", bound=TType[PyType])  # pylint: disable=invalid-name
 
 _set = set
 
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
+TFetcher = Callable[[str, str, List[str], int, int, int], List[VarBind]]
 
 
 def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
@@ -102,7 +108,7 @@ def multiget(
             "Unexpected response. Expected %d varbind, "
             "but got %d!" % (len(oids), len(output))
         )
-    return output  # type: ignore
+    return output
 
 
 def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
@@ -155,11 +161,11 @@ def multigetnext(
     for oid, value in response_object.varbinds:
         if value is END_OF_MIB_VIEW:
             break
-        output.append(VarBind(oid, value))  # type: ignore
+        output.append(VarBind(oid, value))
 
     # Verify that the OIDs we retrieved are successors of the requested OIDs.
     for requested, retrieved in zip(oids, output):
-        if not OID(requested) < retrieved.oid:  # type: ignore
+        if not OID(requested) < retrieved.oid:
             # TODO remove when Py2 is dropped
             stringified = str(retrieved.oid)
             raise FaultySNMPImplementation(
@@ -227,7 +233,7 @@ def multiwalk(
     """
     LOG.debug("Walking on %d OIDs using %s", len(oids), fetcher.__name__)
 
-    varbinds = fetcher(ip, community, oids, port, timeout, version=version)
+    varbinds = fetcher(ip, community, oids, port, timeout, version)
     requested_oids = [OID(oid) for oid in oids]
     grouped_oids = group_varbinds(varbinds, requested_oids)
     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
@@ -238,7 +244,7 @@ def multiwalk(
             len(unfinished_oids),
             len(oids),
         )
-    yielded = _set([])  # type: ignore
+    yielded = _set([])
     for var in sorted(grouped_oids.values()):
         for varbind in var:
             containment = [varbind.oid in _ for _ in requested_oids]
@@ -260,7 +266,7 @@ def multiwalk(
         next_fetches_str = [str(_) for _ in next_fetches]
         try:
             varbinds = fetcher(
-                ip, community, next_fetches_str, port, timeout, version=version
+                ip, community, next_fetches_str, port, timeout, version
             )
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
@@ -482,13 +488,12 @@ def bulkget(
     for oid, value in repeating_tmp:
         if value is END_OF_MIB_VIEW:
             break
-        repeating_out[str(oid)] = value  # type: ignore
+        repeating_out[str(oid)] = value
 
     return BulkResult(scalar_out, repeating_out)
 
 
-def _bulkwalk_fetcher(bulk_size=10):
-    # type: (int) -> Callable[[str, str, List[str], int, int], List[VarBind]]
+def _bulkwalk_fetcher(bulk_size: int = 10) -> TFetcher:
     """
     Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
     """
@@ -573,7 +578,7 @@ def bulkwalk(
         timeout=timeout,
     )
     for oid, value in result:
-        yield VarBind(oid, value)  # type: ignore
+        yield VarBind(oid, value)
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
@@ -607,7 +612,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
         )
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
+        num_base_nodes = len(parsed_oid) + 1
     varbinds = walk(ip, community, oid, port=port)
     for varbind in varbinds:
         tmp.append(varbind)
@@ -634,7 +639,7 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
         )
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
+        num_base_nodes = len(parsed_oid) + 1
     varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
     for varbind in varbinds:
         tmp.append(varbind)

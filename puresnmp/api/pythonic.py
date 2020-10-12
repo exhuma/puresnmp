@@ -21,7 +21,7 @@ of :py:class:`x690.types.Type`.
 import logging
 from collections import OrderedDict
 from datetime import timedelta
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Generator, List, TypeVar
 from warnings import warn
 
 from x690.types import ObjectIdentifier, Type  # type: ignore
@@ -34,17 +34,16 @@ from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
-    from typing import Any, Callable, Dict, Generator, List, Tuple, Union
+    from typing import Any, Callable, Dict, Tuple, Union
 
     from puresnmp.typevars import PyType
 
-    TWalkResponse = Generator[VarBind, None, None]
-    TFetcher = Callable[[str, str, List[str], int, int], List[VarBind]]
     T = TypeVar("T", bound=PyType)
 
 _set = set
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
+TWalkResponse = Generator[VarBind, None, None]
 
 
 class TrapInfo:
@@ -62,10 +61,9 @@ class TrapInfo:
     #:     expose values which can be helpful in debugging.  If something is
     #:     missing from the properties, please open a corresponding support
     #:     ticket!
-    raw_trap = None
+    raw_trap: Trap
 
-    def __init__(self, raw_trap):
-        # type: (Trap) -> None
+    def __init__(self, raw_trap: Trap) -> None:
         self.raw_trap = raw_trap
 
     def __repr__(self):
@@ -77,8 +75,7 @@ class TrapInfo:
         )
 
     @property
-    def origin(self):
-        # type: () -> str
+    def origin(self) -> str:
         """
         Accesses the IP-Address from which the trap was sent
 
@@ -89,16 +86,14 @@ class TrapInfo:
         return self.raw_trap.source.address
 
     @property
-    def uptime(self):
-        # type: () -> timedelta
+    def uptime(self) -> timedelta:
         """
         Returns the uptime of the device.
         """
         return self.raw_trap.varbinds[0].value.pythonize()  # type: ignore
 
     @property
-    def oid(self):
-        # type: () -> str
+    def oid(self) -> str:
         """
         Returns the Trap-OID
         """
@@ -112,9 +107,9 @@ class TrapInfo:
         OIDs to values.
         """
         output = {}
-        for oid_raw, value_raw in self.raw_trap.varbinds[2:]:  # type: ignore
-            oid = oid_raw.pythonize()
-            value = value_raw.pythonize()
+        for oid_raw, value_raw in self.raw_trap.varbinds[2:]:
+            oid = oid_raw.pythonize()  # type: ignore
+            value = value_raw.pythonize()  # type: ignore
             output[oid] = value
         return output
 
@@ -194,15 +189,14 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
 
 def multiwalk(
-    ip,
-    community,
-    oids,
-    port=161,
-    timeout=DEFAULT_TIMEOUT,
-    fetcher=multigetnext,
-    version=Version.V2C,
-):
-    # type: (str, str, List[str], int, int, TFetcher, int) -> TWalkResponse
+    ip: str,
+    community: str,
+    oids: List[str],
+    port: int = 161,
+    timeout: int = DEFAULT_TIMEOUT,
+    fetcher: raw.TFetcher = multigetnext,
+    version: int = Version.V2C,
+) -> TWalkResponse:
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiwalk` but returns simple
     Python types.
@@ -215,7 +209,7 @@ def multiwalk(
     for oid, value in raw_output:
         if isinstance(value, Type):
             value = value.pythonize()
-        yield VarBind(oid, value)  # type: ignore
+        yield VarBind(oid, value)
 
 
 def set(
@@ -229,9 +223,7 @@ def set(
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = multiset(
-        ip, community, [(oid, value)], port, timeout=timeout  # type: ignore
-    )
+    result = multiset(ip, community, [(oid, value)], port, timeout=timeout)
     return result[oid.lstrip(".")]  # type: ignore
 
 
@@ -310,7 +302,7 @@ def bulkwalk(
         timeout=timeout,
     )
     for oid, value in result:
-        yield VarBind(oid, value)  # type: ignore
+        yield VarBind(oid, value)
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
@@ -331,7 +323,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
         )
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
+        num_base_nodes = len(parsed_oid) + 1
     tmp = raw.table(
         ip, community, oid, port=port, num_base_nodes=num_base_nodes
     )
@@ -364,7 +356,7 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
         )
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
+        num_base_nodes = len(parsed_oid) + 1
     tmp = raw.bulktable(ip, community, oid, port=port, bulk_size=bulk_size)
     output = []
     for row in tmp:
