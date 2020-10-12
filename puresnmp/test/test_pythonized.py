@@ -14,6 +14,13 @@ from datetime import timedelta
 from ipaddress import ip_address
 
 import six
+from x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    to_bytes
+)
 
 from puresnmp.api.pythonic import (
     bulkget,
@@ -41,13 +48,6 @@ from puresnmp.pdu import (
 from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.typevars import SocketInfo
 from puresnmp.util import BulkResult
-from puresnmp.x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes
-)
 
 from . import ByteTester
 

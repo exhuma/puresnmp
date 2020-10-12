@@ -2,7 +2,7 @@
 This module contains a high-level API to SNMP functions.
 
 The arguments and return values of these functions have types which are
-internal to ``puresnmp`` (subclasses of :py:class:`puresnmp.x690.Type`).
+internal to ``puresnmp`` (subclasses of :py:class:`x690.Type`).
 
 Alternatively, there is :py:mod:`puresnmp.api.pythonic` which converts
 these values into pure Python types. This makes day-to-day programming a bit
@@ -19,6 +19,9 @@ from typing import Type as TType
 from typing import TypeVar, cast
 from warnings import warn
 
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
+from x690.util import to_bytes
+
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
@@ -33,9 +36,7 @@ from ..pdu import (
 )
 from ..transport import Transport
 from ..util import BulkResult  # NOQA (must be here for type detection)
-from ..util import get_unfinished_walk_oids, group_varbinds
-from ..x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
-from ..x690.util import tablify, to_bytes
+from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
@@ -286,7 +287,7 @@ def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
     data structure. The value must be a subclass of
-    :py:class:`~puresnmp.x690.types.Type`.
+    :py:class:`~x690.types.Type`.
 
     Example::
 

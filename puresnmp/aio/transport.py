@@ -16,9 +16,10 @@ import logging
 from asyncio.events import AbstractEventLoop
 from typing import Optional, Tuple, Union
 
+from x690.util import visible_octets
+
 from ..exc import Timeout
 from ..transport import Transport as SyncTransport
-from ..x690.util import visible_octets
 
 LOG = logging.getLogger(__name__)
 

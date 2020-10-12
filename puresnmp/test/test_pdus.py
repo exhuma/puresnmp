@@ -1,6 +1,13 @@
 # pylint: skip-file
 
 import six
+from x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    to_bytes
+)
 
 from . import ByteTester, readbytes
 from ..const import Version
@@ -13,13 +20,6 @@ from ..pdu import (
     GetResponse,
     SetRequest,
     VarBind
-)
-from ..x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes
 )
 
 

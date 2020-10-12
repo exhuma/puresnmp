@@ -1,6 +1,7 @@
+from x690.types import Null, ObjectIdentifier
+
 from puresnmp.pdu import VarBind
 from puresnmp.util import WalkRow, get_unfinished_walk_oids, group_varbinds
-from puresnmp.x690.types import Null, ObjectIdentifier
 
 OID = ObjectIdentifier.from_string
 

@@ -17,6 +17,13 @@ from logging import WARNING, Handler, getLevelName, getLogger
 from unittest import skipUnless
 
 import six
+from x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    to_bytes
+)
 
 from puresnmp.api.raw import (
     bulkget,
@@ -44,13 +51,6 @@ from puresnmp.pdu import (
 from puresnmp.transport import SocketInfo, SocketResponse
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.util import BulkResult
-from puresnmp.x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes
-)
 
 from . import ByteTester, CapturingHandler, readbytes, readbytes_multiple
 

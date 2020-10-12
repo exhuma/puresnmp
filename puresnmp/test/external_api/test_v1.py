@@ -13,11 +13,11 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 import six
+from x690.types import ObjectIdentifier, OctetString
 
 import puresnmp as snmp
 from puresnmp.pdu import VarBind
 from puresnmp.util import BulkResult
-from puresnmp.x690.types import ObjectIdentifier, OctetString
 from puresnmp.const import Version
 
 from .. import ByteTester, readbytes, readbytes_multiple

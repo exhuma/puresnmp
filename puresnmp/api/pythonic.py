@@ -8,7 +8,7 @@ This module provides "syntactic sugar" around the lower-level, but almost
 identical, module :py:mod:`puresnmp.api.raw`.
 
 The "raw" module returns the variable types unmodified which are all subclasses
-of :py:class:`puresnmp.x690.types.Type`.
+of :py:class:`x690.types.Type`.
 """
 
 # TODO (advanced): This module should not make use of it's own functions. The
@@ -26,10 +26,11 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, TypeVar
 from warnings import warn
 
+from x690.types import ObjectIdentifier, Type
+
 from ..const import DEFAULT_TIMEOUT, Version
 from ..pdu import Trap, VarBind
 from ..util import BulkResult
-from ..x690.types import ObjectIdentifier, Type
 from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover

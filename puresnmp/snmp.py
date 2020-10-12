@@ -14,8 +14,7 @@ from typing import (
 )
 
 import six
-
-from .x690.types import (
+from x690.types import (
     Integer,
     Null,
     ObjectIdentifier,

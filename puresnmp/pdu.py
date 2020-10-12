@@ -14,12 +14,7 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 from typing import TYPE_CHECKING, Iterable, Tuple, cast
 
 import six
-
-from .const import MAX_VARBINDS
-from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
-from .snmp import ERROR_MESSAGES, VarBind
-from .typevars import PyType, SocketInfo
-from .x690.types import (
+from x690.types import (
     Integer,
     Null,
     ObjectIdentifier,
@@ -27,7 +22,12 @@ from .x690.types import (
     Type,
     pop_tlv
 )
-from .x690.util import TypeInfo, encode_length, to_bytes
+from x690.util import TypeInfo, encode_length, to_bytes
+
+from .const import MAX_VARBINDS
+from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
+from .snmp import ERROR_MESSAGES, VarBind
+from .typevars import PyType, SocketInfo
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import

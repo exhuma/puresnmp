@@ -9,7 +9,7 @@ This module provides "syntactic sugar" around the lower-level, but almost
 identical, module :py:mod:`puresnmp.aio.api.raw`.
 
 The "raw" module returns the variable types unmodified which are all subclasses
-of :py:class:`puresnmp.x690.types.Type`.
+of :py:class:`x690.types.Type`.
 """
 
 # TODO (advanced): This module should not make use of it's own functions. The
@@ -26,11 +26,12 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 from warnings import warn
 
+from x690.types import Type, ObjectIdentifier
+
 from . import raw
 from ...const import DEFAULT_TIMEOUT
 from ...pdu import VarBind
 from ...util import BulkResult
-from ...x690.types import Type, ObjectIdentifier
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name

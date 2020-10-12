@@ -4,9 +4,10 @@ from __future__ import unicode_literals
 from datetime import timedelta
 from ipaddress import ip_address
 
+from x690.util import to_bytes
+
 from . import ByteTester
 from .. import types as t
-from ..x690.util import to_bytes
 
 
 class TestIpAddress(ByteTester):

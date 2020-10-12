@@ -5,9 +5,9 @@ from __future__ import unicode_literals
 
 import socket
 
-from puresnmp.const import MAX_VARBINDS
+from x690.types import ObjectIdentifier
 
-from .x690.types import ObjectIdentifier
+from puresnmp.const import MAX_VARBINDS
 
 # pylint: disable=too-few-public-methods
 

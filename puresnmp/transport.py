@@ -16,9 +16,10 @@ import socket
 from ipaddress import ip_address
 from typing import TYPE_CHECKING, Generator
 
+from x690.util import visible_octets
+
 from .exc import Timeout
 from .typevars import SocketInfo, SocketResponse
-from .x690.util import visible_octets
 
 if TYPE_CHECKING:
     from typing import Optional

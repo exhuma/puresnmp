@@ -18,8 +18,8 @@ from ipaddress import IPv4Address
 from struct import pack
 from typing import TYPE_CHECKING, Union
 
-from .x690.types import Integer, OctetString
-from .x690.util import TypeInfo
+from x690.types import Integer, OctetString
+from x690.util import TypeInfo
 
 if TYPE_CHECKING:
     from typing import Optional

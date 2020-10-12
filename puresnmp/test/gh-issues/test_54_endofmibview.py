@@ -1,6 +1,7 @@
+from x690.types import OctetString, Integer
+
 from puresnmp.test import readbytes
 from puresnmp.pdu import PDU
-from puresnmp.x690.types import OctetString, Integer
 
 from puresnmp.api.raw import bulkget
 import pytest

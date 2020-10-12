@@ -12,6 +12,13 @@ from datetime import timedelta
 from unittest import skipUnless
 
 import pytest
+from x690.types import (
+    Integer,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    to_bytes
+)
 
 from puresnmp.aio.api.raw import (
     bulkget,
@@ -30,13 +37,6 @@ from puresnmp.exc import NoSuchOID, SnmpError
 from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetRequest, VarBind
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.util import BulkResult
-from puresnmp.x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes
-)
 
 from . import readbytes, readbytes_multiple
 from .asyncmock import AsyncMock

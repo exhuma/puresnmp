@@ -1,7 +1,7 @@
 '''
 Colleciton of utility functions for the puresnmp package.
 '''
-from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple
+from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Iterable
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
@@ -90,3 +90,79 @@ def get_unfinished_walk_oids(grouped_oids):
     output = [item for item in sorted(last_received_oids.items())
               if item[1].unfinished]
     return output
+
+
+def tablify(varbinds, num_base_nodes=0, base_oid=''):
+    # type: ( Iterable[Tuple[Any, Any]], int, str ) -> List[Dict[str, Any]]
+    """
+    Converts a list of varbinds into a table-like structure. *num_base_nodes*
+    can be used for table which row-ids consist of multiple OID tree nodes. By
+    default, the last node is considered the row ID, and the second-last is the
+    column ID. Example:
+
+    By default, for the table-cell at OID ``1.2.3.4.5``, ``4`` is the column
+    index and ``5`` is the row index.
+
+    Using ``num_base_nodes=2`` will only use the first two nodes (``1.2``) as
+    table-identifier, so ``3`` becomes the column index, and ``4.5`` becomes
+    the row index.
+
+    The output should *not* be considered ordered in any way. If you need it
+    sorted, you must sort it after retrieving the table from this function!
+
+    Each element of the output is a dictionary where each key is the column
+    index. By default the index ``0`` will be added, representing the row ID.
+
+    Example::
+
+        >>> data = [
+        >>>     (ObjectIdentifier.from_string('1.2.1.1'), 'row 1 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.1.2'), 'row 2 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.1'), 'row 1 col 2'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.2'), 'row 2 col 2'),
+        >>> ]
+        >>> tablify(data)
+        [
+            {'0': '1', '1': 'row 1 col 1', '2': 'row 1 col 2'},
+            {'0': '2', '1': 'row 2 col 1', '2': 'row 2 col 2'},
+        ]
+
+
+    Example with longer row ids (using the *first* two as table identifiers)::
+
+        >>> data = [
+        >>>     (ObjectIdentifier.from_string('1.2.1.5.10'), 'row 5.10 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.1.6.10'), 'row 6.10 col 1'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.5.10'), 'row 5.10 col 2'),
+        >>>     (ObjectIdentifier.from_string('1.2.2.6.10'), 'row 6.10 col 2'),
+        >>> ]
+        >>> tablify(data, num_base_nodes=2)
+        [
+            {'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'},
+            {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
+        ]
+    """
+
+    if isinstance(base_oid, str) and base_oid:
+        # This import needs to be delayed to avoid circular imports
+        from puresnmp.x690.types import ObjectIdentifier
+        base_oid_parsed = ObjectIdentifier.from_string(base_oid)
+        # Each table has a sub-index for the table "entry" so the number of
+        # base-nodes needs to be incremented by 1
+        num_base_nodes = len(base_oid_parsed)  #  type: ignore
+
+    rows = {}  # type: Dict[str, Dict[str, Type[PyType]]]
+    for oid, value in varbinds:
+        if num_base_nodes:
+            tail = oid.identifiers[num_base_nodes:]
+            col_id, row_id = tail[0], tail[1:]
+            row_id = '.'.join([str(node) for node in row_id])
+        else:
+            col_id = str(oid.identifiers[-2])
+            row_id = str(oid.identifiers[-1])
+        tmp = {
+            '0': row_id,
+        }
+        row = rows.setdefault(row_id, tmp)
+        row[str(col_id)] = value
+    return list(rows.values())
