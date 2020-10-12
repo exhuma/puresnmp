@@ -9,9 +9,9 @@ from x690.types import (
     to_bytes,
 )
 
-from ..const import Version
-from ..exc import SnmpError
-from ..pdu import (
+from puresnmp.const import Version
+from puresnmp.exc import SnmpError
+from puresnmp.pdu import (
     PDU,
     BulkGetRequest,
     GetNextRequest,
@@ -20,6 +20,7 @@ from ..pdu import (
     SetRequest,
     VarBind,
 )
+
 from . import ByteTester, readbytes
 
 
