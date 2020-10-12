@@ -2,10 +2,11 @@
 Tests for unit-test helpers
 """
 
-from textwrap import dedent
 from binascii import hexlify
-import puresnmp.test as th
 from io import StringIO
+from textwrap import dedent
+
+import puresnmp.test as th
 
 
 def test_readbytes_multiple():

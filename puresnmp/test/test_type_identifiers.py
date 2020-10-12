@@ -4,9 +4,7 @@ from x690 import types as t
 from x690.util import TypeInfo
 
 from .. import types as apptype
-
 from . import ByteTester
-
 
 UNIVERSAL = TypeInfo.UNIVERSAL
 APPLICATION = TypeInfo.APPLICATION

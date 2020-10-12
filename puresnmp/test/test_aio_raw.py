@@ -10,7 +10,7 @@ PureSNMP object instances.
 import sys
 from datetime import timedelta
 from unittest import skipUnless
-from unittest.mock import patch, call
+from unittest.mock import call, patch
 
 import pytest
 from x690.types import (

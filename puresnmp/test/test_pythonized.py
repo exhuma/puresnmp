@@ -51,9 +51,9 @@ from puresnmp.util import BulkResult
 from . import ByteTester
 
 try:
-    from unittest.mock import patch, call
+    from unittest.mock import call, patch
 except ImportError:
-    from unittest.mock import patch, call  # pip install mock
+    from unittest.mock import call, patch  # pip install mock
 
 
 class TestGet(ByteTester):

@@ -9,7 +9,6 @@ from x690.types import (
     to_bytes,
 )
 
-from . import ByteTester, readbytes
 from ..const import Version
 from ..exc import SnmpError
 from ..pdu import (
@@ -21,6 +20,7 @@ from ..pdu import (
     SetRequest,
     VarBind,
 )
+from . import ByteTester, readbytes
 
 
 def comparable(bytes):

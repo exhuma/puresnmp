@@ -24,7 +24,7 @@ from .typevars import PyType, SocketInfo
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Iterator, List, Union, Optional
+    from typing import Any, Iterator, List, Optional, Union
 
 
 class PDU(Type):  # type: ignore

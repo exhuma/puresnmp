@@ -13,7 +13,7 @@ such a case it's recommended to use :py:mod:`puresnmp.aio.api.raw`.
 import logging
 import sys
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Tuple, cast, List
+from typing import TYPE_CHECKING, Any, List, Tuple, cast
 from warnings import warn
 
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
@@ -37,16 +37,9 @@ from ..transport import Transport
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
+    from typing import AsyncGenerator, Callable, Coroutine, Dict, Set
     from typing import Type as TType
-    from typing import (
-        AsyncGenerator,
-        Callable,
-        Coroutine,
-        Dict,
-        Set,
-        TypeVar,
-        Union,
-    )
+    from typing import TypeVar, Union
 
     TWalkResponse = AsyncGenerator[VarBind, None]
     TFetcher = Callable[

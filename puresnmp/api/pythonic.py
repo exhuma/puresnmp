@@ -34,6 +34,7 @@ from . import raw
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
     from typing import Any, Callable, Dict, Generator, List, Tuple, Union
+
     from puresnmp.typevars import PyType
 
     TWalkResponse = Generator[VarBind, None, None]

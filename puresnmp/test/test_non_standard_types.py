@@ -5,8 +5,8 @@ from ipaddress import ip_address
 
 from x690.util import to_bytes
 
-from . import ByteTester
 from .. import types as t
+from . import ByteTester
 
 
 class TestIpAddress(ByteTester):

@@ -10,7 +10,7 @@ to use.
 
 import sys
 from datetime import timedelta
-from unittest.mock import patch, call
+from unittest.mock import call, patch
 
 import pytest
 from x690.types import (
@@ -41,7 +41,6 @@ from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.util import BulkResult
 
 from .asyncmock import AsyncGenMock, AsyncMock
-
 
 pytestmark = pytest.mark.skipif(
     sys.version_info < (3, 5), reason="requires python3.5"

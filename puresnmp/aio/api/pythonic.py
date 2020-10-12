@@ -24,12 +24,12 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 from warnings import warn
 
-from x690.types import Type, ObjectIdentifier
+from x690.types import ObjectIdentifier, Type
 
-from . import raw
 from ...const import DEFAULT_TIMEOUT
 from ...pdu import VarBind
 from ...util import BulkResult
+from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name
@@ -44,6 +44,7 @@ if TYPE_CHECKING:  # pragma: no cover
         TypeVar,
         Union,
     )
+
     from puresnmp.typevars import PyType, TWrappedPyType
 
     TWalkResponse = AsyncGenerator[VarBind, None]

@@ -39,7 +39,8 @@ from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
-    from typing import Callable, Dict, Generator, List, Union, Set
+    from typing import Callable, Dict, Generator, List, Set, Union
+
     from puresnmp.typevars import PyType
 
     TWalkResponse = Generator[VarBind, None, None]

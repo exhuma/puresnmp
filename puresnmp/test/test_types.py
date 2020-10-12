@@ -3,6 +3,7 @@ Unit tests for types specified in RFC-2578
 """
 
 import pytest
+
 from puresnmp import types as t
 
 

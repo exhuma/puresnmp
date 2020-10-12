@@ -54,9 +54,9 @@ from puresnmp.util import BulkResult
 from . import ByteTester, CapturingHandler, readbytes, readbytes_multiple
 
 try:
-    from unittest.mock import patch, call
+    from unittest.mock import call, patch
 except ImportError:
-    from unittest.mock import patch, call  # type: ignore
+    from unittest.mock import call, patch  # type: ignore
 
 
 class TestGet(ByteTester):

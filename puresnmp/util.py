@@ -1,11 +1,12 @@
 """
 Colleciton of utility functions for the puresnmp package.
 """
-from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Iterable
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NamedTuple
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
     from typing import Optional, Tuple
+
     from .pdu import VarBind
     from .x690.types import ObjectIdentifier
 

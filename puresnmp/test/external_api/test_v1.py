@@ -16,16 +16,15 @@ import six
 from x690.types import ObjectIdentifier, OctetString
 
 import puresnmp as snmp
+from puresnmp.const import Version
 from puresnmp.pdu import VarBind
 from puresnmp.util import BulkResult
-from puresnmp.const import Version
 
 from .. import ByteTester, readbytes, readbytes_multiple
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
     from typing import Type
-
 
 from unittest.mock import patch
 
