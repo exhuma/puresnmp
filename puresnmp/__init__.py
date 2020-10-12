@@ -6,7 +6,6 @@ taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
 """
 
-from __future__ import unicode_literals
 
 from collections import namedtuple
 

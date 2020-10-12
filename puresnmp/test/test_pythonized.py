@@ -7,7 +7,6 @@ The "external" interface is what the user sees. It should be pythonic and easy
 to use.
 """
 
-from __future__ import unicode_literals
 
 import unittest
 from datetime import timedelta
@@ -54,7 +53,7 @@ from . import ByteTester
 try:
     from unittest.mock import patch, call
 except ImportError:
-    from mock import patch, call  # pip install mock
+    from unittest.mock import patch, call  # pip install mock
 
 
 class TestGet(ByteTester):
@@ -170,7 +169,7 @@ class TestMultiWalk(unittest.TestCase):
                 '1.3.6.1.2.1.2.2.1.2'
             ]))
         # TODO (advanced): should order matter in the following result?
-        six.assertCountEqual(self, result, expected)
+        self.assertCountEqual(result, expected)
 
 
 class TestMultiSet(unittest.TestCase):
@@ -299,7 +298,7 @@ class TestTable(unittest.TestCase):
             {'0': '1', '1': 1},
             {'0': '2', '1': 2},
         ]
-        six.assertCountEqual(self, result, expected)
+        self.assertCountEqual(result, expected)
 
 
 class TestBulkTable(unittest.TestCase):
@@ -316,7 +315,7 @@ class TestBulkTable(unittest.TestCase):
             {'0': '1', '1': 1},
             {'0': '2', '1': 2},
         ]
-        six.assertCountEqual(self, result, expected)
+        self.assertCountEqual(result, expected)
 
 
 class TestTraps(unittest.TestCase):
@@ -340,10 +339,10 @@ class TestTraps(unittest.TestCase):
                 result.append((trap.uptime, trap.oid, trap.values))
         expected = [(
             b'fake-uptime',
-            u'1.2.3.4',
+            '1.2.3.4',
             {
-                u'1.2.1.3': 13,
-                u'1.2.1.4': b'fake-value-2',
+                '1.2.1.3': 13,
+                '1.2.1.4': b'fake-value-2',
             }
         )]
         self.assertEqual(result, expected)

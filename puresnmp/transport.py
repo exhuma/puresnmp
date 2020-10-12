@@ -35,7 +35,7 @@ RETRIES = 3
 BUFFER_SIZE = 4096  # 4 KiB
 
 
-class Transport(object):
+class Transport:
     """
     A simple UDP transport.
 

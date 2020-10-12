@@ -1,5 +1,4 @@
 # pylint: skip-file
-from __future__ import print_function
 
 import re
 import sys
@@ -32,7 +31,7 @@ class CapturingHandler(Handler):
 
     def __init__(self):
         # type: () -> None
-        super(CapturingHandler, self).__init__()
+        super().__init__()
         self.captured_records = []  # type: List[LogRecord]
 
     def emit(self, record):
@@ -92,16 +91,16 @@ class ByteTester(unittest.TestCase):
                 if char_a is None:
                     char_ab = char_ad = char_ah = char_ar = '?'
                 else:
-                    char_ab = '0b{:08b}'.format(char_a)
-                    char_ad = '{:3d}'.format(char_a)
-                    char_ah = '0x{:02x}'.format(char_a)
+                    char_ab = f'0b{char_a:08b}'
+                    char_ad = f'{char_a:3d}'
+                    char_ah = f'0x{char_a:02x}'
                     char_ar = char_repr(char_a)
                 if char_b is None:
                     char_bb = char_bd = char_bh = char_br = '?'
                 else:
-                    char_bb = '0b{:08b}'.format(char_b)
-                    char_bd = '{:3d}'.format(char_b)
-                    char_bh = '0x{:02x}'.format(char_b)
+                    char_bb = f'0b{char_b:08b}'
+                    char_bd = f'{char_b:3d}'
+                    char_bh = f'0x{char_b:02x}'
                     char_br = char_repr(char_b)
                 comparisons.append(
                     "{8:<3} Offset {0:4d}: "

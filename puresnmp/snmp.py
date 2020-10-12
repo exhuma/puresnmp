@@ -47,7 +47,7 @@ ERROR_MESSAGES = {
 }
 
 
-class VarBind(object):
+class VarBind:
     '''
     A "VarBind" is a 2-tuple containing an object-identifier and the
     corresponding value.
@@ -61,10 +61,10 @@ class VarBind(object):
 
     def __init__(self, oid, value):
         # type: (Union[ObjectIdentifier, str], PyType) -> None
-        if not isinstance(oid, (ObjectIdentifier,) + six.string_types):  # type: ignore
+        if not isinstance(oid, (ObjectIdentifier,) + (str,)):  # type: ignore
             raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
                             ' instances! Your value: %r' % oid)
-        if isinstance(oid, six.string_types):
+        if isinstance(oid, str):
             oid = ObjectIdentifier.from_string(oid)
         self.oid = oid
         self.value = value

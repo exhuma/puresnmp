@@ -161,7 +161,7 @@ class EndOfMibView(PDU):
 
     def __init__(self):
         # type: () -> None
-        super(EndOfMibView, self).__init__(-1, [], 0, 0)
+        super().__init__(-1, [], 0, 0)
 
 
 #: Singleton instance of "EndOfMibView"
@@ -184,7 +184,7 @@ class GetRequest(PDU):
                 wrapped_oids.append(ObjectIdentifier.from_string(oid))
             else:
                 wrapped_oids.append(oid)
-        super(GetRequest, self).__init__(
+        super().__init__(
             request_id,
             [VarBind(oid, Null()) for oid in wrapped_oids])  # type: ignore
 
@@ -211,7 +211,7 @@ class GetResponse(PDU):
         if not data:
             return END_OF_MIB_VIEW
         try:
-            return super(GetResponse, cls).decode(data)
+            return super().decode(data)
         except EmptyMessage as exc:
             raise NoSuchOID(
                 ObjectIdentifier(0),
@@ -319,5 +319,5 @@ class Trap(PDU):
 
     def __init__(self, *args, **kwargs):
         # type: (Any, Any) -> None
-        super(Trap, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.source = None  # type: Optional[SocketInfo]

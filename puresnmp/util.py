@@ -10,14 +10,12 @@ if TYPE_CHECKING:
     from .x690.types import ObjectIdentifier
 
 
-WalkRow = NamedTuple('WalkRow', [
-    ('value', Any),
-    ('unfinished', bool),
-])
-BulkResult = NamedTuple('BulkResult', [
-    ('scalars', Dict[str, Any]),
-    ('listing', Dict[str, Any]),
-])
+class WalkRow(NamedTuple):
+    value: Any
+    unfinished: bool
+class BulkResult(NamedTuple):
+    scalars: Dict[str, Any]
+    listing: Dict[str, Any]
 
 
 def group_varbinds(varbinds, effective_roots, user_roots=None):

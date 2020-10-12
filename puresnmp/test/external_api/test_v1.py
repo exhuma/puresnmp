@@ -27,10 +27,7 @@ if TYPE_CHECKING:
     from typing import Type
 
 
-if sys.version_info >= (3, 0):
-    from unittest.mock import patch
-else:
-    from mock import patch
+from unittest.mock import patch
 
 OID = ObjectIdentifier.from_string
 TESTS_SHOULD_RUN = True  # TODO should use importlib-metadata for this
@@ -68,10 +65,7 @@ class TestGet(ByteTester):
         result = snmp.get('192.168.1.1', 'private', '1.3.6.1.2.1.1.2.0')
         self.assertEqual(result, '1.3.6.1.4.1.8072.3.2.10')
         self.assertTrue(self.transport.send.called, 'method was not called')
-        if six.PY3:
-            self.assertIsInstance(result, str)
-        else:
-            self.assertIsInstance(result, unicode)
+        self.assertIsInstance(result, str)
 
     def test_multiget(self):
         response = readbytes('apiv1/multiget_response.hex')
@@ -141,12 +135,8 @@ class TestGet(ByteTester):
         self.assertTrue(self.transport.send.called, 'method was not called')
         key_types = {type(k) for k in result.listing.keys()}
 
-        if six.PY3:
-            self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
-            self.assertEqual(key_types, {str})
-        else:
-            self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], unicode)
-            self.assertEqual(key_types, {unicode})
+        self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
+        self.assertEqual(key_types, {str})
 
         expected_types = [
             int,
@@ -200,12 +190,8 @@ class TestGet(ByteTester):
         self.assertTrue(self.transport.send.called, 'method was not called')
         key_types = {type(k) for k in result.listing.keys()}
 
-        if six.PY3:
-            self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
-            self.assertEqual(key_types, {str})
-        else:
-            self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], unicode)
-            self.assertEqual(key_types, {unicode})
+        self.assertIsInstance(result.scalars['1.3.6.1.2.1.1.2.0'], str)
+        self.assertEqual(key_types, {str})
 
         expected_types = [
             int,
@@ -303,10 +289,7 @@ class TestGet(ByteTester):
         self.assertTrue(self.transport.send.called, 'method was not called')
         self.assertIsInstance(result, dict)
         key_types = {type(key) for key in result.keys()}
-        if six.PY3:
-            self.assertEqual(key_types, {str})
-        else:
-            self.assertEqual(key_types, {unicode})
+        self.assertEqual(key_types, {str})
         value_types = {type(value) for value in result.values()}
         self.assertEqual(value_types, {bytes})
 
@@ -439,10 +422,7 @@ class TestGet(ByteTester):
         for row in result:
             self.assertIsInstance(row, dict)
             dict_types = {type(key) for key in row.keys()}
-            if six.PY3:
-                self.assertEqual(dict_types, {str})
-            else:
-                self.assertEqual(dict_types, {unicode})
+            self.assertEqual(dict_types, {str})
 
     def test_walk(self):
         responses = readbytes_multiple('apiv1/walk_response.hex')
@@ -453,7 +433,7 @@ class TestGet(ByteTester):
             VarBind(oid=OID('1.3.6.1.2.1.2.2.1.1.1'), value=1),
             VarBind(oid=OID('1.3.6.1.2.1.2.2.1.1.12'), value=12)
         ]
-        six.assertCountEqual(self, result, expected)
+        self.assertCountEqual(result, expected)
         self.assertEqual(self.transport.send.call_count, 3)
 
         expected_types = [

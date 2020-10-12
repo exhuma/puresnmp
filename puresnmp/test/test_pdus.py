@@ -35,7 +35,7 @@ def comparable(bytes):
 class TestGet(ByteTester):
 
     def setUp(self):
-        super(TestGet, self).setUp()
+        super().setUp()
         self.maxDiff = None
 
     def test_get_request(self):
@@ -102,7 +102,7 @@ class TestGet(ByteTester):
                 b"\x30\x16"
                 b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
                 b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a")
-        with six.assertRaisesRegex(self, SnmpError, 'too big'):
+        with self.assertRaisesRegex(SnmpError, 'too big'):
             Sequence.from_bytes(data)
 
     def test_get_repr(self):
@@ -245,7 +245,7 @@ class TestError(ByteTester):
             error_status=5,
             error_index=1)
 
-        with six.assertRaisesRegex(self, SnmpError, 'genErr.*1.2.3') as exc:
+        with self.assertRaisesRegex(SnmpError, 'genErr.*1.2.3') as exc:
             PDU.decode(to_bytes(pdu))
 
         self.assertEqual(exc.exception.error_status, 5)
@@ -259,7 +259,7 @@ class TestError(ByteTester):
             VarBind(ObjectIdentifier.from_string('1.2.3'), Integer(1))],
             error_status=7,
             error_index=1)
-        with six.assertRaisesRegex(self, SnmpError, 'unknown.*error.*1.2.3') as exc:
+        with self.assertRaisesRegex(SnmpError, 'unknown.*error.*1.2.3') as exc:
             PDU.decode(to_bytes(pdu))
         self.assertEqual(exc.exception.error_status, 7)
         self.assertEqual(

@@ -1,7 +1,6 @@
 """
 Exceptions for the puresnmp package.
 """
-from __future__ import unicode_literals
 
 import socket
 
@@ -56,7 +55,7 @@ class ErrorResponse(SnmpError):
 
     def __init__(self, error_status, offending_oid, message=''):
         # type: (int, ObjectIdentifier, str) -> None
-        super(ErrorResponse, self).__init__(
+        super().__init__(
             '%s (status-code: %r) on OID %s' % (
                 message or self.DEFAULT_MESSAGE, error_status, offending_oid))
         self.error_status = error_status
@@ -71,7 +70,7 @@ class TooBig(ErrorResponse):
     DEFAULT_MESSAGE = 'SNMP response was too big!'
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super(TooBig, self).__init__(1, offending_oid)
+        super().__init__(1, offending_oid)
 
 
 class NoSuchOID(ErrorResponse):
@@ -88,7 +87,7 @@ class NoSuchOID(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super(NoSuchOID, self).__init__(2, offending_oid, message)
+        super().__init__(2, offending_oid, message)
 
 
 class BadValue(ErrorResponse):
@@ -101,7 +100,7 @@ class BadValue(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super(BadValue, self).__init__(3, offending_oid, message)
+        super().__init__(3, offending_oid, message)
 
 
 class ReadOnly(ErrorResponse):
@@ -113,7 +112,7 @@ class ReadOnly(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super(ReadOnly, self).__init__(4, offending_oid, message)
+        super().__init__(4, offending_oid, message)
 
 
 class GenErr(ErrorResponse):
@@ -126,7 +125,7 @@ class GenErr(ErrorResponse):
 
     def __init__(self, offending_oid, message=''):
         # type: (ObjectIdentifier, str) -> None
-        super(GenErr, self).__init__(5, offending_oid, message)
+        super().__init__(5, offending_oid, message)
 
 
 class EmptyMessage(SnmpError):
@@ -144,7 +143,7 @@ class TooManyVarbinds(SnmpError):
 
     def __init__(self, num_oids):
         # type: (int) -> None
-        super(TooManyVarbinds, self).__init__(
+        super().__init__(
             'Too many VarBinds (%d) in one request!'
             ' RFC3416 limits requests to %d!' % (
                 num_oids, MAX_VARBINDS))
@@ -160,7 +159,7 @@ class Timeout(socket.timeout):
 
     def __init__(self, message):
         # type: (str) -> None
-        super(Timeout, self).__init__(message)
+        super().__init__(message)
         self.message = message
 
 

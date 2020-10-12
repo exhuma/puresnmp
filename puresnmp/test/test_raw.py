@@ -8,7 +8,6 @@ Test the external "raw" interface.
 PureSNMP object instances.
 """
 
-from __future__ import print_function
 
 import sys
 import unittest
@@ -57,7 +56,7 @@ from . import ByteTester, CapturingHandler, readbytes, readbytes_multiple
 try:
     from unittest.mock import patch, call
 except ImportError:
-    from mock import patch, call  # type: ignore
+    from unittest.mock import patch, call  # type: ignore
 
 
 
@@ -91,7 +90,7 @@ class TestGet(ByteTester):
         with patch('puresnmp.api.raw.Transport') as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            with six.assertRaisesRegex(self, SnmpError, 'varbind'):
+            with self.assertRaisesRegex(SnmpError, 'varbind'):
                 get('::1', 'private', '1.2.3')
 
     def test_get_non_existing_oid(self):
@@ -136,7 +135,7 @@ class TestWalk(unittest.TestCase):
         with patch('puresnmp.api.raw.Transport') as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            with six.assertRaisesRegex(self, SnmpError, 'varbind'):
+            with self.assertRaisesRegex(SnmpError, 'varbind'):
                 next(walk('::1', 'private', '1.2.3'))
 
 
@@ -250,8 +249,8 @@ class TestMultiWalk(unittest.TestCase):
         with patch('puresnmp.api.raw.Transport') as mck:
             mck().send.side_effect = data_generator
             mck().get_request_id.return_value = 0
-            result = multiwalk(u'::1', u'public', [
-                u'1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
+            result = multiwalk('::1', 'public', [
+                '1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1',
             ])
             result = list(result)
 
@@ -538,7 +537,7 @@ class TestGetBulkWalk(unittest.TestCase):
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
 
-            with six.assertRaisesRegex(self, TypeError, 'OIDS.*list'):
+            with self.assertRaisesRegex(TypeError, 'OIDS.*list'):
                 # we need to wrap this in a list to consume the generator.
                 list(bulkwalk('::1', 'public', '1.2.3', bulk_size=2))
 

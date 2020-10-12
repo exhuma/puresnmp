@@ -9,7 +9,6 @@ these values into pure Python types. This makes day-to-day programming a bit
 easier but loses type information which may be useful in some edge-cases. In
 such a case it's recommended to use :py:mod:`puresnmp.aio.api.raw`.
 '''
-from __future__ import unicode_literals
 
 import logging
 import sys
@@ -497,10 +496,7 @@ def _bulkwalk_fetcher(bulk_size=10):
         return [VarBind(OID(k), v)
                 for k, v in result.listing.items()]
 
-    if sys.version_info < (3, 0):
-        fetcher.__name__ = str('_bulkwalk_fetcher(%d)' % bulk_size)
-    else:
-        fetcher.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
+    fetcher.__name__ = '_bulkwalk_fetcher(%d)' % bulk_size
     return fetcher
 
 

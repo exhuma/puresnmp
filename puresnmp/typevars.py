@@ -13,11 +13,9 @@ PyType = Union[str, bytes, int, datetime, timedelta, None, float]
 TWrappedPyType = TypeVar('TWrappedPyType', bound=PyType)
 
 
-SocketInfo = NamedTuple("SocketInfo", [
-    ("address", str),
-    ("port", int),
-])
-SocketResponse = NamedTuple("SocketResponse", [
-    ("data", bytes),
-    ("info", SocketInfo),
-])
+class SocketInfo(NamedTuple):
+    address: str
+    port: int
+class SocketResponse(NamedTuple):
+    data: bytes
+    info: SocketInfo

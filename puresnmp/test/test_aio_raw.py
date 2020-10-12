@@ -10,6 +10,7 @@ PureSNMP object instances.
 import sys
 from datetime import timedelta
 from unittest import skipUnless
+from unittest.mock import patch, call
 
 import pytest
 from x690.types import (
@@ -41,16 +42,11 @@ from puresnmp.util import BulkResult
 from . import readbytes, readbytes_multiple
 from .asyncmock import AsyncMock
 
-try:
-    from unittest.mock import patch, call
-except ImportError:
-    from mock import patch, call  # type: ignore
-
 pytestmark = pytest.mark.skipif(sys.version_info < (3, 5),
                                 reason="requires python3.5")
 
 
-class TestGet(object):
+class TestGet:
 
     @pytest.mark.asyncio
     async def test_get_string(self):
@@ -104,7 +100,7 @@ class TestGet(object):
                 await get('::1', 'private', '1.2.3')
 
 
-class TestWalk(object):
+class TestWalk:
 
     @pytest.mark.asyncio
     async def test_walk(self):
@@ -144,7 +140,7 @@ class TestWalk(object):
                     pass
 
 
-class TestBulkTable(object):
+class TestBulkTable:
 
     @pytest.mark.asyncio
     async def test_bulktable(self):
@@ -211,7 +207,7 @@ class TestBulkTable(object):
         assert sorted(result, key=lambda x: x['0']) == expected
 
 
-class TestMultiGet(object):
+class TestMultiGet:
 
     @pytest.mark.asyncio
     async def test_multiget(self):
@@ -233,7 +229,7 @@ class TestMultiGet(object):
         assert result == expected
 
 
-class TestMultiWalk(object):
+class TestMultiWalk:
 
     # TODO (advanced) figure out why this fails on Python 2!
     @skipUnless(
@@ -302,7 +298,7 @@ class TestMultiWalk(object):
         assert simplified_result == expected
 
 
-class TestMultiSet(object):
+class TestMultiSet:
 
     @pytest.mark.asyncio
     async def test_multiset(self):
@@ -328,7 +324,7 @@ class TestMultiSet(object):
         assert result == expected
 
 
-class TestGetNext(object):
+class TestGetNext:
 
     @pytest.mark.asyncio
     async def test_get_call_args(self):
@@ -360,7 +356,7 @@ class TestGetNext(object):
         assert result == expected
 
 
-class TestGetBulkGet(object):
+class TestGetBulkGet:
 
     @pytest.mark.asyncio
     async def test_get_call_args(self):
@@ -434,7 +430,7 @@ class TestGetBulkGet(object):
         assert result.listing == expected_listing
 
 
-class TestGetBulkWalk(object):
+class TestGetBulkWalk:
 
     @pytest.mark.asyncio
     async def test_get_call_args(self):

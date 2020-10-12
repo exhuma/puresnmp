@@ -41,7 +41,7 @@ class IpAddress(OctetString):
             octet_2, remainder = remainder & 0xff, remainder >> 8
             octet_1, remainder = remainder & 0xff, remainder >> 8
             value = pack('BBBB', octet_1, octet_2, octet_3, octet_4)
-        super(IpAddress, self).__init__(value)
+        super().__init__(value)
 
     def pythonize(self):
         # type: () -> Optional[bytes]
@@ -73,7 +73,7 @@ class Counter(Integer):
             value = value - (2**32)
         if value <= 0:
             value = 0
-        super(Counter, self).__init__(value)
+        super().__init__(value)
 
 
 class Gauge(Integer):
@@ -99,7 +99,7 @@ class TimeTicks(Integer):
             value_int = int(value.total_seconds() * 100)
         else:
             value_int = value
-        super(TimeTicks, self).__init__(value_int)
+        super().__init__(value_int)
 
     def pythonize(self):
         # type: () -> Optional[timedelta]
@@ -133,7 +133,7 @@ class Counter64(Integer):
             value = value - (2**64)
         if value <= 0:
             value = 0
-        super(Counter64, self).__init__(value)
+        super().__init__(value)
 
 
 def _walk_subclasses(cls, indent=0):  # pragma: no cover

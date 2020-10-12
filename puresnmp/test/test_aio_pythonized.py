@@ -7,10 +7,10 @@ The "external" interface is what the user sees. It should be pythonic and easy
 to use.
 """
 
-from __future__ import unicode_literals
 
 import sys
 from datetime import timedelta
+from unittest.mock import patch, call
 
 import pytest
 from x690.types import (
@@ -42,17 +42,12 @@ from puresnmp.util import BulkResult
 
 from .asyncmock import AsyncGenMock, AsyncMock
 
-try:
-    from unittest.mock import patch, call
-except ImportError:
-    from mock import patch, call  # pip install mock
-
 
 pytestmark = pytest.mark.skipif(sys.version_info < (3, 5),
                                 reason="requires python3.5")
 
 
-class TestGet(object):
+class TestGet:
 
     @pytest.mark.asyncio
     async def test_get_string(self):
@@ -75,7 +70,7 @@ class TestGet(object):
         assert result == expected
 
 
-class TestSet(object):
+class TestSet:
 
     @pytest.mark.asyncio
     async def test_set_string(self):
@@ -98,7 +93,7 @@ class TestSet(object):
         assert result == expected
 
 
-class TestWalk(object):
+class TestWalk:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.version_info < (3, 6),
@@ -125,7 +120,7 @@ class TestWalk(object):
         assert result == expected
 
 
-class TestMultiGet(object):
+class TestMultiGet:
 
     @pytest.mark.asyncio
     async def test_multiget(self):
@@ -146,7 +141,7 @@ class TestMultiGet(object):
         assert result == expected
 
 
-class TestMultiWalk(object):
+class TestMultiWalk:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.version_info < (3, 6),
@@ -183,7 +178,7 @@ class TestMultiWalk(object):
         assert len(result) == len(expected)
 
 
-class TestMultiSet(object):
+class TestMultiSet:
 
     @pytest.mark.asyncio
     async def test_multiset(self):
@@ -226,7 +221,7 @@ class TestMultiSet(object):
         assert result == expected
 
 
-class TestGetNext(object):
+class TestGetNext:
 
     @pytest.mark.asyncio
     async def test_getnext(self):
@@ -240,7 +235,7 @@ class TestGetNext(object):
         assert result == expected
 
 
-class TestGetBulkGet(object):
+class TestGetBulkGet:
 
     @pytest.mark.asyncio
     async def test_bulkget(self):
@@ -274,7 +269,7 @@ class TestGetBulkGet(object):
         assert result == expected
 
 
-class TestGetBulkWalk(object):
+class TestGetBulkWalk:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.version_info < (3, 6),
@@ -304,7 +299,7 @@ class TestGetBulkWalk(object):
         assert result == expected
 
 
-class TestTable(object):
+class TestTable:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.version_info < (3, 6),
@@ -327,7 +322,7 @@ class TestTable(object):
         assert len(result) == len(expected)
 
 
-class TestBulkTable(object):
+class TestBulkTable:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(sys.version_info < (3, 6),

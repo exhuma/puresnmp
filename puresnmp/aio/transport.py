@@ -100,7 +100,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         except asyncio.TimeoutError:
             if self.transport:
                 self.transport.abort()
-            raise Timeout("{} second timeout exceeded".format(timeout))
+            raise Timeout(f"{timeout} second timeout exceeded")
 
 
 class Transport(SyncTransport):
