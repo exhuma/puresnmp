@@ -21,7 +21,7 @@ from x690.types import (  # type: ignore
     Type,
     pop_tlv,
 )
-from x690.util import TypeInfo, encode_length, to_bytes
+from x690.util import TypeInfo, encode_length, to_bytes  # type: ignore
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
@@ -30,7 +30,7 @@ from .typevars import SocketInfo
 
 if TYPE_CHECKING:
     # pylint: disable=unused-import
-    from typing import Any, Iterator, Optional
+    from typing import Iterator, Optional
 
 
 class PDU(Type):  # type: ignore
@@ -129,7 +129,7 @@ class PDU(Type):  # type: ignore
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return to_bytes(tinfo) + length + payload
+        return to_bytes(tinfo) + length + payload  # type: ignore
 
     def __repr__(self) -> str:
         return "%s(%r, %r)" % (
@@ -282,7 +282,7 @@ class BulkGetRequest(Type):  # type: ignore
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return to_bytes(tinfo) + length + payload
+        return to_bytes(tinfo) + length + payload  # type: ignore
 
     def __repr__(self):
         # type: () -> str

@@ -24,7 +24,7 @@ from x690.types import (  # type: ignore
     Sequence,
     Type,
 )
-from x690.util import to_bytes
+from x690.util import to_bytes  # type: ignore
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError

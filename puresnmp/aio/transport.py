@@ -16,7 +16,7 @@ import logging
 from asyncio.events import AbstractEventLoop
 from typing import Optional, Tuple, Union
 
-from x690.util import visible_octets
+from x690.util import visible_octets  # type: ignore
 
 from ..exc import Timeout
 from ..transport import Transport as SyncTransport
