@@ -119,6 +119,7 @@ class Opaque(OctetString):  # type: ignore
     It is up to the application to know how to interpret this data and is
     passed through transparently by the SNMP protocol.
     """
+
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x04
 
@@ -127,6 +128,7 @@ class NsapAddress(Integer):  # type: ignore
     """
     Wrapped type for an NSAP Address
     """
+
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x05
 
@@ -191,4 +193,5 @@ def main():  # pragma: no cover
 
 if __name__ == "__main__":  # pragma: no cover
     import sys  # pylint: disable=ungrouped-imports
+
     sys.exit(main())

@@ -116,9 +116,7 @@ class PDU(Type):  # type: ignore
             self.varbinds = varbinds
 
     def __bytes__(self) -> bytes:
-        wrapped_varbinds = [
-            Sequence(vb.oid, vb.value) for vb in self.varbinds
-        ]
+        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
         data = [
             Integer(self.request_id),
             Integer(self.error_status),
@@ -269,9 +267,7 @@ class BulkGetRequest(Type):  # type: ignore
             self.varbinds.append(VarBind(oid, Null()))
 
     def __bytes__(self) -> bytes:
-        wrapped_varbinds = [
-            Sequence(vb.oid, vb.value) for vb in self.varbinds
-        ]
+        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
         data = [
             Integer(self.request_id),
             Integer(self.non_repeaters),

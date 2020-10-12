@@ -107,6 +107,7 @@ class Transport(SyncTransport):
     """
     An async variant of the synchronous TCP transport
     """
+
     # pylint: disable=invalid-overridden-method
 
     async def send(  # type: ignore
