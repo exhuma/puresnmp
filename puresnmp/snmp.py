@@ -10,48 +10,41 @@ from typing import (
     List,
     Tuple,
     Union,
-    cast
+    cast,
 )
 
 import six
-from x690.types import (
-    Integer,
-    Null,
-    ObjectIdentifier,
-    Sequence,
-    Type,
-    pop_tlv
-)
+from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
 
 # Error messages as defined in https://tools.ietf.org/html/rfc3416#section-3
 ERROR_MESSAGES = {
-    0: '(noError)',
-    1: '(tooBig)',
-    2: '(noSuchName)',
-    3: '(badValue)',
-    4: '(readOnly)',
-    5: '(genErr)',
-    6: '(noAccess)',
-    7: '(wrongType)',
-    8: '(wrongLength)',
-    9: '(wrongEncoding)',
-    10: '(wrongValue)',
-    11: '(noCreation)',
-    12: '(inconsistentValue)',
-    13: '(resourceUnavailable)',
-    14: '(commitFailed)',
-    15: '(undoFailed)',
-    16: '(authorizationError)',
-    17: '(notWritable)',
-    18: '(inconsistentName)'
+    0: "(noError)",
+    1: "(tooBig)",
+    2: "(noSuchName)",
+    3: "(badValue)",
+    4: "(readOnly)",
+    5: "(genErr)",
+    6: "(noAccess)",
+    7: "(wrongType)",
+    8: "(wrongLength)",
+    9: "(wrongEncoding)",
+    10: "(wrongValue)",
+    11: "(noCreation)",
+    12: "(inconsistentValue)",
+    13: "(resourceUnavailable)",
+    14: "(commitFailed)",
+    15: "(undoFailed)",
+    16: "(authorizationError)",
+    17: "(notWritable)",
+    18: "(inconsistentName)",
 }
 
 
 class VarBind:
-    '''
+    """
     A "VarBind" is a 2-tuple containing an object-identifier and the
     corresponding value.
-    '''
+    """
 
     # TODO: This class should be split in two for both the raw and pythonic
     #       API, that would simplify the typing of both "oid" and "value"a lot
@@ -62,8 +55,10 @@ class VarBind:
     def __init__(self, oid, value):
         # type: (Union[ObjectIdentifier, str], PyType) -> None
         if not isinstance(oid, (ObjectIdentifier,) + (str,)):  # type: ignore
-            raise TypeError('OIDs for VarBinds must be ObjectIdentifier or str'
-                            ' instances! Your value: %r' % oid)
+            raise TypeError(
+                "OIDs for VarBinds must be ObjectIdentifier or str"
+                " instances! Your value: %r" % oid
+            )
         if isinstance(oid, str):
             oid = ObjectIdentifier.from_string(oid)
         self.oid = oid
@@ -90,4 +85,4 @@ class VarBind:
 
     def __repr__(self):
         # type: () -> str
-        return 'VarBind(%r, %r)' % (self.oid, self.value)
+        return "VarBind(%r, %r)" % (self.oid, self.value)

@@ -1,6 +1,6 @@
-'''
+"""
 Colleciton of utility functions for the puresnmp package.
-'''
+"""
 from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Iterable
 
 if TYPE_CHECKING:
@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 class WalkRow(NamedTuple):
     value: Any
     unfinished: bool
+
+
 class BulkResult(NamedTuple):
     scalars: Dict[str, Any]
     listing: Dict[str, Any]
@@ -49,9 +51,11 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
         for key, value in results.items():
             containment = [base for base in user_roots if key in base]
             if len(containment) > 1:
-                raise RuntimeError('Unexpected OID result. A value was '
-                                   'contained in more than one base than '
-                                   'should be possible!')
+                raise RuntimeError(
+                    "Unexpected OID result. A value was "
+                    "contained in more than one base than "
+                    "should be possible!"
+                )
             if not containment:
                 continue
             new_results[containment[0]] = value
@@ -82,15 +86,21 @@ def get_unfinished_walk_oids(grouped_oids):
 
     # Build a mapping from the originally requested OID to the last fetched OID
     # from that tree.
-    last_received_oids = {k: WalkRow(v[-1], v[-1].oid in k)  # type: ignore
-                          for k, v in grouped_oids.items() if v}
+    last_received_oids = {
+        k: WalkRow(v[-1], v[-1].oid in k)  # type: ignore
+        for k, v in grouped_oids.items()
+        if v
+    }
 
-    output = [item for item in sorted(last_received_oids.items())
-              if item[1].unfinished]
+    output = [
+        item
+        for item in sorted(last_received_oids.items())
+        if item[1].unfinished
+    ]
     return output
 
 
-def tablify(varbinds, num_base_nodes=0, base_oid=''):
+def tablify(varbinds, num_base_nodes=0, base_oid=""):
     # type: ( Iterable[Tuple[Any, Any]], int, str ) -> List[Dict[str, Any]]
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
@@ -144,6 +154,7 @@ def tablify(varbinds, num_base_nodes=0, base_oid=''):
     if isinstance(base_oid, str) and base_oid:
         # This import needs to be delayed to avoid circular imports
         from puresnmp.x690.types import ObjectIdentifier
+
         base_oid_parsed = ObjectIdentifier.from_string(base_oid)
         # Each table has a sub-index for the table "entry" so the number of
         # base-nodes needs to be incremented by 1
@@ -154,12 +165,12 @@ def tablify(varbinds, num_base_nodes=0, base_oid=''):
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]
             col_id, row_id = tail[0], tail[1:]
-            row_id = '.'.join([str(node) for node in row_id])
+            row_id = ".".join([str(node) for node in row_id])
         else:
             col_id = str(oid.identifiers[-2])
             row_id = str(oid.identifiers[-1])
         tmp = {
-            '0': row_id,
+            "0": row_id,
         }
         row = rows.setdefault(row_id, tmp)
         row[str(col_id)] = value

@@ -1,6 +1,6 @@
-'''
+"""
 Tests for unit-test helpers
-'''
+"""
 
 from textwrap import dedent
 from binascii import hexlify
@@ -9,8 +9,9 @@ from io import StringIO
 
 
 def test_readbytes_multiple():
-    data = StringIO(dedent(
-        '''\
+    data = StringIO(
+        dedent(
+            """\
         #
         # This is a comment
         #
@@ -24,12 +25,13 @@ def test_readbytes_multiple():
         ----
 
         30 2e 02 01 01 04 07 70  72 69 76 61 74 65 a2 20   0......private.
-        '''
-    ))
+        """
+        )
+    )
     expected = [
-        b'\x30\x2d\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xa2\x1f',
-        b'\x30\x2d\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xa2\x1f',
-        b'\x30\x2e\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xa2\x20',
+        b"\x30\x2d\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xa2\x1f",
+        b"\x30\x2d\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xa2\x1f",
+        b"\x30\x2e\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xa2\x20",
     ]
 
     result = list(th.readbytes_multiple(data))
@@ -38,11 +40,12 @@ def test_readbytes_multiple():
 
 
 def test_readbytes_multiple_byte_positions():
-    '''
+    """
     If ASCII columns are defined, we should still properly split the packets
-    '''
-    data = StringIO(dedent(
-        '''\
+    """
+    data = StringIO(
+        dedent(
+            """\
         # -*- ascii-cols: 6-56 -*-
         # Sequence of responses for an SNMP Walk operation which eventually falls into
         # a special "endOfMibView" marker (a varbind with binary *value* 0x82 0x00).
@@ -52,12 +55,13 @@ def test_readbytes_multiple_byte_positions():
         ----
 
         0000: 31 37 02 01  01 04 07 70  72 69 76 61  74 65 A2 29    07.....private.)
-        '''
-    ))
+        """
+        )
+    )
 
     expected = [
-        b'\x30\x37\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xA2\x29',
-        b'\x31\x37\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xA2\x29',
+        b"\x30\x37\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xA2\x29",
+        b"\x31\x37\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xA2\x29",
     ]
 
     result = list(th.readbytes_multiple(data))
@@ -66,13 +70,17 @@ def test_readbytes_multiple_byte_positions():
 
 
 def test_readbytes():
-    data = StringIO(dedent(
-        '''\
+    data = StringIO(
+        dedent(
+            """\
         0000: 30 29 02 01  01 04 07 70  72 69 76 61  74 65 A5 1B    0).....private..
-        '''
-    ))
+        """
+        )
+    )
 
-    expected = b'\x30\x29\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xA5\x1B'
+    expected = (
+        b"\x30\x29\x02\x01\x01\x04\x07\x70\x72\x69\x76\x61\x74\x65\xA5\x1B"
+    )
     result = th.readbytes(data)
     assert result == expected
 

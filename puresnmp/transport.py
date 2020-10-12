@@ -59,8 +59,7 @@ class Transport:
         self.retries = retries or RETRIES
         self.buffer_size = buffer_size or BUFFER_SIZE
 
-    def send(
-            self, ip, port, packet):  # pragma: no cover
+    def send(self, ip, port, packet):  # pragma: no cover
         # type: ( str, int, bytes ) -> bytes
         """
         Opens a TCP connection to *ip:port*, sends a packet with *bytes* and
@@ -79,28 +78,34 @@ class Transport:
             try:
                 if LOG.isEnabledFor(logging.DEBUG):
                     hexdump = visible_octets(packet)
-                    LOG.debug('Sending packet to %s:%s (attempt %d/%d)\n%s',
-                              ip, port, (num_retry+1), self.retries, hexdump)
+                    LOG.debug(
+                        "Sending packet to %s:%s (attempt %d/%d)\n%s",
+                        ip,
+                        port,
+                        (num_retry + 1),
+                        self.retries,
+                        hexdump,
+                    )
                 sock.sendto(packet, (ip, port))
                 response = sock.recv(self.buffer_size)
                 break
             except socket.timeout:
-                LOG.debug('Timeout during attempt #%d',
-                          (num_retry+1))  # TODO add detail
+                LOG.debug(
+                    "Timeout during attempt #%d", (num_retry + 1)
+                )  # TODO add detail
                 continue
         else:
             sock.close()
-            raise Timeout(
-                "Max of %d retries reached" % self.retries)  # type: ignore
+            raise Timeout("Max of %d retries reached" % self.retries)  # type: ignore
         sock.close()
 
         if LOG.isEnabledFor(logging.DEBUG):
             hexdump = visible_octets(response)
-            LOG.debug('Received packet:\n%s', hexdump)
+            LOG.debug("Received packet:\n%s", hexdump)
 
         return response
 
-    def listen(self, bind_address='0.0.0.0', port=162):  # pragma: no cover
+    def listen(self, bind_address="0.0.0.0", port=162):  # pragma: no cover
         # type: (str, int) -> Generator[SocketResponse, None, None]
         """
         Sets up a listening UDP socket and returns a generator over recevied
@@ -124,7 +129,7 @@ class Transport:
                 request, addr = sock.recvfrom(self.buffer_size)
                 if LOG.isEnabledFor(logging.DEBUG):
                     hexdump = visible_octets(request)
-                    LOG.debug('Received packet:\n%s', hexdump)
+                    LOG.debug("Received packet:\n%s", hexdump)
 
                 yield SocketResponse(request, SocketInfo(addr[0], addr[1]))
 
@@ -138,4 +143,5 @@ class Transport:
         # it has to be unique across all clients, or just one client. If it's
         # just one client it *may* be enough.
         from time import time
+
         return int(time())

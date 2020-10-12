@@ -13,7 +13,8 @@ from x690.util import to_bytes
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Generator, List, Tuple, TypeVar, Union
-    T = TypeVar('T')
+
+    T = TypeVar("T")
 
 try:
     from itertools import zip_longest
@@ -21,14 +22,13 @@ except ImportError:
     from itertools import izip_longest as zip_longest  # type: ignore
 
 
-DATA_DIR = join(dirname(__file__), 'data')
+DATA_DIR = join(dirname(__file__), "data")
 
 __unittest = True  # <- This disables stack traces in unittest output for
 # everything in this module.
 
 
 class CapturingHandler(Handler):
-
     def __init__(self):
         # type: () -> None
         super().__init__()
@@ -48,12 +48,19 @@ class CapturingHandler(Handler):
                 found = True
                 break
         if not found:
-            print('--- Captured log messages:', file=sys.stderr)
+            print("--- Captured log messages:", file=sys.stderr)
             for record in self.captured_records:
-                print('Level:', getLevelName(record.levelno), 'Message:',
-                      record.msg % record.args, file=sys.stderr)
-            raise AssertionError('Pattern %r was not found with level %r in '
-                                 'the log records' % (message_regex, level))
+                print(
+                    "Level:",
+                    getLevelName(record.levelno),
+                    "Message:",
+                    record.msg % record.args,
+                    file=sys.stderr,
+                )
+            raise AssertionError(
+                "Pattern %r was not found with level %r in "
+                "the log records" % (message_regex, level)
+            )
 
 
 class ByteTester(unittest.TestCase):
@@ -62,11 +69,13 @@ class ByteTester(unittest.TestCase):
         """
         Helper method to compare bytes with more helpful output.
         """
+
         def is_bytes(x):
             # type: (Union[bytes, bytearray]) -> bool
             return isinstance(x, (bytes, bytearray))
+
         if not is_bytes(a) or not is_bytes(b):
-            raise ValueError('assertBytesEqual requires two bytes objects!')
+            raise ValueError("assertBytesEqual requires two bytes objects!")
 
         if a != b:
             comparisons = []
@@ -77,30 +86,31 @@ class ByteTester(unittest.TestCase):
 
             def char_repr(c):
                 # type: (bytes) -> str
-                if 0x1f < char_a < 0x80:
+                if 0x1F < char_a < 0x80:
                     # bytearray to prevent accidental pre-mature str conv
                     # str to prevent b'' suffix in repr's output
-                    return repr(str(bytearray([char_a]).decode('ascii')))
-                return '.'
+                    return repr(str(bytearray([char_a]).decode("ascii")))
+                return "."
+
             for offset, (char_a, char_b) in enumerate(zip_longest(a, b)):
-                comp, marker = ('==', '') if char_a == char_b else ('!=', '>>')
+                comp, marker = ("==", "") if char_a == char_b else ("!=", ">>")
 
                 # Using "zip_longest", overflows are marked as "None", which is
                 # unambiguous in this case, but we need to handle these
                 # separately from the main format string.
                 if char_a is None:
-                    char_ab = char_ad = char_ah = char_ar = '?'
+                    char_ab = char_ad = char_ah = char_ar = "?"
                 else:
-                    char_ab = f'0b{char_a:08b}'
-                    char_ad = f'{char_a:3d}'
-                    char_ah = f'0x{char_a:02x}'
+                    char_ab = f"0b{char_a:08b}"
+                    char_ad = f"{char_a:3d}"
+                    char_ah = f"0x{char_a:02x}"
                     char_ar = char_repr(char_a)
                 if char_b is None:
-                    char_bb = char_bd = char_bh = char_br = '?'
+                    char_bb = char_bd = char_bh = char_br = "?"
                 else:
-                    char_bb = f'0b{char_b:08b}'
-                    char_bd = f'{char_b:3d}'
-                    char_bh = f'0x{char_b:02x}'
+                    char_bb = f"0b{char_b:08b}"
+                    char_bd = f"{char_b:3d}"
+                    char_bh = f"0x{char_b:02x}"
                     char_br = char_repr(char_b)
                 comparisons.append(
                     "{8:<3} Offset {0:4d}: "
@@ -117,25 +127,28 @@ class ByteTester(unittest.TestCase):
                         char_bh,
                         marker,
                         char_ar,
-                        char_br))
+                        char_br,
+                    )
+                )
             raise AssertionError(
-                'Bytes differ!\n' +
-                'type(a)=%s, type(b)=%s\n' % (type_a, type_b) +
-                '\nIndividual bytes:\n' +
-                '\n'.join(comparisons))
+                "Bytes differ!\n"
+                + "type(a)=%s, type(b)=%s\n" % (type_a, type_b)
+                + "\nIndividual bytes:\n"
+                + "\n".join(comparisons)
+            )
 
 
 def parse_meta_lines(lines):
     # type: (List[str]) -> Generator[Tuple[str, Any], None, None]
-    pattern = re.compile(r'-\*-(.*?)-\*-')
+    pattern = re.compile(r"-\*-(.*?)-\*-")
     for line in lines:
         match = pattern.search(line)
         if not match:
             continue
         values = match.groups()[0]
-        key, _, value = values.partition(':')
-        if key.strip() == 'ascii-cols':
-            start, _, end = value.partition('-')
+        key, _, value = values.partition(":")
+        if key.strip() == "ascii-cols":
+            start, _, end = value.partition("-")
             yield key.strip(), (int(start), int(end))
         else:
             yield key.strip(), value.strip()
@@ -143,7 +156,7 @@ def parse_meta_lines(lines):
 
 def chunker(lines, is_boundary):
     # type: (List[T], Callable[[T], bool]) -> Generator[List[T], None, None]
-    '''
+    """
     Transforms a list of items into a generator of new lists of items of the
     same type by looking for special boundary lines. Boundary lines are
     detected with the help of an "is_boundary" callable.
@@ -155,7 +168,7 @@ def chunker(lines, is_boundary):
         ...     print(chunk)
         [1, 2]
         [3, 4]
-    '''
+    """
     if not lines:
         return
 
@@ -174,17 +187,17 @@ def chunker(lines, is_boundary):
 
 def detect_ascii_slice(lines):
     # type: (List[str]) -> slice
-    '''
+    """
     Given a list of strings, this will return the most likely positions of byte
     positions. They are returned slice which should be able to extract the
     columns from each line.
-    '''
+    """
     for line in lines:
         # if the content contains a ":" character, it contains the byte offset
         # in the beginning. This is the case for libsnmp command output using
         # the "-d" switch. We need to remove the offset
-        match = re.match(r'^\d{4}:', line)
-        if ':' in line:
+        match = re.match(r"^\d{4}:", line)
+        if ":" in line:
             return slice(6, 56)
         else:
             return slice(0, 50)
@@ -199,16 +212,16 @@ def readbytes_multiple(filename, base_dir=DATA_DIR):
     else:
         lines = filename.readlines()
 
-    meta_lines = [line for line in lines if '-*-' in line]
+    meta_lines = [line for line in lines if "-*-" in line]
     args = dict(parse_meta_lines(meta_lines))
 
-    if 'ascii-cols' in args:
-        ascii_slice = slice(*args['ascii-cols'])
+    if "ascii-cols" in args:
+        ascii_slice = slice(*args["ascii-cols"])
     else:
         ascii_slice = detect_ascii_slice(lines)
 
-    for chunk in chunker(lines, is_boundary=lambda x: x.strip() == '----'):
-        wo_comments = [line for line in chunk if not line.startswith('#')]
+    for chunk in chunker(lines, is_boundary=lambda x: x.strip() == "----"):
+        wo_comments = [line for line in chunk if not line.startswith("#")]
         without_ascii = [line[ascii_slice] for line in wo_comments]
         nonempty = [line for line in without_ascii if line.strip()]
 

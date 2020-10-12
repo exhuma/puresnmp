@@ -14,14 +14,7 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 from typing import TYPE_CHECKING, Iterable, Tuple, cast
 
 import six
-from x690.types import (
-    Integer,
-    Null,
-    ObjectIdentifier,
-    Sequence,
-    Type,
-    pop_tlv
-)
+from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
 from x690.util import TypeInfo, encode_length, to_bytes
 
 from .const import MAX_VARBINDS
@@ -38,6 +31,7 @@ class PDU(Type):  # type: ignore
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
+
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 0
 
@@ -52,33 +46,36 @@ class PDU(Type):  # type: ignore
         # TODO (advanced): recent tests revealed that this is *not symmetric*
         # with __bytes__ of this class. This should be ensured!
         if not data:
-            raise EmptyMessage('No data to decode!')
+            raise EmptyMessage("No data to decode!")
         request_id, data = pop_tlv(data)
         error_status, data = pop_tlv(data)
         error_index, data = pop_tlv(data)
         if error_status.value:
             error_detail, data = cast(
                 Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
-                pop_tlv(data)
+                pop_tlv(data),
             )
             if not isinstance(error_detail, Sequence):
                 raise TypeError(
-                    'error-detail should be a sequence but got %r' %
-                    type(error_detail))
+                    "error-detail should be a sequence but got %r"
+                    % type(error_detail)
+                )
             varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
-            offending_oid = varbinds[error_index.value-1].oid
-            assert data == b''
+            offending_oid = varbinds[error_index.value - 1].oid
+            assert data == b""
             exception = ErrorResponse.construct(
-                error_status.value, offending_oid)
+                error_status.value, offending_oid
+            )
             raise exception
 
         values, data = cast(
-            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
-            pop_tlv(data)
+            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes], pop_tlv(data)
         )
         if not isinstance(values, Sequence):
-            raise TypeError('PDUs can only be decoded from sequences but got '
-                            '%r instead' % type(values))
+            raise TypeError(
+                "PDUs can only be decoded from sequences but got "
+                "%r instead" % type(values)
+            )
 
         varbinds = []
         for oid, value in values:
@@ -90,10 +87,7 @@ class PDU(Type):  # type: ignore
             varbinds.append(VarBind(oid, value))
 
         return cls(
-            request_id.value,
-            varbinds,
-            error_status.value,
-            error_index.value
+            request_id.value, varbinds, error_status.value, error_index.value
         )
 
     def __init__(self, request_id, varbinds, error_status=0, error_index=0):
@@ -108,15 +102,16 @@ class PDU(Type):  # type: ignore
 
     def __bytes__(self):
         # type: () -> bytes
-        wrapped_varbinds = [Sequence(vb.oid, vb.value)  # type: ignore
-                            for vb in self.varbinds]
+        wrapped_varbinds = [
+            Sequence(vb.oid, vb.value) for vb in self.varbinds  # type: ignore
+        ]
         data = [
             Integer(self.request_id),
             Integer(self.error_status),
             Integer(self.error_index),
-            Sequence(*wrapped_varbinds)
+            Sequence(*wrapped_varbinds),
         ]
-        payload = b''.join([to_bytes(chunk) for chunk in data])
+        payload = b"".join([to_bytes(chunk) for chunk in data])
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
@@ -124,16 +119,20 @@ class PDU(Type):  # type: ignore
 
     def __repr__(self):
         # type: () -> str
-        return '%s(%r, %r)' % (
+        return "%s(%r, %r)" % (
             self.__class__.__name__,
-            self.request_id, self.varbinds)
+            self.request_id,
+            self.varbinds,
+        )
 
     def __eq__(self, other):
         # type: (Any) -> bool
         # pylint: disable=unidiomatic-typecheck
-        return (type(other) == type(self) and
-                self.request_id == other.request_id and
-                self.varbinds == other.varbinds)
+        return (
+            type(other) == type(self)
+            and self.request_id == other.request_id
+            and self.varbinds == other.varbinds
+        )
 
     def pretty(self):  # pragma: no cover
         # type: () -> str
@@ -142,21 +141,22 @@ class PDU(Type):  # type: ignore
         """
         lines = [
             self.__class__.__name__,
-            '    Request ID: %s' % self.request_id,
-            '    Error Status: %s' % self.error_status,
-            '    Error Index: %s' % self.error_index,
-            '    Varbinds: ',
+            "    Request ID: %s" % self.request_id,
+            "    Error Status: %s" % self.error_status,
+            "    Error Index: %s" % self.error_index,
+            "    Varbinds: ",
         ]
         for bind in self.varbinds:
-            lines.append('        %s: %s' % (bind.oid, bind.value))  # type: ignore
+            lines.append("        %s: %s" % (bind.oid, bind.value))  # type: ignore
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 class EndOfMibView(PDU):
     """
     Sentinel value to detect endOfMibView
     """
+
     # This subclassesPDU for type-consistency
 
     def __init__(self):
@@ -172,6 +172,7 @@ class GetRequest(PDU):
     """
     Represents an SNMP Get Request.
     """
+
     TAG = 0
 
     def __init__(self, request_id, *oids):
@@ -185,8 +186,8 @@ class GetRequest(PDU):
             else:
                 wrapped_oids.append(oid)
         super().__init__(
-            request_id,
-            [VarBind(oid, Null()) for oid in wrapped_oids])  # type: ignore
+            request_id, [VarBind(oid, Null()) for oid in wrapped_oids]
+        )  # type: ignore
 
 
 class GetResponse(PDU):
@@ -194,6 +195,7 @@ class GetResponse(PDU):
     Represents an SNMP basic response (this may be returned for other requests
     than GET as well).
     """
+
     TAG = 2
 
     @classmethod
@@ -214,14 +216,15 @@ class GetResponse(PDU):
             return super().decode(data)
         except EmptyMessage as exc:
             raise NoSuchOID(
-                ObjectIdentifier(0),
-                'Nothing found at the given OID (%s)' % exc)
+                ObjectIdentifier(0), "Nothing found at the given OID (%s)" % exc
+            )
 
 
 class GetNextRequest(GetRequest):
     """
     Represents an SNMP GetNext Request.
     """
+
     TAG = 1
 
 
@@ -229,6 +232,7 @@ class SetRequest(PDU):
     """
     Represents an SNMP SET Request.
     """
+
     TAG = 3
 
 
@@ -236,6 +240,7 @@ class BulkGetRequest(Type):  # type: ignore
     """
     Represents a SNMP GetBulk request
     """
+
     TYPECLASS = TypeInfo.CONTEXT
     TAG = 5
 
@@ -252,15 +257,16 @@ class BulkGetRequest(Type):  # type: ignore
 
     def __bytes__(self):
         # type: () -> bytes
-        wrapped_varbinds = [Sequence(vb.oid, vb.value)  # type: ignore
-                            for vb in self.varbinds]
+        wrapped_varbinds = [
+            Sequence(vb.oid, vb.value) for vb in self.varbinds  # type: ignore
+        ]
         data = [
             Integer(self.request_id),
             Integer(self.non_repeaters),
             Integer(self.max_repeaters),
-            Sequence(*wrapped_varbinds)
+            Sequence(*wrapped_varbinds),
         ]
-        payload = b''.join([to_bytes(chunk) for chunk in data])
+        payload = b"".join([to_bytes(chunk) for chunk in data])
 
         tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
@@ -269,21 +275,24 @@ class BulkGetRequest(Type):  # type: ignore
     def __repr__(self):
         # type: () -> str
         oids = [repr(oid) for oid, _ in self.varbinds]
-        return '%s(%r, %r, %r, %s)' % (
+        return "%s(%r, %r, %r, %s)" % (
             self.__class__.__name__,
             self.request_id,
             self.non_repeaters,
             self.max_repeaters,
-            ', '.join(oids))
+            ", ".join(oids),
+        )
 
     def __eq__(self, other):
         # type: (Any) -> bool
         # pylint: disable=unidiomatic-typecheck
-        return (type(other) == type(self) and
-                self.request_id == other.request_id and
-                self.non_repeaters == other.non_repeaters and
-                self.max_repeaters == other.max_repeaters and
-                self.varbinds == other.varbinds)
+        return (
+            type(other) == type(self)
+            and self.request_id == other.request_id
+            and self.non_repeaters == other.non_repeaters
+            and self.max_repeaters == other.max_repeaters
+            and self.varbinds == other.varbinds
+        )
 
     def pretty(self):  # pragma: no cover
         # type: () -> str
@@ -292,21 +301,22 @@ class BulkGetRequest(Type):  # type: ignore
         """
         lines = [
             self.__class__.__name__,
-            '    Request ID: %s' % self.request_id,
-            '    Non Repeaters: %s' % self.non_repeaters,
-            '    Max Repeaters: %s' % self.max_repeaters,
-            '    Varbinds: ',
+            "    Request ID: %s" % self.request_id,
+            "    Non Repeaters: %s" % self.non_repeaters,
+            "    Max Repeaters: %s" % self.max_repeaters,
+            "    Varbinds: ",
         ]
         for bind in self.varbinds:
-            lines.append('        %s: %s' % (bind.oid, bind.value))  # type: ignore
+            lines.append("        %s: %s" % (bind.oid, bind.value))  # type: ignore
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 class InformRequest(PDU):
     """
     Represents an SNMP Inform request
     """
+
     TAG = 6
 
 

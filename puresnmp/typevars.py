@@ -10,12 +10,14 @@ PyType = Union[str, bytes, int, datetime, timedelta, None, float]
 
 #: This is a type variable helps to properly hint functions which take in a
 #: "puresnmp" type and return a pythonic type
-TWrappedPyType = TypeVar('TWrappedPyType', bound=PyType)
+TWrappedPyType = TypeVar("TWrappedPyType", bound=PyType)
 
 
 class SocketInfo(NamedTuple):
     address: str
     port: int
+
+
 class SocketResponse(NamedTuple):
     data: bytes
     info: SocketInfo

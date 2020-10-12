@@ -26,5 +26,5 @@ from puresnmp.api.pythonic import (
     set,
     table,
     traps,
-    walk
+    walk,
 )
