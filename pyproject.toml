@@ -12,10 +12,35 @@ use_parentheses = true
 virtual_env = "env"
 
 [tool.pylint."messages control"]
-disable = ["C0330", "C0326"]
+disable = ["C0330", "C0326", "duplicate-code", "fixme"]
 
 [tool.pylint.format]
-max-line-length = "80"
+max-line-length = 80
+ignore-long-lines = "(^\\s*(#)?<?https?://\\S+>?$|.*VarBind.*ObjectIdentifier.*|# TODO|# type:)"
+
+[tool.pylint.master]
+ignore = [".git", "env"]
+
+[tool.pylint.basic]
+good-names = [
+    "i",
+    "j",
+    "k",
+    "n",
+    "m",
+    "ex",
+    "ip",
+    "Run",
+    "_"
+]
+
+[tool.pylint.reports]
+output-format = "colorized"
+reports = "no"
+
+[tool.pylint.design]
+max-locals = 25
+max-args = 8
 
 [tool.poetry]
 name = "puresnmp"
