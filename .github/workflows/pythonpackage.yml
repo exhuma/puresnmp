@@ -22,6 +22,10 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install poetry
         poetry install --no-ansi
+    - name: Check black formatting
+      run: |
+        pip install black
+        black --check puresnmp
     - name: Lint with pylint
       run: |
         pip install pylint
