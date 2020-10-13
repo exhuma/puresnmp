@@ -15,14 +15,13 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
 from warnings import warn
 
-from x690.types import (  # type: ignore
+from x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
     Type,
 )
-from x690.util import to_bytes  # type: ignore
 
 from ...const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
 from ...exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -35,7 +34,7 @@ from ...pdu import (
     SetRequest,
 )
 from ...snmp import VarBind
-from ...typevars import PyType, TWrappedPyType
+from ...typevars import TWrappedPyType
 from ...util import BulkResult  # NOQA (must be here for type detection)
 from ...util import get_unfinished_walk_oids, group_varbinds, tablify
 from ..transport import Transport
@@ -58,7 +57,7 @@ OID = ObjectIdentifier.from_string
 
 
 async def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: ( str, str, str, int, int ) -> Type[PyType]
+    # type: ( str, str, str, int, int ) -> Type[Any]
     """
     Executes a simple SNMP GET request and returns a pure Python data
     structure.
@@ -73,7 +72,7 @@ async def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
 
 async def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: ( str, str, List[str], int, int ) -> List[Type[PyType]]
+    # type: ( str, str, List[str], int, int ) -> List[Type[Any]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -94,12 +93,12 @@ async def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
         GetRequest(transport.get_request_id(), *parsed_oids),
     )
 
-    response = await transport.send(ip, port, to_bytes(packet))
+    response = await transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
 
-    output = [value for _, value in raw_response[2].varbinds]
+    output: List[Type[Any]] = [value for _, value in raw_response[2].varbinds]
     if len(output) != len(oids):
         raise SnmpError(
             "Unexpected response. Expected %d varbind, "
@@ -141,7 +140,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     transport = Transport(timeout=timeout)
     request = GetNextRequest(transport.get_request_id(), *oids)
     packet = Sequence(Integer(Version.V2C), OctetString(community), request)
-    response = await transport.send(ip, port, to_bytes(packet))
+    response = await transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
@@ -345,7 +344,7 @@ async def multiset(
 
     request = SetRequest(transport.get_request_id(), binds)
     packet = Sequence(Integer(Version.V2C), OctetString(community), request)
-    response = await transport.send(ip, port, to_bytes(packet))
+    response = await transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
@@ -451,7 +450,7 @@ async def bulkget(
         ),
     )
 
-    response = await transport.send(ip, port, to_bytes(packet))
+    response = await transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
@@ -479,7 +478,7 @@ async def bulkget(
     scalar_out = {str(oid): value for oid, value in scalar_tmp}
 
     # prepare output for listing
-    repeating_out = OrderedDict()  # type: Dict[str, Type]
+    repeating_out = OrderedDict()  # type: Dict[str, Type[Any]]
     for oid, value in repeating_tmp:
         if value is END_OF_MIB_VIEW:
             break

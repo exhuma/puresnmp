@@ -11,25 +11,23 @@ for the definition of the new types.
 .. _RFC 3416: https://tools.ietf.org/html/rfc3416
 """
 # TODO: Implement IPv6 via https://tools.ietf.org/html/rfc2465
+# pylint: disable=too-few-public-methods
 
 from datetime import timedelta
 from ipaddress import IPv4Address
 from struct import pack
-from typing import TYPE_CHECKING, Union
+from typing import Optional, Union
 
-from x690.types import Integer, OctetString, Type  # type: ignore
-from x690.util import TypeInfo  # type: ignore
-
-if TYPE_CHECKING:
-    from typing import Optional
+from x690.types import Integer, OctetString, Type
+from x690.util import TypeClass
 
 
-class IpAddress(OctetString):  # type: ignore
+class IpAddress(OctetString):
     """
     SNMP Type for IPv4 Addresses
     """
 
-    TYPECLASS = TypeInfo.APPLICATION
+    TYPECLASS = TypeClass.APPLICATION
     TAG = 0x00
 
     def __init__(self, value):
@@ -44,8 +42,8 @@ class IpAddress(OctetString):  # type: ignore
         super().__init__(value)
 
     def pythonize(self):
-        # type: () -> Optional[bytes]
-        return self.value  # type: ignore
+        # type: () -> bytes
+        return self.value
 
         # TODO The following code breaks backwards compatbility and should be
         # released in the next mator verion
@@ -59,13 +57,13 @@ class IpAddress(OctetString):  # type: ignore
         # TODO v2.0.0 return ip_address(intvalue)
 
 
-class Counter(Integer):  # type: ignore
+class Counter(Integer):
     """
     SNMP type for counters.
     """
 
     SIGNED = False
-    TYPECLASS = TypeInfo.APPLICATION
+    TYPECLASS = TypeClass.APPLICATION
     TAG = 0x01
 
     def __init__(self, value):
@@ -77,23 +75,23 @@ class Counter(Integer):  # type: ignore
         super().__init__(value)
 
 
-class Gauge(Integer):  # type: ignore
+class Gauge(Integer):
     """
     SNMP type for gauges.
     """
 
     SIGNED = False
-    TYPECLASS = TypeInfo.APPLICATION
+    TYPECLASS = TypeClass.APPLICATION
     TAG = 0x02
 
 
-class TimeTicks(Integer):  # type: ignore
+class TimeTicks(Integer):
     """
     SNMP type for time ticks.
     """
 
     SIGNED = False
-    TYPECLASS = TypeInfo.APPLICATION
+    TYPECLASS = TypeClass.APPLICATION
     TAG = 0x03
 
     def __init__(self, value):
@@ -104,15 +102,17 @@ class TimeTicks(Integer):  # type: ignore
             value_int = value
         super().__init__(value_int)
 
-    def pythonize(self):
-        # type: () -> Optional[timedelta]
+    def pythonize(self) -> Optional[timedelta]:  # type: ignore
+        """
+        Convert to Python type
+        """
         if self.value is None:
             return None
         seconds = self.value / 100.0  # see rfc2578#section-7.1.8
         return timedelta(seconds=seconds)
 
 
-class Opaque(OctetString):  # type: ignore
+class Opaque(OctetString):
     """
     The Opaque type is to be considered to carry "any" binary data.
 
@@ -120,26 +120,26 @@ class Opaque(OctetString):  # type: ignore
     passed through transparently by the SNMP protocol.
     """
 
-    TYPECLASS = TypeInfo.APPLICATION
+    TYPECLASS = TypeClass.APPLICATION
     TAG = 0x04
 
 
-class NsapAddress(Integer):  # type: ignore
+class NsapAddress(Integer):
     """
     Wrapped type for an NSAP Address
     """
 
-    TYPECLASS = TypeInfo.APPLICATION
+    TYPECLASS = TypeClass.APPLICATION
     TAG = 0x05
 
 
-class Counter64(Integer):  # type: ignore
+class Counter64(Integer):
     """
     As defined in RFC 2578
     """
 
     SIGNED = False
-    TYPECLASS = TypeInfo.APPLICATION
+    TYPECLASS = TypeClass.APPLICATION
     TAG = 0x06
 
     def __init__(self, value):

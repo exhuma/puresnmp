@@ -17,14 +17,13 @@ from typing import Type as TType
 from typing import TypeVar, cast
 from warnings import warn
 
-from x690.types import (  # type: ignore
+from x690.types import (
     Integer,
     ObjectIdentifier,
     OctetString,
     Sequence,
     Type,
 )
-from x690.util import to_bytes  # type: ignore
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -46,10 +45,8 @@ if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
     from typing import Dict, Generator, Set, Union
 
-    from puresnmp.typevars import PyType
-
     TWalkResponse = Generator[VarBind, None, None]
-    T = TypeVar("T", bound=TType[PyType])  # pylint: disable=invalid-name
+    T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name
 
 _set = set
 
@@ -59,7 +56,7 @@ TFetcher = Callable[[str, str, List[str], int, int, int], List[VarBind]]
 
 
 def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: ( str, str, str, int, int ) -> Type[PyType]
+    # type: ( str, str, str, int, int ) -> Type[Any]
     """
     Executes a simple SNMP GET request and returns a pure Python data
     structure.
@@ -76,7 +73,7 @@ def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 def multiget(
     ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
 ):
-    # type: ( str, str, List[str], int, int, int) -> List[Type[PyType]]
+    # type: ( str, str, List[str], int, int, int) -> List[Type[Any]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -97,7 +94,7 @@ def multiget(
         GetRequest(transport.get_request_id(), *parsed_oids),
     )
 
-    response = transport.send(ip, port, to_bytes(packet))
+    response = transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
@@ -146,7 +143,7 @@ def multigetnext(
     transport = Transport(timeout=timeout)
     request = GetNextRequest(transport.get_request_id(), *oids)
     packet = Sequence(Integer(version), OctetString(community), request)
-    response = transport.send(ip, port, to_bytes(packet))
+    response = transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
@@ -345,11 +342,11 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
             '"set" request must be an instance of "Type"!'
         )
 
-    binds = [VarBind(OID(k), v) for k, v in mappings]  # type: ignore
+    binds = [VarBind(OID(k), v) for k, v in mappings]
 
     request = SetRequest(transport.get_request_id(), binds)
     packet = Sequence(Integer(Version.V2C), OctetString(community), request)
-    response = transport.send(ip, port, to_bytes(packet))
+    response = transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
@@ -456,7 +453,7 @@ def bulkget(
         ),
     )
 
-    response = transport.send(ip, port, to_bytes(packet))
+    response = transport.send(ip, port, bytes(packet))
     raw_response = cast(
         Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
     )
@@ -484,7 +481,7 @@ def bulkget(
     scalar_out = {str(oid): value for oid, value in scalar_tmp}
 
     # prepare output for listing
-    repeating_out = OrderedDict()  # type: Dict[str, Type[PyType]]
+    repeating_out = OrderedDict()  # type: Dict[str, Type[Any]]
     for oid, value in repeating_tmp:
         if value is END_OF_MIB_VIEW:
             break
@@ -616,7 +613,7 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     varbinds = walk(ip, community, oid, port=port)
     for varbind in varbinds:
         tmp.append(varbind)
-    as_table = tablify(tmp, num_base_nodes=num_base_nodes)  # type: ignore
+    as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
 
 
@@ -643,7 +640,7 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
     varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
     for varbind in varbinds:
         tmp.append(varbind)
-    as_table = tablify(tmp, num_base_nodes=num_base_nodes)  # type: ignore
+    as_table = tablify(tmp, num_base_nodes=num_base_nodes)
     return as_table
 
 

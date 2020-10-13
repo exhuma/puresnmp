@@ -13,13 +13,7 @@ from datetime import timedelta
 from ipaddress import ip_address
 
 import six
-from x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes,
-)
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.api.pythonic import (
     bulkget,

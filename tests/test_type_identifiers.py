@@ -1,18 +1,18 @@
 # pylint: skip-file
 
 from x690 import types as t
-from x690.util import TypeInfo
+from x690.util import TypeClass, TypeInfo, TypeNature
 
 from puresnmp import types as apptype
 
 from . import ByteTester
 
-UNIVERSAL = TypeInfo.UNIVERSAL
-APPLICATION = TypeInfo.APPLICATION
-PRIMITIVE = TypeInfo.PRIMITIVE
-PRIVATE = TypeInfo.PRIVATE
-CONSTRUCTED = TypeInfo.CONSTRUCTED
-CONTEXT = TypeInfo.CONTEXT
+UNIVERSAL = TypeClass.UNIVERSAL
+APPLICATION = TypeClass.APPLICATION
+PRIVATE = TypeClass.PRIVATE
+CONTEXT = TypeClass.CONTEXT
+PRIMITIVE = TypeNature.PRIMITIVE
+CONSTRUCTED = TypeNature.CONSTRUCTED
 
 
 def make_identifier_test(octet, expected_class, expected_pc, expected_value):
@@ -26,7 +26,7 @@ def make_identifier_test(octet, expected_class, expected_pc, expected_value):
 
 def add_class_detector(cls, expected_class, typeclass, tag):
     def fun(inst):
-        result = t.Registry.get(typeclass, tag)
+        result = t.Type.get(typeclass, tag)
         inst.assertEqual(result, expected_class)
 
     fun.__name__ = "test_%s" % expected_class.__name__

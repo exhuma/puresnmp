@@ -24,7 +24,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Generator, List, TypeVar
 from warnings import warn
 
-from x690.types import ObjectIdentifier, Type  # type: ignore
+from x690.types import ObjectIdentifier, Type
 
 from ..const import DEFAULT_TIMEOUT, Version
 from ..pdu import Trap
@@ -36,9 +36,7 @@ if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
     from typing import Any, Callable, Dict, Tuple, Union
 
-    from puresnmp.typevars import PyType
-
-    T = TypeVar("T", bound=PyType)
+    T = TypeVar("T", bound=Any)
 
 _set = set
 LOG = logging.getLogger(__name__)
@@ -108,14 +106,14 @@ class TrapInfo:
         """
         output = {}
         for oid_raw, value_raw in self.raw_trap.varbinds[2:]:
-            oid = oid_raw.pythonize()  # type: ignore
-            value = value_raw.pythonize()  # type: ignore
+            oid = oid_raw.pythonize()
+            value = value_raw.pythonize()
             output[oid] = value
         return output
 
 
 def get(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int, int) -> PyType
+    # type: (str, str, str, int, int) -> Any
     """
     Delegates to :py:func:`~puresnmp.api.raw.get` but returns simple Python
     types.
@@ -123,13 +121,13 @@ def get(ip, community, oid, port=161, timeout=2):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_value = raw.get(ip, community, oid, port, timeout=timeout)
-    return raw_value.pythonize()  # type: ignore
+    return raw_value.pythonize()
 
 
 def multiget(
     ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
 ):
-    # type: (str, str, List[str], int, int, int) -> List[PyType]
+    # type: (str, str, List[str], int, int, int) -> List[Any]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiget` but returns simple
     Python types.
@@ -169,7 +167,7 @@ def multigetnext(
         ip, community, oids, port, timeout, version=version
     )
     pythonized = [
-        VarBind(oid, value.pythonize()) for oid, value in raw_output  # type: ignore
+        VarBind(oid, value.pythonize()) for oid, value in raw_output
     ]
     return pythonized
 
@@ -185,7 +183,7 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
     raw_result = raw.walk(ip, community, oid, port, timeout)
     for raw_oid, raw_value in raw_result:
-        yield VarBind(raw_oid, raw_value.pythonize())  # type: ignore
+        yield VarBind(raw_oid, raw_value.pythonize())
 
 
 def multiwalk(
@@ -223,12 +221,12 @@ def set(
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = multiset(ip, community, [(oid, value)], port, timeout=timeout)
+    result = multiset(ip, community, [(oid, value)], port, timeout=timeout)  # type: ignore
     return result[oid.lstrip(".")]  # type: ignore
 
 
 def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[Tuple[str, raw.T]], int, int) -> Dict[str, PyType]
+    # type: (str, str, List[Tuple[str, raw.T]], int, int) -> Dict[str, Any]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiset` but returns simple
     Python types.

@@ -17,7 +17,7 @@ from ipaddress import ip_address
 from time import time
 from typing import TYPE_CHECKING, Generator
 
-from x690.util import visible_octets  # type: ignore
+from x690.util import visible_octets
 
 from .exc import Timeout
 from .typevars import SocketInfo, SocketResponse

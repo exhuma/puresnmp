@@ -13,13 +13,7 @@ from datetime import timedelta
 from unittest.mock import call, patch
 
 import pytest
-from x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes,
-)
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.aio.api.pythonic import (
     bulkget,

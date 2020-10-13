@@ -21,7 +21,6 @@ from x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
-    to_bytes,
 )
 
 from puresnmp.api.raw import (
@@ -225,7 +224,7 @@ class TestMultiWalk(unittest.TestCase):
             ),
         )
         with patch("puresnmp.api.raw.Transport") as mck:
-            mck().send.side_effect = [to_bytes(response)]
+            mck().send.side_effect = [bytes(response)]
             mck().get_request_id.return_value = 0
             with self.assertRaises(FaultySNMPImplementation):
                 list(
@@ -252,7 +251,7 @@ class TestMultiWalk(unittest.TestCase):
             ),
         )
         with patch("puresnmp.api.raw.Transport") as mck:
-            mck().send.side_effect = [to_bytes(response)]
+            mck().send.side_effect = [bytes(response)]
             mck().get_request_id.return_value = 0
             with self.assertRaises(FaultySNMPImplementation):
                 list(
@@ -336,7 +335,7 @@ class TestGetNext(unittest.TestCase):
             mck().get_request_id.return_value = 0
             getnext("::1", "public", "1.2.3")
             mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            mck().send.assert_called_with("::1", 161, bytes(packet))
 
     def test_getnext(self):
         data = readbytes("getnext_response.hex")
@@ -360,7 +359,7 @@ class TestGetNext(unittest.TestCase):
             OctetString(b"public"),
             GetResponse(234, [VarBind(requested_oid, Integer(123))]),
         )
-        response_bytes = to_bytes(response_object)
+        response_bytes = bytes(response_object)
 
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = response_bytes
@@ -390,7 +389,7 @@ class TestGetNext(unittest.TestCase):
             )
             for bind in response_binds
         ]
-        response_bytes = [to_bytes(packet) for packet in response_packets]
+        response_bytes = [bytes(packet) for packet in response_packets]
 
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.side_effect = response_bytes
@@ -431,7 +430,7 @@ class TestGetNext(unittest.TestCase):
             )
             for bind in response_binds
         ]
-        response_bytes = [to_bytes(packet) for packet in response_packets]
+        response_bytes = [bytes(packet) for packet in response_packets]
 
         handler = CapturingHandler()
         logger = getLogger("puresnmp")
@@ -470,7 +469,7 @@ class TestGetBulkGet(unittest.TestCase):
             mck().get_request_id.return_value = 0
             bulkget("::1", "public", ["1.2.3"], ["1.2.4"], max_list_size=2)
             mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            mck().send.assert_called_with("::1", 161, bytes(packet))
 
     def test_bulkget(self):
         data = readbytes("bulk_get_response.hex")
@@ -545,7 +544,7 @@ class TestGetBulkWalk(unittest.TestCase):
             # we need to wrap this in a list to consume the generator.
             list(bulkwalk("::1", "public", ["1.2.3"], bulk_size=2))
             mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            mck().send.assert_called_with("::1", 161, bytes(packet))
 
     def test_get_call_args_issue_22(self):
         data = readbytes("dummy.hex")  # any dump would do
