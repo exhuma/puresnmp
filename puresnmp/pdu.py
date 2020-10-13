@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     # pylint: disable=unused-import
     from typing import Iterator, Optional
 
-
 class PDU(Type):  # type: ignore
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
