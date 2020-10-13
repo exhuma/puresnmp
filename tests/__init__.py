@@ -8,7 +8,6 @@ from os.path import dirname, join
 from typing import TYPE_CHECKING
 
 import six
-from x690.util import to_bytes
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Generator, List, Tuple, TypeVar, Union
@@ -231,7 +230,7 @@ def readbytes_multiple(filename, base_dir=DATA_DIR):
 
         values = [int(char, 16) for char in str_bytes]
 
-        yield to_bytes(values)
+        yield bytes(values)
         del str_bytes[:]
 
 

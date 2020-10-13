@@ -2,11 +2,9 @@
 Colleciton of utility functions for the puresnmp package.
 """
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
-from x690.types import ObjectIdentifier  # type: ignore
-
-from puresnmp.typevars import PyType
+from x690.types import ObjectIdentifier
 
 from .snmp import VarBind
 
@@ -115,9 +113,8 @@ def get_unfinished_walk_oids(grouped_oids):
     return output
 
 
-def tablify(
-    varbinds: Iterable[VarBind], num_base_nodes: int = 0, base_oid: str = ""
-) -> List[Dict[str, Any]]:
+def tablify(varbinds, num_base_nodes=0, base_oid=""):
+    # type: ( Iterable[Union[VarBind, Tuple[Any, Any]]], int, str ) -> List[Dict[str, Any]]
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
@@ -174,7 +171,7 @@ def tablify(
         # base-nodes needs to be incremented by 1
         num_base_nodes = len(base_oid_parsed)
 
-    rows = {}  # type: Dict[str, Dict[str, Type[PyType]]]
+    rows = {}  # type: Dict[str, Dict[str, Type[Any]]]
     for oid, value in varbinds:
         if num_base_nodes:
             tail = oid.identifiers[num_base_nodes:]
@@ -186,6 +183,6 @@ def tablify(
         tmp = {
             "0": row_id,
         }
-        row = rows.setdefault(row_id, tmp)
-        row[str(col_id)] = value
+        row = rows.setdefault(row_id, tmp)  # type: ignore
+        row[str(col_id)] = value  # type: ignore
     return list(rows.values())

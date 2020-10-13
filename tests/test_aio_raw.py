@@ -13,13 +13,7 @@ from unittest import skipUnless
 from unittest.mock import call, patch
 
 import pytest
-from x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes,
-)
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.aio.api.raw import (
     bulkget,
@@ -363,7 +357,7 @@ class TestGetNext:
             mck().send.return_value = data
             await getnext("::1", "public", "1.2.3")
             mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            mck().send.assert_called_with("::1", 161, bytes(packet))
 
     @pytest.mark.asyncio
     async def test_getnext(self):
@@ -397,7 +391,7 @@ class TestGetBulkGet:
                 "::1", "public", ["1.2.3"], ["1.2.4"], max_list_size=2
             )
             mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            mck().send.assert_called_with("::1", 161, bytes(packet))
 
     @pytest.mark.asyncio
     async def test_bulkget(self):
@@ -480,7 +474,7 @@ class TestGetBulkWalk:
             async for x in bulkwalk("::1", "public", ["1.2.3"], bulk_size=2):
                 pass
             mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            mck().send.assert_called_with("::1", 161, bytes(packet))
 
     @pytest.mark.asyncio
     async def test_get_call_args_issue_22(self):

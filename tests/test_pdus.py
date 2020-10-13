@@ -1,13 +1,7 @@
 # pylint: skip-file
 
 import six
-from x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    to_bytes,
-)
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.const import Version
 from puresnmp.exc import SnmpError
@@ -63,7 +57,7 @@ class TestGet(ByteTester):
             ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0),
         )
         packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
-        result = to_bytes(packet)
+        result = bytes(packet)
 
         self.assertBytesEqual(result, expected)
 
@@ -131,7 +125,7 @@ class TestGet(ByteTester):
         )
         packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
 
-        result = to_bytes(packet)
+        result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
     def test_multiget_response(self):
@@ -172,7 +166,7 @@ class TestWalk(ByteTester):
 
         request = GetNextRequest(499509692, ObjectIdentifier(1))
         packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
-        result = to_bytes(packet)
+        result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
 
@@ -188,7 +182,7 @@ class TestSet(ByteTester):
             ),
         )
         packet = Sequence(Integer(Version.V2C), OctetString("private"), request)
-        result = to_bytes(packet)
+        result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
 
@@ -210,7 +204,7 @@ class TestBulkGet(ByteTester):
         )
         packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
 
-        result = to_bytes(packet)
+        result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
     def test_repr(self):
@@ -235,7 +229,7 @@ class TestError(ByteTester):
         )
 
         with self.assertRaisesRegex(SnmpError, "genErr.*1.2.3") as exc:
-            PDU.decode(to_bytes(pdu))
+            PDU.decode(bytes(pdu))
 
         self.assertEqual(exc.exception.error_status, 5)
         self.assertEqual(
@@ -250,7 +244,7 @@ class TestError(ByteTester):
             error_index=1,
         )
         with self.assertRaisesRegex(SnmpError, "unknown.*error.*1.2.3") as exc:
-            PDU.decode(to_bytes(pdu))
+            PDU.decode(bytes(pdu))
         self.assertEqual(exc.exception.error_status, 7)
         self.assertEqual(
             exc.exception.offending_oid, ObjectIdentifier.from_string("1.2.3")

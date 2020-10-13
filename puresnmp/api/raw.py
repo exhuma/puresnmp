@@ -27,13 +27,7 @@ from typing import Type as TType
 from typing import TypeVar, cast
 
 from typing_extensions import Protocol
-from x690.types import (  # type: ignore
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    Type,
-)
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
@@ -49,13 +43,12 @@ from ..pdu import (
 )
 from ..snmp import VarBind
 from ..transport import TSender, get_request_id, send
+from ..typevars import PyType
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
 TWalkResponse = AsyncGenerator[VarBind, None]
-T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name
-PyType = Any  # TODO
-
+T = TypeVar("T", bound=TType[PyType])  # pylint: disable=invalid-name
 
 _set = set
 
@@ -174,8 +167,8 @@ class RawClient:
             ...
             >>> pprint(res)
             [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
+             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
+             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
         """
 
         async for row in self.multiwalk([oid], timeout=timeout, errors=errors):
@@ -330,6 +323,7 @@ class RawClient:
     async def table(
         self, oid: str, num_base_nodes: int = 0, timeout: int = DEFAULT_TIMEOUT
     ) -> List[Dict[str, Any]]:
+
         """
         Fetch an SNMP table
 
@@ -347,7 +341,7 @@ class RawClient:
 
         >>> table('192.0.2.1', 'private', '1.3.6.1.2.1.2.2')
         [{'0': '1', '1': Integer(1), '2': Counter(30)},
-        {'0': '2', '1': Integer(2), '2': Counter(123)}]
+         {'0': '2', '1': Integer(2), '2': Counter(123)}]
         """
         tmp = []
         if num_base_nodes == 0:
@@ -474,9 +468,9 @@ class RawClient:
             ...     max_list_size=10)
             BulkResult(
                 scalars={'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
-                        '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
-                                            b'generic #47-Ubuntu SMP Fri Jun 24 '
-                                            b'10:09:13 UTC 2016 x86_64'},
+                         '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
+                                              b'generic #47-Ubuntu SMP Fri Jun 24 '
+                                              b'10:09:13 UTC 2016 x86_64'},
                 listing=OrderedDict([
                     ('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1', 10),
                     ('1.3.6.1.2.1.5.1.0', b'\x01'),
@@ -500,6 +494,9 @@ class RawClient:
                     ('1.3.6.1.2.1.5.10.0', b'\x00')]))
         """
 
+        if not isinstance(self.default_credentials, V2C):
+            raise SnmpError("Currently only SNMPv2c is supported!")
+
         scalar_oids = scalar_oids or []  # protect against empty values
         repeating_oids = repeating_oids or []  # protect against empty values
 
@@ -508,9 +505,6 @@ class RawClient:
         ]
 
         non_repeaters = len(scalar_oids)
-
-        if not isinstance(self.default_credentials, V2C):
-            raise SnmpError("Currently only SNMPv2c is supported!")
 
         packet = Sequence(
             Integer(1),
@@ -524,7 +518,7 @@ class RawClient:
             str(self.ip), 161, bytes(packet), timeout=timeout
         )
         raw_response = cast(
-            Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
+            Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
         )
 
         # See RFC=3416 for details of the following calculation
@@ -550,7 +544,7 @@ class RawClient:
         scalar_out = {str(oid): value for oid, value in scalar_tmp}
 
         # prepare output for listing
-        repeating_out = OrderedDict()  # type: Dict[str, Type[Any]]
+        repeating_out = OrderedDict()  # type: Dict[str, Type[PyType]]
         for oid, value in repeating_tmp:
             if isinstance(value, EndOfMibView):
                 break

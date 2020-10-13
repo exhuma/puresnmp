@@ -4,9 +4,7 @@ protocol and independent of X.690
 """
 from typing import Any, Iterator, Union
 
-from x690.types import ObjectIdentifier, Type  # type: ignore
-
-from puresnmp.typevars import PyType
+from x690.types import ObjectIdentifier, Type
 
 # Error messages as defined in https://tools.ietf.org/html/rfc3416#section-3
 ERROR_MESSAGES = {
@@ -42,10 +40,10 @@ class VarBind:
     #       API, that would simplify the typing of both "oid" and "value"a lot
     #       and keep things explicit
     oid: ObjectIdentifier = ObjectIdentifier(0)
-    value: Union[PyType, Type, None] = None
+    value: Union[Any, Type[Any], None] = None
 
     def __init__(self, oid, value):
-        # type: (Union[ObjectIdentifier, str], PyType) -> None
+        # type: (Union[ObjectIdentifier, str], Any) -> None
         if not isinstance(oid, (ObjectIdentifier, str)):
             raise TypeError(
                 "OIDs for VarBinds must be ObjectIdentifier or str"
@@ -56,10 +54,10 @@ class VarBind:
         self.oid = oid
         self.value = value
 
-    def __iter__(self) -> Iterator[Union[ObjectIdentifier, PyType]]:
+    def __iter__(self) -> Iterator[Union[ObjectIdentifier, Any]]:
         return iter([self.oid, self.value])
 
-    def __getitem__(self, idx: int) -> Union[PyType, Type, None]:
+    def __getitem__(self, idx: int) -> Union[Any, Type[Any], None]:
         return list(self)[idx]
 
     def __lt__(self, other):

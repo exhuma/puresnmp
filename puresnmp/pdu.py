@@ -13,15 +13,8 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 
 from typing import TYPE_CHECKING, Any, Iterable, List, Tuple, Union, cast
 
-from x690.types import (  # type: ignore
-    Integer,
-    Null,
-    ObjectIdentifier,
-    Sequence,
-    Type,
-    pop_tlv,
-)
-from x690.util import TypeInfo, encode_length, to_bytes  # type: ignore
+from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
+from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
@@ -32,12 +25,13 @@ if TYPE_CHECKING:
     # pylint: disable=unused-import
     from typing import Iterator, Optional
 
-class PDU(Type):  # type: ignore
+
+class PDU(Type[Any]):
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
 
-    TYPECLASS = TypeInfo.CONTEXT
+    TYPECLASS = TypeClass.CONTEXT
     TAG = 0
 
     request_id: int
@@ -119,18 +113,18 @@ class PDU(Type):  # type: ignore
             self.varbinds = varbinds
 
     def __bytes__(self) -> bytes:
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
-        data = [
+        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]  # type: ignore
+        data: List[Type[Any]] = [
             Integer(self.request_id),
             Integer(self.error_status),
             Integer(self.error_index),
             Sequence(*wrapped_varbinds),
         ]
-        payload = b"".join([to_bytes(chunk) for chunk in data])
+        payload = b"".join([bytes(chunk) for chunk in data])
 
-        tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
+        tinfo = TypeInfo(TypeClass.CONTEXT, TypeNature.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return to_bytes(tinfo) + length + payload  # type: ignore
+        return bytes(tinfo) + length + payload
 
     def __repr__(self) -> str:
         return "%s(%r, %r)" % (
@@ -147,19 +141,20 @@ class PDU(Type):  # type: ignore
             and self.varbinds == other.varbinds
         )
 
-    def pretty(self) -> str:  # pragma: no cover
+    def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
         Returns a "prettified" string representing the SNMP message.
         """
+        prefix = "    " * depth
         lines = [
             self.__class__.__name__,
-            "    Request ID: %s" % self.request_id,
-            "    Error Status: %s" % self.error_status,
-            "    Error Index: %s" % self.error_index,
-            "    Varbinds: ",
+            f"{prefix}    Request ID: {self.request_id}",
+            f"{prefix}    Error Status: {self.error_status}",
+            f"{prefix}    Error Index: {self.error_index}",
+            f"{prefix}    Varbinds: ",
         ]
         for bind in self.varbinds:
-            lines.append("        %s: %s" % (bind.oid, bind.value))  # type: ignore
+            lines.append(f"{prefix}        {bind.oid}: {bind.value}")
 
         return "\n".join(lines)
 
@@ -248,14 +243,14 @@ class SetRequest(PDU):
     TAG = 3
 
 
-class BulkGetRequest(Type):  # type: ignore
+class BulkGetRequest(Type[Any]):
     """
     Represents a SNMP GetBulk request
     """
 
     # pylint: disable=abstract-method
 
-    TYPECLASS = TypeInfo.CONTEXT
+    TYPECLASS = TypeClass.CONTEXT
     TAG = 5
 
     def __init__(self, request_id, non_repeaters, max_repeaters, *oids):
@@ -270,18 +265,18 @@ class BulkGetRequest(Type):  # type: ignore
             self.varbinds.append(VarBind(oid, Null()))
 
     def __bytes__(self) -> bytes:
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]
-        data = [
+        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds] # type: ignore
+        data: List[Type[Any]] = [
             Integer(self.request_id),
             Integer(self.non_repeaters),
             Integer(self.max_repeaters),
             Sequence(*wrapped_varbinds),
         ]
-        payload = b"".join([to_bytes(chunk) for chunk in data])
+        payload = b"".join([bytes(chunk) for chunk in data])
 
-        tinfo = TypeInfo(TypeInfo.CONTEXT, TypeInfo.CONSTRUCTED, self.TAG)
+        tinfo = TypeInfo(TypeClass.CONTEXT, TypeNature.CONSTRUCTED, self.TAG)
         length = encode_length(len(payload))
-        return to_bytes(tinfo) + length + payload  # type: ignore
+        return bytes(tinfo) + length + payload
 
     def __repr__(self):
         # type: () -> str
@@ -305,20 +300,20 @@ class BulkGetRequest(Type):  # type: ignore
             and self.varbinds == other.varbinds
         )
 
-    def pretty(self):  # pragma: no cover
-        # type: () -> str
+    def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
         Returns a "prettified" string representing the SNMP message.
         """
+        prefix = "    " * depth
         lines = [
             self.__class__.__name__,
-            "    Request ID: %s" % self.request_id,
-            "    Non Repeaters: %s" % self.non_repeaters,
-            "    Max Repeaters: %s" % self.max_repeaters,
-            "    Varbinds: ",
+            f"{prefix}    Request ID: {self.request_id}",
+            f"{prefix}    Non Repeaters: {self.non_repeaters}",
+            f"{prefix}    Max Repeaters: {self.max_repeaters}",
+            f"{prefix}    Varbinds: ",
         ]
         for bind in self.varbinds:
-            lines.append("        %s: %s" % (bind.oid, bind.value))  # type: ignore
+            lines.append(f"{prefix}        {bind.oid}: {bind.value}")
 
         return "\n".join(lines)
 

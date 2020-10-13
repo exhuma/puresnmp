@@ -25,9 +25,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 from typing import Type as TType
 from warnings import warn
 
-from x690.types import ObjectIdentifier, Type  # type: ignore
+from x690.types import ObjectIdentifier, Type
 
-from puresnmp.typevars import PyType, TWrappedPyType
+from puresnmp.typevars import TWrappedPyType
 
 from ...const import DEFAULT_TIMEOUT
 from ...snmp import VarBind
@@ -42,7 +42,7 @@ if TYPE_CHECKING:  # pragma: no cover
     TFetcher = Callable[
         [str, str, List[str], int, int], Coroutine[Any, Any, List[VarBind]]
     ]
-    T = TypeVar("T", bound=PyType)  # pylint: disable=invalid-name
+    T = TypeVar("T")  # pylint: disable=invalid-name
 
 
 _set = set
@@ -51,7 +51,7 @@ OID = ObjectIdentifier.from_string
 
 
 async def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, str, int, int) -> PyType
+    # type: (str, str, str, int, int) -> Any
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.get` but returns simple Python
     types.
@@ -59,11 +59,11 @@ async def get(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_value = await raw.get(ip, community, oid, port, timeout=timeout)
-    return raw_value.pythonize()  # type: ignore
+    return raw_value.pythonize()
 
 
 async def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[str], int, int) -> List[PyType]
+    # type: (str, str, List[str], int, int) -> List[Any]
     """
     Delegates to :py:func:`~puresnmp.aio.api.raw.multiget` but returns simple
     Python types.
@@ -111,7 +111,7 @@ async def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
     raw_result = raw.walk(ip, community, oid, port, timeout)
     async for raw_oid, raw_value in raw_result:
-        yield VarBind(raw_oid, raw_value.pythonize())  # type: ignore
+        yield VarBind(raw_oid, raw_value.pythonize())
 
 
 async def multiwalk(
@@ -164,7 +164,7 @@ async def multiset(
 
     raw_output = await raw.multiset(ip, community, mappings, port, timeout)
     pythonized = {
-        str(oid): value.pythonize() for oid, value in raw_output.items()
+        str(oid): value.pythonize() for oid, value in raw_output.items()  # type: ignore
     }
     return pythonized
 

@@ -5,7 +5,7 @@ Exceptions for the puresnmp package.
 import socket
 from typing import Optional
 
-from x690.types import ObjectIdentifier  # type: ignore
+from x690.types import ObjectIdentifier
 
 from puresnmp.const import MAX_VARBINDS
 

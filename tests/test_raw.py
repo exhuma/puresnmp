@@ -21,7 +21,6 @@ from x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
-    to_bytes,
 )
 
 from puresnmp.api.raw import RawClient, traps
@@ -235,7 +234,7 @@ class TestMultiWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck, patch(
             "puresnmp.api.raw.get_request_id"
         ) as gri:
-            mck().send.side_effect = [to_bytes(response)]
+            mck().send.side_effect = [bytes(response)]
             gri.return_value = 0
             client = RawClient("::1", V2C("public"))
             with self.assertRaises(FaultySNMPImplementation):
@@ -263,7 +262,7 @@ class TestMultiWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck, patch(
             "puresnmp.api.raw.get_request_id"
         ) as gri:
-            mck().send.side_effect = [to_bytes(response)]
+            mck().send.side_effect = [bytes(response)]
             gri.return_value = 0
             client = RawClient("::1", V2C("public"))
             with self.assertRaises(FaultySNMPImplementation):
@@ -350,7 +349,7 @@ class TestGetNext(unittest.TestCase):
             gri.return_value = 0
             client = RawClient("::1", V2C("public"))
             client.getnext("1.2.3")
-            mck().send.assert_called_with("::1", to_bytes(packet))
+            mck().send.assert_called_with("::1", bytes(packet))
 
     def test_getnext(self):
         data = readbytes("getnext_response.hex")
@@ -377,7 +376,7 @@ class TestGetNext(unittest.TestCase):
             OctetString(b"public"),
             GetResponse(234, [VarBind(requested_oid, Integer(123))]),
         )
-        response_bytes = to_bytes(response_object)
+        response_bytes = bytes(response_object)
 
         with patch("puresnmp.api.raw.Transport") as mck, patch(
             "puresnmp.api.raw.get_request_id"
@@ -410,7 +409,7 @@ class TestGetNext(unittest.TestCase):
             )
             for bind in response_binds
         ]
-        response_bytes = [to_bytes(packet) for packet in response_packets]
+        response_bytes = [bytes(packet) for packet in response_packets]
 
         with patch("puresnmp.api.raw.Transport") as mck, patch(
             "puresnmp.api.raw.get_request_id"
@@ -454,7 +453,7 @@ class TestGetNext(unittest.TestCase):
             )
             for bind in response_binds
         ]
-        response_bytes = [to_bytes(packet) for packet in response_packets]
+        response_bytes = [bytes(packet) for packet in response_packets]
 
         handler = CapturingHandler()
         logger = getLogger("puresnmp")
@@ -498,7 +497,7 @@ class TestGetBulkGet(unittest.TestCase):
             gri.return_value = 0
             client = RawClient("::1", V2C("public"))
             client.bulkget(["1.2.3"], ["1.2.4"], max_list_size=2)
-            mck().send.assert_called_with("::1", to_bytes(packet))
+            mck().send.assert_called_with("::1", bytes(packet))
 
     def test_bulkget(self):
         data = readbytes("bulk_get_response.hex")
