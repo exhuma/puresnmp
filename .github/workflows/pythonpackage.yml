@@ -33,6 +33,7 @@ jobs:
   publish:
 
     runs-on: ubuntu-latest
+    needs: test
     strategy:
       max-parallel: 1
       matrix:
