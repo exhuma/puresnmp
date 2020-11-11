@@ -124,7 +124,7 @@ class TrapInfo:
         return output
 
 
-def get(ip, community, oid, port=161, timeout=2):
+def get(ip, community, oid, port=161, timeout=2, version=Version.V2C):
     # type: (str, str, str, int, int) -> PyType
     """
     Delegates to :py:func:`~puresnmp.api.raw.get` but returns simple Python
@@ -132,7 +132,7 @@ def get(ip, community, oid, port=161, timeout=2):
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_value = raw.get(ip, community, oid, port, timeout=timeout)
+    raw_value = raw.get(ip, community, oid, port, timeout=timeout, version=version)
     return raw_value.pythonize()  # type: ignore
 
 
@@ -149,7 +149,7 @@ def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Ver
     return pythonized
 
 
-def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
+def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
     # type: (str, str, str, int, int) -> VarBind
     """
     Delegates to :py:func:`~puresnmp.api.raw.getnext` but returns simple
@@ -157,7 +157,7 @@ def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    result = multigetnext(ip, community, [oid], port, timeout=timeout)
+    result = multigetnext(ip, community, [oid], port, timeout=timeout, version=version)
     return result[0]
 
 
@@ -175,7 +175,7 @@ def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version
     return pythonized
 
 
-def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
+def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
     # type: (str, str, str, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.walk` but returns simple Python
@@ -184,7 +184,7 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    raw_result = raw.walk(ip, community, oid, port, timeout)
+    raw_result = raw.walk(ip, community, oid, port, timeout, version=version)
     for raw_oid, raw_value in raw_result:
         yield VarBind(raw_oid, raw_value.pythonize())  # type: ignore
 
@@ -198,14 +198,16 @@ def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher, version=version)
+    raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher,
+                               version=version)
     for oid, value in raw_output:
         if isinstance(value, Type):
             value = value.pythonize()
         yield VarBind(oid, value)  # type: ignore
 
 
-def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint: disable=redefined-builtin
+def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT,
+        version=Version.V2C):  # pylint: disable=redefined-builtin
     # type: (str, str, str, Type[T], int, int) -> T
     """
     Delegates to :py:func:`~puresnmp.api.raw.set` but returns simple Python
@@ -215,11 +217,12 @@ def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint
     """
 
     result = multiset(ip, community, [(oid, value)],  # type: ignore
-                      port, timeout=timeout)
+                      port, timeout=timeout, version=version)
     return result[oid.lstrip('.')]  # type: ignore
 
 
-def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
+def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT,
+             version=Version.V2C):
     # type: (str, str, List[Tuple[str, raw.T]], int, int) -> Dict[str, PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiset` but returns simple
@@ -228,7 +231,8 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    raw_output = raw.multiset(ip, community, mappings, port, timeout)
+    raw_output = raw.multiset(ip, community, mappings, port, timeout,
+                              version=version)
     pythonized = {unicode(oid): value.pythonize()
                   for oid, value in raw_output.items()}
     return pythonized
@@ -247,7 +251,8 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     raw_output = raw.bulkget(ip, community, scalar_oids, repeating_oids,
                              max_list_size=max_list_size,
                              port=port,
-                             timeout=timeout)
+                             timeout=timeout,
+                             version=version)
     pythonized_scalars = {oid: value.pythonize()
                           for oid, value in raw_output.scalars.items()}
     pythonized_list = OrderedDict(
@@ -257,7 +262,7 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
 
 
 def bulkwalk(ip, community, oids, bulk_size=10, port=161,
-             timeout=DEFAULT_TIMEOUT):
+             timeout=DEFAULT_TIMEOUT, version=Version.V2C):
     # type: (str, str, List[str], int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.bulkwalk` but returns simple
@@ -270,7 +275,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161,
         ip, community, oids, port=port,
         fetcher=raw._bulkwalk_fetcher(  # pylint: disable=protected-access
             bulk_size),
-        timeout=timeout)
+        timeout=timeout, version=version)
     for oid, value in result:
         yield VarBind(oid, value)  # type: ignore
 
