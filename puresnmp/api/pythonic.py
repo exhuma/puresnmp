@@ -114,15 +114,17 @@ class TrapInfo:
         return output
 
 
-def get(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int, int) -> PyType
+def get(ip, community, oid, port=161, timeout=2, version=Version.V2C):
+    # type: (str, str, str, int, int, int) -> PyType
     """
     Delegates to :py:func:`~puresnmp.api.raw.get` but returns simple Python
     types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_value = raw.get(ip, community, oid, port, timeout=timeout)
+    raw_value = raw.get(
+        ip, community, oid, port, timeout=timeout, version=version
+    )
     return raw_value.pythonize()  # type: ignore
 
 
@@ -143,15 +145,19 @@ def multiget(
     return pythonized
 
 
-def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, str, int, int) -> VarBind
+def getnext(
+    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+):
+    # type: (str, str, str, int, int, int) -> VarBind
     """
     Delegates to :py:func:`~puresnmp.api.raw.getnext` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    result = multigetnext(ip, community, [oid], port, timeout=timeout)
+    result = multigetnext(
+        ip, community, [oid], port, timeout=timeout, version=version
+    )
     return result[0]
 
 
@@ -174,8 +180,10 @@ def multigetnext(
     return pythonized
 
 
-def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, str, int, int) -> TWalkResponse
+def walk(
+    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+):
+    # type: (str, str, str, int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.walk` but returns simple Python
     types.
@@ -183,7 +191,7 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    raw_result = raw.walk(ip, community, oid, port, timeout)
+    raw_result = raw.walk(ip, community, oid, port, timeout, version=version)
     for raw_oid, raw_value in raw_result:
         yield VarBind(raw_oid, raw_value.pythonize())  # type: ignore
 
@@ -213,9 +221,15 @@ def multiwalk(
 
 
 def set(
-    ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT
+    ip,
+    community,
+    oid,
+    value,
+    port=161,
+    timeout=DEFAULT_TIMEOUT,
+    version=Version.V2C,
 ):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type[T], int, int) -> T
+    # type: (str, str, str, Type[T], int, int, int) -> T
     """
     Delegates to :py:func:`~puresnmp.api.raw.set` but returns simple Python
     types.
@@ -223,12 +237,21 @@ def set(
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = multiset(ip, community, [(oid, value)], port, timeout=timeout)
+    result = multiset(
+        ip, community, [(oid, value)], port, timeout=timeout, version=version
+    )
     return result[oid.lstrip(".")]  # type: ignore
 
 
-def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[Tuple[str, raw.T]], int, int) -> Dict[str, PyType]
+def multiset(
+    ip,
+    community,
+    mappings,
+    port=161,
+    timeout=DEFAULT_TIMEOUT,
+    version=Version.V2C,
+):
+    # type: (str, str, List[Tuple[str, raw.T]], int, int, int) -> Dict[str, PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiset` but returns simple
     Python types.
@@ -236,7 +259,9 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    raw_output = raw.multiset(ip, community, mappings, port, timeout)
+    raw_output = raw.multiset(
+        ip, community, mappings, port, timeout, version=version
+    )
     pythonized = {
         str(oid): value.pythonize() for oid, value in raw_output.items()
     }
@@ -270,6 +295,7 @@ def bulkget(
         max_list_size=max_list_size,
         port=port,
         timeout=timeout,
+        version=version,
     )
     pythonized_scalars = {
         oid: value.pythonize() for oid, value in raw_output.scalars.items()
@@ -281,9 +307,15 @@ def bulkget(
 
 
 def bulkwalk(
-    ip, community, oids, bulk_size=10, port=161, timeout=DEFAULT_TIMEOUT
+    ip,
+    community,
+    oids,
+    bulk_size=10,
+    port=161,
+    timeout=DEFAULT_TIMEOUT,
+    version=Version.V2C,
 ):
-    # type: (str, str, List[str], int, int, int) -> TWalkResponse
+    # type: (str, str, List[str], int, int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.bulkwalk` but returns simple
     Python types.
@@ -300,6 +332,7 @@ def bulkwalk(
             bulk_size
         ),
         timeout=timeout,
+        version=version,
     )
     for oid, value in result:
         yield VarBind(oid, value)
