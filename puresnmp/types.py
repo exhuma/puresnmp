@@ -70,7 +70,7 @@ class Counter(Integer):  # type: ignore
 
     def __init__(self, value):
         # type: (int) -> None
-        value &= 0xffffffff if value >= 2**32 else value
+        value &= 0xFFFFFFFF if value >= 2 ** 32 else value
         if value <= 0:
             value = 0
         super().__init__(value)
@@ -143,7 +143,7 @@ class Counter64(Integer):  # type: ignore
 
     def __init__(self, value):
         # type: (int) -> None
-        value &= 0xffffffffffffffff if value >= 2**64 else value
+        value &= 0xFFFFFFFFFFFFFFFF if value >= 2 ** 64 else value
         if value <= 0:
             value = 0
         super().__init__(value)
