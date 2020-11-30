@@ -4,7 +4,7 @@ Exceptions for the puresnmp package.
 from __future__ import unicode_literals
 
 import socket
-
+from typing import Optional
 from puresnmp.const import MAX_VARBINDS
 
 from .x690.types import ObjectIdentifier
@@ -36,7 +36,7 @@ class ErrorResponse(SnmpError):
 
     @staticmethod
     def construct(error_status, offending_oid, message=''):
-        # type: (int, ObjectIdentifier, str) -> ErrorResponse
+        # type: (int, Optional[ObjectIdentifier], str) -> ErrorResponse
         """
         Creates a new instance of an ErrorResponse class, using the proper
         subclass for the given *error_status* value. The message is optional,
@@ -52,13 +52,15 @@ class ErrorResponse(SnmpError):
             return ReadOnly(offending_oid, message)
         if error_status == 5:
             return GenErr(offending_oid, message)
+        if error_status == 6:
+            return NoAccess(offending_oid, message)
         return ErrorResponse(error_status, offending_oid, message)
 
     def __init__(self, error_status, offending_oid, message=''):
-        # type: (int, ObjectIdentifier, str) -> None
+        # type: (int, Optional[ObjectIdentifier], str) -> None
         super(ErrorResponse, self).__init__(
             '%s (status-code: %r) on OID %s' % (
-                message or self.DEFAULT_MESSAGE, error_status, offending_oid))
+                message or self.DEFAULT_MESSAGE, error_status, offending_oid if offending_oid != None else "unknown"))
         self.error_status = error_status
         self.offending_oid = offending_oid
 
@@ -70,7 +72,7 @@ class TooBig(ErrorResponse):
     """
     DEFAULT_MESSAGE = 'SNMP response was too big!'
     def __init__(self, offending_oid, message=''):
-        # type: (ObjectIdentifier, str) -> None
+        # type: (Optional[ObjectIdentifier], str) -> None
         super(TooBig, self).__init__(1, offending_oid)
 
 
@@ -87,7 +89,7 @@ class NoSuchOID(ErrorResponse):
     DEFAULT_MESSAGE = 'No such name/oid'
 
     def __init__(self, offending_oid, message=''):
-        # type: (ObjectIdentifier, str) -> None
+        # type: (Optional[ObjectIdentifier], str) -> None
         super(NoSuchOID, self).__init__(2, offending_oid, message)
 
 
@@ -100,7 +102,7 @@ class BadValue(ErrorResponse):
     DEFAULT_MESSAGE = 'Bad value'
 
     def __init__(self, offending_oid, message=''):
-        # type: (ObjectIdentifier, str) -> None
+        # type: (Optional[ObjectIdentifier], str) -> None
         super(BadValue, self).__init__(3, offending_oid, message)
 
 
@@ -112,8 +114,20 @@ class ReadOnly(ErrorResponse):
     DEFAULT_MESSAGE = 'Value is read-only!'
 
     def __init__(self, offending_oid, message=''):
-        # type: (ObjectIdentifier, str) -> None
+        # type: (Optional[ObjectIdentifier], str) -> None
         super(ReadOnly, self).__init__(4, offending_oid, message)
+
+
+class NoAccess(ErrorResponse):
+    """
+    This error is returned whenever .
+    """
+
+    DEFAULT_MESSAGE = 'No Access!'
+
+    def __init__(self, offending_oid, message=''):
+        # type: (Optional[ObjectIdentifier], str) -> None
+        super(NoAccess, self).__init__(6, offending_oid, message)
 
 
 class GenErr(ErrorResponse):
@@ -125,7 +139,7 @@ class GenErr(ErrorResponse):
     DEFAULT_MESSAGE = 'General Error (genErr)'
 
     def __init__(self, offending_oid, message=''):
-        # type: (ObjectIdentifier, str) -> None
+        # type: (Optional[ObjectIdentifier], str) -> None
         super(GenErr, self).__init__(5, offending_oid, message)
 
 
