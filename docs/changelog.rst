@@ -1,6 +1,12 @@
 Changelog
 =========
 
+Release 1.10.1
+~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** Don't crash with an ``IndexError`` when an error-status is
+  returned from a device without specifying an offending OID (See #89)
+
 Release 1.10.0
 ~~~~~~~~~~~~~~~~~~~
 
