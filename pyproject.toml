@@ -44,7 +44,7 @@ max-args = 8
 
 [tool.poetry]
 name = "puresnmp"
-version = "1.9.1"
+version = "1.10.1"
 description = "Pure Python SNMP implementation"
 authors = ["Michel Albert <michel@albert.lu>"]
 license = "MIT"
