@@ -1,6 +1,6 @@
 name: Python package
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   test:
@@ -28,7 +28,7 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest
-        pytest puresnmp
+        pytest
 
   publish:
 
