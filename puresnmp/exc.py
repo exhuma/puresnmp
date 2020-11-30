@@ -52,6 +52,8 @@ class ErrorResponse(SnmpError):
             return ReadOnly(offending_oid, message)
         if error_status == 5:
             return GenErr(offending_oid, message)
+        if error_status == 6:
+            return NoAccess(offending_oid, message)
         return ErrorResponse(error_status, offending_oid, message)
 
     def __init__(self, error_status, offending_oid, message=''):
@@ -114,6 +116,18 @@ class ReadOnly(ErrorResponse):
     def __init__(self, offending_oid, message=''):
         # type: (Optional[ObjectIdentifier], str) -> None
         super(ReadOnly, self).__init__(4, offending_oid, message)
+
+
+class NoAccess(ErrorResponse):
+    """
+    This error is returned whenever .
+    """
+
+    DEFAULT_MESSAGE = 'No Access!'
+
+    def __init__(self, offending_oid, message=''):
+        # type: (Optional[ObjectIdentifier], str) -> None
+        super(NoAccess, self).__init__(6, offending_oid, message)
 
 
 class GenErr(ErrorResponse):
