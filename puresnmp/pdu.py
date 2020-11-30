@@ -71,7 +71,11 @@ class PDU(Type):  # type: ignore
                     % type(error_detail)
                 )
             varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
-            offending_oid = varbinds[error_index.value - 1].oid
+            if error_index.value != 0:
+                offending_oid = varbinds[error_index.value - 1].oid
+            else:
+                # Offending OID is unknown
+                offending_oid = None
             assert data == b""
             exception = ErrorResponse.construct(
                 error_status.value, offending_oid
