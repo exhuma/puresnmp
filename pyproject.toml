@@ -69,8 +69,9 @@ classifiers=[
 [tool.poetry.dependencies]
 python = "^3.6"
 t61codec = "^1.0.1"
-x690 = "~0.3"
+x690 = {path = "../x690"}
 dataclasses = {version = "^0.7", python = "<3.7"}
+pyDes = "^2.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.1"
@@ -78,6 +79,7 @@ pytest-asyncio = "^0.14.0"
 sphinx = "^3.2.1"
 sphinx-rtd-theme = "^0.5.0"
 pylint = "^2.6.0"
+black = {version = "^20.8b1", allow-prereleases = true}
 
 [build-system]
 requires = ["poetry>=0.12"]

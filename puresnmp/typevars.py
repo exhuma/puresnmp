@@ -2,7 +2,6 @@
 This module contains variour type aliases for type checking
 """
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from ipaddress import IPv4Address, IPv6Address
 from typing import TypeVar, Union
 

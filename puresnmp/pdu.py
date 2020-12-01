@@ -147,14 +147,17 @@ class PDU(Type[Any]):
         """
         prefix = "    " * depth
         lines = [
-            self.__class__.__name__,
+            f"{prefix}{self.__class__.__name__}",
             f"{prefix}    Request ID: {self.request_id}",
             f"{prefix}    Error Status: {self.error_status}",
             f"{prefix}    Error Index: {self.error_index}",
-            f"{prefix}    Varbinds: ",
         ]
-        for bind in self.varbinds:
-            lines.append(f"{prefix}        {bind.oid}: {bind.value}")
+        if self.varbinds:
+            lines.append(f"{prefix}    Varbinds: ")
+            for bind in self.varbinds:
+                lines.append(f"{prefix}        {bind.oid}: {bind.value}")
+        else:
+            lines.append(f"{prefix}    Varbinds: <none>")
 
         return "\n".join(lines)
 
@@ -166,12 +169,9 @@ class EndOfMibView(PDU):
 
     # This subclassesPDU for type-consistency
 
-    def __init__(self) -> None:
-        super().__init__(-1, [], 0, 0)
-
 
 #: Singleton instance of "EndOfMibView"
-END_OF_MIB_VIEW = EndOfMibView()
+END_OF_MIB_VIEW = EndOfMibView(-1, [])
 
 
 class GetRequest(PDU):
@@ -182,19 +182,17 @@ class GetRequest(PDU):
     TAG = 0
 
     def __init__(
-        self, request_id: int, *oids: Union[str, ObjectIdentifier]
+        self,
+        request_id: int,
+        varbinds: Union[VarBind, List[VarBind]],
+        error_status: int = 0,
+        error_index: int = 0,
     ) -> None:
-        if len(oids) > MAX_VARBINDS:
-            raise TooManyVarbinds(len(oids))
-        wrapped_oids = []
-        for oid in oids:
-            if isinstance(oid, str):
-                wrapped_oids.append(ObjectIdentifier.from_string(oid))
-            else:
-                wrapped_oids.append(oid)
-        super().__init__(
-            request_id, [VarBind(oid, Null()) for oid in wrapped_oids]
-        )
+        # GetRequest varbinds should use a "NULL" value. Let's ensure this.
+        if isinstance(varbinds, VarBind):
+            varbinds = [varbinds]
+        varbinds = [VarBind(vb.oid, Null()) for vb in varbinds]
+        super().__init__(request_id, varbinds)
 
 
 class GetResponse(PDU):
@@ -265,7 +263,7 @@ class BulkGetRequest(Type[Any]):
             self.varbinds.append(VarBind(oid, Null()))
 
     def __bytes__(self) -> bytes:
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds] # type: ignore
+        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]  # type: ignore
         data: List[Type[Any]] = [
             Integer(self.request_id),
             Integer(self.non_repeaters),
@@ -337,3 +335,11 @@ class Trap(PDU):
         # type: (Any, Any) -> None
         super().__init__(*args, **kwargs)
         self.source = None  # type: Optional[SocketInfo]
+
+
+class Report(PDU):
+    """
+    Represents an SNMP report
+    """
+
+    TAG = 8

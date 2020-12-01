@@ -4,7 +4,7 @@ Colleciton of utility functions for the puresnmp package.
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
-from x690.types import ObjectIdentifier
+from x690.types import ObjectIdentifier, OctetString
 
 from .snmp import VarBind
 

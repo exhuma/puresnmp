@@ -188,3 +188,29 @@ class FaultySNMPImplementation(SnmpError):
     """
     Exception which indicates an unexpected response from an SNMP agent.
     """
+
+
+class InvalidSecurityModel(SnmpError):
+    """
+    This exception is raised when something goes wrong with a security model
+    """
+
+
+class NotInTimeWindow(SnmpError):
+    """
+    This exception is raised when a message is outside the time window
+
+    See https://tools.ietf.org/html/rfc3414#section-3.2
+    """
+
+    def __init__(self, oid: str, value: int, reporting: str) -> None:
+        super().__init__()
+        self.oid = oid
+        self.value = value
+        self.reporting = reporting
+
+
+class UnknownMessageProcessingModel(SnmpError):
+    """
+    Raised if a message was not formatted according to any known model
+    """

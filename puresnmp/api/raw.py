@@ -39,7 +39,7 @@ from ..pdu import (
     GetRequest,
     GetResponse,
     SetRequest,
-    Trap,
+    Trap
 )
 from ..snmp import VarBind
 from ..transport import TSender, get_request_id, send
@@ -109,7 +109,7 @@ class RawClient:
         packet = Sequence(
             Integer(1),
             OctetString(self.default_credentials.community),
-            GetRequest(get_request_id(), *parsed_oids),
+            GetRequest(get_request_id(), parsed_oids),
         )
 
         response = await self.sender(
@@ -414,7 +414,6 @@ class RawClient:
         seq = Sequence.decode(response)
         raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
         output = {str(oid): value for oid, value in raw_response[2].varbinds}
-
         if len(output) != len(mappings):
             raise SnmpError(
                 "Unexpected response. Expected %d varbinds, "
@@ -664,4 +663,4 @@ def traps(
     for sockinfo in transport.listen(listen_address, port):
         obj = cast(Tuple[Any, Any, Trap], Sequence.decode(sockinfo.data)[0])
         obj[2].source = sockinfo.info
-        yield obj[2]
+            yield obj[2]
