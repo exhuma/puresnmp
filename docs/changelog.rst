@@ -1,11 +1,20 @@
 Changelog
 =========
 
+Release 1.10.2
+~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** Speed improvements for overflowing counters (See #88 by Alexey
+  Minevich)
+
+
 Release 1.10.1
 ~~~~~~~~~~~~~~~~~~~
 
 * **[fixed]** Don't crash with an ``IndexError`` when an error-status is
-  returned from a device without specifying an offending OID (See #89)
+  returned from a device without specifying an offending OID (See #89 by
+  Lopolio)
+
 
 Release 1.10.0
 ~~~~~~~~~~~~~~~~~~~
