@@ -1,7 +1,10 @@
 .. >>> Shields >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-.. image:: https://travis-ci.org/exhuma/puresnmp.svg?branch=develop
-    :target: https://travis-ci.org/exhuma/puresnmp
+![Python
+package]()
+
+.. image:: https://github.com/exhuma/puresnmp/workflows/Python%20package/badge.svg?branch=master
+    :target: https://github.com/exhuma/puresnmp/actions?query=workflow%3A%22Python+package%22
 
 .. image:: https://readthedocs.org/projects/puresnmp/badge/?version=latest
     :target: http://puresnmp.readthedocs.io/en/latest/?badge=latest
