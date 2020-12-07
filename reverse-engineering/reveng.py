@@ -90,11 +90,7 @@ def display():
     blobs = list(readbytes_multiple(filename, HERE))
     for blob in blobs:
         result, _ = pop_tlv(blob)
-        if bytes(result[2])[0] == 4:
-            x = pop_tlv(result[2].value)
-            from pprint import pprint  # XXX
-
-            pprint(x)  # XXX
+        print("=" * 80)
         print(result.pretty())
 
 
