@@ -11,7 +11,16 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       and community). This can then replace some duplicated code in
 #       "puresnmp.get", "puresnmp.walk" & co.
 
-from typing import TYPE_CHECKING, Any, Iterable, List, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
@@ -160,6 +169,17 @@ class PDU(Type[Any]):
             lines.append(f"{prefix}  Varbinds: <none>")
 
         return "\n".join(lines)
+
+    def get_value(
+        self, oid: ObjectIdentifier, default: Optional[Any] = None
+    ) -> Any:
+        """
+        Returns the value for the given OID, *default* if it was not found.
+        """
+        for varbind in self.varbinds:
+            if varbind.oid == oid:
+                return varbind.value
+        return default
 
 
 class EndOfMibView(PDU):
