@@ -145,19 +145,19 @@ class PDU(Type[Any]):
         """
         Returns a "prettified" string representing the SNMP message.
         """
-        prefix = "    " * depth
+        prefix = "  " * depth
         lines = [
-            f"{prefix}{self.__class__.__name__}",
-            f"{prefix}    Request ID: {self.request_id}",
-            f"{prefix}    Error Status: {self.error_status}",
-            f"{prefix}    Error Index: {self.error_index}",
+            f"{prefix}{self.__class__.__name__} (tag: {self.TAG})",
+            f"{prefix}  Request ID: {self.request_id}",
+            f"{prefix}  Error Status: {self.error_status}",
+            f"{prefix}  Error Index: {self.error_index}",
         ]
         if self.varbinds:
-            lines.append(f"{prefix}    Varbinds: ")
+            lines.append(f"{prefix}  Varbinds: ")
             for bind in self.varbinds:
-                lines.append(f"{prefix}        {bind.oid}: {bind.value}")
+                lines.append(f"{prefix}    {bind.oid}: {bind.value}")
         else:
-            lines.append(f"{prefix}    Varbinds: <none>")
+            lines.append(f"{prefix}  Varbinds: <none>")
 
         return "\n".join(lines)
 
@@ -302,16 +302,20 @@ class BulkGetRequest(Type[Any]):
         """
         Returns a "prettified" string representing the SNMP message.
         """
-        prefix = "    " * depth
+        prefix = "  " * depth
         lines = [
-            self.__class__.__name__,
-            f"{prefix}    Request ID: {self.request_id}",
-            f"{prefix}    Non Repeaters: {self.non_repeaters}",
-            f"{prefix}    Max Repeaters: {self.max_repeaters}",
-            f"{prefix}    Varbinds: ",
+            f"{prefix}{self.__class__.__name__} (tag: {self.TAG})",
+            f"{prefix}  Request ID: {self.request_id}",
+            f"{prefix}  Non Repeaters: {self.non_repeaters}",
+            f"{prefix}  Max Repeaters: {self.max_repeaters}",
+            f"{prefix}  Varbinds: ",
         ]
-        for bind in self.varbinds:
-            lines.append(f"{prefix}        {bind.oid}: {bind.value}")
+        if self.varbinds:
+            lines.append(f"{prefix}  Varbinds: ")
+            for bind in self.varbinds:
+                lines.append(f"{prefix}    {bind.oid}: {bind.value}")
+        else:
+            lines.append(f"{prefix}  Varbinds: <none>")
 
         return "\n".join(lines)
 
