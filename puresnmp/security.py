@@ -250,10 +250,6 @@ class UserSecurityModel(SecurityModel):
             user_auth_key, section.auth_engine_id, user_auth_algo
         )
 
-        print(
-            "\u001b[30;43m[debug-print-efa0]\u001b[0m\n%s" % pformat(locals())
-        )  # XXX debug statement
-
         if security_level.auth:
             self.authenticate_incoming_message(
                 auth_key, secparms.auth_params, data
