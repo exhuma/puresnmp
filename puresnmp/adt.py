@@ -1,10 +1,16 @@
+import sys
 from dataclasses import dataclass
 from textwrap import indent
-from typing import Union, cast, Optional
+from typing import Optional, Union, cast
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
 from puresnmp.pdu import PDU
+
+if sys.stdout.isatty():
+    INDENT_STRING = " \u001b[38;5;22m│\u001b[0m "
+else:
+    INDENT_STRING = " │ "
 
 
 @dataclass
@@ -56,16 +62,16 @@ class USMSecurityParameters:
         """
         Return a value for CLI display
         """
+        lines = ["Security Parameters"]
         lines = [
-            "Security Parameters",
-            f" │ Engine ID   : {self.authoritative_engine_id!r}",
-            f" │ Engine Boots: {self.authoritative_engine_boots}",
-            f" │ Engine Time : {self.authoritative_engine_time}",
-            f" │ Username    : {self.user_name!r}",
-            f" │ Auth Params : {self.auth_params!r}",
-            f" │ Priv Params : {self.priv_params!r}",
+            f"{INDENT_STRING}Engine ID   : {self.authoritative_engine_id!r}",
+            f"{INDENT_STRING}Engine Boots: {self.authoritative_engine_boots}",
+            f"{INDENT_STRING}Engine Time : {self.authoritative_engine_time}",
+            f"{INDENT_STRING}Username    : {self.user_name!r}",
+            f"{INDENT_STRING}Auth Params : {self.auth_params!r}",
+            f"{INDENT_STRING}Priv Params : {self.priv_params!r}",
         ]
-        return indent("\n".join(lines), "  " * depth)
+        return indent("\n".join(lines), INDENT_STRING * depth)
 
 
 @dataclass
@@ -122,10 +128,12 @@ class HeaderData:
     def pretty(self, depth: int = 0) -> str:
         lines = []
         lines.append("Global Data")
-        lines.append(f"  Message ID: {self.message_id}")
-        lines.append(f"  Message max size: {self.message_max_size}")
-        lines.append(f"  Flags: {self.flags}")
-        lines.append(f"  Security Model: {self.security_model}")
+        lines.append(f"{INDENT_STRING}Message ID: {self.message_id}")
+        lines.append(
+            f"{INDENT_STRING}Message max size: {self.message_max_size}"
+        )
+        lines.append(f"{INDENT_STRING}Flags: {self.flags}")
+        lines.append(f"{INDENT_STRING}Security Model: {self.security_model}")
         return "\n".join(lines)
 
 
@@ -148,8 +156,12 @@ class ScopedPDU:
     def pretty(self, depth: int = 0) -> str:
         lines = []
         lines.append("Scoped PDU")
-        lines.append(f"  Context Engine ID: {self.context_engine_id.value!r}")
-        lines.append(f"  Context Name: {self.context_name.value!r}")
+        lines.append(
+            f"{INDENT_STRING}Context Engine ID: {self.context_engine_id.value!r}"
+        )
+        lines.append(
+            f"{INDENT_STRING}Context Name: {self.context_name.value!r}"
+        )
         lines.extend(self.data.pretty(1).splitlines())
         return "\n".join(lines)
 
@@ -236,13 +248,18 @@ class Message:
         lines = []
 
         lines.append(f"SNMP Message (version-identifier={self.version})")
-        lines.extend(indent(self.global_data.pretty(1), "  ").splitlines())
-        lines.append("  Security Params:")
         lines.extend(
-            indent(self.security_parameters.pretty(1), "  ").splitlines()
+            indent(self.global_data.pretty(1), INDENT_STRING).splitlines()
+        )
+        lines.extend(
+            indent(
+                self.security_parameters.pretty(1), INDENT_STRING
+            ).splitlines()
         )
         if isinstance(self.scoped_pdu, bytes):
             lines.append(f"Scoped PDU (encrypted): {self.scoped_pdu!r}")
         else:
-            lines.extend(indent(self.scoped_pdu.pretty(1), "  ").splitlines())
+            lines.extend(
+                indent(self.scoped_pdu.pretty(1), INDENT_STRING).splitlines()
+            )
         return "\n".join(lines)
