@@ -1,10 +1,71 @@
 from dataclasses import dataclass
 from textwrap import indent
-from typing import Union, cast
+from typing import Union, cast, Optional
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
 from puresnmp.pdu import PDU
+
+
+@dataclass
+class USMSecurityParameters:
+    """
+    This class wraps the various values for the USM
+    """
+
+    authoritative_engine_id: bytes
+    authoritative_engine_boots: int
+    authoritative_engine_time: int
+    user_name: bytes
+    auth_params: bytes
+    priv_params: bytes
+
+    @staticmethod
+    def decode(data: bytes) -> "USMSecurityParameters":
+        """
+        Construct a USMSecurityParameters instance from pure bytes
+        """
+        seq, _ = pop_tlv(data, enforce_type=Sequence)
+        return USMSecurityParameters.from_snmp_type(seq)
+
+    @staticmethod
+    def from_snmp_type(seq: Sequence) -> "USMSecurityParameters":
+        return USMSecurityParameters(
+            authoritative_engine_id=seq[0].pythonize(),
+            authoritative_engine_boots=seq[1].pythonize(),
+            authoritative_engine_time=seq[2].pythonize(),
+            user_name=seq[3].pythonize(),
+            auth_params=seq[4].pythonize(),
+            priv_params=seq[5].pythonize(),
+        )
+
+    def __bytes__(self) -> bytes:
+        return bytes(self.as_snmp_type())
+
+    def as_snmp_type(self) -> Sequence:
+        return Sequence(
+            OctetString(self.authoritative_engine_id),
+            Integer(self.authoritative_engine_boots),
+            Integer(self.authoritative_engine_time),
+            OctetString(self.user_name),
+            OctetString(self.auth_params),
+            OctetString(self.priv_params),
+        )
+
+    def pretty(self, depth: int = 0) -> str:
+        """
+        Return a value for CLI display
+        """
+        lines = [
+            "Security Parameters",
+            f" │ Engine ID   : {self.authoritative_engine_id!r}",
+            f" │ Engine Boots: {self.authoritative_engine_boots}",
+            f" │ Engine Time : {self.authoritative_engine_time}",
+            f" │ Username    : {self.user_name!r}",
+            f" │ Auth Params : {self.auth_params!r}",
+            f" │ Priv Params : {self.priv_params!r}",
+        ]
+        return indent("\n".join(lines), "  " * depth)
 
 
 @dataclass
@@ -107,15 +168,18 @@ class Message:
 
     version: Integer
     global_data: HeaderData
-    security_parameters: OctetString
+    security_parameters: Optional[USMSecurityParameters]
     scoped_pdu: Union[bytes, ScopedPDU]
 
     def __bytes__(self) -> bytes:
+        security_parameters = b""
+        if self.security_parameters is not None:
+            security_parameters = bytes(self.security_parameters.as_snmp_type())
         output = bytes(
             Sequence(
                 self.version,
                 self.global_data.as_snmp_type(),
-                self.security_parameters,
+                OctetString(security_parameters),
                 self.scoped_pdu
                 if isinstance(self.scoped_pdu, bytes)
                 else self.scoped_pdu,
@@ -127,11 +191,11 @@ class Message:
     def from_sequence(seq: Sequence) -> "Message":
         version = seq[0]
         global_data = cast(Sequence, seq[1])
-        security_parameters = cast(OctetString, seq[2])
-
-        if not isinstance(security_parameters, OctetString):
-            raise TypeError(
-                "security_parameters must be encoded as OctetString"
+        security_params_raw = cast(OctetString, seq[2]).value
+        security_parameters = None
+        if security_params_raw != b"":
+            security_parameters = USMSecurityParameters.decode(
+                security_params_raw
             )
 
         msg_id = cast(Integer, global_data[0])

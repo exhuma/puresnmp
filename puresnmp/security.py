@@ -3,7 +3,7 @@ from typing import Any, Dict, Type, cast
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
-from puresnmp.adt import Message, V3Flags
+from puresnmp.adt import Message, V3Flags, USMSecurityParameters
 from puresnmp.auth import Auth
 from puresnmp.exc import InvalidSecurityModel, NotInTimeWindow, SnmpError
 
@@ -17,63 +17,6 @@ class UnsupportedSecurityLevel(SnmpError):
 class UnknownSecurityModel(SnmpError):
     def __init__(self, identifier: int) -> None:
         super().__init__(f"No security model with ID {identifier} found!")
-
-
-@dataclass
-class USMSecurityParameters:
-    """
-    This class wraps the various values for the USM
-    """
-
-    authoritative_engine_id: bytes
-    authoritative_engine_boots: int
-    authoritative_engine_time: int
-    user_name: bytes
-    auth_params: bytes
-    priv_params: bytes
-
-    @staticmethod
-    def decode(data: bytes) -> "USMSecurityParameters":
-        """
-        Construct a USMSecurityParameters instance from pure bytes
-        """
-        seq, _ = pop_tlv(data, enforce_type=Sequence)
-        return USMSecurityParameters(
-            authoritative_engine_id=seq[0].pythonize(),
-            authoritative_engine_boots=seq[1].pythonize(),
-            authoritative_engine_time=seq[2].pythonize(),
-            user_name=seq[3].pythonize(),
-            auth_params=seq[4].pythonize(),
-            priv_params=seq[5].pythonize(),
-        )
-
-    def __bytes__(self) -> bytes:
-        return bytes(self.as_snmp_type())
-
-    def as_snmp_type(self) -> Sequence:
-        return Sequence(
-            OctetString(self.authoritative_engine_id),
-            Integer(self.authoritative_engine_boots),
-            Integer(self.authoritative_engine_time),
-            OctetString(self.user_name),
-            OctetString(self.auth_params),
-            OctetString(self.priv_params),
-        )
-
-    def pretty(self) -> str:
-        """
-        Return a value for CLI display
-        """
-        lines = [
-            "Security Model #3",
-            f" │ Engine ID   : {self.authoritative_engine_id!r}",
-            f" │ Engine Boots: {self.authoritative_engine_boots}",
-            f" │ Engine Time : {self.authoritative_engine_time}",
-            f" │ Username    : {self.user_name!r}",
-            f" │ Auth Params : {self.auth_params!r}",
-            f" │ Priv Params : {self.priv_params!r}",
-        ]
-        return "\n".join(lines)
 
 
 class SecurityModel:
@@ -224,7 +167,7 @@ class UserSecurityModel(SecurityModel):
         secured_message = Message(
             message.version,
             message.global_data,
-            OctetString(bytes(security_params)),
+            security_params,
             encoded_pdu,
         )
         return secured_message

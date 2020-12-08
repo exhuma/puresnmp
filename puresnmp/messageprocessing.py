@@ -110,7 +110,7 @@ def send_discovery_message(
             V3Flags(False, False, True),
             3,
         ),
-        OctetString(bytes(security_params)),
+        security_params,
         ScopedPDU(
             OctetString(),
             OctetString(),
@@ -138,9 +138,7 @@ def send_discovery_message(
     # fetching them from the wrapping message would be easier. But because the
     # RFC explicitly states that it's the value from inside the PDU I picked it
     # out from there instead.
-    auth_security_params = USMSecurityParameters.decode(
-        response_msg.security_parameters.value
-    )
+    auth_security_params = response_msg.security_parameters
     unknown_engine_ids = response_msg.scoped_pdu.data.varbinds[
         0
     ].value.pythonize()
@@ -294,9 +292,17 @@ class SNMPV3_MPM(MessageProcessingModel):
             message.global_data.security_model
         )
         security_level = message.global_data.flags
-        security_params = USMSecurityParameters.decode(
-            message.security_parameters.value
-        )
+        security_params = message.security_parameters
+
+        if security_params is None:
+            raise NotImplementedError(
+                "Messages without security params are not yet supported"
+            )
+
+        if isinstance(message.scoped_pdu, bytes):
+            raise NotImplementedError(
+                "Encrypted messages are not yet supported"
+            )
 
         return PreparedData(
             security_model,  # Security Model to use
