@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from textwrap import indent
 from typing import Union, cast
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
@@ -57,6 +58,15 @@ class HeaderData:
     def __bytes__(self) -> bytes:
         return bytes(self.as_snmp_type())
 
+    def pretty(self, depth: int = 0) -> str:
+        lines = []
+        lines.append("Global Data")
+        lines.append(f"  Message ID: {self.message_id}")
+        lines.append(f"  Message max size: {self.message_max_size}")
+        lines.append(f"  Flags: {self.flags}")
+        lines.append(f"  Security Model: {self.security_model}")
+        return "\n".join(lines)
+
 
 @dataclass
 class ScopedPDU:
@@ -73,6 +83,14 @@ class ScopedPDU:
             self.context_name,
             self.data,
         )
+
+    def pretty(self, depth: int = 0) -> str:
+        lines = []
+        lines.append("Scoped PDU")
+        lines.append(f"  Context Engine ID: {self.context_engine_id.value!r}")
+        lines.append(f"  Context Name: {self.context_name.value!r}")
+        lines.extend(self.data.pretty(1).splitlines())
+        return "\n".join(lines)
 
 
 @dataclass
@@ -149,3 +167,18 @@ class Message:
 
         message, _ = pop_tlv(data, Sequence)
         return Message.from_sequence(message)
+
+    def pretty(self) -> str:
+        lines = []
+
+        lines.append(f"SNMP Message (version-identifier={self.version})")
+        lines.extend(indent(self.global_data.pretty(1), "  ").splitlines())
+        lines.append("  Security Params:")
+        lines.extend(
+            indent(self.security_parameters.pretty(1), "  ").splitlines()
+        )
+        if isinstance(self.scoped_pdu, bytes):
+            lines.append(f"Scoped PDU (encrypted): {self.scoped_pdu!r}")
+        else:
+            lines.extend(indent(self.scoped_pdu.pretty(1), "  ").splitlines())
+        return "\n".join(lines)
