@@ -63,14 +63,16 @@ class USMSecurityParameters:
         Return a value for CLI display
         """
         lines = ["Security Parameters"]
-        lines = [
-            f"{INDENT_STRING}Engine ID   : {self.authoritative_engine_id!r}",
-            f"{INDENT_STRING}Engine Boots: {self.authoritative_engine_boots}",
-            f"{INDENT_STRING}Engine Time : {self.authoritative_engine_time}",
-            f"{INDENT_STRING}Username    : {self.user_name!r}",
-            f"{INDENT_STRING}Auth Params : {self.auth_params!r}",
-            f"{INDENT_STRING}Priv Params : {self.priv_params!r}",
-        ]
+        lines.extend(
+            [
+                f"{INDENT_STRING}Engine ID   : {self.authoritative_engine_id!r}",
+                f"{INDENT_STRING}Engine Boots: {self.authoritative_engine_boots}",
+                f"{INDENT_STRING}Engine Time : {self.authoritative_engine_time}",
+                f"{INDENT_STRING}Username    : {self.user_name!r}",
+                f"{INDENT_STRING}Auth Params : {self.auth_params!r}",
+                f"{INDENT_STRING}Priv Params : {self.priv_params!r}",
+            ]
+        )
         return indent("\n".join(lines), INDENT_STRING * depth)
 
 
@@ -134,7 +136,7 @@ class HeaderData:
         )
         lines.append(f"{INDENT_STRING}Flags: {self.flags}")
         lines.append(f"{INDENT_STRING}Security Model: {self.security_model}")
-        return "\n".join(lines)
+        return indent("\n".join(lines), INDENT_STRING * depth)
 
 
 @dataclass
@@ -163,7 +165,7 @@ class ScopedPDU:
             f"{INDENT_STRING}Context Name: {self.context_name.value!r}"
         )
         lines.extend(self.data.pretty(1).splitlines())
-        return "\n".join(lines)
+        return indent("\n".join(lines), INDENT_STRING * depth)
 
 
 @dataclass
@@ -244,22 +246,28 @@ class Message:
         message, _ = pop_tlv(data, Sequence)
         return Message.from_sequence(message)
 
-    def pretty(self) -> str:
+    def pretty(self, depth: int = 0) -> str:
         lines = []
 
         lines.append(f"SNMP Message (version-identifier={self.version})")
-        lines.extend(
-            indent(self.global_data.pretty(1), INDENT_STRING).splitlines()
-        )
-        lines.extend(
-            indent(
-                self.security_parameters.pretty(1), INDENT_STRING
-            ).splitlines()
-        )
-        if isinstance(self.scoped_pdu, bytes):
-            lines.append(f"Scoped PDU (encrypted): {self.scoped_pdu!r}")
-        else:
+        lines.extend(self.global_data.pretty(depth + 1).splitlines())
+        if self.security_parameters:
             lines.extend(
-                indent(self.scoped_pdu.pretty(1), INDENT_STRING).splitlines()
+                self.security_parameters.pretty(depth + 1).splitlines()
             )
-        return "\n".join(lines)
+        else:
+            lines.append(
+                indent(
+                    "Security Parameters: <none>", INDENT_STRING * (depth + 1)
+                )
+            )
+        if isinstance(self.scoped_pdu, bytes):
+            lines.append(
+                indent(
+                    f"Scoped PDU (encrypted): {self.scoped_pdu!r}",
+                    INDENT_STRING * (depth + 1),
+                )
+            )
+        else:
+            lines.extend(self.scoped_pdu.pretty(depth + 1).splitlines())
+        return indent("\n".join(lines), INDENT_STRING * depth)
