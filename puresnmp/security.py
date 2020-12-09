@@ -251,39 +251,3 @@ class SNMPv1SecurityModel(SecurityModel):
 
 class SNMPv2cSecurityModel(SecurityModel):
     IDENTIFIER = 2
-
-
-@dataclass
-class USMOld:  # XXX
-    """
-    A wrapper around Security Model #3 from SNMPv3
-
-    See https://tools.ietf.org/html/rfc3414
-    """
-
-    engine_id: Integer
-    engine_boots: Integer
-    engine_time: Integer
-    username: OctetString
-    auth_params: OctetString
-    privacy_params: OctetString
-
-    @staticmethod
-    def from_octet_string(data: OctetString) -> "USM":
-        """
-        Convert an X.690 Octet String into a Security Model
-        """
-        items_raw, _ = pop_tlv(data.pythonize())
-        items = cast(Sequence, items_raw)
-        if len(items) != 6:
-            raise InvalidSecurityModel(
-                "Invalid data to construct the security model."
-            )
-        return USM(
-            items[0],  # type: ignore
-            items[1],  # type: ignore
-            items[2],  # type: ignore
-            items[3],  # type: ignore
-            items[4],  # type: ignore
-            items[5],  # type: ignore
-        )
