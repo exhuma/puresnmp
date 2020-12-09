@@ -237,6 +237,7 @@ class MessageProcessingModel:
         transport_domain: TransportDomain,  # origin transport domain
         transport_address,  # origin transport address
         whole_msg,  # as received from the network
+        security_model: SecurityModel,
     ) -> PreparedData:
         """
         The Message Processing Subsystem provides this service primitive for
@@ -282,15 +283,13 @@ class SNMPV3_MPM(MessageProcessingModel):
         transport_domain: TransportDomain,  # origin transport domain
         transport_address,  # origin transport address
         whole_msg,  # as received from the network
+        security_model: SecurityModel,
     ) -> PreparedData:
         """
         The Message Processing Subsystem provides this service primitive for
         preparing the abstract data elements from an incoming SNMP message:
         """
         message = Message.decode(whole_msg)
-        security_model = SecurityModel.create(
-            message.global_data.security_model
-        )
         security_level = message.global_data.flags
         security_params = message.security_parameters
 
@@ -303,6 +302,8 @@ class SNMPV3_MPM(MessageProcessingModel):
             raise NotImplementedError(
                 "Encrypted messages are not yet supported"
             )
+
+        msg = security_model.process_incoming_message(message)
 
         return PreparedData(
             security_model,  # Security Model to use

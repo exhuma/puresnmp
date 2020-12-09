@@ -56,9 +56,35 @@ class Auth:
     ) -> Message:
         raise NotImplementedError("Not yet implemented")
 
+    def authenticate_incoming_message(
+        self, auth_key: bytes, message: Message
+    ) -> None:
+        raise NotImplementedError("Not yet implemented")
+
 
 class MD5Auth(Auth):
     IDENTIFIER = "usmHMACMD5AuthProtocol"
+
+    def _get_message_digest(self, auth_key: bytes, message: Message) -> bytes:
+        if message.security_parameters is None:
+            # TODO: Better exception
+            raise SnmpError(
+                "Unable to authenticate messages without security params!"
+            )
+
+        # As per https://tools.ietf.org/html/rfc3414#section-6.3.1,
+        # the auth-key needs to be initialised to 12 zeroes
+        message.security_parameters.auth_params = (
+            b"\x00" * 12
+        )  # XXX immutability
+
+        auth_key = password_to_key_md5(
+            auth_key, message.security_parameters.authoritative_engine_id
+        )
+
+        data = bytes(message)
+        mac = hmac.new(auth_key, data, digestmod="md5")
+        return mac.digest()[:12]
 
     def authenticate_outgoing_message(
         self, auth_key: bytes, message: Message
@@ -68,27 +94,19 @@ class MD5Auth(Auth):
         """
 
         if message.security_parameters is None:
+            # TODO: Better exception
             raise SnmpError(
                 "Unable to authenticate messages without security params!"
             )
 
-        # As per https://tools.ietf.org/html/rfc3414#section-6.3.1,
-        # the auth-key needs to be initialised to 12 zeroes
-        message.security_parameters.auth_params = b"\x00" * 12
+        digest = self._get_message_digest(auth_key, message)
 
-        auth_key = password_to_key_md5(
-            auth_key, message.security_parameters.authoritative_engine_id
-        )
-
-        data = bytes(message)
-        mac = hmac.new(auth_key, data, digestmod="md5")
-        output = mac.digest()[:12]
         security_params = USMSecurityParameters(
             message.security_parameters.authoritative_engine_id,
             message.security_parameters.authoritative_engine_boots,
             message.security_parameters.authoritative_engine_time,
             message.security_parameters.user_name,
-            output,
+            digest,
             message.security_parameters.priv_params,
         )
         authed_message = Message(
@@ -98,3 +116,16 @@ class MD5Auth(Auth):
             message.scoped_pdu,
         )
         return authed_message
+
+    def authenticate_incoming_message(
+        self, auth_key: bytes, message: Message
+    ) -> None:
+        if message.security_parameters is None:
+            # TODO: Better exception
+            raise SnmpError("authenticationFailure")
+
+        received_digest = message.security_parameters.auth_params
+        expected_digest = self._get_message_digest(auth_key, message)
+        if received_digest != expected_digest:
+            # TODO: Better exception
+            raise SnmpError("authenticationFailure")

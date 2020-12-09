@@ -248,6 +248,7 @@ class Dispatcher:
     def handle_incoming_message(
         self,
         data: bytes,
+        security_model: SecurityModel,
         transport_domain: TransportDomain,
         remote_addr: TAnyIp,
     ) -> PDU:
@@ -273,6 +274,7 @@ class Dispatcher:
             transport_domain,
             remote_addr,
             data,
+            security_model,
         )
         return self.dispatch_incoming_message(prepared_data)
 
@@ -352,9 +354,8 @@ class Dispatcher:
         )
 
         response_pdu = self.handle_incoming_message(
-            response, out_msg.transport_domain, out_msg.transport_address
+            response, security_model, out_msg.transport_domain, out_msg.transport_address
         )
-        from puresnmp.pdu import Report
 
         return response_pdu
 
@@ -392,7 +393,7 @@ class Dispatcher:
         # XXX return ? <- According to RFC
 
         # XXX response, remote_domain, remote_ip = send_pdu_handle.send(out_msg)
-        # XXX self.handle_incoming_message(response, remote_domain, remote_ip)
+        # XXX self.handle_incoming_message(response, security_model, remote_domain, remote_ip)
         # XXX return send_pdu_handle, dest_domain, dest_address
 
     def process_pdu(

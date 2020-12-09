@@ -55,6 +55,9 @@ class SecurityModel:
     ) -> Message:
         raise NotImplementedError("Not yet implemented")
 
+    def process_incoming_message(self, message: Message) -> Message:
+        raise NotImplementedError("Not yet implemented")
+
 
 class UserSecurityModel(SecurityModel):
     IDENTIFIER = 3
@@ -176,19 +179,40 @@ class UserSecurityModel(SecurityModel):
         )
         return secured_message
 
-    def process_incoming_message(
-        self,
-        mp_model,
-        msg_max_size,
-        security_parameters,
-        security_level,
-        data,
-    ):
+    def process_incoming_message(self, message: Message) -> Message:
+        # TODO: Validate engine-id.
+        # TODO: Validate incoming username against the request
+
+        security_engine_id = message.security_parameters.authoritative_engine_id
+        security_name = message.security_parameters.user_name
+        engine_config = self.local_config[security_engine_id]
+        if security_name not in engine_config["users"]:
+            # See https://tools.ietf.org/html/rfc3414#section-3.1
+            # TODO better exception class
+            raise SnmpError(f"Unknown User {security_name!r}")
+        user_config = engine_config["users"][security_name]
+
+        auth_proto = Auth.create(user_config.get("auth_proto"))
+        if message.global_data.flags.auth and not auth_proto:
+            raise UnsupportedSecurityLevel(
+                f"Security level needs authentication, but auth-proto "
+                f"is missing for user {security_name!r}"
+            )
+        if message.global_data.flags.auth:
+            try:
+                auth_result = auth_proto.authenticate_incoming_message(
+                    user_config["auth_key"], message
+                )
+                return auth_result  # XXX return misplaced
+            except Exception as exc:
+                # TODO improve error message
+                raise SnmpError("authenticationFailure") from exc
+        else:
+            auth_params = b""
+
         message_data, _ = pop_tlv(data)
         secparms = USMSecurityParameters.decode(message_data[2].pythonize())
 
-        # TODO: Validate engine-id.
-        # TODO: Validate incoming username against the request
         # See https://tools.ietf.org/html/rfc3414#section-3.2
 
         from pprint import pformat
