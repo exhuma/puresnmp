@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Type, cast
+from typing import Any, Callable, Dict, Type, cast
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
-from puresnmp.adt import Message, V3Flags, USMSecurityParameters
+from puresnmp.adt import Message, USMSecurityParameters, V3Flags
 from puresnmp.auth import Auth
 from puresnmp.exc import InvalidSecurityModel, NotInTimeWindow, SnmpError
 
@@ -59,12 +59,6 @@ class SecurityModel:
 class UserSecurityModel(SecurityModel):
     IDENTIFIER = 3
 
-    def authenticate_outgoing_message(self, auth_key, whole_msg):
-        """
-        See https://tools.ietf.org/html/rfc3414#section-1.6
-        """
-        return "authenticated_whole_message"  # XXX TODO
-
     def authenticate_incoming_message(self, auth_key, auth_params, whole_msg):
         """
         See https://tools.ietf.org/html/rfc3414#section-1.6
@@ -110,6 +104,17 @@ class UserSecurityModel(SecurityModel):
         engine_boots = engine_config["authoritative_engine_boots"]
         engine_time = engine_config["authoritative_engine_time"]
 
+        message.security_parameters = (
+            USMSecurityParameters(  # XXX immutability!
+                security_engine_id,
+                engine_boots,
+                engine_time,
+                security_name,
+                b"",
+                b"",
+            )
+        )
+
         if security_level.priv and not all(
             [user_config["priv_proto"], user_config["auth_proto"]]
         ):
@@ -145,10 +150,9 @@ class UserSecurityModel(SecurityModel):
         if security_level.auth:
             try:
                 auth_result = auth_proto.authenticate_outgoing_message(
-                    user_config["auth_key"], encoded_pdu
+                    user_config["auth_key"], message
                 )
-                encoded_pdu = auth_result.data
-                auth_params = auth_result.auth_params
+                return auth_result  # XXX return misplaced
             except Exception as exc:
                 # TODO improve error message
                 raise SnmpError("authenticationFailure") from exc
