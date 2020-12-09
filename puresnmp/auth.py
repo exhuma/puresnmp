@@ -29,16 +29,14 @@ def password_to_key(
     return hasher
 
 
-password_to_key_md5 = password_to_key(hashlib.md5, 16)
-password_to_key_sha1 = password_to_key(hashlib.sha1, 20)
-
-
 class Auth:
 
     IDENTIFIER: str
     __registry: Dict[str, Type["Auth"]] = {}
 
     def __init_subclass__(cls: Type["Auth"]) -> None:
+        if not hasattr(cls, "IDENTIFIER"):
+            return
         Auth.__registry[cls.IDENTIFIER] = cls
 
     @staticmethod
@@ -62,8 +60,9 @@ class Auth:
         raise NotImplementedError("Not yet implemented")
 
 
-class MD5Auth(Auth):
-    IDENTIFIER = "usmHMACMD5AuthProtocol"
+class HashingAuth(Auth):
+    IMPLEMENTATION: Callable[..., Any]
+    HMAC_DIGESTMOD: str
 
     def _get_message_digest(self, auth_key: bytes, message: Message) -> bytes:
         if message.security_parameters is None:
@@ -78,12 +77,12 @@ class MD5Auth(Auth):
             b"\x00" * 12
         )  # XXX immutability
 
-        auth_key = password_to_key_md5(
+        auth_key = self.IMPLEMENTATION(
             auth_key, message.security_parameters.authoritative_engine_id
         )
 
         data = bytes(message)
-        mac = hmac.new(auth_key, data, digestmod="md5")
+        mac = hmac.new(auth_key, data, digestmod=self.HMAC_DIGESTMOD)
         return mac.digest()[:12]
 
     def authenticate_outgoing_message(
@@ -129,3 +128,15 @@ class MD5Auth(Auth):
         if received_digest != expected_digest:
             # TODO: Better exception
             raise SnmpError("authenticationFailure")
+
+
+class MD5Auth(HashingAuth):
+    IDENTIFIER = "usmHMACMD5AuthProtocol"
+    IMPLEMENTATION = staticmethod(password_to_key(hashlib.md5, 16))
+    HMAC_DIGESTMOD = "md5"
+
+
+class SHAAuth(HashingAuth):
+    IDENTIFIER = "usmHMACSHAAuthProtocol"
+    IMPLEMENTATION = staticmethod(password_to_key(hashlib.sha1, 20))
+    HMAC_DIGESTMOD = "sha1"
