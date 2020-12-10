@@ -29,13 +29,16 @@ class SecurityModel:
     #: The "Local Configuration Datastor" (LCD)
     local_config: Dict[bytes, Dict[str, Any]]
 
+    #: A default local security config for unknown engine IDs
+    default_auth: Dict[bytes, Dict[str, Any]]
+
     __registry: Dict[int, Type["SecurityModel"]] = {}
 
     def __init_subclass__(cls: Type["SecurityModel"]) -> None:
         SecurityModel.__registry[cls.IDENTIFIER] = cls
 
     def __init__(self) -> None:
-        self.local_config = {"users": {}}
+        self.local_config = {}
 
     @staticmethod
     def create(identifier: int) -> "SecurityModel":
@@ -86,9 +89,12 @@ class UserSecurityModel(SecurityModel):
 
     def set_engine_timing(self, engine_id, boots, time):
         # TODO redundant with set_timing_values?
-        engine_config = self.local_config[engine_id]
+        engine_config = self.local_config.setdefault(engine_id, {})
         engine_config["authoritative_engine_boots"] = boots
         engine_config["authoritative_engine_time"] = time
+
+    def set_default_auth(self, auth: Dict[bytes, Dict[str, Any]]) -> None:
+        self.default_auth = auth
 
     def generate_request_message(
         self,
@@ -98,6 +104,8 @@ class UserSecurityModel(SecurityModel):
         security_level: V3Flags,
     ) -> Message:
         engine_config = self.local_config[security_engine_id]
+        if "users" not in engine_config:
+            engine_config["users"] = self.default_auth or {}
         if security_name not in engine_config["users"]:
             # See https://tools.ietf.org/html/rfc3414#section-3.1
             # TODO better exception class
