@@ -3,7 +3,7 @@ The message processing subsystem
 """
 from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address
-from typing import Any, Dict, List, NamedTuple, Tuple, Type, Union, cast
+from typing import Any, Dict, List, NamedTuple, Tuple, Type, Union, Callable
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
@@ -16,7 +16,6 @@ from puresnmp.security import (
     UserSecurityModel,
     USMSecurityParameters,
 )
-from puresnmp.transport import Transport
 from puresnmp.types import Counter
 from puresnmp.typevars import TAnyIp
 
@@ -67,7 +66,7 @@ def send_auth_discovery_message(
 
 
 def send_discovery_message(
-    transport_domain: TransportDomain, transport_address: TAnyIp
+    transport_handler: Callable[[bytes], bytes]
 ) -> DiscoData:
     # Via https://tools.ietf.org/html/rfc3414#section-4
     #
@@ -85,14 +84,6 @@ def send_discovery_message(
     # field. It contains a Report PDU with the usmStatsUnknownEngineIDs
     # counter in the varBindList.
 
-    if transport_domain not in (
-        TransportDomain.UDPIPV4,
-        TransportDomain.UDPIPV6,
-    ):
-        raise SnmpError(
-            f"Unsupported transport doamain ({transport_domain!r}). "
-            f"Currently only UDP over IPv4 or IPv6 are supported!"
-        )
     request_id = get_request_id()
     security_params = USMSecurityParameters(
         authoritative_engine_id=b"",
@@ -118,11 +109,7 @@ def send_discovery_message(
         ),
     )
     payload = bytes(discovery_message)
-
-    trans = Transport()
-    raw_response = trans.send(
-        str(transport_address), 50009, payload
-    )  # XXX remove hardcoded port
+    raw_response = transport_handler(payload)
     response, _ = pop_tlv(raw_response, Sequence)
 
     response_msg = Message.from_sequence(response)
@@ -164,12 +151,6 @@ class PreparedData(NamedTuple):
     max_size_response_scoped_pdu: int
     status_information: int
     state_reference: Any
-
-
-class PreparedOutMessage(NamedTuple):
-    transport_domain: TransportDomain
-    transport_address: Union[IPv4Address, IPv6Address]
-    outgoing_message: bytes
 
 
 class MPMException(SnmpError):
@@ -218,9 +199,6 @@ class MessageProcessingModel:
     def prepare_outgoing_message(
         self,
         message_id: int,
-        transport_domain: TransportDomain,  # transport domain to be used
-        transport_address,  # transport address to be used
-        message_processing_model,  # typically, SNMP version
         security_model: SecurityModel,  # Security Model to use
         security_name,  # on behalf of this principal
         security_level,  # Level of Security requested
@@ -229,13 +207,12 @@ class MessageProcessingModel:
         pdu_version,  # the version of the PDU
         pdu,  # SNMP Protocol Data Unit
         expect_response,  # TRUE or FALSE
-    ) -> PreparedOutMessage:
+        transport_handler: Callable[[bytes], bytes],
+    ) -> bytes:
         raise NotImplementedError("This needs to be overridden in a subclass")
 
     def prepare_data_elements(
         self,
-        transport_domain: TransportDomain,  # origin transport domain
-        transport_address,  # origin transport address
         whole_msg,  # as received from the network
         security_model: SecurityModel,
     ) -> PreparedData:
@@ -280,8 +257,6 @@ class SNMPV3_MPM(MessageProcessingModel):
 
     def prepare_data_elements(
         self,
-        transport_domain: TransportDomain,  # origin transport domain
-        transport_address,  # origin transport address
         whole_msg,  # as received from the network
         security_model: SecurityModel,
     ) -> PreparedData:
@@ -322,9 +297,6 @@ class SNMPV3_MPM(MessageProcessingModel):
     def prepare_outgoing_message(
         self,
         message_id: int,
-        transport_domain: TransportDomain,  # transport domain to be used
-        transport_address: TAnyIp,  # transport address to be used
-        message_processing_model: int,  # typically, SNMP version
         security_model: SecurityModel,  # Security Model to use
         security_name: OctetString,  # on behalf of this principal
         security_level: V3Flags,  # Level of Security requested
@@ -333,7 +305,8 @@ class SNMPV3_MPM(MessageProcessingModel):
         pdu_version: int,  # the version of the PDU
         pdu: PDU,  # SNMP Protocol Data Unit
         expect_response: bool,  # TRUE or FALSE
-    ) -> PreparedOutMessage:
+        transport_handler: Callable[[bytes], bytes],
+    ) -> bytes:
         """
         The Message Processing Subsystem provides this service primitive for
         preparing an outgoing SNMP Request or Notification Message:
@@ -347,7 +320,7 @@ class SNMPV3_MPM(MessageProcessingModel):
         disco = None
         auth_disco = None
         if isinstance(security_model, UserSecurityModel):
-            disco = send_discovery_message(transport_domain, transport_address)
+            disco = send_discovery_message(transport_handler)
             if security_level.auth:
                 auth_disco = send_auth_discovery_message(
                     transport_domain, transport_address
@@ -381,15 +354,8 @@ class SNMPV3_MPM(MessageProcessingModel):
         )
         # TODO this may need some cleanup. Kept it this way to be aligned with
         #      the RFC var-names
-        dest_transport_domain = transport_domain
-        dest_transport_address = transport_address
         outgoing_message = bytes(output)
-
-        return PreparedOutMessage(
-            dest_transport_domain,  # destination transport domain
-            dest_transport_address,  # destination transport address
-            outgoing_message,  # the message to send
-        )
+        return outgoing_message
 
 
 class MessageProcessingSubsystem:
@@ -419,7 +385,6 @@ class MessageProcessingSubsystem:
 
     def prepare_response_message(
         self,
-        message_processing_model,  # typically, SNMP version
         security_model,  # same as on incoming request
         security_name,  # same as on incoming request
         security_level,  # same as on incoming request

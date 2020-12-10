@@ -60,6 +60,8 @@ application requests that a PDU be sent, and how the response is returned
     |                    |                        |                     |
 """
 import ipaddress
+from puresnmp import transport
+from puresnmp.adt import Message
 from typing import Any, List, Set, Union
 from uuid import UUID, uuid4
 
@@ -72,6 +74,14 @@ from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
 
 TAnyIp = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
+
+
+def send_bytes_to_net(ip: TAnyIp, port: int, packet: bytes) -> bytes:
+    # XXX TODO refactor
+    from puresnmp.transport import Transport
+
+    tpt = Transport()
+    return tpt.send(str(ip), port, packet)  # XXX expose hardcoded port
 
 
 def generate_message_id() -> int:
@@ -232,13 +242,6 @@ class Dispatcher:
         else:
             self.counters[name] += 1
 
-    def send_bytes_to_net(self, ip: TAnyIp, packet: bytes) -> bytes:
-        # XXX TODO refactor
-        from puresnmp.transport import Transport
-
-        tpt = Transport()
-        return tpt.send(str(ip), 50009, packet)  # XXX expose hardcoded port
-
     def state_release(state_reference):
         """
         Release the memory that holds the referenced state information
@@ -270,12 +273,7 @@ class Dispatcher:
         except UnknownMessageProcessingModel:
             self.increase_counter("snmpInBadVersions")
             raise
-        prepared_data = mpm.prepare_data_elements(
-            transport_domain,
-            remote_addr,
-            data,
-            security_model,
-        )
+        prepared_data = mpm.prepare_data_elements(data, security_model)
         return self.dispatch_incoming_message(prepared_data)
 
     def dispatch_incoming_message(self, prepared_data: PreparedData) -> PDU:
@@ -297,7 +295,8 @@ class Dispatcher:
     def send_pdu(
         self,
         transport_domain: TransportDomain,
-        transport_address: Any,
+        transport_address: TAnyIp,
+        transport_port: int,
         message_processing_model: int,
         security_model: SecurityModel,
         security_name: bytes,
@@ -325,12 +324,15 @@ class Dispatcher:
         #  > set to the default context.
         context_name = context_name or b""
 
+        def transport_handler(data: bytes) -> bytes:
+            from puresnmp.transport import Transport
+
+            tr = Transport()
+            return tr.send(str(transport_address), transport_port, data)
+
         try:
             out_msg = mpm.prepare_outgoing_message(
                 message_id,
-                transport_domain,  # transport domain to be used
-                transport_address,  # transport address to be used
-                message_processing_model,  # typically, SNMP version
                 security_model,  # Security Model to use
                 OctetString(security_name),  # on behalf of this principal
                 security_level,  # Level of Security requested
@@ -339,22 +341,20 @@ class Dispatcher:
                 pdu_version,  # the version of the PDU
                 pdu,  # SNMP Protocol Data Unit
                 expect_response,  # TRUE or FALSE
+                transport_handler,
             )
         except:
             # TODO implement error-handling as in https://tools.ietf.org/html/rfc3412#section-7.1 subsection 3)
             raise
-        if out_msg.transport_domain not in {
+        if transport_domain not in {
             TransportDomain.UDPIPV4,
             TransportDomain.UDPIPV6,
         }:
             raise SnmpError("Unsupported transport domain")
-        response = self.send_bytes_to_net(
-            out_msg.transport_address,
-            out_msg.outgoing_message,
-        )
 
+        response = transport_handler(out_msg)
         response_pdu = self.handle_incoming_message(
-            response, security_model, out_msg.transport_domain, out_msg.transport_address
+            response, security_model, transport_domain, transport_address
         )
 
         return response_pdu
