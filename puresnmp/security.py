@@ -6,6 +6,7 @@ from x690.types import Integer, OctetString, Sequence, pop_tlv
 from puresnmp.adt import Message, USMSecurityParameters, V3Flags
 from puresnmp.auth import Auth
 from puresnmp.exc import InvalidSecurityModel, NotInTimeWindow, SnmpError
+from puresnmp.priv import Priv
 
 
 class UnsupportedSecurityLevel(SnmpError):
@@ -65,28 +66,6 @@ class SecurityModel:
 class UserSecurityModel(SecurityModel):
     IDENTIFIER = 3
 
-    def authenticate_incoming_message(self, auth_key, auth_params, whole_msg):
-        """
-        See https://tools.ietf.org/html/rfc3414#section-1.6
-        """
-        return "authenticated_whole_message"  # XXX TODO
-
-    def encrypt_data(self, encrypt_key, data):
-        """
-        See https://tools.ietf.org/html/rfc3414#section-1.6
-        """
-        import pyDes
-
-        des = pyDes.des(encrypt_key)
-        encrypted = des.encrypt(data)
-        return encrypted, "priv_params"  # XXX TODO priv-params
-
-    def decrypt_data(self, decrypt_key, priv_params, data):
-        """
-        See https://tools.ietf.org/html/rfc3414#section-1.6
-        """
-        return "decrypted_data"  # XXX TODO
-
     def set_engine_timing(self, engine_id, boots, time):
         # TODO redundant with set_timing_values?
         engine_config = self.local_config.setdefault(engine_id, {})
@@ -135,30 +114,24 @@ class UserSecurityModel(SecurityModel):
             )
 
         if security_level.priv:
-            key = user_config["privkey"]
+            priv_proto = Priv.create(user_config.get("priv_proto"))
+            key = user_config["priv_key"]
             try:
-                encoded_pdu, priv_params = self.encrypt_data(
-                    key, bytes(message.scoped_pdu)
-                )
-                # TODO: I could not understand what to do with this (from the rfc)
-                #   > If the privacy module returns success, then the returned
-                #   > privParameters are put into the msgPrivacyParameters field
-                #   > of the securityParameters and the encryptedPDU serves as
-                #   > the payload of the message being prepared.
+                message = priv_proto.encrypt_data(key, message)
             except Exception as exc:
                 # TODO Use a proper app-exception here
-                raise Exception("EncryptionError") from exc
+                raise SnmpError("EncryptionError") from exc
         else:
             encoded_pdu = bytes(message.scoped_pdu)
             priv_params = b""
 
-        auth_proto = Auth.create(user_config.get("auth_proto"))
-        if security_level.auth and not auth_proto:
+        if security_level.auth and not user_config["auth_proto"]:
             raise UnsupportedSecurityLevel(
                 f"Security level needs authentication, but auth-proto "
                 f"is missing for user {security_name!r}"
             )
         if security_level.auth:
+            auth_proto = Auth.create(user_config.get("auth_proto"))
             try:
                 auth_result = auth_proto.authenticate_outgoing_message(
                     user_config["auth_key"], message
@@ -208,15 +181,25 @@ class UserSecurityModel(SecurityModel):
             )
         if message.global_data.flags.auth:
             try:
-                auth_result = auth_proto.authenticate_incoming_message(
+                auth_proto.authenticate_incoming_message(
                     user_config["auth_key"], message
                 )
-                return auth_result  # XXX return misplaced
             except Exception as exc:
                 # TODO improve error message
                 raise SnmpError("authenticationFailure") from exc
-        else:
-            auth_params = b""
+
+        if message.global_data.flags.priv:
+            priv_proto = Priv.create(user_config.get("priv_proto"))
+            key = user_config["priv_key"]
+            try:
+                message = priv_proto.decrypt_data(key, message)
+            except Exception as exc:
+                # TODO Use a proper app-exception here
+                raise SnmpError("DecryptionError") from exc
+
+        return message
+
+        # XXX ----------------------------
 
         message_data, _ = pop_tlv(data)
         secparms = USMSecurityParameters.decode(message_data[2].pythonize())

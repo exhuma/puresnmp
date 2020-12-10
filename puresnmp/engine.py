@@ -76,12 +76,6 @@ from puresnmp.security import SecurityModel
 TAnyIp = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 
 
-def send_bytes_to_net(ip: TAnyIp, port: int, packet: bytes) -> bytes:
-    # XXX TODO refactor
-    from puresnmp.transport import Transport
-
-    tpt = Transport()
-    return tpt.send(str(ip), port, packet)  # XXX expose hardcoded port
 
 
 def generate_message_id() -> int:

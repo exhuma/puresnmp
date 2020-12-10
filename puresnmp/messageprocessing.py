@@ -273,11 +273,6 @@ class SNMPV3_MPM(MessageProcessingModel):
                 "Messages without security params are not yet supported"
             )
 
-        if isinstance(message.scoped_pdu, bytes):
-            raise NotImplementedError(
-                "Encrypted messages are not yet supported"
-            )
-
         msg = security_model.process_incoming_message(message)
 
         return PreparedData(
@@ -285,11 +280,11 @@ class SNMPV3_MPM(MessageProcessingModel):
             security_params.user_name,  # on behalf of this principal
             security_level,  # Level of Security requested
             security_params.authoritative_engine_id,  # data from/at this entity
-            message.scoped_pdu.context_name,  # data from/in this context
+            msg.scoped_pdu.context_name,  # data from/in this context
             -1,  # XXX # the version of the PDU
-            message.scoped_pdu.data,  # SNMP Protocol Data Unit
+            msg.scoped_pdu.data,  # SNMP Protocol Data Unit
             -1,  # XXX # SNMP PDU type
-            message.global_data.message_max_size,  # maximum size sender can accept
+            msg.global_data.message_max_size,  # maximum size sender can accept
             None,  # XXX status_information,  # success or errorIndication error counter OID/value if error
             None,  # XXX state_reference,  # reference to state information to be used for possible Response
         )

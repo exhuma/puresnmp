@@ -148,6 +148,16 @@ class ScopedPDU:
     def __bytes__(self) -> bytes:
         return bytes(self.as_snmp_type())
 
+    @staticmethod
+    def decode(data: bytes) -> "ScopedPDU":
+        sequence, _ = pop_tlv(data, Sequence, strict=True)
+        output = ScopedPDU(
+            context_engine_id=sequence[0],
+            context_name=sequence[1],
+            data=sequence[2],
+        )
+        return output
+
     def as_snmp_type(self) -> Sequence:
         return Sequence(
             self.context_engine_id,
@@ -261,13 +271,11 @@ class Message:
                     "Security Parameters: <none>", INDENT_STRING * (depth + 1)
                 )
             )
-        if isinstance(self.scoped_pdu, bytes):
+        if isinstance(self.scoped_pdu, OctetString):
             lines.append(
-                indent(
-                    f"Scoped PDU (encrypted): {self.scoped_pdu!r}",
-                    INDENT_STRING * (depth + 1),
-                )
+                indent(f"Scoped PDU (encrypted)", INDENT_STRING * (depth + 1))
             )
+            lines.extend(self.scoped_pdu.pretty(depth + 2).splitlines())
         else:
             lines.extend(self.scoped_pdu.pretty(depth + 1).splitlines())
         return indent("\n".join(lines), INDENT_STRING * depth)
