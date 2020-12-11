@@ -2,8 +2,7 @@
 The message processing subsystem
 """
 from dataclasses import dataclass
-from ipaddress import IPv4Address, IPv6Address
-from typing import Any, Dict, List, NamedTuple, Tuple, Type, Union, Callable
+from typing import Any, Callable, Dict, List, NamedTuple, Tuple, Type
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
@@ -15,8 +14,7 @@ from puresnmp.security import (
     UserSecurityModel,
     USMSecurityParameters,
 )
-from puresnmp.types import Counter
-from puresnmp.typevars import TAnyIp
+from puresnmp.transport import get_request_id
 
 MESSAGE_MAX_SIZE = 65507  # TODO determine a better value here
 
@@ -27,12 +25,6 @@ class DiscoData:
     authoritative_engine_boots: int
     authoritative_engine_time: int
     unknown_engine_ids: int
-
-
-def get_request_id() -> int:
-    # XXX The number used for msgID should not have been used recently, and
-    # XXX MUST NOT be the same as was used for any outstanding request.
-    return 12345  # XXX don't hardcode this
 
 
 def is_confirmed(pdu: PDU):
@@ -184,7 +176,9 @@ class MessageProcessingModel:
         expect_response,  # TRUE or FALSE
         transport_handler: Callable[[bytes], bytes],
     ) -> bytes:
-        raise NotImplementedError("This needs to be overridden in a subclass")
+        raise NotImplementedError(
+            "prepare_outgoing_message is not yet implemented in %r" % type(self)
+        )
 
     def prepare_data_elements(
         self,
@@ -196,7 +190,9 @@ class MessageProcessingModel:
         preparing the abstract data elements from an incoming SNMP message:
         """
         # XXX TODO should raise "SnmpFailure" on error
-        raise NotImplementedError("This needs to be overridden in a subclass")
+        raise NotImplementedError(
+            "prepare_data_elements is not yet implemented in %r" % type(self)
+        )
 
 
 class SNMPV1_MPM(MessageProcessingModel):
@@ -348,7 +344,9 @@ class MessageProcessingSubsystem:
         """
         Release the memory that holds the referenced state information
         """
-        raise NotImplementedError("Not Yet Implemented")
+        raise NotImplementedError(
+            "state_release is not yet implemented in %r" % type(self)
+        )
 
     def prepare_response_message(
         self,

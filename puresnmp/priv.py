@@ -2,6 +2,8 @@ from dataclasses import replace
 from typing import Dict, Type
 
 import pyDes
+
+# TODO: remove dependency on OctetString
 from x690.types import OctetString
 
 from puresnmp.adt import Message, ScopedPDU

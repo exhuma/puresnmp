@@ -41,6 +41,9 @@ class SecurityModel:
     def __init__(self) -> None:
         self.local_config = {}
 
+    def set_default_auth(self, auth: Dict[bytes, Dict[str, Any]]) -> None:
+        self.default_auth = auth
+
     @staticmethod
     def create(identifier: int) -> "SecurityModel":
         """

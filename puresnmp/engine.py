@@ -60,28 +60,27 @@ application requests that a PDU be sent, and how the response is returned
     |                    |                        |                     |
 """
 import ipaddress
-from typing import Any, Callable, List, Optional, Set, Union
-from uuid import UUID, uuid4
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 
-from x690.types import OctetString, Sequence, pop_tlv
+from x690.types import Null, OctetString, Sequence, pop_tlv
 
+import puresnmp.pdu as pdu
+from puresnmp.adt import V3Flags
 from puresnmp.exc import SnmpError, UnknownMessageProcessingModel
-from puresnmp.messageprocessing import MessageProcessingModel, PreparedData
+from puresnmp.messageprocessing import (
+    MessageProcessingModel,
+    PreparedData,
+)
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
-from puresnmp.transport import Transport
+from puresnmp.transport import Transport, get_request_id
 
 TAnyIp = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 TTransportHandler = Callable[[TAnyIp, int, bytes], bytes]
 
 UDPTransport = Transport()
 udp_handler = UDPTransport.send
-
-
-def generate_message_id() -> int:
-    # TODO The number used for msgID should not have been used recently, and
-    #      MUST NOT be the same as was used for any outstanding request.
-    return 12345  # XXX TODO
 
 
 def generate_engine_id_ip(pen: int, ip: TAnyIp) -> bytes:
@@ -124,6 +123,78 @@ def generate_engine_id_octets(pen: int, octets: bytes) -> bytes:
     buffer.append(5)
     buffer.extend(octets)
     return bytes(buffer)
+
+
+@dataclass
+class Credentials:
+    SECURITY_MODEL_ID = -1
+    community: str = ""
+    username: str = ""
+    auth_key: bytes = b""
+    auth_mode: str = ""
+    encryption_key: bytes = b""
+    encryption_mode: str = ""
+
+    @staticmethod
+    def as_flags() -> V3Flags:
+        raise NotImplementedError("Not yet implemented")
+
+
+class CommunityString(Credentials):
+    SECURITY_MODEL_ID = 2
+
+    def __init__(self, community: str) -> None:
+        self.community = community
+
+    @staticmethod
+    def as_flags() -> V3Flags:
+        return V3Flags(False, False, False)
+
+
+class NoAuthNoPriv(Credentials):
+    SECURITY_MODEL_ID = 3
+
+    def __init__(self, username: str) -> None:
+        self.username = username
+
+    @staticmethod
+    def as_flags() -> V3Flags:
+        return V3Flags(False, False, False)
+
+
+class AuthNoPriv(Credentials):
+    SECURITY_MODEL_ID = 3
+
+    def __init__(self, username: str, auth_key: bytes, auth_mode: str) -> None:
+        self.username = username
+        self.auth_key = auth_key
+        self.auth_mode = auth_mode
+
+    @staticmethod
+    def as_flags() -> V3Flags:
+        return V3Flags(True, False, False)
+
+
+class AuthPriv(Credentials):
+    SECURITY_MODEL_ID = 3
+
+    def __init__(
+        self,
+        username: str,
+        auth_key: bytes,
+        auth_mode: str,
+        encryption_key: bytes,
+        encryption_mode: str,
+    ) -> None:
+        self.username = username
+        self.auth_key = auth_key
+        self.auth_mode = auth_mode
+        self.encryption_key = encryption_key
+        self.encryption_mode = encryption_mode
+
+    @staticmethod
+    def as_flags() -> V3Flags:
+        return V3Flags(True, True, False)
 
 
 class ErrorIndication:
@@ -346,7 +417,7 @@ class Dispatcher:
             transport_handler = udp_handler
 
         mpm = MessageProcessingModel.create(message_processing_model)
-        message_id = generate_message_id()
+        message_id = get_request_id()
 
         # TODO This could benefit from being more specific? Maybe? From the RFC:
         #  > If the contextName is not yet determined, the contextName is
@@ -391,7 +462,7 @@ class Dispatcher:
         return prepared_data.pdu
 
     def register_context_engine_id(
-        self, context_engine_ids: Set[UUID], pdu_types: Set[Any], app: Any
+        self, context_engine_ids: Set[bytes], pdu_types: Set[Any], app: Any
     ) -> None:
         """
         Applications can register/unregister responsibility for a specific
@@ -410,7 +481,7 @@ class Dispatcher:
                 context_apps[ptype] = app
 
     def unregister_context_engine_id(
-        self, context_engine_ids: Set[UUID], pdu_types: Set[Any]
+        self, context_engine_ids: Set[bytes], pdu_types: Set[Any]
     ) -> None:
         """
         Applications can register/unregister responsibility for a specific
@@ -441,14 +512,72 @@ class Engine:
       * an Access Control Subsystem.
     """
 
+    engine_id: bytes
+    context_name: bytes
     dispatcher: Dispatcher
-    # XXX processing: MessageProcessingSubsystem
-    security: SecuritySubsystem
-    acs: AccessControlSubsystem
+    mpm: MessageProcessingModel
+    security: Dict[int, SecurityModel]
 
-    engine_id: UUID
-    known_contexts: Set[str]
+    def __init__(
+        self,
+        engine_id: bytes,
+        context_name: bytes,
+        transport_handler: Callable[..., bytes],
+    ) -> None:
+        self.engine_id = engine_id
+        self.dispatcher = Dispatcher()
+        self.mpm = MessageProcessingModel()
+        self.security = {}
+        self.context_name = context_name
+        self.transport_handler = transport_handler
 
-    def __init__(self) -> None:
-        self.engine_id = uuid4()
-        self.known_contexts = set()
+    def get(
+        self,
+        ip: TAnyIp,
+        port: int,
+        oid: str,
+        version: int,
+        creds: Credentials,
+    ) -> Any:
+
+        protomap = {
+            "md5": "usmHMACMD5AuthProtocol",
+            "sha1": "usmHMACSHAAuthProtocol",
+            "des": "usmDESPrivProtocol",
+        }
+        auth = {
+            creds.username.encode("ascii"): {
+                "auth_proto": protomap[creds.auth_mode],
+                "auth_key": creds.auth_key,
+                "priv_proto": protomap[creds.encryption_mode],
+                "priv_key": creds.encryption_key,
+            }
+        }
+        if creds.SECURITY_MODEL_ID not in self.security:
+            security = SecurityModel.create(creds.SECURITY_MODEL_ID)
+            security.set_default_auth(auth)
+            self.security[creds.SECURITY_MODEL_ID] = security
+        else:
+            security = self.security[creds.SECURITY_MODEL_ID]
+
+        flags = creds.as_flags()
+
+        embedded_pdu = pdu.GetRequest(
+            get_request_id(), pdu.VarBind(oid, Null())
+        )
+        response = self.dispatcher.send_pdu(
+            ip,
+            port,
+            version,
+            security_model=security,
+            security_name=creds.username.encode("ascii"),
+            security_level=flags,
+            context_engine_id=self.engine_id,
+            context_name=self.context_name,
+            pdu_version=None,
+            pdu=embedded_pdu,
+            expect_response=False,
+            transport_handler=self.transport_handler,
+        )
+
+        return response.varbinds[0].value
