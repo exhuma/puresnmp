@@ -1,5 +1,6 @@
 from dataclasses import replace
-from typing import Dict, Type
+from random import randint
+from typing import Dict, Generator, Optional, Type
 
 import pyDes
 
@@ -8,6 +9,15 @@ from x690.types import OctetString
 
 from puresnmp.adt import Message, ScopedPDU
 from puresnmp.exc import SnmpError
+
+
+def reference_saltpot() -> int:
+    salt = randint(1, 0xFFFFFFFF - 1)
+    while True:
+        yield salt
+        salt += 1
+        if salt == 0xFFFFFFFF:
+            salt = 0
 
 
 class Priv:
@@ -48,6 +58,12 @@ class Priv:
 class DES(Priv):
     IDENTIFIER = "usmDESPrivProtocol"
 
+    def __init__(
+        self, saltpot: Optional[Generator[int, None, None]] = None
+    ) -> None:
+        if saltpot is None:
+            self.saltpot = reference_saltpot()
+
     def encrypt_data(self, key: bytes, message: Message) -> Message:
         """
         See https://tools.ietf.org/html/rfc3414#section-1.6
@@ -66,7 +82,7 @@ class DES(Priv):
         des_key = private_privacy_key[:8]
         pre_iv = private_privacy_key[8:]
 
-        local_salt = 42  # XXX TODO remove hardcoded value (see rfc3414-8.1.1.1)
+        local_salt = next(self.saltpot)
         engine_boots = message.security_parameters.authoritative_engine_boots
         salt = (engine_boots & 0xFF).to_bytes(4, "big") + (
             local_salt & 0xFF
@@ -78,9 +94,7 @@ class DES(Priv):
                 message.security_parameters, priv_params=salt
             ),
         )
-        local_salt += 1  # XXX TODO this should be a process-local
-        if local_salt == 0xFFFFFFFF:  # XXX TODO this should be a process-local
-            local_salt = 0  # XXX TODO this should be a process-local
+        local_salt = next(self.saltpot)
 
         des = pyDes.des(
             des_key, mode=pyDes.CBC, IV=init_vector, padmode=pyDes.PAD_PKCS5
