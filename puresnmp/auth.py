@@ -119,6 +119,9 @@ class HashingAuth(Auth):
     def authenticate_incoming_message(
         self, auth_key: bytes, message: Message
     ) -> None:
+        """
+        See https://tools.ietf.org/html/rfc3414#section-1.6
+        """
         if message.security_parameters is None:
             # TODO: Better exception
             raise SnmpError("authenticationFailure")

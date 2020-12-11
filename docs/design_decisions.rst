@@ -1,6 +1,15 @@
 Design Decisions
 ================
 
+Deviations from the RFCs
+------------------------
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   rfc-deviations/*
+
 MIBs & ASN.1
 ------------
 
