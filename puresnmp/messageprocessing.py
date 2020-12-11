@@ -8,7 +8,6 @@ from typing import Any, Dict, List, NamedTuple, Tuple, Type, Union, Callable
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
-from puresnmp.const import TransportDomain
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU, GetRequest
 from puresnmp.security import (
@@ -39,30 +38,6 @@ def get_request_id() -> int:
 def is_confirmed(pdu: PDU):
     # XXX TODO This might be doable cleaner with subclassing in puresnmp.pdu
     return isinstance(pdu, GetRequest)
-
-
-def send_auth_discovery_message(
-    transport_domain: TransportDomain, transport_address: TAnyIp
-) -> DiscoData:
-    # Via https://tools.ietf.org/html/rfc3414#section-4
-    #
-    # If authenticated communication is required, then the discovery
-    # process should also establish time synchronization with the
-    # authoritative SNMP engine. This may be accomplished by sending an
-    # authenticated Request message with the value of
-    # msgAuthoritativeEngineID set to the newly learned snmpEngineID and
-    # with the values of msgAuthoritativeEngineBoots and
-    # msgAuthoritativeEngineTime set to zero. For an authenticated Request
-    # message, a valid userName must be used in the msgUserName field. The
-    # response to this authenticated message will be a Report message
-    # containing the up to date values of the authoritative SNMP engine's
-    # snmpEngineBoots and snmpEngineTime as the value of the
-    # msgAuthoritativeEngineBoots and msgAuthoritativeEngineTime fields
-    # respectively. It also contains the usmStatsNotInTimeWindows counter
-    # in the varBindList of the Report PDU. The time synchronization then
-    # happens automatically as part of the procedures in section 3.2 step
-    # 7b. See also section 2.3.
-    raise NotImplementedError("Not yet implemented")
 
 
 def send_discovery_message(
@@ -313,14 +288,11 @@ class SNMPV3_MPM(MessageProcessingModel):
 
         security = security_model
         disco = None
-        auth_disco = None
         if isinstance(security_model, UserSecurityModel):
             disco = send_discovery_message(transport_handler)
-            if security_level.auth:
-                auth_disco = send_auth_discovery_message(
-                    transport_domain, transport_address
-                )
             security_engine_id = disco.authoritative_engine_id
+        else:
+            security_engine_id = b""
 
         scoped_pdu = ScopedPDU(context_engine_id, context_name, pdu)
         global_data = HeaderData(

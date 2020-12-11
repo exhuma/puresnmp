@@ -60,22 +60,22 @@ application requests that a PDU be sent, and how the response is returned
     |                    |                        |                     |
 """
 import ipaddress
-from puresnmp import transport
-from puresnmp.adt import Message
-from typing import Any, List, Set, Union
+from typing import Any, Callable, List, Optional, Set, Union
 from uuid import UUID, uuid4
 
 from x690.types import OctetString, Sequence, pop_tlv
 
-from puresnmp.const import TransportDomain
 from puresnmp.exc import SnmpError, UnknownMessageProcessingModel
 from puresnmp.messageprocessing import MessageProcessingModel, PreparedData
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
+from puresnmp.transport import Transport
 
 TAnyIp = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
+TTransportHandler = Callable[[TAnyIp, int, bytes], bytes]
 
-
+UDPTransport = Transport()
+udp_handler = UDPTransport.send
 
 
 def generate_message_id() -> int:
@@ -246,8 +246,6 @@ class Dispatcher:
         self,
         data: bytes,
         security_model: SecurityModel,
-        transport_domain: TransportDomain,
-        remote_addr: TAnyIp,
     ) -> PDU:
         """
         Processes an incomning SNMP message.
@@ -288,7 +286,6 @@ class Dispatcher:
 
     def send_pdu(
         self,
-        transport_domain: TransportDomain,
         transport_address: TAnyIp,
         transport_port: int,
         message_processing_model: int,
@@ -300,29 +297,23 @@ class Dispatcher:
         pdu_version: Any,
         pdu: Any,
         expect_response: bool,
+        transport_handler: Optional[TTransportHandler] = None,
     ) -> PDU:
+
+        if transport_handler is None:
+            transport_handler = udp_handler
+
         mpm = MessageProcessingModel.create(message_processing_model)
         message_id = generate_message_id()
-
-        # TODO This could benefit from being more specific? Maybe? From the RFC:
-        #  > If the contextEngineID is not yet determined, then the
-        #  > contextEngineID is determined, in an implementation-dependent
-        #  > manner, possibly using the transportDomain and
-        #  > transportAddress.
-        context_engine_id = (
-            context_engine_id or f"{transport_domain}-{transport_address}"
-        )
 
         # TODO This could benefit from being more specific? Maybe? From the RFC:
         #  > If the contextName is not yet determined, the contextName is
         #  > set to the default context.
         context_name = context_name or b""
 
-        def transport_handler(data: bytes) -> bytes:
-            from puresnmp.transport import Transport
-
-            tr = Transport()
-            return tr.send(str(transport_address), transport_port, data)
+        def inner_transport_handler(data: bytes) -> bytes:
+            output = transport_handler(transport_address, transport_port, data)
+            return output
 
         try:
             out_msg = mpm.prepare_outgoing_message(
@@ -335,80 +326,21 @@ class Dispatcher:
                 pdu_version,  # the version of the PDU
                 pdu,  # SNMP Protocol Data Unit
                 expect_response,  # TRUE or FALSE
-                transport_handler,
+                inner_transport_handler,
             )
         except:
             # TODO implement error-handling as in https://tools.ietf.org/html/rfc3412#section-7.1 subsection 3)
             raise
-        if transport_domain not in {
-            TransportDomain.UDPIPV4,
-            TransportDomain.UDPIPV6,
-        }:
-            raise SnmpError("Unsupported transport domain")
 
-        response = transport_handler(out_msg)
-        response_pdu = self.handle_incoming_message(
-            response, security_model, transport_domain, transport_address
-        )
-
-        return response_pdu
-
-        # XXX Unreachable Code!!
+        response = inner_transport_handler(out_msg)
+        response_pdu = self.handle_incoming_message(response, security_model)
 
         # XXX # TODO Handle errors as defined in
         # XXX #   https://tools.ietf.org/html/rfc3412#section-7.1 subsection 3)
         # XXX #   The "statusInformation" referenced in that section may be coming from
         # XXX #   an exception of "prepare_outgoing_message"
 
-        # XXX # NOTE (RFC citation needed): The Report-PDU, Trapv2-PDU, and
-        # XXX #   Response-PDU messages are considered Unconfirmed and the rest are
-        # XXX #   Confirmed.
-        # XXX if pdu.is_confirmed or pdu.is_notification:
-        # XXX     # TODO The above checks could be done as "isinstance" checks?
-        # XXX     # TODO Setting the engine ids is weird but following the RFC. I may
-        # XXX     #      have misinterpreted this.
-        # XXX     #      See https://tools.ietf.org/html/rfc3412#section-7.1 subsection 9)a)
-
-        # XXX     target_engine_id = f"{dest_domain}-{dest_address}"
-        # XXX     security_engine_id = target_entity_engine_id
-
-        # XXX if pdu.is_confirmed:
-        # XXX     state_reference = StateReference(
-        # XXX         send_pdu_handle,
-        # XXX         message_id,
-        # XXX         snmp_engine_id,
-        # XXX         security_model,
-        # XXX         security_name,
-        # XXX         security_level,
-        # XXX         context_engine_id,
-        # XXX         context_name,
-        # XXX     )
-
-        # XXX return ? <- According to RFC
-
-        # XXX response, remote_domain, remote_ip = send_pdu_handle.send(out_msg)
-        # XXX self.handle_incoming_message(response, security_model, remote_domain, remote_ip)
-        # XXX return send_pdu_handle, dest_domain, dest_address
-
-    def process_pdu(
-        self,
-        message_processing_model,  # typically, SNMP version
-        security_model: SecurityModel,  # Security Model in use
-        security_name,  # on behalf of this principal
-        security_level,  # Level of Security
-        context_engine_id,  # data from/at this SNMP entity
-        context_name,  # data from/in this context
-        pdu_ersion,  # the version of the PDU
-        pdu,  # SNMP Protocol Data Unit
-        max_size_response_scoped_pdu,  # maximum size of the Response PDU
-        state_reference,  # reference to state information needed when sending a response
-    ):
-        """
-        processes an incoming request/notification PDU
-        """
-        raise NotImplementedError(
-            'puresnmp is currently only usable as SNMP "manager"'
-        )
+        return response_pdu
 
     def process_response_pdu(self, prepared_data: PreparedData) -> PDU:
         """

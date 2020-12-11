@@ -33,27 +33,3 @@ ERRORS_WARN = "warn"
 
 #: TCP timeout which is used if not manually overridden
 DEFAULT_TIMEOUT = 6
-
-
-class TransportDomain(int, Enum):
-    """
-    See :rfc:`3419`
-    """
-
-    UNKNOWN = 0
-    UDPIPV4 = 1
-    UDPIPV6 = 2
-    UDPIPV4Z = 3
-    UDPIPV6Z = 4
-    TCPIPV4 = 5
-    TCPIPV6 = 6
-    TCPIPV4Z = 7
-    TCPIPV6Z = 8
-    SCTPIPV4 = 9
-    SCTPIPV6 = 10
-    SCTPIPV4Z = 11
-    SCTPIPV6Z = 12
-    LOCAL = 13
-    UDPDNS = 14
-    TCPDNS = 15
-    SCTPDNS = 16
