@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, Type, cast
+from typing import Any, Dict, Type
+from dataclasses import replace
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
@@ -47,7 +47,7 @@ class SecurityModel:
         Creates a message processing model according to the given identifier.
         """
         if identifier not in SecurityModel.__registry:
-            raise UnknownSecurityModel(identifier)
+            raise InvalidSecurityModel(identifier)
         return SecurityModel.__registry[identifier]()
 
     def generate_request_message(
@@ -94,15 +94,16 @@ class UserSecurityModel(SecurityModel):
         engine_boots = engine_config["authoritative_engine_boots"]
         engine_time = engine_config["authoritative_engine_time"]
 
-        message.security_parameters = (
-            USMSecurityParameters(  # XXX immutability!
+        message = replace(
+            message,
+            security_parameters=USMSecurityParameters(
                 security_engine_id,
                 engine_boots,
                 engine_time,
                 security_name,
                 b"",
                 b"",
-            )
+            ),
         )
 
         if security_level.priv and not all(

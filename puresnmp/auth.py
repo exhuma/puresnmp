@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import itertools
+from dataclasses import replace
 from typing import Any, Callable, Dict, Type
 
 from puresnmp.adt import Message, USMSecurityParameters
@@ -73,9 +74,12 @@ class HashingAuth(Auth):
 
         # As per https://tools.ietf.org/html/rfc3414#section-6.3.1,
         # the auth-key needs to be initialised to 12 zeroes
-        message.security_parameters.auth_params = (
-            b"\x00" * 12
-        )  # XXX immutability
+        message = replace(
+            message,
+            security_parameters=replace(
+                message.security_parameters, auth_params=b"\x00" * 12
+            ),
+        )
 
         auth_key = self.IMPLEMENTATION(
             auth_key, message.security_parameters.authoritative_engine_id

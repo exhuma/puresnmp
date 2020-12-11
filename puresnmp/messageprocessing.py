@@ -21,7 +21,7 @@ from puresnmp.typevars import TAnyIp
 MESSAGE_MAX_SIZE = 65507  # TODO determine a better value here
 
 
-@dataclass
+@dataclass(frozen=True)
 class DiscoData:
     authoritative_engine_id: bytes
     authoritative_engine_boots: int

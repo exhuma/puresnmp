@@ -13,7 +13,7 @@ else:
     INDENT_STRING = " │ "
 
 
-@dataclass
+@dataclass(frozen=True)
 class USMSecurityParameters:
     """
     This class wraps the various values for the USM
@@ -76,7 +76,7 @@ class USMSecurityParameters:
         return indent("\n".join(lines), INDENT_STRING * depth)
 
 
-@dataclass
+@dataclass(frozen=True)
 class V3Flags:
     """
     This class represents the SNMP message flags.
@@ -109,7 +109,7 @@ class V3Flags:
         return bytes([value])
 
 
-@dataclass
+@dataclass(frozen=True)
 class HeaderData:
     message_id: int
     message_max_size: int
@@ -139,7 +139,7 @@ class HeaderData:
         return indent("\n".join(lines), INDENT_STRING * depth)
 
 
-@dataclass
+@dataclass(frozen=True)
 class ScopedPDU:
     context_engine_id: OctetString
     context_name: OctetString
@@ -178,7 +178,7 @@ class ScopedPDU:
         return indent("\n".join(lines), INDENT_STRING * depth)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Message:
     """
     A message represents the complete binary packet sent to/from the network.

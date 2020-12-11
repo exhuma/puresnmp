@@ -1,3 +1,4 @@
+from dataclasses import replace
 from typing import Dict, Type
 
 import pyDes
@@ -69,7 +70,12 @@ class DES(Priv):
             local_salt & 0xFF
         ).to_bytes(4, "big")
         init_vector = bytes(a ^ b for a, b in zip(salt, pre_iv))
-        message.security_parameters.priv_params = salt  # XXX immutability
+        message = replace(
+            message,
+            security_parameters=replace(
+                message.security_parameters, priv_params=salt
+            ),
+        )
         local_salt += 1  # XXX TODO this should be a process-local
         if local_salt == 0xFFFFFFFF:  # XXX TODO this should be a process-local
             local_salt = 0  # XXX TODO this should be a process-local
@@ -78,7 +84,7 @@ class DES(Priv):
             des_key, mode=pyDes.CBC, IV=init_vector, padmode=pyDes.PAD_PKCS5
         )
         encrypted = des.encrypt(bytes(message.scoped_pdu))
-        message.scoped_pdu = OctetString(encrypted)
+        message = replace(message, scoped_pdu=OctetString(encrypted))
         return message
 
     def decrypt_data(self, decrypt_key: bytes, message: Message) -> Message:
@@ -111,7 +117,5 @@ class DES(Priv):
             des_key, mode=pyDes.CBC, IV=init_vector, padmode=pyDes.PAD_PKCS5
         )
         decrypted = des.decrypt(message.scoped_pdu.value)
-        message.scoped_pdu = ScopedPDU.decode(decrypted)  # XXX immutability
-        print("=== decrypted response ===")
-        print(message.pretty())
+        message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
         return message
