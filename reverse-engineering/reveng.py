@@ -89,7 +89,10 @@ def display():
     filename = sys.argv[1]
     blobs = list(readbytes_multiple(filename, HERE))
     for blob in blobs:
-        result, _ = pop_tlv(blob)
+        try:
+            result = Message.decode(blob)
+        except:
+            result, _ = pop_tlv(blob)
         print("=" * 80)
         print(result.pretty())
 
