@@ -1,3 +1,4 @@
+import hashlib
 from dataclasses import replace
 from random import randint
 from typing import Dict, Generator, Optional, Type
@@ -8,6 +9,7 @@ import pyDes
 from x690.types import OctetString
 
 from puresnmp.adt import Message, ScopedPDU
+from puresnmp.auth import password_to_key
 from puresnmp.exc import SnmpError
 
 
@@ -68,7 +70,6 @@ class DES(Priv):
         """
         See https://tools.ietf.org/html/rfc3414#section-1.6
         """
-        from .auth import hashlib, password_to_key  # XXX refactor
 
         if message.security_parameters is None:
             raise SnmpError(
@@ -119,7 +120,6 @@ class DES(Priv):
             raise SnmpError(
                 "Unable to decrypt a message without security parameters!"
             )
-        from .auth import hashlib, password_to_key  # XXX refactor
 
         hasher = password_to_key(hashlib.md5, 16)
         private_privacy_key = hasher(
