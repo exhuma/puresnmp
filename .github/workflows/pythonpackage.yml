@@ -9,7 +9,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
+        python-version: [2.7, 3.5, 3.6, 3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v1
@@ -19,16 +19,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e .[test]
+        python -m pip install poetry
+        poetry install --no-ansi
     - name: Lint with pylint
       run: |
-        pip install pylint
-        pylint --reports=y --exit-zero puresnmp
+        poetry run pip install pylint
+        poetry run pylint --reports=y --exit-zero puresnmp
     - name: Test with pytest
       run: |
-        pip install pytest
-        pytest
+        poetry run pip install pytest
+        poetry run pytest
 
   publish:
 
@@ -43,9 +43,8 @@ jobs:
     - name: Build distribution
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       run: |
-        pip install wheel
-        python setup.py sdist
-        python setup.py bdist_wheel
+        pip install poetry
+        poetry build
     - name: Publish package
       if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@e777b333
