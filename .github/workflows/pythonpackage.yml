@@ -63,8 +63,9 @@ jobs:
           github.event_name == 'push' &&
           startsWith(github.event.ref, 'refs/tags')
       run: |
-        pip install poetry wheel
-        poetry build
+        pip install wheel
+        pip install poetry
+        ~/.local/bin/poetry build
     - name: Publish package
       if: >
           github.event_name == 'push' &&
