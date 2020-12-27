@@ -66,11 +66,12 @@ jobs:
         if: >
           github.event_name == 'push' &&
           startsWith(github.event.ref, 'refs/tags')
-        run: |
-          pip install wheel
-          poetry build
-      - name: Publish package
-        if: >
+      run: |
+        pip install wheel
+        pip install poetry
+        ~/.local/bin/poetry build
+    - name: Publish package
+      if: >
           github.event_name == 'push' &&
           startsWith(github.event.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@e777b333
