@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Release 1.10.2.post1
+~~~~~~~~~~~~~~~~~~~~
+
+This is a "house-keeping" commit. No new features or fixes are introduced.
+
+* **[changed]** Packaging and publishing switched over to poetry
+
 Release 1.10.2
 ~~~~~~~~~~~~~~~~~~~
 
