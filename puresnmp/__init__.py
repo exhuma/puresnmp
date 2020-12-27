@@ -10,8 +10,6 @@ from __future__ import unicode_literals
 
 from collections import namedtuple
 
-import verlib  # type: ignore
-
 # !!! DO NOT REMOVE !!! The following import triggers the processing of SNMP
 # Types and thus populates the Registry. If this is not included, Non x.690
 # SNMP types will not be properly detected!
@@ -32,13 +30,9 @@ from puresnmp.api.pythonic import (
     walk
 )
 
-from .version import VERSION
+try:
+    import importlib.metadata as im
+except ImportError:
+    import importlib_metadata as im
 
-# Simple version information as text
-__version__ = VERSION
-
-
-# The following line makes the version information available, and also serves
-# as a sanity check that the version number is PEP-440 compliant. verlib would
-# raise an exception if it isn't!
-version_info = verlib.NormalizedVersion(__version__)
+__version__ = im.version("puresnmp")

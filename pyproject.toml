@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "puresnmp"
+version = "1.10.2"
+description = "Pure Python SNMP implementation"
+authors = ["Michel Albert <michel@albert.lu>"]
+license = "MIT"
+readme = "README.rst"
+homepage = "https://github.com/exhuma/puresnmp"
+repository = "https://github.com/exhuma/puresnmp"
+documentation = "https://puresnmp.readthedocs.io/en/latest/"
+keywords = ["networking", "snmp"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 2",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Networking :: Monitoring",
+    "Topic :: System :: Systems Administration",
+]
+include = ["README.rst", "LICENSE.txt", "puresnmp/py.typed"]
+
+
+
+[tool.poetry.dependencies]
+python = "^3.5"
+six = "*"
+t61codec = ">= 1.0.1"
+verlib = "*"
+typing = {version="*", python="<3.5"}
+ipaddress = {version="*", python="<3.3"}
+mock = {version="*", python="<3.3"}
+importlib_metadata = {version="*", python="<3.8"}
+
+[tool.poetry.dev-dependencies]
+pytest-xdist = "*"
+pytest = "*"
+pytest-coverage = "*"
+pytest-asyncio = {version="*", python=">=3.6"}
+sphinx = "*"
+sphinx-rtd-theme = "*"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
