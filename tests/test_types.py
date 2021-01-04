@@ -35,7 +35,7 @@ def test_counter_issue_75():
     This test covers this issue.
     """
     data = b"\x41\x04\x84\x43\x20\xf8"
-    result = t.Counter.from_bytes(data)
+    result = t.Counter.decode(data)
     expected = t.Counter(2218991864)
     assert result == expected
 

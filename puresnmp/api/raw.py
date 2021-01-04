@@ -519,7 +519,7 @@ class RawClient:
             str(self.ip), 161, bytes(packet), timeout=timeout
         )
         raw_response = cast(
-            Tuple[Any, Any, GetResponse], Sequence.from_bytes(response)
+            Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
         )
 
         # See RFC=3416 for details of the following calculation

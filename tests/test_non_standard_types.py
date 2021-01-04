@@ -10,7 +10,7 @@ from . import ByteTester
 
 class TestIpAddress(ByteTester):
     def test_decoding(self):
-        result = t.IpAddress.from_bytes(b"\x40\x04\x80\x96\xa1\x09")
+        result = t.IpAddress.decode(b"\x80\x96\xa1\x09")
         expected = t.IpAddress(b"\x80\x96\xa1\x09")
         self.assertEqual(result, expected)
 
@@ -41,7 +41,7 @@ class TestIpAddress(ByteTester):
 
 class TestTimeTicks(ByteTester):
     def test_decoding(self):
-        result = t.TimeTicks.from_bytes(b"\x43\x01\x0a")
+        result = t.TimeTicks.decode(b"\x0a")
         expected = t.TimeTicks(10)
         self.assertEqual(result, expected)
 

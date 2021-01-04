@@ -73,7 +73,7 @@ class TestGet(ByteTester):
             b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
             b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a"
         )
-        result = Sequence.from_bytes(data)
+        result = Sequence.decode(data)[0]
         expected = Sequence(
             Integer(Version.V2C),
             OctetString("public"),
@@ -101,7 +101,7 @@ class TestGet(ByteTester):
             b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a"
         )
         with self.assertRaisesRegex(SnmpError, "too big"):
-            Sequence.from_bytes(data)
+            Sequence.decode(data)[0]
 
     def test_get_repr(self):
         oid = ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0)
@@ -136,7 +136,7 @@ class TestGet(ByteTester):
 
     def test_multiget_response(self):
         data = readbytes("multiget_response.hex")
-        result = Sequence.from_bytes(data)
+        result = Sequence.decode(data)[0]
         expected = Sequence(
             Integer(Version.V2C),
             OctetString("public"),

@@ -24,9 +24,9 @@ def make_identifier_test(octet, expected_class, expected_pc, expected_value):
     return fun
 
 
-def add_class_detector(cls, expected_class, typeclass, tag):
+def add_class_detector(cls, expected_class, typeclass, tag, pc=PRIMITIVE):
     def fun(inst):
-        result = t.Type.get(typeclass, tag)
+        result = t.Type.get(typeclass, tag, pc)
         inst.assertEqual(result, expected_class)
 
     fun.__name__ = "test_%s" % expected_class.__name__
@@ -79,6 +79,7 @@ class TestClassDetector(ByteTester):
 
 
 # "Standard" x690 types
+# TODO: The tests for standard types should move into the x690 package
 add_class_detector(TestClassDetector, t.EOC, UNIVERSAL, 0x00)
 add_class_detector(TestClassDetector, t.Boolean, UNIVERSAL, 0x01)
 add_class_detector(TestClassDetector, t.Integer, UNIVERSAL, 0x02)
@@ -87,14 +88,16 @@ add_class_detector(TestClassDetector, t.OctetString, UNIVERSAL, 0x04)
 add_class_detector(TestClassDetector, t.Null, UNIVERSAL, 0x05)
 add_class_detector(TestClassDetector, t.ObjectIdentifier, UNIVERSAL, 0x06)
 add_class_detector(TestClassDetector, t.ObjectDescriptor, UNIVERSAL, 0x07)
-add_class_detector(TestClassDetector, t.External, UNIVERSAL, 0x08)
+add_class_detector(TestClassDetector, t.External, UNIVERSAL, 0x08, CONSTRUCTED)
 add_class_detector(TestClassDetector, t.Real, UNIVERSAL, 0x09)
 add_class_detector(TestClassDetector, t.Enumerated, UNIVERSAL, 0x0A)
-add_class_detector(TestClassDetector, t.EmbeddedPdv, UNIVERSAL, 0x0B)
+add_class_detector(
+    TestClassDetector, t.EmbeddedPdv, UNIVERSAL, 0x0B, CONSTRUCTED
+)
 add_class_detector(TestClassDetector, t.Utf8String, UNIVERSAL, 0x0C)
 add_class_detector(TestClassDetector, t.RelativeOid, UNIVERSAL, 0x0D)
-add_class_detector(TestClassDetector, t.Sequence, UNIVERSAL, 0x10)
-add_class_detector(TestClassDetector, t.Set, UNIVERSAL, 0x11)
+add_class_detector(TestClassDetector, t.Sequence, UNIVERSAL, 0x10, CONSTRUCTED)
+add_class_detector(TestClassDetector, t.Set, UNIVERSAL, 0x11, CONSTRUCTED)
 add_class_detector(TestClassDetector, t.NumericString, UNIVERSAL, 0x12)
 add_class_detector(TestClassDetector, t.PrintableString, UNIVERSAL, 0x13)
 add_class_detector(TestClassDetector, t.T61String, UNIVERSAL, 0x14)
@@ -106,7 +109,9 @@ add_class_detector(TestClassDetector, t.GraphicString, UNIVERSAL, 0x19)
 add_class_detector(TestClassDetector, t.VisibleString, UNIVERSAL, 0x1A)
 add_class_detector(TestClassDetector, t.GeneralString, UNIVERSAL, 0x1B)
 add_class_detector(TestClassDetector, t.UniversalString, UNIVERSAL, 0x1C)
-add_class_detector(TestClassDetector, t.CharacterString, UNIVERSAL, 0x1D)
+add_class_detector(
+    TestClassDetector, t.CharacterString, UNIVERSAL, 0x1D, CONSTRUCTED
+)
 add_class_detector(TestClassDetector, t.BmpString, UNIVERSAL, 0x1E)
 
 

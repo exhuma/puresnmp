@@ -26,7 +26,13 @@ from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
 
 from .const import MAX_VARBINDS
-from .exc import EmptyMessage, ErrorResponse, NoSuchOID, TooManyVarbinds
+from .exc import (
+    EmptyMessage,
+    ErrorResponse,
+    NoSuchOID,
+    SnmpError,
+    TooManyVarbinds,
+)
 from .snmp import VarBind
 from .typevars import SocketInfo
 
@@ -97,8 +103,8 @@ class PDU(Type[Any]):
         for oid, value in values:
             # NOTE: this uses the "is" check to make 100% sure we check against
             # the sentinel object defined in this module!
-            if value is END_OF_MIB_VIEW:
-                varbinds.append(VarBind(oid, END_OF_MIB_VIEW))
+            if isinstance(value, EndOfMibView):
+                varbinds.append(VarBind(oid, value))
                 break
             varbinds.append(VarBind(oid, value))
 
@@ -183,16 +189,46 @@ class PDU(Type[Any]):
         return default
 
 
-class EndOfMibView(PDU):
+class EndOfMibView(Type[bytes]):
     """
     Sentinel value to detect endOfMibView
     """
 
     # This subclassesPDU for type-consistency
+    TYPECLASS = TypeClass.CONTEXT
+    NATURE = [TypeNature.PRIMITIVE]
+    TAG = 2
+
+    def __init__(self, value: bytes = b"") -> None:
+        super().__init__()
+        self.value = value
+
+    @classmethod
+    def decode(cls, data: bytes) -> "EndOfMibView":
+        if data != b"":
+            raise SnmpError("end-of-mibview should not contain data!")
+        return EndOfMibView(data)
 
 
-#: Singleton instance of "EndOfMibView"
-END_OF_MIB_VIEW = EndOfMibView(-1, [])
+class NoSuchOIDPacket(Type[bytes]):
+    """
+    Sentinel value to detect no-such-oid error
+    """
+
+    # This subclassesPDU for type-consistency
+    TYPECLASS = TypeClass.CONTEXT
+    NATURE = [TypeNature.PRIMITIVE]
+    TAG = 1
+
+    def __init__(self, value: bytes = b"") -> None:
+        super().__init__()
+        self.value = value
+
+    @classmethod
+    def decode(cls, data: bytes) -> "EndOfMibView":
+        if data != b"":
+            raise SnmpError("no-such-oid should not contain data!")
+        return NoSuchOIDPacket(data)
 
 
 class GetRequest(PDU):
@@ -237,13 +273,15 @@ class GetResponse(PDU):
         #      difficult to distinguish between a valid GetResponse object and
         #      an endOfMibView value, except that the endOfMibView had no data.
         if not data:
-            return END_OF_MIB_VIEW
-        try:
-            return super().decode(data)
-        except EmptyMessage as exc:
-            raise NoSuchOID(
-                ObjectIdentifier(0), "Nothing found at the given OID (%s)" % exc
-            ) from exc
+            return EndOfMibView()
+        value = super().decode(data)
+        for varbind in value.varbinds:
+            if isinstance(varbind.value, NoSuchOIDPacket):
+                raise NoSuchOID(
+                    varbind.oid,
+                    "Nothing found at the given OID (%s)" % varbind.oid,
+                )
+        return value
 
 
 class GetNextRequest(GetRequest):
