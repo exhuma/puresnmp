@@ -172,9 +172,7 @@ def multigetnext(
     raw_output = raw.multigetnext(
         ip, community, oids, port, timeout, version=version
     )
-    pythonized = [
-        VarBind(oid, value.pythonize()) for oid, value in raw_output
-    ]
+    pythonized = [VarBind(oid, value.pythonize()) for oid, value in raw_output]
     return pythonized
 
 
