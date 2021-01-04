@@ -9,20 +9,10 @@ PureSNMP object instances.
 """
 
 
-import sys
 import unittest
-from datetime import timedelta
-from logging import WARNING, Handler, getLevelName, getLogger
-from unittest import skipUnless
+from logging import WARNING, getLogger
 
-import six
-from x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    Null,
-)
+from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.api.raw import RawClient, traps
 from puresnmp.const import Version
