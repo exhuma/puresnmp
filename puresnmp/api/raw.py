@@ -647,16 +647,10 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
      {'0': '2', '1': Integer(2), '2': Counter(123)}]
     """
     tmp = []
-    if num_base_nodes:
-        warn(
-            'Usage of "num_base_nodes" in table operations is no longer '
-            "required",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-    else:
+    if num_base_nodes == 0:
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1
+
     varbinds = walk(ip, community, oid, port=port)
     for varbind in varbinds:
         tmp.append(varbind)
@@ -674,16 +668,10 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
     .. versionadded: 1.7.0
     """
     tmp = []
-    if num_base_nodes:
-        warn(
-            'Usage of "num_base_nodes" in table operations is no longer '
-            "required",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-    else:
+    if num_base_nodes == 0:
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1
+
     varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
     for varbind in varbinds:
         tmp.append(varbind)
