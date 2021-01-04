@@ -69,7 +69,7 @@ classifiers=[
 [tool.poetry.dependencies]
 python = "^3.6"
 t61codec = "^1.0.1"
-x690 = "^0.2.0"
+x690 = "~0.2.0"
 dataclasses = {version = "^0.7", python = "<3.7"}
 
 [tool.poetry.dev-dependencies]
