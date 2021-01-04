@@ -85,10 +85,10 @@ class ByteTester(unittest.TestCase):
 
             def char_repr(c):
                 # type: (bytes) -> str
-                if 0x1F < char_a < 0x80:
+                if 0x1F < c < 0x80:
                     # bytearray to prevent accidental pre-mature str conv
                     # str to prevent b'' suffix in repr's output
-                    return repr(str(bytearray([char_a]).decode("ascii")))
+                    return repr(str(bytearray([c]).decode("ascii")))
                 return "."
 
             for offset, (char_a, char_b) in enumerate(zip_longest(a, b)):
@@ -104,6 +104,7 @@ class ByteTester(unittest.TestCase):
                     char_ad = f"{char_a:3d}"
                     char_ah = f"0x{char_a:02x}"
                     char_ar = char_repr(char_a)
+
                 if char_b is None:
                     char_bb = char_bd = char_bh = char_br = "?"
                 else:
