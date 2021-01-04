@@ -851,4 +851,4 @@ class TestTraps(unittest.TestCase):
             for trap in traps():
                 result.append(trap.source)
         expected = [SocketInfo("192.0.2.1", 64001)] * 3
-        self.assertEquals(result, expected)
+        self.assertEqual(result, expected)
