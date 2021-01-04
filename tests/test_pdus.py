@@ -11,6 +11,7 @@ from puresnmp.pdu import (
     GetNextRequest,
     GetRequest,
     GetResponse,
+    Null,
     SetRequest,
     VarBind,
 )
@@ -54,7 +55,7 @@ class TestGet(ByteTester):
 
         request = GetRequest(
             1913359423,
-            ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0),
+            VarBind(ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0), Null()),
         )
         packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
         result = bytes(packet)
@@ -106,7 +107,7 @@ class TestGet(ByteTester):
         oid = ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0)
         request = GetRequest(
             1913359423,
-            oid,
+            VarBind(oid, Null()),
         )
         result = repr(request)
         self.assertTrue(
@@ -120,11 +121,16 @@ class TestGet(ByteTester):
         expected = readbytes("multiget.hex")
         request = GetRequest(
             1913359423,
-            ObjectIdentifier.from_string("1.3.6.1.2.1.1.2.0"),
-            ObjectIdentifier.from_string("1.3.6.1.2.1.1.1.0"),
+            [
+                VarBind(
+                    ObjectIdentifier.from_string("1.3.6.1.2.1.1.2.0"), Null()
+                ),
+                VarBind(
+                    ObjectIdentifier.from_string("1.3.6.1.2.1.1.1.0"), Null()
+                ),
+            ],
         )
         packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
-
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
@@ -164,7 +170,9 @@ class TestWalk(ByteTester):
     def test_request(self):
         expected = readbytes("walk_dot.hex")
 
-        request = GetNextRequest(499509692, ObjectIdentifier(1))
+        request = GetNextRequest(
+            499509692, VarBind(ObjectIdentifier(1), Null())
+        )
         packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
         result = bytes(packet)
         self.assertBytesEqual(result, expected)

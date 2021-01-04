@@ -283,9 +283,11 @@ class RawClient:
                 VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
             ]
         """
-        request = GetNextRequest(get_request_id(), *oids)
         if not isinstance(self.default_credentials, V2C):
             raise SnmpError("Currently only SNMPv2c is supported!")
+
+        varbinds = [VarBind(oid, Null()) for oid in oids]
+        request = GetNextRequest(get_request_id(), varbinds)
         packet = Sequence(
             Integer(1),
             OctetString(self.default_credentials.community),

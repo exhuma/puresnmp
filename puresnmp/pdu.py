@@ -122,6 +122,7 @@ class PDU(Type[Any]):
             self.varbinds = varbinds
 
     def __bytes__(self) -> bytes:
+
         wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]  # type: ignore
         data: List[Type[Any]] = [
             Integer(self.request_id),

@@ -21,6 +21,7 @@ from x690.types import (
     ObjectIdentifier,
     OctetString,
     Sequence,
+    Null,
 )
 
 from puresnmp.api.raw import RawClient, traps
@@ -340,7 +341,7 @@ class TestGetNext(unittest.TestCase):
         packet = Sequence(
             Integer(Version.V2C),
             OctetString("public"),
-            GetNextRequest(0, ObjectIdentifier(1, 2, 3)),
+            GetNextRequest(0, VarBind(ObjectIdentifier(1, 2, 3), Null())),
         )
         with patch("puresnmp.api.raw.Transport") as mck, patch(
             "puresnmp.api.raw.get_request_id"
