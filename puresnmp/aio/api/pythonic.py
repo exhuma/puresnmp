@@ -96,9 +96,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
     raw_output = await raw.multigetnext(ip, community, oids, port, timeout)
-    pythonized = [
-        VarBind(oid, value.pythonize()) for oid, value in raw_output  # type: ignore
-    ]
+    pythonized = [VarBind(oid, value.pythonize()) for oid, value in raw_output]
     return pythonized
 
 

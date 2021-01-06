@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Generator
 from x690.util import visible_octets  # type: ignore
 
 from .exc import Timeout
-from .typevars import SocketInfo, SocketResponse
+from .typevars import SocketInfo, SocketResponse, TAnyIp
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -54,13 +54,14 @@ class Transport:
         will use :py:data:`puresnmp.transport.BUFFER_SIZE` as default.
     """
 
-    def __init__(self, timeout=2, retries=None, buffer_size=None):
-        # type: (int, Optional[int], Optional[int]) -> None
+    def __init__(self, timeout=2, retries=None, buffer_size=None, port=161):
+        # type: (int, Optional[int], Optional[int], int) -> None
         self.timeout = timeout
         self.retries = retries or RETRIES
         self.buffer_size = buffer_size or BUFFER_SIZE
+        self.port = port
 
-    def send(self, ip, port, packet, timeout=2):  # pragma: no cover
+    def send(self, ip, packet, timeout=2):  # pragma: no cover
         # type: ( str, int, bytes, int ) -> bytes
         """
         Opens a TCP connection to *ip:port*, sends a packet with *bytes* and
@@ -82,12 +83,12 @@ class Transport:
                     LOG.debug(
                         "Sending packet to %s:%s (attempt %d/%d)\n%s",
                         ip,
-                        port,
+                        self.port,
                         (num_retry + 1),
                         self.retries,
                         hexdump,
                     )
-                sock.sendto(packet, (ip, port))
+                sock.sendto(packet, (ip, self.port))
                 response = sock.recv(self.buffer_size)
                 break
             except socket.timeout:
@@ -146,3 +147,13 @@ class Transport:
         # just one client it *may* be enough.
 
         return int(time())
+
+
+class NullTransport(Transport):
+    def send(
+        self, ip: TAnyIp, port: int, packet: bytes, timeout: int = 2
+    ) -> bytes:  # pragma: no cover
+        return b""
+
+    def listen(self, bind_address="0.0.0.0", port=162):  # pragma: no cover
+        pass

@@ -24,21 +24,9 @@ from x690.types import (
     to_bytes,
 )
 
-from puresnmp.api.raw import (
-    bulkget,
-    bulktable,
-    bulkwalk,
-    get,
-    getnext,
-    multiget,
-    multiset,
-    multiwalk,
-    set,
-    table,
-    traps,
-    walk,
-)
+from puresnmp.api.raw import RawClient, traps
 from puresnmp.const import Version
+from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from puresnmp.pdu import (
     BulkGetRequest,
@@ -69,7 +57,8 @@ class TestGet(ByteTester):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = get("::1", "private", "1.2.3")
+            client = RawClient("::1", V2C("private"))
+            result = client.get("1.2.3")
         self.assertEqual(result, expected)
 
     def test_get_oid(self):
@@ -78,7 +67,8 @@ class TestGet(ByteTester):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = get("::1", "private", "1.2.3")
+            client = RawClient("::1", V2C("private"))
+            result = client.get("1.2.3")
         self.assertEqual(result, expected)
 
     def test_get_multiple_return_binds(self):
@@ -89,8 +79,9 @@ class TestGet(ByteTester):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
+            client = RawClient("::1", V2C("private"))
             with self.assertRaisesRegex(SnmpError, "varbind"):
-                get("::1", "private", "1.2.3")
+                client.get("1.2.3")
 
     def test_get_non_existing_oid(self):
         """
@@ -101,8 +92,9 @@ class TestGet(ByteTester):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
+            client = RawClient("::1", V2C("private"))
             with self.assertRaises(NoSuchOID):
-                get("::1", "private", "1.2.3")
+                client.get("1.2.3")
 
 
 class TestWalk(unittest.TestCase):
@@ -125,7 +117,8 @@ class TestWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.side_effect = [response_1, response_2, response_3]
             mck().get_request_id.return_value = 0
-            result = list(walk("::1", "public", "1.3.6.1.2.1.2.2.1.5"))
+            client = RawClient("::1", V2C("public"))
+            result = list(client.walk("1.3.6.1.2.1.2.2.1.5"))
         self.assertEqual(result, expected)
 
     def test_walk_multiple_return_binds(self):
@@ -136,8 +129,9 @@ class TestWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
+            client = RawClient("::1", V2C("private"))
             with self.assertRaisesRegex(SnmpError, "varbind"):
-                next(walk("::1", "private", "1.2.3"))
+                next(client.walk("1.2.3"))
 
 
 class TestMultiGet(unittest.TestCase):
@@ -154,9 +148,8 @@ class TestMultiGet(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = multiget(
-                "::1",
-                "private",
+            client = RawClient("::1", V2C("private"))
+            result = client.multiget(
                 [
                     "1.3.6.1.2.1.1.2.0",
                     "1.3.6.1.2.1.1.1.0",
@@ -194,10 +187,9 @@ class TestMultiWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.side_effect = [response_1, response_2, response_3]
             mck().get_request_id.return_value = 0
+            client = RawClient("::1", V2C("public"))
             result = list(
-                multiwalk(
-                    "::1",
-                    "public",
+                client.multiwalk(
                     ["1.3.6.1.2.1.2.2.1.1", "1.3.6.1.2.1.2.2.1.2"],
                 )
             )
@@ -227,11 +219,10 @@ class TestMultiWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.side_effect = [to_bytes(response)]
             mck().get_request_id.return_value = 0
+            client = RawClient("::1", V2C("public"))
             with self.assertRaises(FaultySNMPImplementation):
                 list(
-                    multiwalk(
-                        "::1",
-                        "public",
+                    client.multiwalk(
                         [
                             "1.2.3",
                             "2.3.4",
@@ -254,11 +245,10 @@ class TestMultiWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.side_effect = [to_bytes(response)]
             mck().get_request_id.return_value = 0
+            client = RawClient("::1", V2C("public"))
             with self.assertRaises(FaultySNMPImplementation):
                 list(
-                    multiwalk(
-                        "::1",
-                        "public",
+                    client.multiwalk(
                         [
                             "1.2.3",
                             "2.3.4",
@@ -276,9 +266,8 @@ class TestMultiWalk(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.side_effect = data_generator
             mck().get_request_id.return_value = 0
-            result = multiwalk(
-                "::1",
-                "public",
+            client = RawClient("::1", V2C("public"))
+            result = client.multiwalk(
                 [
                     "1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1",
                 ],
@@ -308,13 +297,12 @@ class TestMultiSet(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = multiset(
-                "::1",
-                "private",
-                [
-                    ("1.3.6.1.2.1.1.4.0", OctetString(b"hello@world.com")),
-                    ("1.3.6.1.2.1.1.5.0", OctetString(b"hello@world.com")),
-                ],
+            client = RawClient("::1", V2C("private"))
+            result = client.multiset(
+                {
+                    "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
+                    "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
+                },
             )
         expected = {
             "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
@@ -334,9 +322,9 @@ class TestGetNext(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            getnext("::1", "public", "1.2.3")
-            mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            client = RawClient("::1", V2C("public"))
+            client.getnext("1.2.3")
+            mck().send.assert_called_with("::1", to_bytes(packet))
 
     def test_getnext(self):
         data = readbytes("getnext_response.hex")
@@ -345,7 +333,8 @@ class TestGetNext(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = getnext("::1", "private", "1.3.6.1.5")
+            client = RawClient("::1", V2C("private"))
+            result = client.getnext("1.3.6.1.5")
         self.assertEqual(result, expected)
 
     def test_getnext_increasing_oid_strict(self):
@@ -365,8 +354,9 @@ class TestGetNext(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = response_bytes
             mck().get_request_id.return_value = 0
+            client = RawClient("::1", V2C("private"))
             with self.assertRaises(FaultySNMPImplementation):
-                getnext("::1", "private", "1.2.3.4")
+                client.getnext("1.2.3.4")
 
     def test_walk_increasing_oid_lenient(self):
         """
@@ -395,7 +385,8 @@ class TestGetNext(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.side_effect = response_bytes
             mck().get_request_id.return_value = 0
-            result = list(walk("::1", "private", "1.2", errors="warn"))
+            client = RawClient("::1", V2C("private"))
+            result = list(client.walk("1.2", errors="warn"))
 
         # The last OID in the mocked responses is decreasing so we want to read
         # just up to that point.
@@ -437,9 +428,10 @@ class TestGetNext(unittest.TestCase):
         logger = getLogger("puresnmp")
         logger.addHandler(handler)
         with patch("puresnmp.api.raw.Transport") as mck:
+            client = RawClient("::1", V2C("private"))
             mck().send.side_effect = response_bytes
             mck().get_request_id.return_value = 0
-            result = list(walk("::1", "private", "1.2", errors="warn"))
+            result = list(client.walk("1.2", errors="warn"))
         logger.removeHandler(handler)
 
         # The last OID in the mocked responses is decreasing so we want to read
@@ -468,9 +460,9 @@ class TestGetBulkGet(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            bulkget("::1", "public", ["1.2.3"], ["1.2.4"], max_list_size=2)
-            mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            client = RawClient("::1", V2C("public"))
+            client.bulkget(["1.2.3"], ["1.2.4"], max_list_size=2)
+            mck().send.assert_called_with("::1", to_bytes(packet))
 
     def test_bulkget(self):
         data = readbytes("bulk_get_response.hex")
@@ -497,9 +489,8 @@ class TestGetBulkGet(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = bulkget(
-                "::1",
-                "public",
+            client = RawClient("::1", V2C("public"))
+            result = client.bulkget(
                 ["1.3.6.1.2.1.1.1"],
                 ["1.3.6.1.2.1.3.1"],
                 max_list_size=5,
@@ -515,7 +506,8 @@ class TestGetBulkGet(unittest.TestCase):
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
-            result = bulkget("::1", "public", [], ["1.2.4"], max_list_size=10)
+            client = RawClient("::1", V2C("public"))
+            result = client.bulkget([], ["1.2.4"], max_list_size=10)
 
         expected_scalars = {}
         self.assertEqual(result.scalars, expected_scalars)
@@ -539,28 +531,24 @@ class TestGetBulkWalk(unittest.TestCase):
             BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3)),
         )
         with patch("puresnmp.api.raw.Transport") as mck:
+            client = RawClient("::1", V2C("public"))
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
 
             # we need to wrap this in a list to consume the generator.
-            list(bulkwalk("::1", "public", ["1.2.3"], bulk_size=2))
-            mck.assert_called_with(timeout=6)
-            mck().send.assert_called_with("::1", 161, to_bytes(packet))
+            list(client.bulkwalk(["1.2.3"], bulk_size=2))
+            mck().send.assert_called_with("::1", bytes(packet))
 
     def test_get_call_args_issue_22(self):
         data = readbytes("dummy.hex")  # any dump would do
-        packet = Sequence(
-            Integer(Version.V2C),
-            OctetString("public"),
-            BulkGetRequest(0, 0, 2, ObjectIdentifier(1, 2, 3)),
-        )
         with patch("puresnmp.api.raw.Transport") as mck:
             mck().send.return_value = data
             mck().get_request_id.return_value = 0
 
+            client = RawClient("::1", "public")
             with self.assertRaisesRegex(TypeError, "OIDS.*list"):
                 # we need to wrap this in a list to consume the generator.
-                list(bulkwalk("::1", "public", "1.2.3", bulk_size=2))
+                list(client.bulkwalk("1.2.3", bulk_size=2))
 
     @patch("puresnmp.api.raw.Transport")
     def test_bulkwalk(self, mck_transport):
@@ -578,17 +566,15 @@ class TestGetBulkWalk(unittest.TestCase):
         request_ids = [1001613222, 1001613223, 1001613224]
         mck_transport().get_request_id.side_effect = request_ids
 
-        result = list(
-            bulkwalk("127.0.0.1", "private", ["1.3.6.1.2.1.2.2"], bulk_size=20)
-        )
+        client = RawClient("127.0.0.1", V2C("private"))
+        result = list(client.bulkwalk(["1.3.6.1.2.1.2.2"], bulk_size=20))
 
-        mck_transport.assert_called_with(timeout=6)
         self.assertEqual(
             mck_transport().send.mock_calls,
             [
-                call("127.0.0.1", 161, req1),
-                call("127.0.0.1", 161, req2),
-                call("127.0.0.1", 161, req3),
+                call("127.0.0.1", req1),
+                call("127.0.0.1", req2),
+                call("127.0.0.1", req3),
             ],
         )
 
@@ -645,7 +631,7 @@ class TestGetBulkWalk(unittest.TestCase):
 
 
 class TestTable(unittest.TestCase):
-    @patch("puresnmp.api.raw.walk")
+    @patch("puresnmp.api.raw.RawClient.walk")
     def test_table(self, mck_walk):
         mck_walk.return_value = [
             VarBind("1.2.1.1.1", OctetString(b"row 1 col 1")),
@@ -653,7 +639,8 @@ class TestTable(unittest.TestCase):
             VarBind("1.2.1.2.1", OctetString(b"row 1 col 2")),
             VarBind("1.2.1.2.2", OctetString(b"row 2 col 2")),
         ]
-        result = table("192.0.2.1", "private", "1.2")
+        client = RawClient("192.0.2.1", V2C("private"))
+        result = client.table("1.2")
         expected = [
             {
                 "0": "1",
@@ -668,7 +655,7 @@ class TestTable(unittest.TestCase):
         ]
         self.assertEqual(sorted(result, key=lambda x: x["0"]), expected)
 
-    @patch("puresnmp.api.raw.walk")
+    @patch("puresnmp.api.raw.RawClient.walk")
     def test_table_complex_row_id(self, mck_walk):
         mck_walk.return_value = [
             VarBind("1.2.1.1.1.1", OctetString(b"row 1.1.1 col 1")),
@@ -676,7 +663,8 @@ class TestTable(unittest.TestCase):
             VarBind("1.2.2.1.1.1", OctetString(b"row 1.1.1 col 2")),
             VarBind("1.2.2.2.1.1", OctetString(b"row 2.1.1 col 2")),
         ]
-        result = table("192.0.2.1", "private", "1.2", num_base_nodes=2)
+        client = RawClient("192.0.2.1", V2C("private"))
+        result = client.table("1.2", num_base_nodes=2)
         expected = [
             {
                 "0": "1.1.1",
@@ -691,7 +679,7 @@ class TestTable(unittest.TestCase):
         ]
         self.assertEqual(sorted(result, key=lambda x: x["0"]), expected)
 
-    @patch("puresnmp.api.raw.walk")
+    @patch("puresnmp.api.raw.RawClient.walk")
     def test_table_base_oid(self, mck_walk):
         """
         The "table" function should be capable of detecting the
@@ -703,7 +691,8 @@ class TestTable(unittest.TestCase):
             VarBind("1.2.1.2.1.1.1", OctetString(b"row 1.1.1 col 2")),
             VarBind("1.2.1.2.2.1.1", OctetString(b"row 2.1.1 col 2")),
         ]
-        result = table("192.0.2.1", "private", "1.2")
+        client = RawClient("192.0.2.1", V2C("private"))
+        result = client.table("1.2")
         expected = [
             {
                 "0": "1.1.1",
@@ -728,7 +717,9 @@ class TestBulkTable(unittest.TestCase):
         request_ids = [1, 2, 3, 4, 5]
         mck_transport().get_request_id.side_effect = request_ids
 
-        result = list(bulktable("127.0.0.1", "private", "1.3.6.1.2.1.2.2"))
+        client = RawClient("192.0.2.1", V2C("private"))
+
+        result = list(client.bulktable("1.3.6.1.2.1.2.2"))
 
         expected = [
             {

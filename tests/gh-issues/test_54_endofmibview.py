@@ -2,18 +2,18 @@ from unittest.mock import patch
 
 from x690.types import Integer, OctetString
 
-from puresnmp.api.raw import bulkget
+from puresnmp.api.raw import RawClient
+from puresnmp.credentials import V2C
 from tests import readbytes
 
 
 def test_54_endofmibview():
     data = readbytes("gh-issues/54-endofmibview.hex")
     with patch("puresnmp.api.raw.Transport") as ptch:
+        client = RawClient("192.0.2.1", V2C("private"))
         ptch().send.return_value = data
         ptch().get_request_id.return_value = 123
-        result = bulkget(
-            "192.0.2.1", "private", [], ["1.2.3"], max_list_size=10
-        )
+        result = client.bulkget([], ["1.2.3"], max_list_size=10)
     assert result.scalars == {}
 
     expected_lists = {
