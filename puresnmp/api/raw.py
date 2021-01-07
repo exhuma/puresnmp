@@ -38,7 +38,7 @@ from ..pdu import (
     Trap,
 )
 from ..snmp import VarBind
-from ..transport import Transport
+from ..transport import Transport, get_request_id
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
@@ -211,7 +211,7 @@ class RawClient:
                 VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
             ]
         """
-        request = GetNextRequest(self.transport.get_request_id(), *oids)
+        request = GetNextRequest(get_request_id(), *oids)
         if not isinstance(self.default_credentials, V2C):
             raise SnmpError("Currently only SNMPv2c is supported!")
         packet = Sequence(
@@ -314,7 +314,7 @@ class RawClient:
         packet = Sequence(
             Integer(1),
             OctetString(self.default_credentials.community),
-            GetRequest(self.transport.get_request_id(), *parsed_oids),
+            GetRequest(get_request_id(), *parsed_oids),
         )
 
         response = self.transport.send(str(self.ip), bytes(packet))
@@ -392,7 +392,7 @@ class RawClient:
 
         binds = [VarBind(OID(k), v) for k, v in mappings.items()]
 
-        request = SetRequest(self.transport.get_request_id(), binds)
+        request = SetRequest(get_request_id(), binds)
         packet = Sequence(
             Integer(1), OctetString(self.default_credentials.community), request
         )
@@ -496,10 +496,7 @@ class RawClient:
             Integer(1),
             OctetString(self.default_credentials.community),
             BulkGetRequest(
-                self.transport.get_request_id(),
-                non_repeaters,
-                max_list_size,
-                *oids
+                get_request_id(), non_repeaters, max_list_size, *oids
             ),
         )
 

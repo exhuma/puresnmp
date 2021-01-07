@@ -38,7 +38,7 @@ from ...snmp import VarBind
 from ...typevars import PyType, TWrappedPyType
 from ...util import BulkResult  # NOQA (must be here for type detection)
 from ...util import get_unfinished_walk_oids, group_varbinds, tablify
-from ..transport import Transport
+from ..transport import Transport, get_request_id
 
 if TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=unused-import, invalid-name, ungrouped-imports
@@ -91,7 +91,7 @@ async def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
     packet = Sequence(
         Integer(Version.V2C),
         OctetString(community),
-        GetRequest(transport.get_request_id(), *parsed_oids),
+        GetRequest(get_request_id(), *parsed_oids),
     )
 
     response = await transport.send(ip, port, to_bytes(packet))
@@ -139,7 +139,7 @@ async def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT):
         ]
     """
     transport = Transport(timeout=timeout)
-    request = GetNextRequest(transport.get_request_id(), *oids)
+    request = GetNextRequest(get_request_id(), *oids)
     packet = Sequence(Integer(Version.V2C), OctetString(community), request)
     response = await transport.send(ip, port, to_bytes(packet))
     raw_response = cast(
@@ -343,7 +343,7 @@ async def multiset(
 
     binds = [VarBind(OID(k), v) for k, v in mappings]
 
-    request = SetRequest(transport.get_request_id(), binds)
+    request = SetRequest(get_request_id(), binds)
     packet = Sequence(Integer(Version.V2C), OctetString(community), request)
     response = await transport.send(ip, port, to_bytes(packet))
     raw_response = cast(
@@ -446,9 +446,7 @@ async def bulkget(
     packet = Sequence(
         Integer(Version.V2C),
         OctetString(community),
-        BulkGetRequest(
-            transport.get_request_id(), non_repeaters, max_list_size, *oids
-        ),
+        BulkGetRequest(get_request_id(), non_repeaters, max_list_size, *oids),
     )
 
     response = await transport.send(ip, port, to_bytes(packet))

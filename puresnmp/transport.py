@@ -36,6 +36,18 @@ RETRIES = 3
 BUFFER_SIZE = 4096  # 4 KiB
 
 
+def get_request_id() -> int:  # pragma: no cover
+    """
+    Generates a SNMP request ID. This value should be unique for each
+    request.
+    """
+    # TODO check if this is good enough. My gut tells me "no"! Depends if
+    # it has to be unique across all clients, or just one client. If it's
+    # just one client it *may* be enough.
+
+    return int(time())
+
+
 class Transport:
     """
     A simple UDP transport.
@@ -134,19 +146,6 @@ class Transport:
                     LOG.debug("Received packet:\n%s", hexdump)
 
                 yield SocketResponse(request, SocketInfo(addr[0], addr[1]))
-
-    def get_request_id(self):  # pragma: no cover
-        # type: () -> int
-        # pylint: disable=no-self-use
-        """
-        Generates a SNMP request ID. This value should be unique for each
-        request.
-        """
-        # TODO check if this is good enough. My gut tells me "no"! Depends if
-        # it has to be unique across all clients, or just one client. If it's
-        # just one client it *may* be enough.
-
-        return int(time())
 
 
 class NullTransport(Transport):
