@@ -10,6 +10,6 @@ implementations as possible.
 # SNMP types will not be properly detected!
 import puresnmp.types
 from puresnmp.api.raw import RawClient
-from puresnmp.transport import Transport
+from puresnmp.credentials import V1, V2C, V3
 
-__all__ = ["RawClient", "Transport"]
+__all__ = ["RawClient", "Transport", "V1", "V2C", "V3"]

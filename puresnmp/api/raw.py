@@ -38,7 +38,7 @@ from ..pdu import (
     Trap,
 )
 from ..snmp import VarBind
-from ..transport import Transport, get_request_id
+from ..transport import TSender, get_request_id, send
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
@@ -59,11 +59,11 @@ class RawClient:
         self,
         ip: str,
         credentials: Credentials,
-        transport: Optional[Transport] = None,
+        sender: Optional[TSender] = send,
     ) -> None:
         self.ip = ip_address(ip)
         self.default_credentials = credentials
-        self.transport = transport or Transport()
+        self.sender = sender
 
     def walk(
         self,
@@ -219,7 +219,7 @@ class RawClient:
             OctetString(self.default_credentials.community),
             request,
         )
-        response = self.transport.send(str(self.ip), bytes(packet))
+        response = self.sender(str(self.ip), 161, bytes(packet))
         seq = Sequence.decode(response)
         raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
         response_object = raw_response[2]
@@ -279,7 +279,7 @@ class RawClient:
         as_table = tablify(tmp, num_base_nodes=num_base_nodes)
         return as_table
 
-    def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
+    async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
         """
         Executes a simple SNMP GET request and returns a pure Python data
         structure.
@@ -289,10 +289,10 @@ class RawClient:
             >>> get('192.168.1.1', 'private', '1.2.3.4')
             'non-functional example'
         """
-        result = self.multiget([oid], timeout=timeout)
+        result = await self.multiget([oid], timeout=timeout)
         return result[0]
 
-    def multiget(
+    async def multiget(
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
     ) -> List[Type]:
         """
@@ -317,7 +317,7 @@ class RawClient:
             GetRequest(get_request_id(), *parsed_oids),
         )
 
-        response = self.transport.send(str(self.ip), bytes(packet))
+        response = await self.sender(str(self.ip), 161, bytes(packet))
         raw_response = cast(
             Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
         )
@@ -396,7 +396,7 @@ class RawClient:
         packet = Sequence(
             Integer(1), OctetString(self.default_credentials.community), request
         )
-        response = self.transport.send(str(self.ip), bytes(packet))
+        response = self.sender(str(self.ip), 161, bytes(packet))
         seq = Sequence.decode(response)
         raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
         output = {str(oid): value for oid, value in raw_response[2].varbinds}
@@ -500,7 +500,7 @@ class RawClient:
             ),
         )
 
-        response = self.transport.send(str(self.ip), bytes(packet))
+        response = self.sender(str(self.ip), 161, bytes(packet))
         raw_response = cast(
             Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
         )
