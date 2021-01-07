@@ -81,6 +81,71 @@ class RawClient:
         self.default_credentials = credentials
         self.sender = sender
 
+    async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
+        """
+        Executes a simple SNMP GET request and returns a pure Python data
+        structure.
+
+        Example::
+
+            >>> get('192.168.1.1', 'private', '1.2.3.4')
+            'non-functional example'
+        """
+        result = await self.multiget([oid], timeout=timeout)
+        return result[0]
+
+    async def multiget(
+        self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
+    ) -> List[Type]:
+        """
+        Executes an SNMP GET request with multiple OIDs and returns a list of pure
+        Python objects. The order of the output items is the same order as the OIDs
+        given as arguments.
+
+        Example::
+
+            >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
+            ['non-functional example', 'second value']
+        """
+
+        if not isinstance(self.default_credentials, V2C):
+            raise SnmpError("Currently only SNMPv2c is supported!")
+
+        parsed_oids = [OID(oid) for oid in oids]
+
+        packet = Sequence(
+            Integer(1),
+            OctetString(self.default_credentials.community),
+            GetRequest(get_request_id(), *parsed_oids),
+        )
+
+        response = await self.sender(
+            str(self.ip), 161, bytes(packet), timeout=timeout
+        )
+        raw_response = cast(
+            Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
+        )
+
+        output = [value for _, value in raw_response[2].varbinds]
+        if len(output) != len(oids):
+            raise SnmpError(
+                "Unexpected response. Expected %d varbind, "
+                "but got %d!" % (len(oids), len(output))
+            )
+        return output
+
+    def getnext(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> VarBind:
+        """
+        Executes a single SNMP GETNEXT request (used inside *walk*).
+
+        Example::
+
+            >>> getnext('192.168.1.1', 'private', '1.2.3')
+            VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
+        """
+        result = self.multigetnext([oid], timeout=timeout)
+        return result[0]
+
     async def walk(
         self,
         oid: str,
@@ -292,71 +357,6 @@ class RawClient:
             tmp.append(varbind)
         as_table = tablify(tmp, num_base_nodes=num_base_nodes)
         return as_table
-
-    async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
-        """
-        Executes a simple SNMP GET request and returns a pure Python data
-        structure.
-
-        Example::
-
-            >>> get('192.168.1.1', 'private', '1.2.3.4')
-            'non-functional example'
-        """
-        result = await self.multiget([oid], timeout=timeout)
-        return result[0]
-
-    async def multiget(
-        self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
-    ) -> List[Type]:
-        """
-        Executes an SNMP GET request with multiple OIDs and returns a list of pure
-        Python objects. The order of the output items is the same order as the OIDs
-        given as arguments.
-
-        Example::
-
-            >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
-            ['non-functional example', 'second value']
-        """
-
-        if not isinstance(self.default_credentials, V2C):
-            raise SnmpError("Currently only SNMPv2c is supported!")
-
-        parsed_oids = [OID(oid) for oid in oids]
-
-        packet = Sequence(
-            Integer(1),
-            OctetString(self.default_credentials.community),
-            GetRequest(get_request_id(), *parsed_oids),
-        )
-
-        response = await self.sender(
-            str(self.ip), 161, bytes(packet), timeout=timeout
-        )
-        raw_response = cast(
-            Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
-        )
-
-        output = [value for _, value in raw_response[2].varbinds]
-        if len(output) != len(oids):
-            raise SnmpError(
-                "Unexpected response. Expected %d varbind, "
-                "but got %d!" % (len(oids), len(output))
-            )
-        return output
-
-    def getnext(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> VarBind:
-        """
-        Executes a single SNMP GETNEXT request (used inside *walk*).
-
-        Example::
-
-            >>> getnext('192.168.1.1', 'private', '1.2.3')
-            VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
-        """
-        result = self.multigetnext([oid], timeout=timeout)
-        return result[0]
 
     def set(
         self,
