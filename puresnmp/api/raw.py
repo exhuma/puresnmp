@@ -134,7 +134,9 @@ class RawClient:
             )
         return output
 
-    def getnext(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> VarBind:
+    async def getnext(
+        self, oid: str, timeout: int = DEFAULT_TIMEOUT
+    ) -> VarBind:
         """
         Executes a single SNMP GETNEXT request (used inside *walk*).
 
@@ -143,7 +145,7 @@ class RawClient:
             >>> getnext('192.168.1.1', 'private', '1.2.3')
             VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
         """
-        result = self.multigetnext([oid], timeout=timeout)
+        result = await self.multigetnext([oid], timeout=timeout)
         return result[0]
 
     async def walk(
@@ -325,7 +327,7 @@ class RawClient:
                 )
         return output
 
-    def table(
+    async def table(
         self, oid: str, num_base_nodes: int = 0, timeout: int = DEFAULT_TIMEOUT
     ) -> List[Dict[str, Any]]:
         """
@@ -353,12 +355,12 @@ class RawClient:
             num_base_nodes = len(parsed_oid) + 1
 
         varbinds = self.walk(oid, timeout=timeout)
-        for varbind in varbinds:
+        async for varbind in varbinds:
             tmp.append(varbind)
         as_table = tablify(tmp, num_base_nodes=num_base_nodes)
         return as_table
 
-    def set(
+    async def set(
         self,
         oid: str,
         value: T,
@@ -376,7 +378,7 @@ class RawClient:
             b'I am contact'
         """
 
-        result = self.multiset({oid: value}, timeout=timeout)
+        result = await self.multiset({oid: value}, timeout=timeout)
         return result[oid.lstrip(".")]
 
     async def multiset(
@@ -556,19 +558,19 @@ class RawClient:
 
         return BulkResult(scalar_out, repeating_out)
 
-    def _bulkwalk_fetcher(self, bulk_size: int = 10) -> TFetcher:
+    async def _bulkwalk_fetcher(self, bulk_size: int = 10) -> TFetcher:
         """
         Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
         """
 
-        def fetcher(
+        async def fetcher(
             oids: List[str],
             timeout: int = DEFAULT_TIMEOUT,
         ) -> List[VarBind]:
             """
             Executes a SNMP BulkGet request.
             """
-            result = self.bulkget(
+            result = await self.bulkget(
                 [], oids, max_list_size=bulk_size, timeout=timeout
             )
             return [VarBind(OID(k), v) for k, v in result.listing.items()]
@@ -576,7 +578,7 @@ class RawClient:
         fetcher.__name__ = "_bulkwalk_fetcher(%d)" % bulk_size
         return fetcher
 
-    def bulkwalk(
+    async def bulkwalk(
         self,
         oids: List[str],
         bulk_size: int = 10,
@@ -626,10 +628,10 @@ class RawClient:
             fetcher=self._bulkwalk_fetcher(bulk_size),
             timeout=timeout,
         )
-        for oid, value in result:
+        async for oid, value in result:
             yield VarBind(oid, value)
 
-    def bulktable(
+    async def bulktable(
         self, oid: str, num_base_nodes: int = 0, bulk_size: int = 10
     ) -> List[Dict[str, Any]]:
         """
@@ -645,7 +647,7 @@ class RawClient:
             num_base_nodes = len(parsed_oid) + 1
 
         varbinds = self.bulkwalk([oid], bulk_size=bulk_size)
-        for varbind in varbinds:
+        async for varbind in varbinds:
             tmp.append(varbind)
         as_table = tablify(tmp, num_base_nodes=num_base_nodes)
         return as_table
