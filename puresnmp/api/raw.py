@@ -51,7 +51,7 @@ _set = set
 
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
-TFetcher = Callable[[str, str, List[str], int, int, int], List[VarBind]]
+TFetcher = Callable[[List[str], int], List[VarBind]]
 
 
 class RawClient:
@@ -104,12 +104,11 @@ class RawClient:
 
     def multiwalk(
         self,
-        oids,
-        timeout=DEFAULT_TIMEOUT,
-        fetcher=None,
-        errors=ERRORS_STRICT,
+        oids: List[str],
+        timeout: int = DEFAULT_TIMEOUT,
+        fetcher: TFetcher = None,
+        errors: str = ERRORS_STRICT,
     ):
-        # type: (str, str, List[str], int, int, TFetcher, str, int) -> TWalkResponse
         """
         Executes a sequence of SNMP GETNEXT requests and returns a generator over
         :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -123,7 +122,9 @@ class RawClient:
             ...     '1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
             <generator object multiwalk at 0x7fa2f775cf68>
         """
-        fetcher = fetcher or self.multigetnext
+        if fetcher is None:
+            fetcher = self.multigetnext
+
         LOG.debug("Walking on %d OIDs using %s", len(oids), fetcher.__name__)
 
         varbinds = fetcher(oids, timeout)
@@ -245,8 +246,9 @@ class RawClient:
                 )
         return output
 
-    def table(self, oid, num_base_nodes=0, timeout=DEFAULT_TIMEOUT):
-        # type: (str, str, str, int, int) -> List[Dict[str, Any]]
+    def table(
+        self, oid: str, num_base_nodes: int = 0, timeout: int = DEFAULT_TIMEOUT
+    ) -> List[Dict[str, Any]]:
         """
         Fetch an SNMP table
 

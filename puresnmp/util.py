@@ -115,8 +115,9 @@ def get_unfinished_walk_oids(grouped_oids):
     return output
 
 
-def tablify(varbinds, num_base_nodes=0, base_oid=""):
-    # type: ( Iterable[Tuple[Any, Any]], int, str ) -> List[Dict[str, Any]]
+def tablify(
+    varbinds: Iterable[VarBind], num_base_nodes: int = 0, base_oid: str = ""
+) -> List[Dict[str, Any]]:
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
