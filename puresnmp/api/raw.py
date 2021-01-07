@@ -13,10 +13,20 @@ such a case it's recommended to use :py:mod:`puresnmp.api.raw`.
 import logging
 from collections import OrderedDict
 from ipaddress import ip_address
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+)
 from typing import Type as TType
 from typing import TypeVar, cast
 
+from typing_extensions import Protocol
 from x690.types import (  # type: ignore
     Integer,
     ObjectIdentifier,
@@ -42,7 +52,7 @@ from ..transport import TSender, get_request_id, send
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
-TWalkResponse = Generator[VarBind, None, None]
+TWalkResponse = AsyncGenerator[VarBind, None]
 T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name
 PyType = Any  # TODO
 
@@ -51,7 +61,13 @@ _set = set
 
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
-TFetcher = Callable[[List[str], int], List[VarBind]]
+
+
+class TFetcher(Protocol):
+    async def __call__(
+        self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
+    ) -> List[VarBind]:
+        ...
 
 
 class RawClient:
@@ -59,13 +75,13 @@ class RawClient:
         self,
         ip: str,
         credentials: Credentials,
-        sender: Optional[TSender] = send,
+        sender: TSender = send,
     ) -> None:
         self.ip = ip_address(ip)
         self.default_credentials = credentials
         self.sender = sender
 
-    def walk(
+    async def walk(
         self,
         oid: str,
         timeout: int = DEFAULT_TIMEOUT,
@@ -95,18 +111,14 @@ class RawClient:
             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
         """
 
-        gen = self.multiwalk(
-            [oid],
-            timeout=timeout,
-            errors=errors,
-        )
-        return gen
+        async for row in self.multiwalk([oid], timeout=timeout, errors=errors):
+            yield row
 
-    def multiwalk(
+    async def multiwalk(
         self,
         oids: List[str],
         timeout: int = DEFAULT_TIMEOUT,
-        fetcher: TFetcher = None,
+        fetcher: Optional[TFetcher] = None,
         errors: str = ERRORS_STRICT,
     ):
         """
@@ -127,7 +139,7 @@ class RawClient:
 
         LOG.debug("Walking on %d OIDs using %s", len(oids), fetcher.__name__)
 
-        varbinds = fetcher(oids, timeout)
+        varbinds = await fetcher(oids, timeout)
         requested_oids = [OID(oid) for oid in oids]
         grouped_oids = group_varbinds(varbinds, requested_oids)
         unfinished_oids = get_unfinished_walk_oids(grouped_oids)
@@ -159,7 +171,7 @@ class RawClient:
             next_fetches = [_[1].value.oid for _ in unfinished_oids]
             next_fetches_str = [str(_) for _ in next_fetches]
             try:
-                varbinds = fetcher(next_fetches_str, timeout)
+                varbinds = await fetcher(next_fetches_str, timeout)
             except NoSuchOID:
                 # Reached end of OID tree, finish iteration
                 break
@@ -194,7 +206,7 @@ class RawClient:
                     yielded.add(varbind.oid)
                     yield varbind
 
-    def multigetnext(
+    async def multigetnext(
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
     ) -> List[VarBind]:
         """
@@ -219,7 +231,9 @@ class RawClient:
             OctetString(self.default_credentials.community),
             request,
         )
-        response = self.sender(str(self.ip), 161, bytes(packet))
+        response = await self.sender(
+            str(self.ip), 161, bytes(packet), timeout=timeout
+        )
         seq = Sequence.decode(response)
         raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
         response_object = raw_response[2]
@@ -317,7 +331,9 @@ class RawClient:
             GetRequest(get_request_id(), *parsed_oids),
         )
 
-        response = await self.sender(str(self.ip), 161, bytes(packet))
+        response = await self.sender(
+            str(self.ip), 161, bytes(packet), timeout=timeout
+        )
         raw_response = cast(
             Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
         )
@@ -363,7 +379,7 @@ class RawClient:
         result = self.multiset({oid: value}, timeout=timeout)
         return result[oid.lstrip(".")]
 
-    def multiset(
+    async def multiset(
         self,
         mappings: Dict[str, T],
         timeout: int = DEFAULT_TIMEOUT,
@@ -396,7 +412,9 @@ class RawClient:
         packet = Sequence(
             Integer(1), OctetString(self.default_credentials.community), request
         )
-        response = self.sender(str(self.ip), 161, bytes(packet))
+        response = await self.sender(
+            str(self.ip), 161, bytes(packet), timeout=timeout
+        )
         seq = Sequence.decode(response)
         raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
         output = {str(oid): value for oid, value in raw_response[2].varbinds}
@@ -408,7 +426,7 @@ class RawClient:
             )
         return output  # type: ignore
 
-    def bulkget(
+    async def bulkget(
         self,
         scalar_oids: List[str],
         repeating_oids: List[str],
@@ -500,7 +518,9 @@ class RawClient:
             ),
         )
 
-        response = self.sender(str(self.ip), 161, bytes(packet))
+        response = await self.sender(
+            str(self.ip), 161, bytes(packet), timeout=timeout
+        )
         raw_response = cast(
             Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
         )

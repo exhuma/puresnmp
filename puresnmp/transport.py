@@ -16,6 +16,7 @@ import logging
 from asyncio.events import AbstractEventLoop
 from time import time
 from typing import Any, Callable, Coroutine, Generator, Optional, Tuple, Union
+from typing_extensions import Protocol
 
 from x690.util import visible_octets  # type: ignore
 
@@ -24,10 +25,17 @@ from .typevars import SocketResponse
 
 LOG = logging.getLogger(__name__)
 
-TSender = Callable[
-    [str, int, bytes, int, Optional[AbstractEventLoop]],
-    Coroutine[Any, Any, bytes],
-]
+
+class TSender(Protocol):
+    async def __call__(
+        self,
+        ip: str,
+        port: int,
+        packet: bytes,
+        timeout: int = 6,
+        loop: Optional[AbstractEventLoop] = None,
+    ) -> bytes:
+        ...
 
 
 def get_request_id() -> int:  # pragma: no cover
