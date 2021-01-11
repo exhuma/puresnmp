@@ -71,7 +71,7 @@ class RawClient:
         sender: TSender = send,
     ) -> None:
         self.ip = ip_address(ip)
-        self.default_credentials = credentials
+        self.credentials = credentials
         self.sender = sender
 
     async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
@@ -101,14 +101,14 @@ class RawClient:
             ['non-functional example', 'second value']
         """
 
-        if not isinstance(self.default_credentials, V2C):
+        if not isinstance(self.credentials, V2C):
             raise SnmpError("Currently only SNMPv2c is supported!")
 
         parsed_oids = [OID(oid) for oid in oids]
 
         packet = Sequence(
             Integer(1),
-            OctetString(self.default_credentials.community),
+            OctetString(self.credentials.community),
             GetRequest(get_request_id(), parsed_oids),
         )
 
@@ -290,7 +290,7 @@ class RawClient:
         request = GetNextRequest(get_request_id(), varbinds)
         packet = Sequence(
             Integer(1),
-            OctetString(self.default_credentials.community),
+            OctetString(self.credentials.community),
             request,
         )
         response = await self.sender(
@@ -395,7 +395,7 @@ class RawClient:
             {'1.2.3': b'foo', '2.3.4': b'bar'}
         """
 
-        if not isinstance(self.default_credentials, V2C):
+        if not isinstance(self.credentials, V2C):
             raise SnmpError("Currently only SNMPv2c is supported!")
 
         if any([not isinstance(v, Type) for v in mappings.values()]):
@@ -408,7 +408,7 @@ class RawClient:
 
         request = SetRequest(get_request_id(), binds)
         packet = Sequence(
-            Integer(1), OctetString(self.default_credentials.community), request
+            Integer(1), OctetString(self.credentials.community), request
         )
         response = await self.sender(
             str(self.ip), 161, bytes(packet), timeout=timeout
@@ -495,7 +495,7 @@ class RawClient:
                     ('1.3.6.1.2.1.5.10.0', b'\x00')]))
         """
 
-        if not isinstance(self.default_credentials, V2C):
+        if not isinstance(self.credentials, V2C):
             raise SnmpError("Currently only SNMPv2c is supported!")
 
         scalar_oids = scalar_oids or []  # protect against empty values
