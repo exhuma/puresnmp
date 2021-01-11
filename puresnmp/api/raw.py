@@ -665,4 +665,4 @@ def traps(
     for sockinfo in transport.listen(listen_address, port):
         obj = cast(Tuple[Any, Any, Trap], Sequence.decode(sockinfo.data)[0])
         obj[2].source = sockinfo.info
-            yield obj[2]
+        yield obj[2]
