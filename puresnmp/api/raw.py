@@ -27,12 +27,23 @@ from typing import Type as TType
 from typing import TypeVar, cast
 
 from typing_extensions import Protocol
-from x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
+from x690.types import (
+    Integer,
+    Null,
+    ObjectIdentifier,
+    OctetString,
+    Sequence,
+    Type,
+)
+
+from puresnmp.engine import generate_engine_id_text
+from puresnmp.messageprocessing import MessageProcessingModel
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
+    PDU,
     BulkGetRequest,
     EndOfMibView,
     GetNextRequest,
@@ -43,10 +54,10 @@ from ..pdu import (
 )
 from ..snmp import VarBind
 from ..transport import TSender, get_request_id, send
-from ..typevars import PyType
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
+PyType = Any  # TODO
 TWalkResponse = AsyncGenerator[VarBind, None]
 T = TypeVar("T", bound=TType[PyType])  # pylint: disable=invalid-name
 
@@ -70,11 +81,42 @@ class RawClient:
         credentials: Credentials,
         port: int = 161,
         sender: TSender = send,
+        context_name: bytes = b"",
+        engine_id: bytes = b"",
     ) -> None:
         self.ip = ip_address(ip)
         self.port = port
         self.credentials = credentials
         self.sender = sender
+        self.engine_id = engine_id
+        self.context_name = context_name
+        self.lcd = {}
+
+        async def handler(data: bytes) -> bytes:
+            return await sender(str(self.ip), port, data)
+
+        self.transport_handler = handler
+        self.mpm = MessageProcessingModel.create(
+            self.credentials.mpm, self.transport_handler, self.lcd
+        )
+
+    async def _send(self, pdu: PDU, request_id: int, timeout: int) -> PDU:
+        packet, security_model = await self.mpm.encode(
+            request_id,
+            self.credentials,
+            self.engine_id,
+            self.context_name,
+            pdu,
+        )
+
+        raw_response = await self.sender(
+            str(self.ip), self.port, bytes(packet), timeout=timeout
+        )
+        response = self.mpm.decode(
+            raw_response, self.credentials, security_model
+        )
+        # TODO check against request_id
+        return response
 
     async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
         """
@@ -103,25 +145,13 @@ class RawClient:
             ['non-functional example', 'second value']
         """
 
-        if not isinstance(self.credentials, V2C):
-            raise SnmpError("Currently only SNMPv2c is supported!")
+        parsed_oids = [VarBind(oid, Null()) for oid in oids]
 
-        parsed_oids = [OID(oid) for oid in oids]
+        request_id = get_request_id()
+        pdu = GetRequest(request_id, parsed_oids)
+        response = await self._send(pdu, request_id, timeout)
 
-        packet = Sequence(
-            Integer(1),
-            OctetString(self.credentials.community),
-            GetRequest(get_request_id(), parsed_oids),
-        )
-
-        response = await self.sender(
-            str(self.ip), self.port, bytes(packet), timeout=timeout
-        )
-        raw_response = cast(
-            Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
-        )
-
-        output = [value for _, value in raw_response[2].varbinds]
+        output = [value for _, value in response.varbinds]
         if len(output) != len(oids):
             raise SnmpError(
                 "Unexpected response. Expected %d varbind, "
@@ -285,22 +315,11 @@ class RawClient:
                 VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
             ]
         """
-        if not isinstance(self.default_credentials, V2C):
-            raise SnmpError("Currently only SNMPv2c is supported!")
 
         varbinds = [VarBind(oid, Null()) for oid in oids]
-        request = GetNextRequest(get_request_id(), varbinds)
-        packet = Sequence(
-            Integer(1),
-            OctetString(self.credentials.community),
-            request,
-        )
-        response = await self.sender(
-            str(self.ip), self.port, bytes(packet), timeout=timeout
-        )
-        seq = Sequence.decode(response)
-        raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
-        response_object = raw_response[2]
+        request_id = get_request_id()
+        pdu = GetNextRequest(request_id, varbinds)
+        response_object = await self._send(pdu, request_id, timeout)
         if len(response_object.varbinds) != len(oids):
             raise SnmpError(
                 "Invalid response! Expected exactly %d varbind, "

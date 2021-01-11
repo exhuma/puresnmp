@@ -5,8 +5,15 @@ from x690.types import Integer, OctetString, Sequence, pop_tlv
 
 from puresnmp.adt import Message, USMSecurityParameters, V3Flags
 from puresnmp.auth import Auth
+from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import InvalidSecurityModel, NotInTimeWindow, SnmpError
 from puresnmp.priv import Priv
+
+PROTOMAP = {
+    "md5": "usmHMACMD5AuthProtocol",
+    "sha1": "usmHMACSHAAuthProtocol",
+    "des": "usmDESPrivProtocol",
+}
 
 
 class UnsupportedSecurityLevel(SnmpError):
@@ -40,6 +47,7 @@ class SecurityModel:
 
     def __init__(self) -> None:
         self.local_config = {}
+        self.default_auth = {}
 
     def set_default_auth(self, auth: Dict[bytes, Dict[str, Any]]) -> None:
         self.default_auth = auth
@@ -82,18 +90,15 @@ class UserSecurityModel(SecurityModel):
         self,
         message: Message,
         security_engine_id: bytes,
-        security_name: bytes,
-        security_level: V3Flags,
+        credentials: Credentials,
     ) -> Message:
-        engine_config = self.local_config[security_engine_id]
-        if "users" not in engine_config:
-            engine_config["users"] = self.default_auth or {}
-        if security_name not in engine_config["users"]:
-            # See https://tools.ietf.org/html/rfc3414#section-3.1
-            # TODO better exception class
-            raise SnmpError(f"Unknown User {security_name!r}")
+        if not isinstance(credentials, V3):
+            raise TypeError(
+                "Credentials must be a V3 instance for this scurity model!"
+            )
 
-        user_config = engine_config["users"][security_name]
+        security_name = credentials.username.encode("ascii")
+        engine_config = self.local_config[security_engine_id]
         engine_boots = engine_config["authoritative_engine_boots"]
         engine_time = engine_config["authoritative_engine_time"]
 
@@ -109,17 +114,17 @@ class UserSecurityModel(SecurityModel):
             ),
         )
 
-        if security_level.priv and not all(
-            [user_config["priv_proto"], user_config["auth_proto"]]
+        if credentials.priv is not None and not all(
+            [credentials.priv.method, credentials.auth.method]
         ):
             raise UnsupportedSecurityLevel(
                 f"Security level needs privacy, but either auth-proto or "
                 f"priv-proto are missing for user {security_name!r}"
             )
 
-        if security_level.priv:
-            priv_proto = Priv.create(user_config.get("priv_proto"))
-            key = user_config["priv_key"]
+        if credentials.priv is not None:
+            priv_proto = Priv.create(PROTOMAP[credentials.priv.method])
+            key = credentials.priv.key
             try:
                 message = priv_proto.encrypt_data(key, message)
             except Exception as exc:
@@ -129,16 +134,16 @@ class UserSecurityModel(SecurityModel):
             encoded_pdu = bytes(message.scoped_pdu)
             priv_params = b""
 
-        if security_level.auth and not user_config["auth_proto"]:
+        if credentials.auth is not None and not credentials.auth.method:
             raise UnsupportedSecurityLevel(
                 f"Security level needs authentication, but auth-proto "
                 f"is missing for user {security_name!r}"
             )
-        if security_level.auth:
-            auth_proto = Auth.create(user_config.get("auth_proto"))
+        if credentials.auth is not None:
+            auth_proto = Auth.create(PROTOMAP[credentials.auth.method])
             try:
                 auth_result = auth_proto.authenticate_outgoing_message(
-                    user_config["auth_key"], message
+                    credentials.auth.key, message
                 )
                 return auth_result  # XXX return misplaced
             except Exception as exc:
@@ -164,20 +169,21 @@ class UserSecurityModel(SecurityModel):
         )
         return secured_message
 
-    def process_incoming_message(self, message: Message) -> Message:
+    def process_incoming_message(
+        self, message: Message, credentials: Credentials
+    ) -> Message:
         # TODO: Validate engine-id.
         # TODO: Validate incoming username against the request
 
         security_engine_id = message.security_parameters.authoritative_engine_id
         security_name = message.security_parameters.user_name
         engine_config = self.local_config[security_engine_id]
-        if security_name not in engine_config["users"]:
+        if security_name != credentials.username.encode("ascii"):
             # See https://tools.ietf.org/html/rfc3414#section-3.1
             # TODO better exception class
             raise SnmpError(f"Unknown User {security_name!r}")
-        user_config = engine_config["users"][security_name]
 
-        auth_proto = Auth.create(user_config.get("auth_proto"))
+        auth_proto = Auth.create(PROTOMAP[credentials.auth.method])
         if message.global_data.flags.auth and not auth_proto:
             raise UnsupportedSecurityLevel(
                 f"Security level needs authentication, but auth-proto "
@@ -186,15 +192,15 @@ class UserSecurityModel(SecurityModel):
         if message.global_data.flags.auth:
             try:
                 auth_proto.authenticate_incoming_message(
-                    user_config["auth_key"], message
+                    credentials.auth.key, message
                 )
             except Exception as exc:
                 # TODO improve error message
                 raise SnmpError("authenticationFailure") from exc
 
         if message.global_data.flags.priv:
-            priv_proto = Priv.create(user_config.get("priv_proto"))
-            key = user_config["priv_key"]
+            priv_proto = Priv.create(PROTOMAP[credentials.priv.method])
+            key = credentials.priv.key
             try:
                 message = priv_proto.decrypt_data(key, message)
             except Exception as exc:
@@ -202,54 +208,6 @@ class UserSecurityModel(SecurityModel):
                 raise SnmpError("DecryptionError") from exc
 
         return message
-
-        # XXX ----------------------------
-
-        message_data, _ = pop_tlv(data)
-        secparms = USMSecurityParameters.decode(message_data[2].pythonize())
-
-        # See https://tools.ietf.org/html/rfc3414#section-3.2
-
-        from pprint import pformat
-
-        auth_key = localized_auth_key(
-            user_auth_key, section.auth_engine_id, user_auth_algo
-        )
-
-        if security_level.auth:
-            self.authenticate_incoming_message(
-                auth_key, secparms.auth_params, data
-            )
-
-        1 / 0
-
-        engine_boots = 2147483647  # XXX TODO
-        local_engine_time = 0  # XXX TODO
-        msg.engine_time = 0  # XXX TODO
-        local_engine_boots = 0  # XXX TODO
-        msg.engine_boots = 0  # XXX TODO
-        oid_usmStatsNotInTimeWindows = "1.2.3"
-        usmStatsNotInTimeWindows_value = 1
-        if (
-            engine_boots == 2147483647
-            or local_engine_boots != msg.engine_boots
-            or abs(local_engine_time - msg.engine_time) > 150
-        ):
-            raise NotInTimeWindow(
-                oid_usmStatsNotInTimeWindows,
-                usmStatsNotInTimeWindows_value,
-                reporting="authnopriv",
-            )
-
-        if msg.engine_boots > local_engine_boots or (
-            msg.engine_boots == local_engine_boots
-            and msg.engine_time > latest_received_engine_time
-        ):
-            local.set_timing_values(
-                boots=msg.engine_boots,
-                time=msg.engine_time,
-                latest_received_engine_time=msg.engine_time,
-            )
 
 
 class NullSecurityModel(SecurityModel):

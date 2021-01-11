@@ -2,11 +2,22 @@
 The message processing subsystem
 """
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, NamedTuple, Tuple, Type
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Type,
+)
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
+from puresnmp.credentials import V2C, V3, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU, GetRequest
 from puresnmp.security import (
@@ -14,7 +25,7 @@ from puresnmp.security import (
     UserSecurityModel,
     USMSecurityParameters,
 )
-from puresnmp.transport import get_request_id
+from puresnmp.transport import TSender, get_request_id
 
 MESSAGE_MAX_SIZE = 65507  # TODO determine a better value here
 
@@ -32,8 +43,8 @@ def is_confirmed(pdu: PDU):
     return isinstance(pdu, GetRequest)
 
 
-def send_discovery_message(
-    transport_handler: Callable[[bytes], bytes]
+async def send_discovery_message(
+    transport_handler: Callable[[bytes], Awaitable[bytes]],
 ) -> DiscoData:
     # Via https://tools.ietf.org/html/rfc3414#section-4
     #
@@ -76,7 +87,7 @@ def send_discovery_message(
         ),
     )
     payload = bytes(discovery_message)
-    raw_response = transport_handler(payload)
+    raw_response = await transport_handler(payload)
     response, _ = pop_tlv(raw_response, Sequence)
 
     response_msg = Message.from_sequence(response)
@@ -149,19 +160,47 @@ class MessageProcessingModel:
 
     IDENTIFIER: int
     __registry: Dict[int, Type["MessageProcessingModel"]] = {}
+    disco: Optional[DiscoData]
 
     def __init_subclass__(cls: Type["MessageProcessingModel"]) -> None:
         MessageProcessingModel.__registry[cls.IDENTIFIER] = cls
 
+    def __init__(
+        self,
+        transport_handler: Callable[[bytes], Awaitable[bytes]],
+        lcd: Dict[str, Any],
+    ) -> None:
+        self.transport_handler = transport_handler
+        self.lcd = lcd
+        self.disco = None
+
     @staticmethod
-    def create(identifier: int) -> "MessageProcessingModel":
+    def create(
+        identifier: int,
+        transport_handler: Callable[[bytes], Awaitable[bytes]],
+        lcd: Dict[str, Any],
+    ) -> "MessageProcessingModel":
         """
         Creates a message processing model according to the given identifier.
         """
         # See https://tools.ietf.org/html/rfc3412#section-4.1.1
         if identifier not in MessageProcessingModel.__registry:
             raise UnknownMessageProcessingModel(identifier)
-        return MessageProcessingModel.__registry[identifier]()
+        return MessageProcessingModel.__registry[identifier](
+            transport_handler, lcd
+        )
+
+    async def encode(
+        self,
+        request_id: int,
+        credentials: Credentials,
+        engine_id: bytes,
+        context_name: bytes,
+        pdu,
+    ) -> bytes:
+        raise NotImplementedError(
+            "encode is not yet implemented in %r" % type(self)
+        )
 
     def prepare_outgoing_message(
         self,
@@ -174,7 +213,6 @@ class MessageProcessingModel:
         pdu_version,  # the version of the PDU
         pdu,  # SNMP Protocol Data Unit
         expect_response,  # TRUE or FALSE
-        transport_handler: Callable[[bytes], bytes],
     ) -> bytes:
         raise NotImplementedError(
             "prepare_outgoing_message is not yet implemented in %r" % type(self)
@@ -210,6 +248,35 @@ class SNMPV2C_MPM(MessageProcessingModel):
 
     IDENTIFIER = 1
 
+    async def encode(
+        self,
+        request_id: int,
+        credentials: Credentials,
+        engine_id: bytes,
+        context_name: bytes,
+        pdu,
+    ) -> Tuple[bytes, Optional[SecurityModel]]:
+        request_id
+        engine_id
+        context_name
+        if not isinstance(credentials, V2C):
+            raise TypeError("SNMPv2c MPM should be used with V2C credentials!")
+        packet = Sequence(Integer(1), OctetString(credentials.community), pdu)
+        return bytes(packet), None
+
+    def decode(
+        self,
+        whole_msg,  # as received from the network
+        credentials: Credentials,
+        security_model: SecurityModel,
+    ) -> PDU:
+        """
+        The Message Processing Subsystem provides this service primitive for
+        preparing the abstract data elements from an incoming SNMP message:
+        """
+        decoded, _ = pop_tlv(whole_msg)
+        return decoded[2]
+
 
 class SNMPV2X_MPM(MessageProcessingModel):
     """
@@ -226,11 +293,12 @@ class SNMPV3_MPM(MessageProcessingModel):
 
     IDENTIFIER = 3
 
-    def prepare_data_elements(
+    def decode(
         self,
         whole_msg,  # as received from the network
+        credentials: Credentials,
         security_model: SecurityModel,
-    ) -> PreparedData:
+    ) -> PDU:
         """
         The Message Processing Subsystem provides this service primitive for
         preparing the abstract data elements from an incoming SNMP message:
@@ -244,81 +312,71 @@ class SNMPV3_MPM(MessageProcessingModel):
                 "Messages without security params are not yet supported"
             )
 
-        msg = security_model.process_incoming_message(message)
+        msg = security_model.process_incoming_message(message, credentials)
+        return msg.scoped_pdu.data
 
-        return PreparedData(
-            security_model,  # Security Model to use
-            security_params.user_name,  # on behalf of this principal
-            security_level,  # Level of Security requested
-            security_params.authoritative_engine_id,  # data from/at this entity
-            msg.scoped_pdu.context_name,  # data from/in this context
-            -1,  # XXX # the version of the PDU
-            msg.scoped_pdu.data,  # SNMP Protocol Data Unit
-            -1,  # XXX # SNMP PDU type
-            msg.global_data.message_max_size,  # maximum size sender can accept
-            None,  # XXX status_information,  # success or errorIndication error counter OID/value if error
-            None,  # XXX state_reference,  # reference to state information to be used for possible Response
-        )
-
-    def prepare_outgoing_message(
+    async def encode(
         self,
-        message_id: int,
-        security_model: SecurityModel,  # Security Model to use
-        security_name: OctetString,  # on behalf of this principal
-        security_level: V3Flags,  # Level of Security requested
-        context_engine_id: OctetString,  # data from/at this entity
-        context_name: OctetString,  # data from/in this context
-        pdu_version: int,  # the version of the PDU
-        pdu: PDU,  # SNMP Protocol Data Unit
-        expect_response: bool,  # TRUE or FALSE
-        transport_handler: Callable[[bytes], bytes],
-    ) -> bytes:
+        request_id: int,
+        credentials: Credentials,
+        engine_id: bytes,
+        context_name: bytes,
+        pdu,
+    ) -> Tuple[bytes, SecurityModel]:
         """
         The Message Processing Subsystem provides this service primitive for
         preparing an outgoing SNMP Request or Notification Message:
         """
-        # SNMPv3 does not use "expect_response" nor "pdu_version". We drop it
-        # in the code here to silence pylint's unused variable check
-        expect_response  # pylint: disable=pointless-statement
-        pdu_version  # pylint: disable=pointless-statement
 
-        security = security_model
-        disco = None
-        if isinstance(security_model, UserSecurityModel):
-            disco = send_discovery_message(transport_handler)
-            security_engine_id = disco.authoritative_engine_id
-        else:
-            security_engine_id = b""
+        if not isinstance(credentials, V3):
+            raise TypeError("Credentials for SNMPv3 must be V3 instances!")
 
-        scoped_pdu = ScopedPDU(context_engine_id, context_name, pdu)
+        security_model = SecurityModel.create(3)
+        if not isinstance(security_model, UserSecurityModel):
+            raise NotImplementedError(
+                "Currently only USM is supported for SNMPv3"
+            )
+
+        # We need to determine some values from the remote host for security.
+        # These can be retrieved by sending a so called discovery message.
+        if not self.disco:
+            self.disco = await send_discovery_message(self.transport_handler)
+        security_engine_id = self.disco.authoritative_engine_id
+
+        if engine_id == b"":
+            engine_id = security_engine_id
+
+        scoped_pdu = ScopedPDU(
+            OctetString(engine_id), OctetString(context_name), pdu
+        )
+        flags = V3Flags(
+            auth=credentials.auth is not None,
+            priv=credentials.priv is not None,
+            reportable=is_confirmed(pdu),
+        )
         global_data = HeaderData(
-            message_id,
+            request_id,
             MESSAGE_MAX_SIZE,
-            V3Flags(
-                auth=security_level.auth,
-                priv=security_level.priv,
-                reportable=is_confirmed(pdu),
-            ),
-            security.IDENTIFIER,
+            flags,
+            security_model.IDENTIFIER,
         )
 
-        security_model.set_engine_timing(
-            disco.authoritative_engine_id,
-            disco.authoritative_engine_boots,
-            disco.authoritative_engine_time,
-        )
+        if self.disco is not None:
+            security_model.set_engine_timing(
+                self.disco.authoritative_engine_id,
+                self.disco.authoritative_engine_boots,
+                self.disco.authoritative_engine_time,
+            )
 
         msg = Message(Integer(3), global_data, None, scoped_pdu)
-        output = security.generate_request_message(
+        output = security_model.generate_request_message(
             msg,
             security_engine_id,
-            security_name.value,
-            security_level,
+            credentials,
         )
-        # TODO this may need some cleanup. Kept it this way to be aligned with
-        #      the RFC var-names
+
         outgoing_message = bytes(output)
-        return outgoing_message
+        return outgoing_message, security_model
 
 
 class MessageProcessingSubsystem:

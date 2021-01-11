@@ -71,13 +71,12 @@ from puresnmp.exc import SnmpError, UnknownMessageProcessingModel
 from puresnmp.messageprocessing import MessageProcessingModel, PreparedData
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
-from puresnmp.transport import Transport, get_request_id
+from puresnmp.transport import TSender, get_request_id, send
 
 TAnyIp = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 TTransportHandler = Callable[[TAnyIp, int, bytes], bytes]
 
-UDPTransport = Transport()
-udp_handler = UDPTransport.send
+udp_handler = send
 
 
 def generate_engine_id_ip(pen: int, ip: TAnyIp) -> bytes:
@@ -407,7 +406,7 @@ class Dispatcher:
         pdu_version: Any,
         pdu: Any,
         expect_response: bool,
-        transport_handler: Optional[TTransportHandler] = None,
+        transport_handler: Optional[TSender] = None,
     ) -> PDU:
 
         if transport_handler is None:
