@@ -150,7 +150,7 @@ class ScopedPDU:
 
     @staticmethod
     def decode(data: bytes) -> "ScopedPDU":
-        sequence, _ = pop_tlv(data, Sequence, strict=True)
+        sequence, _ = pop_tlv(data, Sequence, strict=False)
         output = ScopedPDU(
             context_engine_id=sequence[0],
             context_name=sequence[1],
