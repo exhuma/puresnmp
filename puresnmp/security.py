@@ -9,12 +9,6 @@ from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import InvalidSecurityModel, NotInTimeWindow, SnmpError
 from puresnmp.priv import Priv
 
-PROTOMAP = {
-    "md5": "usmHMACMD5AuthProtocol",
-    "sha1": "usmHMACSHAAuthProtocol",
-    "des": "usmDESPrivProtocol",
-}
-
 
 class UnsupportedSecurityLevel(SnmpError):
     """
@@ -123,10 +117,10 @@ class UserSecurityModel(SecurityModel):
             )
 
         if credentials.priv is not None:
-            priv_proto = Priv.create(PROTOMAP[credentials.priv.method])
+            priv_method = Priv.create(credentials.priv.method)
             key = credentials.priv.key
             try:
-                message = priv_proto.encrypt_data(key, message)
+                message = priv_method.encrypt_data(key, message)
             except Exception as exc:
                 # TODO Use a proper app-exception here
                 raise SnmpError("EncryptionError") from exc
@@ -140,9 +134,9 @@ class UserSecurityModel(SecurityModel):
                 f"is missing for user {security_name!r}"
             )
         if credentials.auth is not None:
-            auth_proto = Auth.create(PROTOMAP[credentials.auth.method])
+            auth_method = Auth.create(credentials.auth.method)
             try:
-                auth_result = auth_proto.authenticate_outgoing_message(
+                auth_result = auth_method.authenticate_outgoing_message(
                     credentials.auth.key, message
                 )
                 return auth_result  # XXX return misplaced
@@ -183,15 +177,15 @@ class UserSecurityModel(SecurityModel):
             # TODO better exception class
             raise SnmpError(f"Unknown User {security_name!r}")
 
-        auth_proto = Auth.create(PROTOMAP[credentials.auth.method])
-        if message.global_data.flags.auth and not auth_proto:
+        auth_method = Auth.create(credentials.auth.method)
+        if message.global_data.flags.auth and not auth_method:
             raise UnsupportedSecurityLevel(
                 f"Security level needs authentication, but auth-proto "
                 f"is missing for user {security_name!r}"
             )
         if message.global_data.flags.auth:
             try:
-                auth_proto.authenticate_incoming_message(
+                auth_method.authenticate_incoming_message(
                     credentials.auth.key, message
                 )
             except Exception as exc:
@@ -199,10 +193,10 @@ class UserSecurityModel(SecurityModel):
                 raise SnmpError("authenticationFailure") from exc
 
         if message.global_data.flags.priv:
-            priv_proto = Priv.create(PROTOMAP[credentials.priv.method])
+            priv_method = Priv.create(credentials.priv.method)
             key = credentials.priv.key
             try:
-                message = priv_proto.decrypt_data(key, message)
+                message = priv_method.decrypt_data(key, message)
             except Exception as exc:
                 # TODO Use a proper app-exception here
                 raise SnmpError("DecryptionError") from exc

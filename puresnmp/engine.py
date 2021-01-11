@@ -536,16 +536,11 @@ class Engine:
         creds: Credentials,
     ) -> Any:
 
-        protomap = {
-            "md5": "usmHMACMD5AuthProtocol",
-            "sha1": "usmHMACSHAAuthProtocol",
-            "des": "usmDESPrivProtocol",
-        }
         auth = {
             creds.username.encode("ascii"): {
-                "auth_proto": protomap[creds.auth_mode],
+                "auth_mode": creds.auth_mode,
                 "auth_key": creds.auth_key,
-                "priv_proto": protomap[creds.encryption_mode],
+                "priv_method": creds.encryption_mode,
                 "priv_key": creds.encryption_key,
             }
         }

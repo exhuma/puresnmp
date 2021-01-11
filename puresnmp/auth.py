@@ -138,12 +138,12 @@ class HashingAuth(Auth):
 
 
 class MD5Auth(HashingAuth):
-    IDENTIFIER = "usmHMACMD5AuthProtocol"
+    IDENTIFIER = "md5"
     IMPLEMENTATION = staticmethod(password_to_key(hashlib.md5, 16))
     HMAC_DIGESTMOD = "md5"
 
 
 class SHAAuth(HashingAuth):
-    IDENTIFIER = "usmHMACSHAAuthProtocol"
+    IDENTIFIER = "sha1"
     IMPLEMENTATION = staticmethod(password_to_key(hashlib.sha1, 20))
     HMAC_DIGESTMOD = "sha1"

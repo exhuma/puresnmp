@@ -76,7 +76,7 @@ class Priv:
 
 
 class DES(Priv):
-    IDENTIFIER = "usmDESPrivProtocol"
+    IDENTIFIER = "des"
 
     def __init__(
         self, saltpot: Optional[Generator[int, None, None]] = None
