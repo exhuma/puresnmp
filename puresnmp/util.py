@@ -2,7 +2,18 @@
 Colleciton of utility functions for the puresnmp package.
 """
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
+from functools import lru_cache
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    Callable,
+)
 
 from x690.types import ObjectIdentifier, OctetString
 
@@ -186,3 +197,25 @@ def tablify(varbinds, num_base_nodes=0, base_oid=""):
         row = rows.setdefault(row_id, tmp)  # type: ignore
         row[str(col_id)] = value  # type: ignore
     return list(rows.values())
+
+
+def password_to_key(
+    hash_implementation: Callable[..., Any], padding_length: int
+) -> Callable[[bytes, bytes], bytes]:
+    @lru_cache(maxsize=None)
+    def hasher(password: bytes, engine_id: bytes) -> bytes:
+        hash_instance = hash_implementation()
+        # Hash 1MB worth of data
+        hash_size = 1024 * 1024
+        num_words = hash_size // len(password)
+        tmp = (password * (num_words + 1))[:hash_size]
+        hash_instance.update(tmp)
+        key = hash_instance.digest()
+        localised_buffer = (
+            key[:padding_length] + engine_id + key[:padding_length]
+        )
+        final_key = hash_implementation(localised_buffer).digest()
+        return final_key
+
+    hasher.__name__ = f"<hasher:{hash_implementation}>"  # type: ignore
+    return hasher

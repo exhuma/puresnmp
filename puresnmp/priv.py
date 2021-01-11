@@ -9,7 +9,7 @@ from Crypto.Cipher import DES as CDES
 from x690.types import OctetString
 
 from puresnmp.adt import Message, ScopedPDU
-from puresnmp.auth import password_to_key
+from puresnmp.util import password_to_key
 from puresnmp.exc import SnmpError
 
 
