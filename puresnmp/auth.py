@@ -1,7 +1,7 @@
 import hashlib
 import hmac
-import itertools
 from dataclasses import replace
+from functools import lru_cache
 from typing import Any, Callable, Dict, Type
 
 from puresnmp.adt import Message, USMSecurityParameters
@@ -11,15 +11,13 @@ from puresnmp.exc import SnmpError
 def password_to_key(
     hash_implementation: Callable[..., Any], padding_length: int
 ) -> Callable[[bytes, bytes], bytes]:
+    @lru_cache(maxsize=None)
     def hasher(password: bytes, engine_id: bytes) -> bytes:
         hash_instance = hash_implementation()
-        chars = itertools.cycle(password)
-        count = 0
         # Hash 1MB worth of data
-        while count < (1024 * 1024):
-            buffer = bytes(next(chars) for char in range(64))
-            hash_instance.update(buffer)
-            count += 64
+        num_words = 1024 * 1024 // len(password)
+        tmp = (password * (num_words + 1))[: 1024 * 1024]
+        hash_instance.update(tmp)
         key = hash_instance.digest()
         localised_buffer = (
             key[:padding_length] + engine_id + key[:padding_length]
@@ -27,6 +25,7 @@ def password_to_key(
         final_key = hash_implementation(localised_buffer).digest()
         return final_key
 
+    hasher.__name__ = f"<hasher:{hash_implementation}>"  # type: ignore
     return hasher
 
 
