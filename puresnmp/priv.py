@@ -3,7 +3,7 @@ from dataclasses import replace
 from random import randint
 from typing import Dict, Generator, Optional, Type
 
-import pyDes
+from Crypto.Cipher import DES as CDES
 
 # TODO: remove dependency on OctetString
 from x690.types import OctetString
@@ -13,7 +13,25 @@ from puresnmp.auth import password_to_key
 from puresnmp.exc import SnmpError
 
 
-def reference_saltpot() -> int:
+def pad_packet(data: bytes, block_size: int = 8) -> bytes:
+    """
+    Pads a packet to being a multiple of *block_size*.
+
+    In x.690 BER encoding, the data contains length-information so
+    "over-sized" data can be decoded without issue. This function simply adds
+    zeroes at the end for as needed.
+
+    Packets also don't need to be "unpadded" for the same reason
+    See https://tools.ietf.org/html/rfc3414#section-8.1.1.3
+    """
+    rest = len(data) % 8
+    if rest == 0:
+        return data
+    numpad = 8 - rest
+    return data + numpad * b"\x00"
+
+
+def reference_saltpot() -> Generator[int, None, None]:
     salt = randint(1, 0xFFFFFFFF - 1)
     while True:
         yield salt
@@ -97,10 +115,9 @@ class DES(Priv):
         )
         local_salt = next(self.saltpot)
 
-        des = pyDes.des(
-            des_key, mode=pyDes.CBC, IV=init_vector, padmode=pyDes.PAD_PKCS5
-        )
-        encrypted = des.encrypt(bytes(message.scoped_pdu))
+        cdes = CDES.new(des_key, mode=CDES.MODE_CBC, IV=init_vector)
+        padded = pad_packet(bytes(message.scoped_pdu))
+        encrypted = cdes.encrypt(padded)
         message = replace(message, scoped_pdu=OctetString(encrypted))
         return message
 
@@ -126,12 +143,13 @@ class DES(Priv):
             decrypt_key, message.security_parameters.authoritative_engine_id
         )
         des_key = private_privacy_key[:8]
+
         pre_iv = private_privacy_key[8:]
         salt = message.security_parameters.priv_params
         init_vector = bytes(a ^ b for a, b in zip(salt, pre_iv))
-        des = pyDes.des(
-            des_key, mode=pyDes.CBC, IV=init_vector, padmode=pyDes.PAD_PKCS5
-        )
-        decrypted = des.decrypt(message.scoped_pdu.value)
+        cdes = CDES.new(des_key, mode=CDES.MODE_CBC, IV=init_vector)
+        decrypted = cdes.decrypt(message.scoped_pdu.value)
+        if message.scoped_pdu.value and not decrypted:
+            raise SnmpError("Unable to decrypt data!")
         message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
         return message
