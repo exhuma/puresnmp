@@ -68,9 +68,11 @@ class RawClient:
         self,
         ip: str,
         credentials: Credentials,
+        port: int = 161,
         sender: TSender = send,
     ) -> None:
         self.ip = ip_address(ip)
+        self.port = port
         self.credentials = credentials
         self.sender = sender
 
@@ -113,7 +115,7 @@ class RawClient:
         )
 
         response = await self.sender(
-            str(self.ip), 161, bytes(packet), timeout=timeout
+            str(self.ip), self.port, bytes(packet), timeout=timeout
         )
         raw_response = cast(
             Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
@@ -294,7 +296,7 @@ class RawClient:
             request,
         )
         response = await self.sender(
-            str(self.ip), 161, bytes(packet), timeout=timeout
+            str(self.ip), self.port, bytes(packet), timeout=timeout
         )
         seq = Sequence.decode(response)
         raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
@@ -411,7 +413,7 @@ class RawClient:
             Integer(1), OctetString(self.credentials.community), request
         )
         response = await self.sender(
-            str(self.ip), 161, bytes(packet), timeout=timeout
+            str(self.ip), self.port, bytes(packet), timeout=timeout
         )
         seq = Sequence.decode(response)
         raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
@@ -509,14 +511,14 @@ class RawClient:
 
         packet = Sequence(
             Integer(1),
-            OctetString(self.default_credentials.community),
+            OctetString(self.credentials.community),
             BulkGetRequest(
                 get_request_id(), non_repeaters, max_list_size, *oids
             ),
         )
 
         response = await self.sender(
-            str(self.ip), 161, bytes(packet), timeout=timeout
+            str(self.ip), self.port, bytes(packet), timeout=timeout
         )
         raw_response = cast(
             Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
