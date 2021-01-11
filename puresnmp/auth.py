@@ -15,8 +15,9 @@ def password_to_key(
     def hasher(password: bytes, engine_id: bytes) -> bytes:
         hash_instance = hash_implementation()
         # Hash 1MB worth of data
-        num_words = 1024 * 1024 // len(password)
-        tmp = (password * (num_words + 1))[: 1024 * 1024]
+        hash_size = 1024 * 1024
+        num_words = hash_size // len(password)
+        tmp = (password * (num_words + 1))[:hash_size]
         hash_instance.update(tmp)
         key = hash_instance.digest()
         localised_buffer = (
