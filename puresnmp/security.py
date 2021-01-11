@@ -3,11 +3,11 @@ from typing import Any, Dict, Type
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
+import puresnmp.auth as auth
+import puresnmp.priv as priv
 from puresnmp.adt import Message, USMSecurityParameters, V3Flags
-from puresnmp.auth import Auth
 from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import InvalidSecurityModel, NotInTimeWindow, SnmpError
-from puresnmp.priv import Priv
 
 
 class UnsupportedSecurityLevel(SnmpError):
@@ -117,7 +117,7 @@ class UserSecurityModel(SecurityModel):
             )
 
         if credentials.priv is not None:
-            priv_method = Priv.create(credentials.priv.method)
+            priv_method = priv.create(credentials.priv.method)
             key = credentials.priv.key
             try:
                 message = priv_method.encrypt_data(key, message)
@@ -134,7 +134,7 @@ class UserSecurityModel(SecurityModel):
                 f"is missing for user {security_name!r}"
             )
         if credentials.auth is not None:
-            auth_method = Auth.create(credentials.auth.method)
+            auth_method = auth.create(credentials.auth.method)
             try:
                 auth_result = auth_method.authenticate_outgoing_message(
                     credentials.auth.key, message
@@ -177,7 +177,7 @@ class UserSecurityModel(SecurityModel):
             # TODO better exception class
             raise SnmpError(f"Unknown User {security_name!r}")
 
-        auth_method = Auth.create(credentials.auth.method)
+        auth_method = auth.create(credentials.auth.method)
         if message.global_data.flags.auth and not auth_method:
             raise UnsupportedSecurityLevel(
                 f"Security level needs authentication, but auth-proto "
@@ -193,7 +193,7 @@ class UserSecurityModel(SecurityModel):
                 raise SnmpError("authenticationFailure") from exc
 
         if message.global_data.flags.priv:
-            priv_method = Priv.create(credentials.priv.method)
+            priv_method = priv.create(credentials.priv.method)
             key = credentials.priv.key
             try:
                 message = priv_method.decrypt_data(key, message)

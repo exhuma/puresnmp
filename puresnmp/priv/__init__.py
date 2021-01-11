@@ -1,10 +1,21 @@
 import importlib
 import pkgutil
 
+from typing_extensions import Protocol
+
 import puresnmp.priv
+from puresnmp.adt import Message
 
 #: Global registry of detected plugins
 DISCOVERED_PLUGINS = {}
+
+
+class TPriv(Protocol):
+    def encrypt_data(key: bytes, message: Message) -> Message:
+        ...
+
+    def decrypt_data(decrypt_key: bytes, message: Message) -> Message:
+        ...
 
 
 def iter_namespace(ns_pkg):
@@ -34,10 +45,8 @@ def discover_plugins():
         DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
 
 
-class Priv:
-    @staticmethod
-    def create(name: str) -> "Priv":
+def create(name: str) -> TPriv:
 
-        if not DISCOVERED_PLUGINS:
-            discover_plugins()
-        return DISCOVERED_PLUGINS[name]
+    if not DISCOVERED_PLUGINS:
+        discover_plugins()
+    return DISCOVERED_PLUGINS[name]

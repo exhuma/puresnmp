@@ -2,9 +2,23 @@ import importlib
 import pkgutil
 
 import puresnmp.auth
+from typing_extensions import Protocol
+from puresnmp.adt import Message
 
 #: Global registry of detected plugins
 DISCOVERED_PLUGINS = {}
+
+
+class TAuth(Protocol):
+    def authenticate_outgoing_message(
+        auth_key: bytes, message: Message
+    ) -> Message:
+        ...
+
+    def authenticate_incoming_message(
+        auth_key: bytes, message: Message
+    ) -> None:
+        ...
 
 
 def iter_namespace(ns_pkg):
@@ -34,10 +48,8 @@ def discover_plugins():
         DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
 
 
-class Auth:
-    @staticmethod
-    def create(name: str) -> "Auth":
+def create(name: str) -> TAuth:
 
-        if not DISCOVERED_PLUGINS:
-            discover_plugins()
-        return DISCOVERED_PLUGINS[name]
+    if not DISCOVERED_PLUGINS:
+        discover_plugins()
+    return DISCOVERED_PLUGINS[name]
