@@ -15,13 +15,7 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, cast
 from warnings import warn
 
-from x690.types import (
-    Integer,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    Type,
-)
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence, Type
 
 from ...const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN, Version
 from ...exc import FaultySNMPImplementation, NoSuchOID, SnmpError

@@ -7,7 +7,6 @@ include_trailing_comma = true
 known_third_party = ["schema", "floss", "jargon"]
 line_length = 80
 multi_line_output = 3
-not_skip = "__init__.py"
 use_parentheses = true
 virtual_env = "env"
 

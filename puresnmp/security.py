@@ -1,5 +1,5 @@
-from typing import Any, Dict, Type
 from dataclasses import replace
+from typing import Any, Dict, Type
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 

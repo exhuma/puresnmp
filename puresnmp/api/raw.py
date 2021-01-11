@@ -39,7 +39,7 @@ from ..pdu import (
     GetRequest,
     GetResponse,
     SetRequest,
-    Trap
+    Trap,
 )
 from ..snmp import VarBind
 from ..transport import TSender, get_request_id, send

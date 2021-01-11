@@ -68,10 +68,7 @@ from x690.types import Null, OctetString, Sequence, pop_tlv
 import puresnmp.pdu as pdu
 from puresnmp.adt import V3Flags
 from puresnmp.exc import SnmpError, UnknownMessageProcessingModel
-from puresnmp.messageprocessing import (
-    MessageProcessingModel,
-    PreparedData,
-)
+from puresnmp.messageprocessing import MessageProcessingModel, PreparedData
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
 from puresnmp.transport import Transport, get_request_id

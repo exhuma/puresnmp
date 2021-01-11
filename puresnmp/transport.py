@@ -16,8 +16,8 @@ import logging
 from asyncio.events import AbstractEventLoop
 from time import time
 from typing import Any, Callable, Coroutine, Generator, Optional, Tuple, Union
-from typing_extensions import Protocol
 
+from typing_extensions import Protocol
 from x690.util import visible_octets
 
 from .exc import Timeout
