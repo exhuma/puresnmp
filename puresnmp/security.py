@@ -1,13 +1,11 @@
 from dataclasses import replace
 from typing import Any, Dict, Type
 
-from x690.types import Integer, OctetString, Sequence, pop_tlv
-
 import puresnmp.auth as auth
 import puresnmp.priv as priv
 from puresnmp.adt import Message, USMSecurityParameters, V3Flags
 from puresnmp.credentials import V3, Credentials
-from puresnmp.exc import InvalidSecurityModel, NotInTimeWindow, SnmpError
+from puresnmp.exc import InvalidSecurityModel, SnmpError
 
 
 class UnsupportedSecurityLevel(SnmpError):
