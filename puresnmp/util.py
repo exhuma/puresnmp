@@ -15,7 +15,7 @@ from typing import (
     Callable,
 )
 
-from x690.types import ObjectIdentifier, OctetString
+from x690.types import ObjectIdentifier
 
 from .snmp import VarBind
 

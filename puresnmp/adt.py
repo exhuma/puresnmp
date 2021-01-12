@@ -1,7 +1,7 @@
 import sys
 from dataclasses import dataclass
 from textwrap import indent
-from typing import Optional, Union, cast
+from typing import Union, cast
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
