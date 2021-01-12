@@ -2,12 +2,21 @@ import importlib
 import pkgutil
 from typing import Any, Dict
 
+from typing_extensions import Protocol
+
 import puresnmp.security
-from puresnmp.adt import Message, V3Flags
+from puresnmp.adt import Message
+from puresnmp.credentials import Credentials
 from puresnmp.exc import InvalidSecurityModel
 
+
+class TSecurityPlugin(Protocol):
+    def create(self) -> "SecurityModel":
+        ...
+
+
 #: Global registry of detected plugins
-DISCOVERED_PLUGINS = {}
+DISCOVERED_PLUGINS: Dict[int, TSecurityPlugin] = {}
 
 
 class SecurityModel:
@@ -34,8 +43,7 @@ class SecurityModel:
         self,
         message: Message,
         security_engine_id: bytes,
-        security_name: bytes,
-        security_level: V3Flags,
+        credentials: Credentials,
     ) -> Message:
         raise NotImplementedError("Not yet implemented")
 

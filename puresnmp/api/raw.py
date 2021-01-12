@@ -16,7 +16,6 @@ from ipaddress import ip_address
 from typing import (
     Any,
     AsyncGenerator,
-    Callable,
     Dict,
     Generator,
     List,
@@ -37,7 +36,7 @@ from x690.types import (
 )
 
 from puresnmp.engine import generate_engine_id_text
-from puresnmp.messageprocessing import MessageProcessingModel
+import puresnmp.mpm as mpm
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
@@ -96,7 +95,7 @@ class RawClient:
             return await sender(str(self.ip), port, data)
 
         self.transport_handler = handler
-        self.mpm = MessageProcessingModel.create(
+        self.mpm = mpm.create(
             self.credentials.mpm, self.transport_handler, self.lcd
         )
 

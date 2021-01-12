@@ -1,21 +1,23 @@
 import importlib
 import pkgutil
+from typing import Dict
 
 from typing_extensions import Protocol
 
 import puresnmp.priv
 from puresnmp.adt import Message
 
-#: Global registry of detected plugins
-DISCOVERED_PLUGINS = {}
-
 
 class TPriv(Protocol):
-    def encrypt_data(key: bytes, message: Message) -> Message:
+    def encrypt_data(self, key: bytes, message: Message) -> Message:
         ...
 
-    def decrypt_data(decrypt_key: bytes, message: Message) -> Message:
+    def decrypt_data(self, decrypt_key: bytes, message: Message) -> Message:
         ...
+
+
+#: Global registry of detected plugins
+DISCOVERED_PLUGINS: Dict[str, TPriv] = {}
 
 
 def iter_namespace(ns_pkg):

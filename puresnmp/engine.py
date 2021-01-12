@@ -65,10 +65,10 @@ from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from x690.types import Null, OctetString, Sequence, pop_tlv
 
+import puresnmp.mpm as mpm
 import puresnmp.pdu as pdu
 from puresnmp.adt import V3Flags
 from puresnmp.exc import SnmpError, UnknownMessageProcessingModel
-from puresnmp.messageprocessing import MessageProcessingModel, PreparedData
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
 from puresnmp.transport import TSender, get_request_id, send
@@ -370,14 +370,14 @@ class Dispatcher:
                 "Unable to determine SNMP version in packet"
             ) from exc
         try:
-            mpm = MessageProcessingModel.create(version)
+            mpm = mpm.create(version)
         except UnknownMessageProcessingModel:
             self.increase_counter("snmpInBadVersions")
             raise
         prepared_data = mpm.prepare_data_elements(data, security_model)
         return self.dispatch_incoming_message(prepared_data)
 
-    def dispatch_incoming_message(self, prepared_data: PreparedData) -> PDU:
+    def dispatch_incoming_message(self, prepared_data: mpm.PreparedData) -> PDU:
         """
         Corresponds to https://tools.ietf.org/html/rfc3412#section-4.2.2
         """
@@ -385,7 +385,7 @@ class Dispatcher:
         # TODO     return self.dispatch_request(prepared_data)
         return self.process_response_pdu(prepared_data)
 
-    def dispatch_request(self, prepared_data: PreparedData) -> None:
+    def dispatch_request(self, prepared_data: mpm.PreparedData) -> None:
         """
         See https://tools.ietf.org/html/rfc3412#section-4.2.2.1
         """
@@ -412,7 +412,7 @@ class Dispatcher:
         if transport_handler is None:
             transport_handler = udp_handler
 
-        mpm = MessageProcessingModel.create(message_processing_model)
+        mpm = mpm.create(message_processing_model)
         message_id = get_request_id()
 
         # TODO This could benefit from being more specific? Maybe? From the RFC:
@@ -451,7 +451,7 @@ class Dispatcher:
 
         return response_pdu
 
-    def process_response_pdu(self, prepared_data: PreparedData) -> PDU:
+    def process_response_pdu(self, prepared_data: mpm.PreparedData) -> PDU:
         """
         Processes a response to a previously made request.
         """
@@ -511,7 +511,7 @@ class Engine:
     engine_id: bytes
     context_name: bytes
     dispatcher: Dispatcher
-    mpm: MessageProcessingModel
+    mpm: mpm.MessageProcessingModel
     security: Dict[int, SecurityModel]
 
     def __init__(
@@ -522,7 +522,7 @@ class Engine:
     ) -> None:
         self.engine_id = engine_id
         self.dispatcher = Dispatcher()
-        self.mpm = MessageProcessingModel()
+        self.mpm = mpm.MessageProcessingModel()
         self.security = {}
         self.context_name = context_name
         self.transport_handler = transport_handler
