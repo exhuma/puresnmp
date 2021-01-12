@@ -515,9 +515,6 @@ class RawClient:
                     ('1.3.6.1.2.1.5.10.0', b'\x00')]))
         """
 
-        if not isinstance(self.credentials, V2C):
-            raise SnmpError("Currently only SNMPv2c is supported!")
-
         scalar_oids = scalar_oids or []  # protect against empty values
         repeating_oids = repeating_oids or []  # protect against empty values
 
@@ -527,20 +524,9 @@ class RawClient:
 
         non_repeaters = len(scalar_oids)
 
-        packet = Sequence(
-            Integer(1),
-            OctetString(self.credentials.community),
-            BulkGetRequest(
-                get_request_id(), non_repeaters, max_list_size, *oids
-            ),
-        )
-
-        response = await self.sender(
-            str(self.ip), self.port, bytes(packet), timeout=timeout
-        )
-        raw_response = cast(
-            Tuple[Any, Any, GetResponse], Sequence.decode(response)[0]
-        )
+        request_id = get_request_id()
+        pdu = BulkGetRequest(request_id, non_repeaters, max_list_size, *oids)
+        get_response = await self._send(pdu, request_id, timeout)
 
         # See RFC=3416 for details of the following calculation
         n = min(non_repeaters, len(oids))
@@ -548,7 +534,6 @@ class RawClient:
         r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
         expected_max_varbinds = n + (m * r)
 
-        _, _, get_response = raw_response
         n_retrieved_varbinds = len(get_response.varbinds)
         if n_retrieved_varbinds > expected_max_varbinds:
             raise SnmpError(
@@ -573,7 +558,7 @@ class RawClient:
 
         return BulkResult(scalar_out, repeating_out)
 
-    async def _bulkwalk_fetcher(self, bulk_size: int = 10) -> TFetcher:
+    def _bulkwalk_fetcher(self, bulk_size: int = 10) -> TFetcher:
         """
         Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
         """
