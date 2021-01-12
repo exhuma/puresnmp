@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable, Awaitable, Dict, Any
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 
@@ -43,3 +43,10 @@ class V2CMPM(MessageProcessingModel):
         """
         decoded, _ = pop_tlv(whole_msg)
         return decoded[2]
+
+
+def create(
+    transport_handler: Callable[[bytes], Awaitable[bytes]],
+    lcd: Dict[str, Any],
+) -> "MessageProcessingModel":
+    return V2CMPM(transport_handler, lcd)
