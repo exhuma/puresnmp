@@ -114,7 +114,10 @@ class RawClient:
             raw_response, self.credentials, security_model
         )
         if response.request_id != request_id:
-            raise SnmpError("Mismatching request-id in request/response")
+            raise SnmpError(
+                "Mismatching request-id in request/response (%r != %r)"
+                % (response.request_id, request_id)
+            )
         return response
 
     async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
