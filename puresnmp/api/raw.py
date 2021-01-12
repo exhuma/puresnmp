@@ -35,7 +35,6 @@ from x690.types import (
     Type,
 )
 
-from puresnmp.engine import generate_engine_id_text
 import puresnmp.mpm as mpm
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
@@ -89,7 +88,7 @@ class RawClient:
         self.sender = sender
         self.engine_id = engine_id
         self.context_name = context_name
-        self.lcd = {}
+        self.lcd: Dict[str, Any] = {}
 
         async def handler(data: bytes) -> bytes:
             return await sender(str(self.ip), port, data)

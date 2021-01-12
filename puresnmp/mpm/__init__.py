@@ -8,7 +8,6 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
-    Type,
 )
 
 import puresnmp.mpm
@@ -97,6 +96,16 @@ class MessageProcessingModel:
     ) -> Tuple[bytes, Optional[SecurityModel]]:
         raise NotImplementedError(
             "encode is not yet implemented in %r" % type(self)
+        )
+
+    def decode(
+        self,
+        raw_response: bytes,
+        credentials: Credentials,
+        security_model: SecurityModel,
+    ) -> PDU:
+        raise NotImplementedError(
+            "decode is not yet implemented in %r" % type(self)
         )
 
     def prepare_outgoing_message(
