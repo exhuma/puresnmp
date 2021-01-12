@@ -1,14 +1,9 @@
 import hashlib
-from dataclasses import replace
 from random import randint
-from typing import Generator
+from typing import Generator, Tuple
 
 from Crypto.Cipher import DES as CDES
 
-# TODO: remove dependency on OctetString
-from x690.types import OctetString
-
-from puresnmp.adt import Message, ScopedPDU
 from puresnmp.util import password_to_key
 from puresnmp.exc import SnmpError
 
@@ -45,71 +40,53 @@ def reference_saltpot() -> Generator[int, None, None]:
 SALTPOT = reference_saltpot()
 
 
-def encrypt_data(key: bytes, message: Message) -> Message:
+def encrypt_data(
+    key: bytes, engine_id: bytes, engine_boots: int, data: bytes
+) -> Tuple[bytes, bytes]:
     """
     See https://tools.ietf.org/html/rfc3414#section-1.6
     """
 
-    if message.security_parameters is None:
-        raise SnmpError("Unable to encrypt a message without security params!")
-
     hasher = password_to_key(hashlib.md5, 16)
-    private_privacy_key = hasher(
-        key, message.security_parameters.authoritative_engine_id
-    )
+    private_privacy_key = hasher(key, engine_id)
     des_key = private_privacy_key[:8]
     pre_iv = private_privacy_key[8:]
 
     local_salt = next(SALTPOT)
-    engine_boots = message.security_parameters.authoritative_engine_boots
     salt = (engine_boots & 0xFF).to_bytes(4, "big") + (
         local_salt & 0xFF
     ).to_bytes(4, "big")
     init_vector = bytes(a ^ b for a, b in zip(salt, pre_iv))
-    message = replace(
-        message,
-        security_parameters=replace(
-            message.security_parameters, priv_params=salt
-        ),
-    )
     local_salt = next(SALTPOT)
 
     cdes = CDES.new(des_key, mode=CDES.MODE_CBC, IV=init_vector)
-    padded = pad_packet(bytes(message.scoped_pdu))
+    padded = pad_packet(data)
     encrypted = cdes.encrypt(padded)
-    message = replace(message, scoped_pdu=OctetString(encrypted))
-    return message
+    return encrypted, salt
 
 
-def decrypt_data(decrypt_key: bytes, message: Message) -> Message:
+def decrypt_data(
+    decrypt_key: bytes,
+    data: bytes,
+    authoritative_engine_id: bytes,
+    salt: bytes,
+) -> bytes:
     """
     See https://tools.ietf.org/html/rfc3414#section-1.6
     """
-    if not isinstance(message.scoped_pdu, OctetString):
-        raise SnmpError(
-            "Unexpectedly received unencrypted PDU with a security level requesting encryption!"
-        )
-    if len(message.scoped_pdu.value) % 8 != 0:
+    if len(data) % 8 != 0:
         raise SnmpError(
             "Invalid payload lenght for decryption (not a multiple of 8)"
         )
-    if message.security_parameters is None:
-        raise SnmpError(
-            "Unable to decrypt a message without security parameters!"
-        )
 
     hasher = password_to_key(hashlib.md5, 16)
-    private_privacy_key = hasher(
-        decrypt_key, message.security_parameters.authoritative_engine_id
-    )
+    private_privacy_key = hasher(decrypt_key, authoritative_engine_id)
     des_key = private_privacy_key[:8]
 
     pre_iv = private_privacy_key[8:]
-    salt = message.security_parameters.priv_params
     init_vector = bytes(a ^ b for a, b in zip(salt, pre_iv))
     cdes = CDES.new(des_key, mode=CDES.MODE_CBC, IV=init_vector)
-    decrypted = cdes.decrypt(message.scoped_pdu.value)
-    if message.scoped_pdu.value and not decrypted:
+    decrypted = cdes.decrypt(data)
+    if data and not decrypted:
         raise SnmpError("Unable to decrypt data!")
-    message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
-    return message
+    return decrypted

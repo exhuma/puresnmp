@@ -14,69 +14,6 @@ else:
 
 
 @dataclass(frozen=True)
-class USMSecurityParameters:
-    """
-    This class wraps the various values for the USM
-    """
-
-    authoritative_engine_id: bytes
-    authoritative_engine_boots: int
-    authoritative_engine_time: int
-    user_name: bytes
-    auth_params: bytes
-    priv_params: bytes
-
-    @staticmethod
-    def decode(data: bytes) -> "USMSecurityParameters":
-        """
-        Construct a USMSecurityParameters instance from pure bytes
-        """
-        seq, _ = pop_tlv(data, enforce_type=Sequence)
-        return USMSecurityParameters.from_snmp_type(seq)
-
-    @staticmethod
-    def from_snmp_type(seq: Sequence) -> "USMSecurityParameters":
-        return USMSecurityParameters(
-            authoritative_engine_id=seq[0].pythonize(),
-            authoritative_engine_boots=seq[1].pythonize(),
-            authoritative_engine_time=seq[2].pythonize(),
-            user_name=seq[3].pythonize(),
-            auth_params=seq[4].pythonize(),
-            priv_params=seq[5].pythonize(),
-        )
-
-    def __bytes__(self) -> bytes:
-        return bytes(self.as_snmp_type())
-
-    def as_snmp_type(self) -> Sequence:
-        return Sequence(
-            OctetString(self.authoritative_engine_id),
-            Integer(self.authoritative_engine_boots),
-            Integer(self.authoritative_engine_time),
-            OctetString(self.user_name),
-            OctetString(self.auth_params),
-            OctetString(self.priv_params),
-        )
-
-    def pretty(self, depth: int = 0) -> str:
-        """
-        Return a value for CLI display
-        """
-        lines = ["Security Parameters"]
-        lines.extend(
-            [
-                f"{INDENT_STRING}Engine ID   : {self.authoritative_engine_id!r}",
-                f"{INDENT_STRING}Engine Boots: {self.authoritative_engine_boots}",
-                f"{INDENT_STRING}Engine Time : {self.authoritative_engine_time}",
-                f"{INDENT_STRING}Username    : {self.user_name!r}",
-                f"{INDENT_STRING}Auth Params : {self.auth_params!r}",
-                f"{INDENT_STRING}Priv Params : {self.priv_params!r}",
-            ]
-        )
-        return indent("\n".join(lines), INDENT_STRING * depth)
-
-
-@dataclass(frozen=True)
 class V3Flags:
     """
     This class represents the SNMP message flags.
@@ -192,18 +129,15 @@ class Message:
 
     version: Integer
     global_data: HeaderData
-    security_parameters: Optional[USMSecurityParameters]
+    security_parameters: bytes
     scoped_pdu: Union[bytes, ScopedPDU]
 
     def __bytes__(self) -> bytes:
-        security_parameters = b""
-        if self.security_parameters is not None:
-            security_parameters = bytes(self.security_parameters.as_snmp_type())
         output = bytes(
             Sequence(
                 self.version,
                 self.global_data.as_snmp_type(),
-                OctetString(security_parameters),
+                OctetString(self.security_parameters),
                 self.scoped_pdu
                 if isinstance(self.scoped_pdu, bytes)
                 else self.scoped_pdu,
@@ -215,12 +149,7 @@ class Message:
     def from_sequence(seq: Sequence) -> "Message":
         version = seq[0]
         global_data = cast(Sequence, seq[1])
-        security_params_raw = cast(OctetString, seq[2]).value
-        security_parameters = None
-        if security_params_raw != b"":
-            security_parameters = USMSecurityParameters.decode(
-                security_params_raw
-            )
+        security_parameters = cast(OctetString, seq[2]).value
 
         msg_id = cast(Integer, global_data[0])
         msg_max_size = cast(Integer, global_data[1])
@@ -261,21 +190,19 @@ class Message:
 
         lines.append(f"SNMP Message (version-identifier={self.version})")
         lines.extend(self.global_data.pretty(depth + 1).splitlines())
-        if self.security_parameters:
-            lines.extend(
-                self.security_parameters.pretty(depth + 1).splitlines()
-            )
-        else:
-            lines.append(
-                indent(
-                    "Security Parameters: <none>", INDENT_STRING * (depth + 1)
-                )
-            )
-        if isinstance(self.scoped_pdu, OctetString):
+        lines.append(
+            indent(f"Security Parameters", INDENT_STRING * (depth + 1))
+        )
+        lines.extend(
+            OctetString(self.security_parameters).pretty(depth + 2).splitlines()
+        )
+        if isinstance(self.scoped_pdu, bytes):
             lines.append(
                 indent(f"Scoped PDU (encrypted)", INDENT_STRING * (depth + 1))
             )
-            lines.extend(self.scoped_pdu.pretty(depth + 2).splitlines())
+            lines.extend(
+                OctetString(self.scoped_pdu).pretty(depth + 2).splitlines()
+            )
         else:
             lines.extend(self.scoped_pdu.pretty(depth + 1).splitlines())
         return indent("\n".join(lines), INDENT_STRING * depth)

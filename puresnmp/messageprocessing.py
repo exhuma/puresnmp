@@ -1,7 +1,6 @@
 """
 The message processing subsystem
 """
-from dataclasses import dataclass
 from typing import (
     Any,
     Awaitable,
@@ -20,101 +19,15 @@ from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V2C, V3, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU, GetRequest
-from puresnmp.security import (
-    SecurityModel,
-    UserSecurityModel,
-    USMSecurityParameters,
-)
-from puresnmp.transport import TSender, get_request_id
-
-MESSAGE_MAX_SIZE = 65507  # TODO determine a better value here
-
-
-@dataclass(frozen=True)
-class DiscoData:
-    authoritative_engine_id: bytes
-    authoritative_engine_boots: int
-    authoritative_engine_time: int
-    unknown_engine_ids: int
+from puresnmp.security import SecurityModel
+from puresnmp.security import create as create_sm
+from puresnmp.security.usm import DiscoData
+from puresnmp.transport import MESSAGE_MAX_SIZE
 
 
 def is_confirmed(pdu: PDU):
     # XXX TODO This might be doable cleaner with subclassing in puresnmp.pdu
     return isinstance(pdu, GetRequest)
-
-
-async def send_discovery_message(
-    transport_handler: Callable[[bytes], Awaitable[bytes]],
-) -> DiscoData:
-    # Via https://tools.ietf.org/html/rfc3414#section-4
-    #
-    # The User-based Security Model requires that a discovery process
-    # obtains sufficient information about other SNMP engines in order to
-    # communicate with them. Discovery requires an non-authoritative SNMP
-    # engine to learn the authoritative SNMP engine's snmpEngineID value
-    # before communication may proceed. This may be accomplished by
-    # generating a Request message with a securityLevel of noAuthNoPriv, a
-    # msgUserName of zero-length, a msgAuthoritativeEngineID value of zero
-    # length, and the varBindList left empty. The response to this message
-    # will be a Report message containing the snmpEngineID of the
-    # authoritative SNMP engine as the value of the
-    # msgAuthoritativeEngineID field within the msgSecurityParameters
-    # field. It contains a Report PDU with the usmStatsUnknownEngineIDs
-    # counter in the varBindList.
-
-    request_id = get_request_id()
-    security_params = USMSecurityParameters(
-        authoritative_engine_id=b"",
-        authoritative_engine_boots=0,
-        authoritative_engine_time=0,
-        user_name=b"",
-        auth_params=b"",
-        priv_params=b"",
-    )
-    discovery_message = Message(
-        Integer(3),
-        HeaderData(
-            request_id,
-            MESSAGE_MAX_SIZE,
-            V3Flags(False, False, True),
-            3,
-        ),
-        security_params,
-        ScopedPDU(
-            OctetString(),
-            OctetString(),
-            GetRequest(request_id, []),
-        ),
-    )
-    payload = bytes(discovery_message)
-    raw_response = await transport_handler(payload)
-    response, _ = pop_tlv(raw_response, Sequence)
-
-    response_msg = Message.from_sequence(response)
-
-    response_id = response_msg.scoped_pdu.data.request_id
-    if response_id != request_id:
-        raise SnmpError(
-            f"Invalid response ID {response_id} for request id {request_id}"
-        )
-
-    # The engine-id is available in two places: The response directly, and also
-    # the Report PDU. In initial tests these values were identical, and
-    # fetching them from the wrapping message would be easier. But because the
-    # RFC explicitly states that it's the value from inside the PDU I picked it
-    # out from there instead.
-    auth_security_params = response_msg.security_parameters
-    unknown_engine_ids = response_msg.scoped_pdu.data.varbinds[
-        0
-    ].value.pythonize()
-
-    out = DiscoData(
-        authoritative_engine_id=auth_security_params.authoritative_engine_id,
-        authoritative_engine_boots=auth_security_params.authoritative_engine_boots,
-        authoritative_engine_time=auth_security_params.authoritative_engine_time,
-        unknown_engine_ids=unknown_engine_ids,
-    )
-    return out
 
 
 class PreparedData(NamedTuple):
@@ -304,14 +217,6 @@ class SNMPV3_MPM(MessageProcessingModel):
         preparing the abstract data elements from an incoming SNMP message:
         """
         message = Message.decode(whole_msg)
-        security_level = message.global_data.flags
-        security_params = message.security_parameters
-
-        if security_params is None:
-            raise NotImplementedError(
-                "Messages without security params are not yet supported"
-            )
-
         msg = security_model.process_incoming_message(message, credentials)
         return msg.scoped_pdu.data
 
@@ -331,16 +236,15 @@ class SNMPV3_MPM(MessageProcessingModel):
         if not isinstance(credentials, V3):
             raise TypeError("Credentials for SNMPv3 must be V3 instances!")
 
-        security_model = SecurityModel.create(3)
-        if not isinstance(security_model, UserSecurityModel):
-            raise NotImplementedError(
-                "Currently only USM is supported for SNMPv3"
-            )
+        security_model_id = 3
+        security_model = create_sm(security_model_id)
 
         # We need to determine some values from the remote host for security.
         # These can be retrieved by sending a so called discovery message.
         if not self.disco:
-            self.disco = await send_discovery_message(self.transport_handler)
+            self.disco = await security_model.send_discovery_message(
+                self.transport_handler
+            )
         security_engine_id = self.disco.authoritative_engine_id
 
         if engine_id == b"":
@@ -358,7 +262,7 @@ class SNMPV3_MPM(MessageProcessingModel):
             request_id,
             MESSAGE_MAX_SIZE,
             flags,
-            security_model.IDENTIFIER,
+            security_model_id,
         )
 
         if self.disco is not None:
@@ -368,7 +272,8 @@ class SNMPV3_MPM(MessageProcessingModel):
                 self.disco.authoritative_engine_time,
             )
 
-        msg = Message(Integer(3), global_data, None, scoped_pdu)
+        snmp_version = 3
+        msg = Message(Integer(snmp_version), global_data, None, scoped_pdu)
         output = security_model.generate_request_message(
             msg,
             security_engine_id,
