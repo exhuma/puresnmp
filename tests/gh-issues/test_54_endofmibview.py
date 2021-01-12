@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+import pytest
 from x690.types import Integer, OctetString
 
 from puresnmp.api.raw import RawClient
@@ -7,13 +8,13 @@ from puresnmp.credentials import V2C
 from tests import readbytes
 
 
-def test_54_endofmibview():
+@pytest.mark.asyncio
+async def test_54_endofmibview(mocked_send):
     data = readbytes("gh-issues/54-endofmibview.hex")
-    with patch("puresnmp.api.raw.Transport") as ptch:
-        client = RawClient("192.0.2.1", V2C("private"))
-        ptch().send.return_value = data
-        ptch().get_request_id.return_value = 123
-        result = client.bulkget([], ["1.2.3"], max_list_size=10)
+    mocked_send.sender.set_values([data])
+    with patch("puresnmp.api.raw.get_request_id") as gri:
+        gri.return_value = 1540273572
+        result = await mocked_send.bulkget([], ["1.2.3"], max_list_size=10)
     assert result.scalars == {}
 
     expected_lists = {

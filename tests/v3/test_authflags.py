@@ -4,7 +4,7 @@ Test support for auth-flags
 import pytest
 from x690.types import OctetString
 
-from puresnmp.messageprocessing import V3Flags
+from puresnmp.adt import V3Flags
 
 
 @pytest.mark.parametrize(

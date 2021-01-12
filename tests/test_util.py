@@ -2,9 +2,16 @@
 Unit-tests for utility functions
 """
 from x690.types import Null, ObjectIdentifier
+from binascii import unhexlify
+import hashlib
 
 from puresnmp.pdu import VarBind
-from puresnmp.util import WalkRow, get_unfinished_walk_oids, group_varbinds
+from puresnmp.util import (
+    WalkRow,
+    get_unfinished_walk_oids,
+    group_varbinds,
+    password_to_key,
+)
 
 OID = ObjectIdentifier.from_string
 
@@ -76,4 +83,27 @@ def test_get_unfinished_walk_oids():
         (OID("1.1"), WalkRow(VarBind(OID("1.1.2"), Null()), unfinished=True)),
         (OID("2.2"), WalkRow(VarBind(OID("2.2.2"), Null()), unfinished=True)),
     ]
+    assert result == expected
+
+
+def test_password_to_key():
+    hasher = password_to_key(hashlib.md5, 16)
+    result = hasher(b"foo", b"bar")
+    expected = b"x\xf4\xdf-#\x19\x95\xe0\x8f\xcd\x1f{\xa87\x99\x06"
+    assert result == expected
+
+
+def test_md5_key():
+    engine_id = unhexlify("000000000000000000000002")
+    hasher = password_to_key(hashlib.md5, 16)
+    result = hasher(b"maplesyrup", engine_id)
+    expected = unhexlify("526f5eed9fcce26f8964c2930787d82b")
+    assert result == expected
+
+
+def test_sha_key():
+    engine_id = unhexlify("000000000000000000000002")
+    hasher = password_to_key(hashlib.sha1, 20)
+    result = hasher(b"maplesyrup", engine_id)
+    expected = unhexlify("6695febc9288e36282235fc7151f128497b38f3f")
     assert result == expected
