@@ -113,7 +113,8 @@ class RawClient:
         response = self.mpm.decode(
             raw_response, self.credentials, security_model
         )
-        # TODO check against request_id
+        if response.request_id != request_id:
+            raise SnmpError("Mismatching request-id in request/response")
         return response
 
     async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
