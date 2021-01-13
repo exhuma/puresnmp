@@ -14,16 +14,11 @@ from unittest.mock import call, patch
 import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 
-from puresnmp.api.raw import RawClient, traps
+from puresnmp.api.raw import RawClient, register_trap_callback
 from puresnmp.const import Version
 from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
-from puresnmp.pdu import (
-    BulkGetRequest,
-    GetNextRequest,
-    GetResponse,
-    VarBind,
-)
+from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetResponse, VarBind
 from puresnmp.transport import SocketResponse
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.typevars import SocketInfo

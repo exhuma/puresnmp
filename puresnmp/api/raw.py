@@ -10,12 +10,16 @@ easier but loses type information which may be useful in some edge-cases. In
 such a case it's recommended to use :py:mod:`puresnmp.api.raw`.
 """
 
+import asyncio
 import logging
+from asyncio import get_event_loop
+from asyncio.events import AbstractEventLoop
 from collections import OrderedDict
 from ipaddress import ip_address
 from typing import (
     Any,
     AsyncGenerator,
+    Callable,
     Dict,
     Generator,
     List,
@@ -36,6 +40,9 @@ from x690.types import (
 )
 
 import puresnmp.mpm as mpm
+from puresnmp import security
+from puresnmp.security import create as create_sm
+from puresnmp.typevars import SocketResponse
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
@@ -51,7 +58,7 @@ from ..pdu import (
     Trap,
 )
 from ..snmp import VarBind
-from ..transport import TSender, get_request_id, send
+from ..transport import TSender, get_request_id, listen, send
 from ..util import BulkResult  # NOQA (must be here for type detection)
 from ..util import get_unfinished_walk_oids, group_varbinds, tablify
 
@@ -656,11 +663,13 @@ class RawClient:
         return as_table
 
 
-def traps(
+def register_trap_callback(
+    callback: Callable[[PDU], Any],
     listen_address: str = "0.0.0.0",
     port: int = 162,
-    buffer_size: int = 1024,
-) -> Generator[Trap, None, None]:
+    credentials: Optional[Credentials] = None,
+    loop: Optional[AbstractEventLoop] = None,
+) -> AbstractEventLoop:
     """
     Creates a generator for SNMPv2 traps.
 
@@ -669,8 +678,23 @@ def traps(
     varbinds are the system uptime and the trap OID. The following varbinds are
     the body of the trap
     """
-    transport = Transport(buffer_size=buffer_size)
-    for sockinfo in transport.listen(listen_address, port):
-        obj = cast(Tuple[Any, Any, Trap], Sequence.decode(sockinfo.data)[0])
-        obj[2].source = sockinfo.info
-        yield obj[2]
+    if loop is None:
+        loop = get_event_loop()
+
+    def decode(packet: SocketResponse) -> None:
+        async def handler(data: bytes) -> bytes:
+            return await send(str(packet.info.address), packet.info.port, data)
+
+        lcd: Dict[str, Any] = {}
+
+        obj = cast(
+            Tuple[Integer, Integer, Trap], Sequence.decode(packet.data)[0]
+        )
+
+        mproc = mpm.create(obj[0].value, handler, lcd)
+        trap = mproc.decode(packet.data, credentials)
+        asyncio.ensure_future(callback(trap))
+
+    handler = listen(listen_address, port, decode, loop)
+    loop.run_until_complete(handler)
+    return loop

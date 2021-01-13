@@ -47,8 +47,10 @@ class SecurityModel:
     ) -> Message:
         raise NotImplementedError("Not yet implemented")
 
-    def process_incoming_message(self, message: Message) -> Message:
-        raise NotImplementedError("Not yet implemented")
+    def process_incoming_message(
+        self, message: Message, credentials: Credentials
+    ) -> Message:
+        raise NotImplementedError("Not yet implemented in %s", self.__class__)
 
 
 def iter_namespace(ns_pkg):

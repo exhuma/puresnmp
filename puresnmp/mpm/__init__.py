@@ -1,14 +1,8 @@
 import importlib
 import pkgutil
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    NamedTuple,
-    Optional,
-    Tuple,
-)
+from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Tuple
+
+from typing_extensions import Protocol
 
 import puresnmp.mpm
 from puresnmp.adt import V3Flags
@@ -16,7 +10,6 @@ from puresnmp.credentials import Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
-from typing_extensions import Protocol
 from puresnmp.security.usm import DiscoData  # TODO: Too specific to USM
 
 
@@ -85,6 +78,7 @@ class MessageProcessingModel:
         self.transport_handler = transport_handler
         self.lcd = lcd
         self.disco = None
+        self.security_model: Optional[SecurityModel] = None
 
     async def encode(
         self,
@@ -100,9 +94,8 @@ class MessageProcessingModel:
 
     def decode(
         self,
-        raw_response: bytes,
+        whole_msg,  # as received from the network
         credentials: Credentials,
-        security_model: SecurityModel,
     ) -> PDU:
         raise NotImplementedError(
             "decode is not yet implemented in %r" % type(self)

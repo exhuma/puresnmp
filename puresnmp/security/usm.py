@@ -14,7 +14,6 @@ from puresnmp.pdu import GetRequest
 from puresnmp.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE, get_request_id
 
-
 IDENTIFIER = 3
 
 
@@ -238,9 +237,7 @@ class UserSecurityModel(SecurityModel):
             message.security_parameters
         )
 
-        security_engine_id = security_params.authoritative_engine_id
         security_name = security_params.user_name
-        engine_config = self.local_config[security_engine_id]
         if security_name != credentials.username.encode("ascii"):
             # See https://tools.ietf.org/html/rfc3414#section-3.1
             # TODO better exception class

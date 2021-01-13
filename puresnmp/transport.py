@@ -14,14 +14,15 @@ hard to test.
 import asyncio
 import logging
 from asyncio.events import AbstractEventLoop
+from asyncio.transports import BaseTransport
 from time import time
-from typing import Generator, Optional, Tuple, Union
+from typing import Any, AsyncGenerator, Callable, Optional, Tuple, Union
 
 from typing_extensions import Protocol
 from x690.util import visible_octets
 
 from .exc import Timeout
-from .typevars import SocketResponse
+from .typevars import SocketInfo, SocketResponse
 
 LOG = logging.getLogger(__name__)
 MESSAGE_MAX_SIZE = 65507  # TODO determine a better value here
@@ -49,6 +50,21 @@ def get_request_id() -> int:  # pragma: no cover
     # just one client it *may* be enough.
 
     return int(time())
+
+
+class SNMPTrapReceiverProtocol(asyncio.DatagramProtocol):
+    def __init__(self, callback: Callable[[SocketResponse], Any]) -> None:
+        super().__init__()
+        self.callback = callback
+
+    def connection_made(self, transport: BaseTransport) -> None:
+        self.transport = transport
+
+    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
+        if LOG.isEnabledFor(logging.DEBUG):
+            hexdump = visible_octets(data)
+            LOG.debug("Received packet:\n%s", hexdump)
+        self.callback(SocketResponse(data, SocketInfo(addr[0], addr[1])))
 
 
 class SNMPClientProtocol(asyncio.DatagramProtocol):
@@ -158,8 +174,16 @@ async def send(  # type: ignore
     return response  # type: ignore
 
 
-def listen(bind_address="0.0.0.0", port=162):  # pragma: no cover
-    # type: (str, int) -> Generator[SocketResponse, None, None]
+def default_trap_handler(info: SocketResponse) -> None:
+    LOG.debug(f"Trap Received: {info!r}")
+
+
+async def listen(
+    bind_address: str = "0.0.0.0",
+    port: int = 162,
+    callback: Callable[[SocketResponse], Any] = default_trap_handler,
+    loop: Optional[AbstractEventLoop] = None,
+) -> None:  # pragma: no cover
     """
     Sets up a listening UDP socket and returns a generator over recevied
     packets::
@@ -176,13 +200,9 @@ def listen(bind_address="0.0.0.0", port=162):  # pragma: no cover
         This defaults to the standard SNMP Trap port 162. This is a
         privileged port so processes using this port must run as root!
     """
-    raise NotImplementedError("Not yet implemented as async")
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.bind((bind_address, port))
-        while True:
-            request, addr = sock.recvfrom(self.buffer_size)
-            if LOG.isEnabledFor(logging.DEBUG):
-                hexdump = visible_octets(request)
-                LOG.debug("Received packet:\n%s", hexdump)
-
-            yield SocketResponse(request, SocketInfo(addr[0], addr[1]))
+    if loop is None:
+        loop = asyncio.get_event_loop()
+    transport, protocol = await loop.create_datagram_endpoint(
+        lambda: SNMPTrapReceiverProtocol(callback),
+        local_addr=(bind_address, port),
+    )

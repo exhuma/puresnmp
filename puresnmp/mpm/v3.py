@@ -28,10 +28,12 @@ class V3MPM(MessageProcessingModel):
         self,
         whole_msg,  # as received from the network
         credentials: Credentials,
-        security_model: SecurityModel,
     ) -> PDU:
+        security_model_id = 3
+        if self.security_model is None:
+            self.security_model = create_sm(security_model_id)
         message = Message.decode(whole_msg)
-        msg = security_model.process_incoming_message(message, credentials)
+        msg = self.security_model.process_incoming_message(message, credentials)
         return msg.scoped_pdu.data
 
     async def encode(
@@ -47,12 +49,13 @@ class V3MPM(MessageProcessingModel):
             raise TypeError("Credentials for SNMPv3 must be V3 instances!")
 
         security_model_id = 3
-        security_model = create_sm(security_model_id)
+        if self.security_model is None:
+            self.security_model = create_sm(security_model_id)
 
         # We need to determine some values from the remote host for security.
         # These can be retrieved by sending a so called discovery message.
         if not self.disco:
-            self.disco = await security_model.send_discovery_message(
+            self.disco = await self.security_model.send_discovery_message(
                 self.transport_handler
             )
         security_engine_id = self.disco.authoritative_engine_id
@@ -84,14 +87,14 @@ class V3MPM(MessageProcessingModel):
 
         snmp_version = 3
         msg = Message(Integer(snmp_version), global_data, None, scoped_pdu)
-        output = security_model.generate_request_message(
+        output = self.security_model.generate_request_message(
             msg,
             security_engine_id,
             credentials,
         )
 
         outgoing_message = bytes(output)
-        return EncodingResult(outgoing_message, security_model)
+        return EncodingResult(outgoing_message, self.security_model)
 
 
 def create(
