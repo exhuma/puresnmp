@@ -671,12 +671,17 @@ def register_trap_callback(
     loop: Optional[AbstractEventLoop] = None,
 ) -> AbstractEventLoop:
     """
-    Creates a generator for SNMPv2 traps.
+    Registers a callback function for for SNMP traps.
 
-    Each item in the generator will be a simpla puresnmp "PDU" type object
-    representing the trap. As per :rfc:`3416#section-4.2.6`, the first two
-    varbinds are the system uptime and the trap OID. The following varbinds are
-    the body of the trap
+    Every time a trap is received, the callback is called with the PDU
+    contained in that trap.
+
+    As per :rfc:`3416#section-4.2.6`, the first two varbinds are the system
+    uptime and the trap OID. The following varbinds are the body of the trap
+
+    The callback will be called on the current asyncio loop. Alternatively, a
+    loop can be passed into this function in which case, the traps will be
+    handler on that loop instead.
     """
     if loop is None:
         loop = get_event_loop()

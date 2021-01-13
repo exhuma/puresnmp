@@ -742,24 +742,34 @@ class TestTraps(unittest.TestCase):
                 result.extend(trap.varbinds)
         self.assertEqual(result, expected)
 
-    def test_traps_origin(self):
-        """
-        We want to see where a trap was sent from
-        """
-        raise pytest.skip("TODO")
-        data_generator = readbytes_multiple("trap_requests.hex")
 
-        def socket_response_generator():
-            for blob in data_generator:
-                yield SocketResponse(blob, SocketInfo("192.0.2.1", 64001))
+def test_traps_origin(mocked_send):
+    """
+    We want to see where a trap was sent from
+    """
+    raise pytest.skip("TODO - Have not yet figured out how to test this")
+    data_generator = readbytes_multiple("trap_requests.hex")
 
-        result = []
-        with patch("puresnmp.api.raw.Transport") as mck:
-            mck().listen.return_value = socket_response_generator()
-            for trap in traps():
-                result.append(trap.source)
-        expected = [SocketInfo("192.0.2.1", 64001)] * 3
-        self.assertEqual(result, expected)
+    with patch("puresnmp.transport.listen") as listen:
+        listen.return_value = mocked_trap()
+        loop = register_trap_callback(
+            callback,
+            port=50010,
+        )
+        loop.run_until_complete(mocked_trap())
+    1 / 0
+
+    def socket_response_generator():
+        for blob in data_generator:
+            yield SocketResponse(blob, SocketInfo("192.0.2.1", 64001))
+
+    result = []
+    with patch("puresnmp.api.raw.Transport") as mck:
+        mck().listen.return_value = socket_response_generator()
+        for trap in traps():
+            result.append(trap.source)
+    expected = [SocketInfo("192.0.2.1", 64001)] * 3
+    self.assertEqual(result, expected)
 
 
 @pytest.mark.asyncio
