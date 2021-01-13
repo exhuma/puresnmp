@@ -38,7 +38,7 @@ class FakeSend:
 
 
 @pytest.fixture
-def mocked_send():
+def mocked_raw():
     sender = FakeSend()
     client = RawClient("192.0.2.1", V2C("private"), sender=sender)
     yield client

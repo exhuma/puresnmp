@@ -3,18 +3,16 @@ from unittest.mock import patch
 import pytest
 from x690.types import Integer, OctetString
 
-from puresnmp.api.raw import RawClient
-from puresnmp.credentials import V2C
 from tests import readbytes
 
 
 @pytest.mark.asyncio
-async def test_54_endofmibview(mocked_send):
+async def test_54_endofmibview(mocked_raw):
     data = readbytes("gh-issues/54-endofmibview.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 1540273572
-        result = await mocked_send.bulkget([], ["1.2.3"], max_list_size=10)
+        result = await mocked_raw.bulkget([], ["1.2.3"], max_list_size=10)
     assert result.scalars == {}
 
     expected_lists = {

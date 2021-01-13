@@ -29,64 +29,64 @@ from .conftest import AsyncIter
 
 
 @pytest.mark.asyncio
-async def test_get_string(mocked_send):
+async def test_get_string(mocked_raw):
     data = readbytes("get_sysdescr_01.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     expected = OctetString(
         b"Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP "
         b"Fri Jun 24 10:09:13 UTC 2016 x86_64"
     )
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 3262242864
-        result = await mocked_send.get("1.2.3")
+        result = await mocked_raw.get("1.2.3")
     assert result == expected
 
 
 @pytest.mark.asyncio
-async def test_get_oid(mocked_send):
+async def test_get_oid(mocked_raw):
     data = readbytes("get_sysoid_01.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     expected = ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10")
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 1401558560
-        result = await mocked_send.get("1.2.3")
+        result = await mocked_raw.get("1.2.3")
     assert result == expected
 
 
 @pytest.mark.asyncio
-async def test_get_multiple_return_binds(mocked_send):
+async def test_get_multiple_return_binds(mocked_raw):
     """
     A "GET" response should only return one varbind.
     """
     data = readbytes("get_sysoid_01_error.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 123
         with pytest.raises(SnmpError) as exc:
-            await mocked_send.get("1.2.3")
+            await mocked_raw.get("1.2.3")
         exc.match(r"varbind")
 
 
 @pytest.mark.asyncio
-async def test_get_non_existing_oid(mocked_send):
+async def test_get_non_existing_oid(mocked_raw):
     """
     A "GET" response on a non-existing OID should raise an appropriate
     exception.
     """
     data = readbytes("get_non_existing.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = -1
         with pytest.raises(NoSuchOID):
-            await mocked_send.get("1.2.3")
+            await mocked_raw.get("1.2.3")
 
 
 @pytest.mark.asyncio
-async def test_walk(mocked_send):
+async def test_walk(mocked_raw):
     response_1 = readbytes("walk_response_1.hex")
     response_2 = readbytes("walk_response_2.hex")
     response_3 = readbytes("walk_response_3.hex")
-    mocked_send.sender.set_values([response_1, response_2, response_3])
+    mocked_raw.sender.set_values([response_1, response_2, response_3])
 
     expected = [
         VarBind(
@@ -102,30 +102,30 @@ async def test_walk(mocked_send):
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.side_effect = [463373299, 463373300, 463373301]
         result = []
-        async for row in mocked_send.walk("1.3.6.1.2.1.2.2.1.5"):
+        async for row in mocked_raw.walk("1.3.6.1.2.1.2.2.1.5"):
             result.append(row)
     assert result == expected
 
 
 @pytest.mark.asyncio
-async def test_walk_multiple_return_binds(mocked_send):
+async def test_walk_multiple_return_binds(mocked_raw):
     """
     A "WALK" response should only return one varbind.
     """
     data = readbytes("get_sysoid_01_error.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 123
         with pytest.raises(SnmpError) as exc:
-            async for _ in mocked_send.walk("1.2.3"):
+            async for _ in mocked_raw.walk("1.2.3"):
                 pass
         exc.match(r"varbind")
 
 
 @pytest.mark.asyncio
-async def test_multiget(mocked_send):
+async def test_multiget(mocked_raw):
     data = readbytes("multiget_response.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     expected = [
         ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10"),
         OctetString(
@@ -136,14 +136,14 @@ async def test_multiget(mocked_send):
     ]
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 1913359423
-        result = await mocked_send.multiget(
+        result = await mocked_raw.multiget(
             ["1.3.6.1.2.1.1.2.0", "1.3.6.1.2.1.1.1.0"]
         )
     assert result == expected
 
 
 @pytest.mark.asyncio
-async def test_multi_walk(mocked_send):
+async def test_multi_walk(mocked_raw):
     response_1 = readbytes("multiwalk_response_1.hex")
     response_2 = readbytes("multiwalk_response_2.hex")
     response_3 = readbytes("multiwalk_response_3.hex")
@@ -167,11 +167,11 @@ async def test_multi_walk(mocked_send):
         ),
     ]
 
-    mocked_send.sender.set_values([response_1, response_2, response_3])
+    mocked_raw.sender.set_values([response_1, response_2, response_3])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 1474004155
         result = []
-        async for row in mocked_send.multiwalk(
+        async for row in mocked_raw.multiwalk(
             ["1.3.6.1.2.1.2.2.1.1", "1.3.6.1.2.1.2.2.1.2"],
         ):
             result.append(row)
@@ -179,7 +179,7 @@ async def test_multi_walk(mocked_send):
 
 
 @pytest.mark.asyncio
-async def test_multiwalk_non_containment(mocked_send):
+async def test_multiwalk_non_containment(mocked_raw):
     """
     Running a multiwalk should raise an exception if the agent returns OIDs
     which are not properly increasing.
@@ -199,16 +199,16 @@ async def test_multiwalk_non_containment(mocked_send):
             ],
         ),
     )
-    mocked_send.sender.set_values([bytes(response)])
+    mocked_raw.sender.set_values([bytes(response)])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 123
         with pytest.raises(FaultySNMPImplementation):
-            async for _ in mocked_send.multiwalk(["1.2.3", "2.3.4"]):
+            async for _ in mocked_raw.multiwalk(["1.2.3", "2.3.4"]):
                 pass
 
 
 @pytest.mark.asyncio
-async def test_multiwalk_non_containment_2(mocked_send):
+async def test_multiwalk_non_containment_2(mocked_raw):
     """
     Running a multiwalk should raise an exception if the agent returns OIDs
     which are not properly increasing.
@@ -227,11 +227,11 @@ async def test_multiwalk_non_containment_2(mocked_send):
             ],
         ),
     )
-    mocked_send.sender.set_values([bytes(response)])
+    mocked_raw.sender.set_values([bytes(response)])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 123
         with pytest.raises(FaultySNMPImplementation):
-            async for _ in mocked_send.multiwalk(["1.2.3", "2.3.4"]):
+            async for _ in mocked_raw.multiwalk(["1.2.3", "2.3.4"]):
                 pass
 
 
@@ -267,7 +267,7 @@ def test_eom(self):
 
 
 @pytest.mark.asyncio
-async def test_multiset(mocked_send):
+async def test_multiset(mocked_raw):
     """
     Test setting multiple OIDs at once.
 
@@ -275,10 +275,10 @@ async def test_multiset(mocked_send):
             unit-testing. It probably has a different type in the real world!
     """
     data = readbytes("multiset_response.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 0
-        result = await mocked_send.multiset(
+        result = await mocked_raw.multiset(
             {
                 "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
                 "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
@@ -292,9 +292,9 @@ async def test_multiset(mocked_send):
 
 
 @pytest.mark.asyncio
-async def test_get_call_args(mocked_send):
+async def test_get_call_args(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     packet = Sequence(
         Integer(Version.V2C),
         OctetString("public"),
@@ -302,24 +302,24 @@ async def test_get_call_args(mocked_send):
     )
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 0
-        await mocked_send.getnext("1.2.3")
-        assert mocked_send.sender.mock_calls == [call(-1, bytes(packet))]
+        await mocked_raw.getnext("1.2.3")
+        assert mocked_raw.sender.mock_calls == [call(-1, bytes(packet))]
 
 
 @pytest.mark.asyncio
-async def test_getnext(mocked_send):
+async def test_getnext(mocked_raw):
     data = readbytes("getnext_response.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     expected = VarBind("1.3.6.1.6.3.1.1.6.1.0", Integer(354522558))
 
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 2089242883
-        result = await mocked_send.getnext("1.3.6.1.5")
+        result = await mocked_raw.getnext("1.3.6.1.5")
     assert result == expected
 
 
 @pytest.mark.asyncio
-async def test_getnext_increasing_oid_strict(mocked_send):
+async def test_getnext_increasing_oid_strict(mocked_raw):
     """
     When running "getnext" we expect a different OID than the one we passed
     in. If not, this can cause endless-loops in the worst case. Faulty SNMP
@@ -332,16 +332,16 @@ async def test_getnext_increasing_oid_strict(mocked_send):
         GetResponse(234, [VarBind(requested_oid, Integer(123))]),
     )
     response_bytes = bytes(response_object)
-    mocked_send.sender.set_values([response_bytes])
+    mocked_raw.sender.set_values([response_bytes])
 
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 234
         with pytest.raises(FaultySNMPImplementation):
-            await mocked_send.getnext("1.2.3.4")
+            await mocked_raw.getnext("1.2.3.4")
 
 
 @pytest.mark.asyncio
-async def test_walk_increasing_oid_lenient(mocked_send):
+async def test_walk_increasing_oid_lenient(mocked_raw):
     """
     We want to be able to allow faulty SNMP implementations to at least try
     to fetch the values in a walk which are not increasing. It should read
@@ -362,12 +362,12 @@ async def test_walk_increasing_oid_lenient(mocked_send):
         for bind in response_binds
     ]
     response_bytes = [bytes(packet) for packet in response_packets]
-    mocked_send.sender.set_values(response_bytes)
+    mocked_raw.sender.set_values(response_bytes)
 
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 234
         result = []
-        async for row in mocked_send.walk("1.2", errors="warn"):
+        async for row in mocked_raw.walk("1.2", errors="warn"):
             result.append(row)
 
     # The last OID in the mocked responses is decreasing so we want to read
@@ -385,7 +385,7 @@ async def test_walk_increasing_oid_lenient(mocked_send):
 
 
 @pytest.mark.asyncio
-async def test_walk_endless_loop(mocked_send):
+async def test_walk_endless_loop(mocked_raw):
     """
     In rare cases, some devices fall into an endless loop by returning the
     requested OID on a "getnext" call during a "walk" operation. A SNMP
@@ -405,7 +405,7 @@ async def test_walk_endless_loop(mocked_send):
         for bind in response_binds
     ]
     response_bytes = [bytes(packet) for packet in response_packets]
-    mocked_send.sender.set_values(response_bytes)
+    mocked_raw.sender.set_values(response_bytes)
 
     handler = CapturingHandler()
     logger = getLogger("puresnmp")
@@ -413,7 +413,7 @@ async def test_walk_endless_loop(mocked_send):
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 234
         result = []
-        async for row in mocked_send.walk("1.2", errors="warn"):
+        async for row in mocked_raw.walk("1.2", errors="warn"):
             result.append(row)
     logger.removeHandler(handler)
 
@@ -431,9 +431,9 @@ async def test_walk_endless_loop(mocked_send):
 
 
 @pytest.mark.asyncio
-async def test_get_call_args(mocked_send):
+async def test_get_call_args(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     packet = Sequence(
         Integer(Version.V2C),
         OctetString("private"),
@@ -443,17 +443,17 @@ async def test_get_call_args(mocked_send):
     )
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 0
-        await mocked_send.bulkget(["1.2.3"], ["1.2.4"], max_list_size=2)
-    assert mocked_send.sender.mock_calls == [
+        await mocked_raw.bulkget(["1.2.3"], ["1.2.4"], max_list_size=2)
+    assert mocked_raw.sender.mock_calls == [
         call("192.0.2.1", 161, bytes(packet), timeout=6)
     ]
     1 / 0
 
 
 @pytest.mark.asyncio
-async def test_bulkget(mocked_send):
+async def test_bulkget(mocked_raw):
     data = readbytes("bulk_get_response.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     expected = BulkResult(
         {
             "1.3.6.1.2.1.1.1.0": OctetString(
@@ -476,7 +476,7 @@ async def test_bulkget(mocked_send):
 
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 1105659629
-        result = await mocked_send.bulkget(
+        result = await mocked_raw.bulkget(
             ["1.3.6.1.2.1.1.1"],
             ["1.3.6.1.2.1.3.1"],
             max_list_size=5,
@@ -485,15 +485,15 @@ async def test_bulkget(mocked_send):
 
 
 @pytest.mark.asyncio
-async def test_eom(mocked_send):
+async def test_eom(mocked_raw):
     """
     Test a bulg-get operation which runs into the "endOfMibView" marker.
     """
     data = readbytes("x690/bulk_get_eom_response.hex")
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 43764201
-        result = await mocked_send.bulkget([], ["1.2.4"], max_list_size=10)
+        result = await mocked_raw.bulkget([], ["1.2.4"], max_list_size=10)
 
     expected_scalars = {}
     assert result.scalars == expected_scalars
@@ -508,9 +508,9 @@ async def test_eom(mocked_send):
 
 
 @pytest.mark.asyncio
-async def test_get_call_args(mocked_send):
+async def test_get_call_args(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     packet = Sequence(
         Integer(Version.V2C),
         OctetString("private"),
@@ -519,28 +519,28 @@ async def test_get_call_args(mocked_send):
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 3262242864
         # we need to consume this to trigger the error
-        async for _ in mocked_send.bulkwalk(["1.2.3"], bulk_size=2):
+        async for _ in mocked_raw.bulkwalk(["1.2.3"], bulk_size=2):
             pass
-        assert mocked_send.sender.mock_calls == [
+        assert mocked_raw.sender.mock_calls == [
             call("192.0.2.1", 161, bytes(packet), timeout=6)
         ]
 
 
 @pytest.mark.asyncio
-async def test_get_call_args_issue_22(mocked_send):
+async def test_get_call_args_issue_22(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
-    mocked_send.sender.set_values([data])
+    mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 0
         with pytest.raises(TypeError) as exc:
             # we need to consume this to trigger the error
-            async for _ in mocked_send.bulkwalk("1.2.3", bulk_size=2):
+            async for _ in mocked_raw.bulkwalk("1.2.3", bulk_size=2):
                 pass
         exc.match(r"OIDS.*list")
 
 
 @pytest.mark.asyncio
-async def test_bulkwalk(mocked_send):
+async def test_bulkwalk(mocked_raw):
     req1 = readbytes("bulkwalk_request_1.hex")
     req2 = readbytes("bulkwalk_request_2.hex")
     req3 = readbytes("bulkwalk_request_3.hex")
@@ -550,19 +550,17 @@ async def test_bulkwalk(mocked_send):
         readbytes("bulkwalk_response_2.hex"),
         readbytes("bulkwalk_response_3.hex"),
     ]
-    mocked_send.sender.set_values(responses)
+    mocked_raw.sender.set_values(responses)
 
     request_ids = [1001613222, 1001613223, 1001613224]
 
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.side_effect = request_ids
         result = []
-        async for row in mocked_send.bulkwalk(
-            ["1.3.6.1.2.1.2.2"], bulk_size=20
-        ):
+        async for row in mocked_raw.bulkwalk(["1.3.6.1.2.1.2.2"], bulk_size=20):
             result.append(row)
 
-    assert mocked_send.sender.mock_calls == [
+    assert mocked_raw.sender.mock_calls == [
         call("192.0.2.1", 161, req1, timeout=6),
         call("192.0.2.1", 161, req2, timeout=6),
         call("192.0.2.1", 161, req3, timeout=6),
@@ -621,9 +619,9 @@ async def test_bulkwalk(mocked_send):
 
 
 @pytest.mark.asyncio
-async def test_bulktable(mocked_send):
+async def test_bulktable(mocked_raw):
     responses = readbytes_multiple("bulktable_response.hex")
-    mocked_send.sender.set_values(responses)
+    mocked_raw.sender.set_values(responses)
 
     with patch("puresnmp.api.raw.get_request_id") as gri:
         request_ids = [
@@ -634,7 +632,7 @@ async def test_bulktable(mocked_send):
             1378164143,
         ]
         gri.side_effect = request_ids
-        result = list(await mocked_send.bulktable("1.3.6.1.2.1.2.2"))
+        result = list(await mocked_raw.bulktable("1.3.6.1.2.1.2.2"))
 
     expected = [
         {
@@ -743,7 +741,7 @@ class TestTraps(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-def test_traps_origin(mocked_send):
+def test_traps_origin(mocked_raw):
     """
     We want to see where a trap was sent from
     """
