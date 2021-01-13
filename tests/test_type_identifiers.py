@@ -26,8 +26,7 @@ def make_identifier_test(octet, expected_class, expected_pc, expected_value):
 
 def add_class_detector(cls, expected_class, typeclass, tag, pc=PRIMITIVE):
     def fun(inst):
-        # TODO new x690 - result = t.Type.get(typeclass, tag, pc)
-        result = t.Type.get(typeclass, tag)
+        result = t.Type.get(typeclass, tag, pc)
         inst.assertEqual(result, expected_class)
 
     fun.__name__ = "test_%s" % expected_class.__name__

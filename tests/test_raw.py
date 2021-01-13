@@ -78,7 +78,6 @@ async def test_get_non_existing_oid(mocked_send):
     A "GET" response on a non-existing OID should raise an appropriate
     exception.
     """
-    raise pytest.skip("TODO")
     data = readbytes("get_non_existing.hex")
     mocked_send.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
@@ -331,7 +330,6 @@ async def test_getnext_increasing_oid_strict(mocked_send):
     in. If not, this can cause endless-loops in the worst case. Faulty SNMP
     implementations may behave this way!
     """
-    raise pytest.skip("TODO")
     requested_oid = ObjectIdentifier(1, 2, 3, 4)
     response_object = Sequence(
         Integer(1),
@@ -339,10 +337,10 @@ async def test_getnext_increasing_oid_strict(mocked_send):
         GetResponse(234, [VarBind(requested_oid, Integer(123))]),
     )
     response_bytes = bytes(response_object)
-    mocked_send.sender.set_values(response_bytes)
+    mocked_send.sender.set_values([response_bytes])
 
     with patch("puresnmp.api.raw.get_request_id") as gri:
-        gri.return_value = 0
+        gri.return_value = 234
         with pytest.raises(FaultySNMPImplementation):
             await mocked_send.getnext("1.2.3.4")
 
