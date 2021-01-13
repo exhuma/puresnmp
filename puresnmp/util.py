@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -12,7 +13,6 @@ from typing import (
     Tuple,
     Type,
     Union,
-    Callable,
 )
 
 from x690.types import ObjectIdentifier

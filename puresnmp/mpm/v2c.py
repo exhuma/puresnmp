@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Callable, Awaitable, Dict, Any
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 

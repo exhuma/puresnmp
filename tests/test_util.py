@@ -1,9 +1,10 @@
 """
 Unit-tests for utility functions
 """
-from x690.types import Null, ObjectIdentifier
-from binascii import unhexlify
 import hashlib
+from binascii import unhexlify
+
+from x690.types import Null, ObjectIdentifier
 
 from puresnmp.pdu import VarBind
 from puresnmp.util import (

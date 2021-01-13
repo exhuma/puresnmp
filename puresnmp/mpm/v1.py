@@ -1,4 +1,5 @@
-from typing import Callable, Awaitable, Dict, Any
+from typing import Any, Awaitable, Callable, Dict
+
 from puresnmp.mpm import MessageProcessingModel
 
 IDENTIFIER = 0

@@ -4,8 +4,8 @@ from typing import Generator, Tuple
 
 from Crypto.Cipher import DES as CDES
 
-from puresnmp.util import password_to_key
 from puresnmp.exc import SnmpError
+from puresnmp.util import password_to_key
 
 IDENTIFIER = "des"
 

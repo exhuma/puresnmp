@@ -1,8 +1,9 @@
 import importlib
 import pkgutil
 
-import puresnmp.auth
 from typing_extensions import Protocol
+
+import puresnmp.auth
 from puresnmp.adt import Message
 
 #: Global registry of detected plugins

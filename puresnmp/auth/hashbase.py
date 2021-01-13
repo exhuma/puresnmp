@@ -1,8 +1,9 @@
 import hmac
+from typing import Callable
+
+from typing_extensions import Protocol
 
 from puresnmp.exc import SnmpError
-from typing import Callable
-from typing_extensions import Protocol
 
 THasher = Callable[[bytes, bytes], bytes]
 
