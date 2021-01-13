@@ -35,7 +35,6 @@ class V2CMPM(MessageProcessingModel):
         self,
         whole_msg,  # as received from the network
         credentials: Credentials,
-        security_model: SecurityModel,
     ) -> PDU:
         """
         The Message Processing Subsystem provides this service primitive for

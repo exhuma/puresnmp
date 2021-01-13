@@ -12,4 +12,6 @@ class NullSecurityModel(SecurityModel):
     phase.
     """
 
-    pass
+
+def create() -> NullSecurityModel:
+    return NullSecurityModel()

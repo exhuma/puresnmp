@@ -158,6 +158,9 @@ class UserSecurityModel(SecurityModel):
             except Exception as exc:
                 # TODO Use a proper app-exception here
                 raise SnmpError("EncryptionError") from exc
+        else:
+            scoped_pdu = message.scoped_pdu
+            salt = b""
 
         unauthed_message = replace(
             message,
@@ -216,14 +219,14 @@ class UserSecurityModel(SecurityModel):
             authoritative_engine_time=engine_time,
             user_name=security_name,
             auth_params=auth_params,
-            priv_params=priv_params,
+            priv_params=salt,
         )
 
         secured_message = Message(
             message.version,
             message.global_data,
             bytes(security_params),
-            encrypted_pdu,
+            scoped_pdu,
         )
         return secured_message
 

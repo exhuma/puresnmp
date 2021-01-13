@@ -117,9 +117,7 @@ class RawClient:
         raw_response = await self.sender(
             str(self.ip), self.port, bytes(packet), timeout=timeout
         )
-        response = self.mpm.decode(
-            raw_response, self.credentials, security_model
-        )
+        response = self.mpm.decode(raw_response, self.credentials)
         if response.request_id != request_id:
             raise SnmpError(
                 "Mismatching request-id in request/response (%r != %r)"

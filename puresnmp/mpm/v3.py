@@ -79,7 +79,7 @@ class V3MPM(MessageProcessingModel):
         )
 
         if self.disco is not None:
-            security_model.set_engine_timing(
+            self.security_model.set_engine_timing(
                 self.disco.authoritative_engine_id,
                 self.disco.authoritative_engine_boots,
                 self.disco.authoritative_engine_time,
