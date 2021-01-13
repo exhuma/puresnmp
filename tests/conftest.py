@@ -6,7 +6,7 @@ from unittest.mock import call
 
 import pytest
 
-from puresnmp.api.raw import RawClient
+from puresnmp import RawClient
 from puresnmp.credentials import V2C
 
 collect_ignore = [
@@ -41,4 +41,11 @@ class FakeSend:
 def mocked_raw():
     sender = FakeSend()
     client = RawClient("192.0.2.1", V2C("private"), sender=sender)
+    yield client
+
+
+@pytest.fixture
+def mocked_pythonic():
+    sender = FakeSend()
+    client = Client("192.0.2.1", V2C("private"), sender=sender)
     yield client
