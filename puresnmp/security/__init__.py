@@ -29,15 +29,8 @@ class SecurityModel:
     #: The "Local Configuration Datastor" (LCD)
     local_config: Dict[bytes, Dict[str, Any]]
 
-    #: A default local security config for unknown engine IDs
-    default_auth: Dict[bytes, Dict[str, Any]]
-
     def __init__(self) -> None:
         self.local_config = {}
-        self.default_auth = {}
-
-    def set_default_auth(self, auth: Dict[bytes, Dict[str, Any]]) -> None:
-        self.default_auth = auth
 
     def generate_request_message(
         self,

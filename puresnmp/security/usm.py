@@ -115,9 +115,6 @@ class UserSecurityModel(SecurityModel):
         engine_config["authoritative_engine_boots"] = boots
         engine_config["authoritative_engine_time"] = time
 
-    def set_default_auth(self, auth: Dict[bytes, Dict[str, Any]]) -> None:
-        self.default_auth = auth
-
     def generate_request_message(
         self,
         message: Message,
