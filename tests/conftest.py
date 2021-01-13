@@ -9,11 +9,6 @@ import pytest
 from puresnmp import RawClient
 from puresnmp.credentials import V2C
 
-collect_ignore = [
-    "test_aio_pythonized.py",
-    "test_aio_raw.py",
-]
-
 
 class AsyncIter:
     def __init__(self, values):
