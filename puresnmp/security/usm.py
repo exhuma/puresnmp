@@ -1,6 +1,6 @@
 from dataclasses import dataclass, replace
 from textwrap import indent
-from typing import Any, Awaitable, Callable, Dict
+from typing import Awaitable, Callable, Tuple
 
 from x690.types import Integer, OctetString, Sequence, pop_tlv
 from x690.util import INDENT_STRING
@@ -108,6 +108,123 @@ class USMSecurityParameters:
         return indent("\n".join(lines), INDENT_STRING * depth)
 
 
+def apply_encryption(
+    message: Message,
+    credentials: V3,
+    security_name: bytes,
+    security_engine_id: bytes,
+    engine_boots: int,
+    engine_time: int,
+) -> Tuple[Message, bytes, ScopedPDU]:
+    if credentials.priv is not None and not all(
+        [credentials.priv.method, credentials.auth.method]
+    ):
+        raise UnsupportedSecurityLevel(
+            f"Security level needs privacy, but either auth-proto or "
+            f"priv-proto are missing for user {security_name!r}"
+        )
+
+    if credentials.priv is not None:
+        priv_method = priv.create(credentials.priv.method)
+        key = credentials.priv.key
+        try:
+            from x690.types import OctetString
+
+            encrypted, salt = priv_method.encrypt_data(
+                key,
+                security_engine_id,
+                engine_boots,
+                bytes(message.scoped_pdu),
+            )
+            scoped_pdu = OctetString(encrypted)
+        except Exception as exc:
+            # TODO Use a proper app-exception here
+            raise SnmpError("EncryptionError") from exc
+    else:
+        scoped_pdu = message.scoped_pdu
+        salt = b""
+
+    unauthed_message = replace(
+        message,
+        scoped_pdu=scoped_pdu,
+        security_parameters=bytes(
+            USMSecurityParameters(
+                security_engine_id,
+                engine_boots,
+                engine_time,
+                security_name,
+                b"",
+                salt,
+            )
+        ),
+    )
+    return unauthed_message, salt, scoped_pdu
+
+
+def apply_authentication(
+    unauthed_message: Message,
+    credentials: V3,
+    security_name: bytes,
+    security_engine_id: bytes,
+    engine_boots: int,
+    engine_time: int,
+    salt: bytes,
+    scoped_pdu: ScopedPDU,
+) -> Message:
+    if credentials.auth is not None and not credentials.auth.method:
+        raise UnsupportedSecurityLevel(
+            f"Security level needs authentication, but auth-proto "
+            f"is missing for user {security_name!r}"
+        )
+
+    if credentials.auth is not None:
+        auth_method = auth.create(credentials.auth.method)
+        try:
+            without_digest = reset_digest(unauthed_message)
+            auth_result = auth_method.authenticate_outgoing_message(
+                credentials.auth.key,
+                bytes(without_digest),
+                security_engine_id,
+            )
+            security_params = USMSecurityParameters(
+                security_engine_id,
+                engine_boots,
+                engine_time,
+                security_name,
+                auth_result,
+                salt,
+            )
+            authed_message = Message(
+                unauthed_message.version,
+                unauthed_message.global_data,
+                bytes(security_params),
+                unauthed_message.scoped_pdu,
+            )
+            return authed_message
+        except Exception as exc:
+            # TODO improve error message
+            raise SnmpError("authenticationFailure") from exc
+    else:
+        auth_params = b""
+
+    security_params = USMSecurityParameters(
+        authoritative_engine_id=security_engine_id,
+        authoritative_engine_boots=engine_boots,
+        authoritative_engine_time=engine_time,
+        user_name=security_name,
+        auth_params=auth_params,
+        priv_params=salt,
+    )
+
+    secured_message = Message(
+        unauthed_message.version,
+        unauthed_message.global_data,
+        bytes(security_params),
+        scoped_pdu,
+    )
+    return secured_message
+
+
 class UserSecurityModel(SecurityModel):
     def set_engine_timing(self, engine_id, boots, time):
         # TODO redundant with set_timing_values?
@@ -131,100 +248,26 @@ class UserSecurityModel(SecurityModel):
         engine_boots = engine_config["authoritative_engine_boots"]
         engine_time = engine_config["authoritative_engine_time"]
 
-        if credentials.priv is not None and not all(
-            [credentials.priv.method, credentials.auth.method]
-        ):
-            raise UnsupportedSecurityLevel(
-                f"Security level needs privacy, but either auth-proto or "
-                f"priv-proto are missing for user {security_name!r}"
-            )
-
-        if credentials.priv is not None:
-            priv_method = priv.create(credentials.priv.method)
-            key = credentials.priv.key
-            try:
-                from x690.types import OctetString
-
-                encrypted, salt = priv_method.encrypt_data(
-                    key,
-                    security_engine_id,
-                    engine_boots,
-                    bytes(message.scoped_pdu),
-                )
-                scoped_pdu = OctetString(encrypted)
-            except Exception as exc:
-                # TODO Use a proper app-exception here
-                raise SnmpError("EncryptionError") from exc
-        else:
-            scoped_pdu = message.scoped_pdu
-            salt = b""
-
-        unauthed_message = replace(
+        unauthed_message, salt, scoped_pdu = apply_encryption(
             message,
-            scoped_pdu=scoped_pdu,
-            security_parameters=bytes(
-                USMSecurityParameters(
-                    security_engine_id,
-                    engine_boots,
-                    engine_time,
-                    security_name,
-                    b"",
-                    salt,
-                )
-            ),
+            credentials,
+            security_name,
+            security_engine_id,
+            engine_boots,
+            engine_time,
         )
 
-        if credentials.auth is not None and not credentials.auth.method:
-            raise UnsupportedSecurityLevel(
-                f"Security level needs authentication, but auth-proto "
-                f"is missing for user {security_name!r}"
-            )
-
-        if credentials.auth is not None:
-            auth_method = auth.create(credentials.auth.method)
-            try:
-                without_digest = reset_digest(unauthed_message)
-                auth_result = auth_method.authenticate_outgoing_message(
-                    credentials.auth.key,
-                    bytes(without_digest),
-                    security_engine_id,
-                )
-                security_params = USMSecurityParameters(
-                    security_engine_id,
-                    engine_boots,
-                    engine_time,
-                    security_name,
-                    auth_result,
-                    salt,
-                )
-                authed_message = Message(
-                    unauthed_message.version,
-                    unauthed_message.global_data,
-                    bytes(security_params),
-                    unauthed_message.scoped_pdu,
-                )
-                return authed_message  # XXX return misplaced
-            except Exception as exc:
-                # TODO improve error message
-                raise SnmpError("authenticationFailure") from exc
-        else:
-            auth_params = b""
-
-        security_params = USMSecurityParameters(
-            authoritative_engine_id=security_engine_id,
-            authoritative_engine_boots=engine_boots,
-            authoritative_engine_time=engine_time,
-            user_name=security_name,
-            auth_params=auth_params,
-            priv_params=salt,
-        )
-
-        secured_message = Message(
-            message.version,
-            message.global_data,
-            bytes(security_params),
+        secured_message = apply_authentication(
+            unauthed_message,
+            credentials,
+            security_name,
+            security_engine_id,
+            engine_boots,
+            engine_time,
+            salt,
             scoped_pdu,
         )
+
         return secured_message
 
     def process_incoming_message(
