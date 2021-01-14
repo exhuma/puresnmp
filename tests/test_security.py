@@ -1,15 +1,18 @@
-from puresnmp.credentials import Auth, Priv, V2C, V3
-from x690.types import Integer, OctetString, Sequence
-from puresnmp.pdu import GetRequest
-from puresnmp.adt import HeaderData, Message, V3Flags
-import pytest
 import random
+from unittest.mock import patch, MagicMock
+
+import pytest
+from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
 import puresnmp.security as sec
 import puresnmp.security.null as null
 import puresnmp.security.usm as usm
 import puresnmp.security.v1 as v1
 import puresnmp.security.v2c as v2c
+from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
+from puresnmp.credentials import V2C, V3, Auth, Priv
+from puresnmp.pdu import GetRequest, GetResponse
+from puresnmp.snmp import VarBind
 
 
 def make_msg():
@@ -105,6 +108,20 @@ def test_set_timing():
     instance.local_config == expected
 
 
+def test_request_message_invalid_creds():
+    """
+    We expect an error if we call an USM function with unsupported creds.
+    """
+    instance = usm.UserSecurityModel()
+    with pytest.raises(TypeError):
+        instance.generate_request_message(
+            make_msg(),
+            b"engine-id",
+            V2C("community"),
+        )
+
+
+@pytest.mark.dependency()
 def test_request_message_nanp():
     message = make_msg()
     instance = usm.UserSecurityModel()
@@ -138,6 +155,7 @@ def test_request_message_nanp():
     assert result == expected
 
 
+@pytest.mark.dependency(depends=["test_request_message_nanp"])
 def test_request_message_anp():
     message = make_msg()
     instance = usm.UserSecurityModel()
@@ -171,6 +189,7 @@ def test_request_message_anp():
     assert result == expected
 
 
+@pytest.mark.dependency(depends=["test_request_message_anp"])
 def test_request_message_ap():
     # Apply static random seed for testing
     random.seed(123)
@@ -202,5 +221,149 @@ def test_request_message_ap():
             b"\x04\x08\x00\x00\x00\x01\x00\x00\x00g"
         ),
         scoped_pdu=OctetString(b"\xde\xe24\x01b\xbdk\x9b#\x01\xe4|\x8a\xe6\r7"),
+    )
+    assert result == expected
+
+
+@pytest.mark.asyncio
+async def test_send_disco():
+    instance = usm.UserSecurityModel()
+    disco_response = Message(
+        Integer(3),
+        HeaderData(123, 65507, V3Flags(False, False, False), 3),
+        bytes(
+            Sequence(
+                OctetString(b"engine-id"),
+                Integer(1),
+                Integer(75101),
+                OctetString(b""),
+                OctetString(b""),
+                OctetString(b""),
+            )
+        ),
+        ScopedPDU(
+            OctetString(b"engine-id"),
+            OctetString(b"context-name"),
+            GetResponse(
+                123,
+                [
+                    VarBind(
+                        ObjectIdentifier(1, 3, 6, 1, 6, 3, 15, 1, 1, 4, 0),
+                        Integer(6),
+                    )
+                ],
+            ),
+        ),
+    )
+
+    async def fake_transport(data: bytes) -> bytes:
+        return bytes(disco_response)
+
+    with patch("puresnmp.security.usm.get_request_id", return_value=123):
+        result = await instance.send_discovery_message(fake_transport)
+
+    expected = usm.DiscoData(b"engine-id", 1, 75101, 6)
+    assert result == expected
+
+
+def test_missing_enc_method():
+    with pytest.raises(usm.UnsupportedSecurityLevel):
+        usm.apply_encryption(
+            None, V3(b"", Auth(b"", ""), Priv(b"foo", "")), b"", b"", 0, 0
+        )
+
+
+def test_encrypt_error():
+    with pytest.raises(usm.EncryptionError) as exc:
+        usm.apply_encryption(
+            None,
+            V3(b"", Auth(b"a", "md5"), Priv(b"foo", "des")),
+            b"",
+            b"",
+            0,
+            0,
+        )
+    exc.match(r"NoneType.*has no attribute")
+
+
+def test_missing_auth_method():
+    with pytest.raises(usm.UnsupportedSecurityLevel):
+        usm.apply_authentication(
+            None, V3(b"", Auth(b"foo", ""), Priv(b"foo", "")), b""
+        )
+
+
+def test_auth_error():
+    with pytest.raises(usm.AuthenticationError) as exc:
+        usm.apply_authentication(None, V3(b"", Auth(b"foo", "md5"), None), b"")
+    exc.match(r"NoneType.*has no attribute")
+
+
+def test_incoming_message():
+    message = Message(
+        version=Integer(3),
+        global_data=HeaderData(
+            message_id=1610635889,
+            message_max_size=65507,
+            flags=V3Flags(auth=True, priv=True, reportable=False),
+            security_model=3,
+        ),
+        security_parameters=(
+            b"0:"
+            b"\x04\x11\x80\x00\x1f\x88\x80\xf5\xb92\x087\x13\xff_\x00\x00\x00\x00"
+            b"\x02\x01\x01"
+            b"\x02\x03\x01G:"
+            b"\x04\x05ninja"
+            b"\x04\x0c(\x85t\xdbN\xad\xc7\x9c\xa6\xf5\x92\xdc"
+            b"\x04\x08\x00\x00\x00\x01m\xfc\x986"
+        ),
+        scoped_pdu=OctetString(
+            (
+                b"\xe0\xc5\xfc\xa6m@\xaf\xc3\xd5<\t\xa9\x9e\x81\xa0\xa2\xb9"
+                b"\x13\xd7\x14\xe8J\xa84C,\xbb \xd9\xbc\x06]\x08he\xe6/\x06"
+                b"y'\xf4x\xc7#=\x07^n\x8d\xbf\xcem\x82\xfa\xc67w/?\xcd\xec"
+                b"\x89\xe9{"
+            )
+        ),
+    )
+    instance = usm.UserSecurityModel()
+    result = instance.process_incoming_message(
+        message,
+        V3(
+            "ninja",
+            Auth(b"theauthpass", "md5"),
+            Priv(b"privpass", "des"),
+        ),
+    )
+    expected = Message(
+        version=Integer(3),
+        global_data=HeaderData(
+            message_id=1610635889,
+            message_max_size=65507,
+            flags=V3Flags(auth=True, priv=True, reportable=False),
+            security_model=3,
+        ),
+        security_parameters=(
+            b"0:"
+            b"\x04\x11\x80\x00\x1f\x88\x80\xf5\xb92\x087\x13\xff_\x00\x00\x00\x00"
+            b"\x02\x01\x01"
+            b"\x02\x03\x01G:"
+            b"\x04\x05ninja"
+            b"\x04\x0c(\x85t\xdbN\xad\xc7\x9c\xa6\xf5\x92\xdc"
+            b"\x04\x08\x00\x00\x00\x01m\xfc\x986"
+        ),
+        scoped_pdu=ScopedPDU(
+            context_engine_id=OctetString(b"\x01\x00&4\x04puresnmp-26938"),
+            context_name=OctetString(b""),
+            data=GetResponse(
+                1610635889,
+                [
+                    VarBind(
+                        ObjectIdentifier((1, 3, 6, 1, 6, 3, 16, 1, 1, 1, 1, 0)),
+                        OctetString(b""),
+                    )
+                ],
+            ),
+        ),
     )
     assert result == expected
