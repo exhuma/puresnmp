@@ -12,12 +12,16 @@ DISCOVERED_PLUGINS = {}
 
 class TAuth(Protocol):
     def authenticate_outgoing_message(
-        auth_key: bytes, message: Message
-    ) -> Message:
+        self, auth_key: bytes, data: bytes, engine_id: bytes
+    ) -> bytes:
         ...
 
     def authenticate_incoming_message(
-        auth_key: bytes, message: Message
+        self,
+        auth_key: bytes,
+        data: bytes,
+        received_digst: bytes,
+        engine_id: bytes,
     ) -> None:
         ...
 

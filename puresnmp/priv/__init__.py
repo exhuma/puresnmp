@@ -2,14 +2,16 @@ import importlib
 import pkgutil
 from typing import Dict
 
-from typing_extensions import Protocol
+from typing_extensions import Protocol, Tuple
 
 import puresnmp.priv
 from puresnmp.adt import Message
 
 
 class TPriv(Protocol):
-    def encrypt_data(self, key: bytes, message: Message) -> Message:
+    def encrypt_data(
+        self, key: bytes, engine_id: bytes, engine_boots: int, data: bytes
+    ) -> Tuple[bytes, bytes]:
         ...
 
     def decrypt_data(self, decrypt_key: bytes, message: Message) -> Message:
