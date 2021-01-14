@@ -199,6 +199,63 @@ def apply_authentication(
         ) from exc
 
 
+def verify_authentication(
+    message: Message, credentials: V3, security_params: USMSecurityParameters
+):
+
+    if not message.global_data.flags.auth:
+        return
+
+    if not credentials.auth:
+        raise UnsupportedSecurityLevel(
+            "Message requires authentication but auth-method is missing!"
+        )
+
+    auth_method = auth.create(credentials.auth.method)
+
+    if not message.global_data.flags.auth:
+        return
+
+    try:
+        without_digest = reset_digest(message)
+        auth_method.authenticate_incoming_message(
+            credentials.auth.key,
+            bytes(without_digest),
+            security_params.auth_params,
+            security_params.authoritative_engine_id,
+        )
+    except Exception as exc:
+        raise AuthenticationError(
+            "Incoming message could not be authenticated!"
+        ) from exc
+
+
+def decrypt_message(message: Message, credentials: V3) -> Message:
+    if not message.global_data.flags.priv:
+        return message
+    priv_method = priv.create(credentials.priv.method)
+    key = credentials.priv.key
+    try:
+        if not isinstance(message.scoped_pdu, OctetString):
+            raise SnmpError(
+                "Unexpectedly received unencrypted PDU with a security level requesting encryption!"
+            )
+        security_parameters = USMSecurityParameters.decode(
+            message.security_parameters
+        )
+        decrypted = priv_method.decrypt_data(
+            key,
+            message.scoped_pdu.value,
+            security_parameters.authoritative_engine_id,
+            security_parameters.priv_params,
+        )
+        message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
+        return message
+    except Exception as exc:
+        # TODO Use a proper app-exception here
+        raise SnmpError("DecryptionError") from exc
+
+
 class UserSecurityModel(SecurityModel):
     def set_engine_timing(self, engine_id, boots, time):
         # TODO redundant with set_timing_values?
@@ -243,6 +300,9 @@ class UserSecurityModel(SecurityModel):
         # TODO: Validate engine-id.
         # TODO: Validate incoming username against the request
 
+        if not isinstance(credentials, V3):
+            raise SnmpError("Supplied credentials is not a V3 instance!")
+
         security_params = USMSecurityParameters.decode(
             message.security_parameters
         )
@@ -253,49 +313,8 @@ class UserSecurityModel(SecurityModel):
             # TODO better exception class
             raise SnmpError(f"Unknown User {security_name!r}")
 
-        auth_method = auth.create(credentials.auth.method)
-
-        if message.global_data.flags.auth and not auth_method:
-            raise UnsupportedSecurityLevel(
-                f"Security level needs authentication, but auth-proto "
-                f"is missing for user {security_name!r}"
-            )
-        if message.global_data.flags.auth:
-            try:
-                without_digest = reset_digest(message)
-                auth_method.authenticate_incoming_message(
-                    credentials.auth.key,
-                    bytes(without_digest),
-                    security_params.auth_params,
-                    security_params.authoritative_engine_id,
-                )
-            except Exception as exc:
-                # TODO improve error message
-                raise SnmpError("authenticationFailure") from exc
-
-        if message.global_data.flags.priv:
-            priv_method = priv.create(credentials.priv.method)
-            key = credentials.priv.key
-            try:
-                if not isinstance(message.scoped_pdu, OctetString):
-                    raise SnmpError(
-                        "Unexpectedly received unencrypted PDU with a security level requesting encryption!"
-                    )
-                security_parameters = USMSecurityParameters.decode(
-                    message.security_parameters
-                )
-                decrypted = priv_method.decrypt_data(
-                    key,
-                    message.scoped_pdu.value,
-                    security_parameters.authoritative_engine_id,
-                    security_parameters.priv_params,
-                )
-                message = replace(
-                    message, scoped_pdu=ScopedPDU.decode(decrypted)
-                )
-            except Exception as exc:
-                # TODO Use a proper app-exception here
-                raise SnmpError("DecryptionError") from exc
+        verify_authentication(message, credentials, security_params)
+        message = decrypt_message(message, credentials)
 
         return message
 
