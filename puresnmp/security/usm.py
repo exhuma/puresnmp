@@ -37,6 +37,14 @@ class UnsupportedSecurityLevel(USMError):
     pass
 
 
+class EncryptionError(USMError):
+    pass
+
+
+class AuthenticationError(USMError):
+    pass
+
+
 @dataclass(frozen=True)
 class DiscoData:
     authoritative_engine_id: bytes
@@ -133,8 +141,7 @@ def apply_encryption(
             )
             scoped_pdu = OctetString(encrypted)
         except Exception as exc:
-            # TODO Use a proper app-exception here
-            raise SnmpError("EncryptionError") from exc
+            raise EncryptionError(f"Unable to encrypt message ({exc})") from exc
     else:
         scoped_pdu = message.scoped_pdu
         salt = b""
@@ -187,8 +194,9 @@ def apply_authentication(
         )
         return authed_message
     except Exception as exc:
-        # TODO improve error message
-        raise SnmpError("authenticationFailure") from exc
+        raise AuthenticationError(
+            f"Unable to authenticat the message ({exc})"
+        ) from exc
 
 
 class UserSecurityModel(SecurityModel):
