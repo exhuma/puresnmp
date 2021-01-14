@@ -1,5 +1,6 @@
 import random
-from unittest.mock import patch, MagicMock
+from dataclasses import replace
+from unittest.mock import Mock, patch
 
 import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
@@ -10,7 +11,8 @@ import puresnmp.security.usm as usm
 import puresnmp.security.v1 as v1
 import puresnmp.security.v2c as v2c
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
-from puresnmp.credentials import V2C, V3, Auth, Priv
+from puresnmp.credentials import V2C, V3, Auth, Credentials, Priv
+from puresnmp.exc import SnmpError, InvalidResponseId
 from puresnmp.pdu import GetRequest, GetResponse
 from puresnmp.snmp import VarBind
 
@@ -266,6 +268,12 @@ async def test_send_disco():
     assert result == expected
 
 
+def test_mismatching_ids():
+    with pytest.raises(InvalidResponseId) as exc:
+        usm.validate_response_id(1, 2)
+    exc.match(r"[iI]nvalid.*id")
+
+
 def test_missing_enc_method():
     with pytest.raises(usm.UnsupportedSecurityLevel):
         usm.apply_encryption(
@@ -367,3 +375,102 @@ def test_incoming_message():
         ),
     )
     assert result == expected
+
+
+def test_incoming_noauth():
+    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(), 1))
+    usm.verify_authentication(
+        msg,
+        V3(b"", None, None),
+        usm.USMSecurityParameters(b"", 1, 1, b"", b"", b""),
+    )
+
+
+def test_missing_auth():
+    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(True), 1))
+    with pytest.raises(usm.UnsupportedSecurityLevel) as exc:
+        usm.verify_authentication(
+            msg,
+            V3(b"", None, None),
+            usm.USMSecurityParameters(b"", 1, 1, b"", b"", b""),
+        )
+    exc.match(r"auth.*missing")
+
+
+def test_incoming_auth_error():
+    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(True), 1))
+    with pytest.raises(usm.AuthenticationError) as exc:
+        with patch("puresnmp.security.usm.auth") as auth:
+            mck = Mock()
+            mck.authenticate_incoming_message.side_effect = Exception("yoinks")
+
+            auth.create.return_value = mck
+            usm.verify_authentication(
+                msg,
+                V3(b"", Auth(b"foo", "md5"), None),
+                usm.USMSecurityParameters(b"", 1, 1, b"", b"", b""),
+            )
+    exc.match(r"auth.*yoinks")
+
+
+def test_incoming_priv_error():
+    msg = replace(
+        make_msg(), global_data=HeaderData(1, 1, V3Flags(True, True), 1)
+    )
+    with pytest.raises(usm.DecryptionError) as exc:
+        with patch("puresnmp.security.usm.priv") as priv:
+            mck = Mock()
+            mck.decrypt_data.side_effect = Exception("yoinks")
+
+            priv.create.return_value = mck
+            usm.decrypt_message(
+                replace(msg, scoped_pdu=OctetString(b"foo")),
+                V3(b"", Auth(b"foo", "md5"), Priv(b"foo", "des")),
+            )
+    exc.match(r"decrypt.*yoinks")
+
+
+def test_decrypt_noop():
+    """
+    An incoming message which doesn't have the "privacy" flag does not need
+    to be decrypted.
+    """
+    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(), 1))
+    result = usm.decrypt_message(msg, V3(b"", None, None))
+    assert result == msg
+
+
+def test_decrypt_needed():
+    """
+    Passing a non-binary message to decrypt_message indicates an error
+    """
+    msg = replace(
+        make_msg(), global_data=HeaderData(1, 1, V3Flags(True, True), 1)
+    )
+    with pytest.raises(SnmpError) as exc:
+        usm.decrypt_message(
+            msg, V3(b"", Auth(b"foo", "md5"), Priv(b"bar", "des"))
+        )
+    exc.match(r"unencrypted")
+
+
+def test_incoming_cred_version():
+    """
+    processing incoming messages with invalid credentials should raise an error
+    """
+    instance = usm.UserSecurityModel()
+    with pytest.raises(SnmpError) as exc:
+        instance.process_incoming_message(make_msg(), V2C("community"))
+    exc.match(r"credentials.*V3")
+
+
+def test_incoming_user_match():
+    """
+    An incoming message should match with the username in the credentials
+    """
+    instance = usm.UserSecurityModel()
+    with pytest.raises(SnmpError) as exc:
+        instance.process_incoming_message(
+            make_msg(), V3("the-user", None, None)
+        )
+    exc.match(r"user.*user-name")

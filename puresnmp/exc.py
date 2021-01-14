@@ -214,3 +214,10 @@ class UnknownMessageProcessingModel(SnmpError):
     """
     Raised if a message was not formatted according to any known model
     """
+
+
+class InvalidResponseId(SnmpError):
+    """
+    Exception which is raised when a response is received that did not
+    correspond to the request-id
+    """

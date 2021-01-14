@@ -9,7 +9,7 @@ import puresnmp.auth as auth
 import puresnmp.priv as priv
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V3, Credentials
-from puresnmp.exc import SnmpError
+from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.pdu import GetRequest
 from puresnmp.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE, get_request_id
@@ -41,7 +41,15 @@ class EncryptionError(USMError):
     pass
 
 
+class DecryptionError(USMError):
+    pass
+
+
 class AuthenticationError(USMError):
+    pass
+
+
+class UnknownUser(USMError):
     pass
 
 
@@ -114,6 +122,18 @@ class USMSecurityParameters:
             ]
         )
         return indent("\n".join(lines), INDENT_STRING * depth)
+
+
+def validate_response_id(request_id: int, response_id: int) -> None:
+    """
+    Helper method to keep the error on mismatching IDs the same
+
+    Raises an appropriate error if the IDs differ. Otherwise returns
+    """
+    if response_id != request_id:
+        raise InvalidResponseId(
+            f"Invalid response ID {response_id} for request id {request_id}"
+        )
 
 
 def apply_encryption(
@@ -213,9 +233,6 @@ def verify_authentication(
 
     auth_method = auth.create(credentials.auth.method)
 
-    if not message.global_data.flags.auth:
-        return
-
     try:
         without_digest = reset_digest(message)
         auth_method.authenticate_incoming_message(
@@ -226,7 +243,7 @@ def verify_authentication(
         )
     except Exception as exc:
         raise AuthenticationError(
-            "Incoming message could not be authenticated!"
+            f"Incoming message could not be authenticated! ({exc})"
         ) from exc
 
 
@@ -252,8 +269,7 @@ def decrypt_message(message: Message, credentials: V3) -> Message:
         message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
         return message
     except Exception as exc:
-        # TODO Use a proper app-exception here
-        raise SnmpError("DecryptionError") from exc
+        raise DecryptionError(f"Unable to decrypt message ({exc})") from exc
 
 
 class UserSecurityModel(SecurityModel):
@@ -310,8 +326,7 @@ class UserSecurityModel(SecurityModel):
         security_name = security_params.user_name
         if security_name != credentials.username.encode("ascii"):
             # See https://tools.ietf.org/html/rfc3414#section-3.1
-            # TODO better exception class
-            raise SnmpError(f"Unknown User {security_name!r}")
+            raise UnknownUser(f"Unknown user {security_name!r}")
 
         verify_authentication(message, credentials, security_params)
         message = decrypt_message(message, credentials)
@@ -369,10 +384,7 @@ class UserSecurityModel(SecurityModel):
         response_msg = Message.from_sequence(response)
 
         response_id = response_msg.scoped_pdu.data.request_id
-        if response_id != request_id:
-            raise SnmpError(
-                f"Invalid response ID {response_id} for request id {request_id}"
-            )
+        validate_response_id(response_id, request_id)
 
         # The engine-id is available in two places: The response directly, and also
         # the Report PDU. In initial tests these values were identical, and
@@ -397,7 +409,3 @@ class UserSecurityModel(SecurityModel):
 
 def create() -> UserSecurityModel:
     return UserSecurityModel()
-
-
-def default_security_params() -> bytes:
-    return
