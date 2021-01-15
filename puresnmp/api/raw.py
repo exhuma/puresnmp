@@ -132,7 +132,7 @@ class RawClient:
 
         Example::
 
-            >>> get('192.168.1.1', 'private', '1.2.3.4')
+            >>> get('192.168.1.1', 'private', '1.2.3.4')  # doctest: +SKIP
             'non-functional example'
         """
         result = await self.multiget([oid], timeout=timeout)
@@ -148,7 +148,7 @@ class RawClient:
 
         Example::
 
-            >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
+            >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])  # doctest: +SKIP
             ['non-functional example', 'second value']
         """
 
@@ -174,7 +174,7 @@ class RawClient:
 
         Example::
 
-            >>> getnext('192.168.1.1', 'private', '1.2.3')
+            >>> getnext('192.168.1.1', 'private', '1.2.3')  # doctest: +SKIP
             VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
         """
         result = await self.multigetnext([oid], timeout=timeout)
@@ -195,16 +195,17 @@ class RawClient:
 
         Example::
 
-            >>> walk('127.0.0.1', 'private', '1.3.6.1.2.1.1')
+            >>> walk('127.0.0.1', 'private', '1.3.6.1.2.1.1')  # doctest: +SKIP
             <generator object multiwalk at 0x7fa2f775cf68>
 
             >>> from pprint import pprint
-            >>> result = walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')
-            >>> res = []
-            >>> for x in gen:
-            ...     res.append(x)
-            ...
-            >>> pprint(res)
+            >>> def example():
+            ...     result = walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')
+            ...     res = []
+            ...     for x in gen:
+            ...         res.append(x)
+            ...     pprint(res)
+            >>> example()  # doctest: +SKIP
             [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
              VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
              VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
@@ -229,7 +230,7 @@ class RawClient:
 
         Example::
 
-            >>> multiwalk('127.0.0.1', 'private', [
+            >>> multiwalk('127.0.0.1', 'private', [  # doctest: +SKIP
             ...     '1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
             <generator object multiwalk at 0x7fa2f775cf68>
         """
@@ -316,7 +317,7 @@ class RawClient:
 
         Example::
 
-            >>> multigetnext('192.168.1.1', 'private', ['1.2.3', '1.2.4'])
+            >>> multigetnext('192.168.1.1', 'private', ['1.2.3', '1.2.4'])  # doctest: +SKIP
             [
                 VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example'),
                 VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
@@ -369,7 +370,7 @@ class RawClient:
 
         Example output (using fake data):
 
-        >>> table('192.0.2.1', 'private', '1.3.6.1.2.1.2.2')
+        >>> table('192.0.2.1', 'private', '1.3.6.1.2.1.2.2')  # doctest: +SKIP
         [{'0': '1', '1': Integer(1), '2': Counter(30)},
          {'0': '2', '1': Integer(2), '2': Counter(123)}]
         """
@@ -397,7 +398,7 @@ class RawClient:
 
         Example::
 
-            >>> set('127.0.0.1', 'private', '1.3.6.1.2.1.1.4.0',
+            >>> set('127.0.0.1', 'private', '1.3.6.1.2.1.1.4.0',  # doctest: +SKIP
             ...     OctetString(b'I am contact'))
             b'I am contact'
         """
@@ -416,7 +417,7 @@ class RawClient:
 
         Fake Example::
 
-            >>> multiset(
+            >>> multiset(  # doctest: +SKIP
             ...     '127.0.0.1', 'private',
             ...     [('1.2.3', OctetString(b'foo')),
             ...     ('2.3.4', OctetString(b'bar'))])
@@ -487,7 +488,7 @@ class RawClient:
 
             >>> ip = '192.168.1.1'
             >>> community = 'private'
-            >>> result = bulkget(
+            >>> result = bulkget(  # doctest: +SKIP
             ...     ip,
             ...     community,
             ...     scalar_oids=['1.3.6.1.2.1.1.1',
@@ -609,17 +610,20 @@ class RawClient:
 
         Example::
 
-            >>> from puresnmp import bulkwalk
-            >>> ip = '127.0.0.1'
-            >>> community = 'private'
-            >>> oids = [
-            ...     '1.3.6.1.2.1.2.2.1.2',   # name
-            ...     '1.3.6.1.2.1.2.2.1.6',   # MAC
-            ...     '1.3.6.1.2.1.2.2.1.22',  # ?
-            ... ]
-            >>> result = bulkwalk(ip, community, oids)
-            >>> for row in result:
-            ...     print(row)
+            >>> from puresnmp import RawClient, V2C
+            >>> def example():
+            ...     ip = '127.0.0.1'
+            ...     community = 'private'
+            ...     oids = [
+            ...         '1.3.6.1.2.1.2.2.1.2',   # name
+            ...         '1.3.6.1.2.1.2.2.1.6',   # MAC
+            ...         '1.3.6.1.2.1.2.2.1.22',  # ?
+            ...     ]
+            ...     client = RawClient(ip, V2C(community))
+            ...     result = client.bulkwalk(oids)
+            ...     for row in result:
+            ...         print(row)
+            >>> example()  # doctest: +SKIP
             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 2, 1)), value=b'lo')
             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 6, 1)), value=b'')
             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 1)), value='0.0')

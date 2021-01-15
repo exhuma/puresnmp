@@ -150,31 +150,25 @@ def tablify(varbinds, num_base_nodes=0, base_oid=""):
     Example::
 
         >>> data = [
-        >>>     (ObjectIdentifier.from_string('1.2.1.1'), 'row 1 col 1'),
-        >>>     (ObjectIdentifier.from_string('1.2.1.2'), 'row 2 col 1'),
-        >>>     (ObjectIdentifier.from_string('1.2.2.1'), 'row 1 col 2'),
-        >>>     (ObjectIdentifier.from_string('1.2.2.2'), 'row 2 col 2'),
-        >>> ]
+        ...     (ObjectIdentifier.from_string('1.2.1.1'), 'row 1 col 1'),
+        ...     (ObjectIdentifier.from_string('1.2.1.2'), 'row 2 col 1'),
+        ...     (ObjectIdentifier.from_string('1.2.2.1'), 'row 1 col 2'),
+        ...     (ObjectIdentifier.from_string('1.2.2.2'), 'row 2 col 2'),
+        ... ]
         >>> tablify(data)
-        [
-            {'0': '1', '1': 'row 1 col 1', '2': 'row 1 col 2'},
-            {'0': '2', '1': 'row 2 col 1', '2': 'row 2 col 2'},
-        ]
+        [{'0': '1', '1': 'row 1 col 1', '2': 'row 1 col 2'}, {'0': '2', '1': 'row 2 col 1', '2': 'row 2 col 2'}]
 
 
     Example with longer row ids (using the *first* two as table identifiers)::
 
         >>> data = [
-        >>>     (ObjectIdentifier.from_string('1.2.1.5.10'), 'row 5.10 col 1'),
-        >>>     (ObjectIdentifier.from_string('1.2.1.6.10'), 'row 6.10 col 1'),
-        >>>     (ObjectIdentifier.from_string('1.2.2.5.10'), 'row 5.10 col 2'),
-        >>>     (ObjectIdentifier.from_string('1.2.2.6.10'), 'row 6.10 col 2'),
-        >>> ]
+        ...     (ObjectIdentifier.from_string('1.2.1.5.10'), 'row 5.10 col 1'),
+        ...     (ObjectIdentifier.from_string('1.2.1.6.10'), 'row 6.10 col 1'),
+        ...     (ObjectIdentifier.from_string('1.2.2.5.10'), 'row 5.10 col 2'),
+        ...     (ObjectIdentifier.from_string('1.2.2.6.10'), 'row 6.10 col 2'),
+        ... ]
         >>> tablify(data, num_base_nodes=2)
-        [
-            {'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'},
-            {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'},
-        ]
+        [{'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'}, {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'}]
     """
 
     if isinstance(base_oid, str) and base_oid:

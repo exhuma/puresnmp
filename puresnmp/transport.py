@@ -188,8 +188,8 @@ async def listen(
     Sets up a listening UDP socket and returns a generator over recevied
     packets::
 
-        >>> transport = Transport()
-        >>> for seq, packet in enumerate(transport.listen()):
+        >>> transport = Transport()  # doctest: +SKIP
+        >>> for seq, packet in enumerate(transport.listen()):  # doctest: +SKIP
         ...     print(seq, repr(packet))
         0, b'...'
         1, b'...'
