@@ -75,7 +75,7 @@ OID = ObjectIdentifier.from_string
 class TFetcher(Protocol):
     async def __call__(
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
-    ) -> List[VarBind]:
+    ) -> List[VarBind]:  # pragma: no cover
         ...
 
 
@@ -97,7 +97,7 @@ class RawClient:
         self.context_name = context_name
         self.lcd: Dict[str, Any] = {}
 
-        async def handler(data: bytes) -> bytes:
+        async def handler(data: bytes) -> bytes:  # pragma: no cover
             return await sender(str(self.ip), port, data)
 
         self.transport_handler = handler
