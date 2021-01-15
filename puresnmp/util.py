@@ -17,7 +17,9 @@ from typing import (
 
 from x690.types import ObjectIdentifier
 
-from .snmp import VarBind
+from puresnmp.exc import SnmpError
+from puresnmp.snmp import VarBind
+from puresnmp.typevars import TAnyIp
 
 
 @dataclass
@@ -219,3 +221,116 @@ def password_to_key(
 
     hasher.__name__ = f"<hasher:{hash_implementation}>"  # type: ignore
     return hasher
+
+
+def generate_engine_id_ip(pen: int, ip: TAnyIp) -> bytes:
+    """
+    Generates a valid SNMP Engine ID using a private enterprise number and an
+    ip-address.
+
+    >>> from ipaddress import ip_address
+    >>> generate_engine_id_ip(696, ip_address("192.0.2.1"))
+    b'\\x80\\x00\\x02\\xb8\\x01\\xc0\\x00\\x02\\x01'
+
+    .. seealso::
+        `Engine ID structure <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
+            ASN.1 definition for engine-id encoding
+        `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
+            List of valid engine-id variants
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+            List of publicly registered private enterprise numbers
+    """
+    buffer = bytearray(pen.to_bytes(4, "big"))
+    # Setting the first bit to 1 is the same as setting the first byte to 16*8
+    buffer[0] = 16 * 8
+    fmt = 1 if ip.version == 4 else 2
+    buffer.append(fmt)
+    buffer.extend(ip.packed)
+    return bytes(buffer)
+
+
+def generate_engine_id_mac(pen: int, mac_address: str) -> bytes:
+    """
+    Generates a valid SNMP Engine ID using a private enterprise number and a
+    mac-address.
+
+    >>> generate_engine_id_mac(696, "01:02:03:04:05:06")
+    b'\\x80\\x00\\x02\\xb8\\x03\\x01\\x02\\x03\\x04\\x05\\x06'
+
+    .. seealso::
+        `Engine ID structure <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
+            ASN.1 definition for engine-id encoding
+        `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
+            List of valid engine-id variants
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+            List of publicly registered private enterprise numbers
+    """
+    buffer = bytearray(pen.to_bytes(4, "big"))
+
+    # Setting the first bit to 1 is the same as setting the first byte to 16*8
+    buffer[0] = 16 * 8
+
+    if "-" in mac_address:
+        octets = [int(oct, 16) for oct in mac_address.split("-")]
+    else:
+        octets = [int(oct, 16) for oct in mac_address.split(":")]
+
+    buffer.append(3)
+    buffer.extend(octets)
+    return bytes(buffer)
+
+
+def generate_engine_id_text(pen: int, text: str) -> bytes:
+    """
+    Generates a valid SNMP Engine ID using a private enterprise number and a
+    custom text (no longer than 27 characters).
+
+    >>> generate_engine_id_text(696, "hello")
+    b'\\x80\\x00\\x02\\xb8\\x04hello'
+
+    .. seealso::
+        `Engine ID structure <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
+            ASN.1 definition for engine-id encoding
+        `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
+            List of valid engine-id variants
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+            List of publicly registered private enterprise numbers
+    """
+    if len(text) > 27:
+        raise SnmpError(
+            "Invalid engine ID. Text must have fewer than 27 characters"
+        )
+    buffer = bytearray(pen.to_bytes(4, "big"))
+    # Setting the first bit to 1 is the same as setting the first byte to 16*8
+    buffer[0] = 16 * 8
+    buffer.append(4)
+    buffer.extend(text.encode("ascii"))
+    return bytes(buffer)
+
+
+def generate_engine_id_octets(pen: int, octets: bytes) -> bytes:
+    """
+    Generates a valid SNMP Engine ID using a private enterprise number and a
+    custom byte-string (no longer than 27 bytes)
+
+    >>> generate_engine_id_octets(696, b"hello")
+    b'\\x80\\x00\\x02\\xb8\\x05hello'
+
+    .. seealso::
+        `Engine ID structure <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
+            ASN.1 definition for engine-id encoding
+        `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
+            List of valid engine-id variants
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+            List of publicly registered private enterprise numbers
+    """
+    if len(octets) > 27:
+        raise SnmpError(
+            f"Invalid engine ID. The value {octets!r} is longer than 27 octets"
+        )
+    buffer = bytearray(pen.to_bytes(4, "big"))
+    # Setting the first bit to 1 is the same as setting the first byte to 16*8
+    buffer[0] = 16 * 8
+    buffer.append(5)
+    buffer.extend(octets)
+    return bytes(buffer)

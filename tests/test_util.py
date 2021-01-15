@@ -3,9 +3,11 @@ Unit-tests for utility functions
 """
 import hashlib
 from binascii import unhexlify
+from ipaddress import ip_address
 
 from x690.types import Null, ObjectIdentifier
 
+import puresnmp.util as util
 from puresnmp.pdu import VarBind
 from puresnmp.util import (
     WalkRow,
@@ -107,4 +109,29 @@ def test_sha_key():
     hasher = password_to_key(hashlib.sha1, 20)
     result = hasher(b"maplesyrup", engine_id)
     expected = unhexlify("6695febc9288e36282235fc7151f128497b38f3f")
+    assert result == expected
+
+
+def test_generate_engine_id_ip():
+    ip = ip_address("192.0.2.1")
+    result = util.generate_engine_id_ip(696, ip)
+    expected = b"\x80\x00\x02\xb8\x01" + ip.packed
+    assert result == expected
+
+
+def test_generate_engine_id_mac():
+    result = util.generate_engine_id_mac(696, "00:01:02:03:04:05:06:07")
+    expected = b"\x80\x00\x02\xb8\x03" + b"\x00\x01\x02\x03\x04\x05\x06\x07"
+    assert result == expected
+
+
+def test_generate_engine_id_text():
+    result = util.generate_engine_id_text(696, "hello")
+    expected = b"\x80\x00\x02\xb8\x04" + b"hello"
+    assert result == expected
+
+
+def test_generate_engine_id_octets():
+    result = util.generate_engine_id_octets(696, b"hello")
+    expected = b"\x80\x00\x02\xb8\x05" + b"hello"
     assert result == expected
