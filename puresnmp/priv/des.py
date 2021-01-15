@@ -20,6 +20,11 @@ def pad_packet(data: bytes, block_size: int = 8) -> bytes:
 
     Packets also don't need to be "unpadded" for the same reason
     See https://tools.ietf.org/html/rfc3414#section-8.1.1.3
+
+    >>> pad_packet(b"hello")
+    b'hello\\x00\\x00\\x00'
+    >>> pad_packet(b"hello123")
+    b'hello123'
     """
     rest = len(data) % block_size
     if rest == 0:
@@ -29,6 +34,12 @@ def pad_packet(data: bytes, block_size: int = 8) -> bytes:
 
 
 def reference_saltpot() -> Generator[int, None, None]:
+    """
+    Creates a new source for salt numbers.
+
+    Following :rfc:`3414` this starts at a random number and increases on
+    each subsequent retrieval.
+    """
     salt = randint(1, 0xFFFFFFFF - 1)
     while True:
         yield salt
@@ -87,6 +98,4 @@ def decrypt_data(
     init_vector = bytes(a ^ b for a, b in zip(salt, pre_iv))
     cdes = CDES.new(des_key, mode=CDES.MODE_CBC, IV=init_vector)
     decrypted = cdes.decrypt(data)
-    if data and not decrypted:
-        raise SnmpError("Unable to decrypt data!")
     return decrypted
