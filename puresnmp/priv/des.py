@@ -21,10 +21,10 @@ def pad_packet(data: bytes, block_size: int = 8) -> bytes:
     Packets also don't need to be "unpadded" for the same reason
     See https://tools.ietf.org/html/rfc3414#section-8.1.1.3
     """
-    rest = len(data) % 8
+    rest = len(data) % block_size
     if rest == 0:
         return data
-    numpad = 8 - rest
+    numpad = block_size - rest
     return data + numpad * b"\x00"
 
 
