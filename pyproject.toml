@@ -41,6 +41,14 @@ reports = "no"
 max-locals = 25
 max-args = 8
 
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--doctest-modules"
+testpaths = [
+    "tests",
+    "puresnmp",
+]
+
 [tool.poetry]
 name = "puresnmp"
 version = "1.10.2.post1"
