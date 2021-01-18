@@ -1,15 +1,12 @@
 """
 Global configuration for pytest
 """
+from itertools import zip_longest
 from typing import Any, List
 from unittest.mock import call
-from itertools import zip_longest
-from x690.util import visible_octets
 
 import pytest
-
-from puresnmp import RawClient
-from puresnmp.credentials import V2C
+from x690.util import visible_octets
 
 
 class AsyncIter:
@@ -36,6 +33,9 @@ class FakeSend:
 
 @pytest.fixture
 def mocked_raw():
+    from puresnmp import RawClient
+    from puresnmp.credentials import V2C
+
     sender = FakeSend()
     client = RawClient("192.0.2.1", V2C("private"), sender=sender)
     yield client

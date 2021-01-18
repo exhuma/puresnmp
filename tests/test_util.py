@@ -16,7 +16,7 @@ from puresnmp.util import (
     password_to_key,
 )
 
-OID = ObjectIdentifier.from_string
+OID = ObjectIdentifier
 
 
 def test_group_varbinds():

@@ -1,5 +1,4 @@
 import asyncio
-from puresnmp.snmp import VarBind
 from unittest.mock import Mock, patch
 
 import pytest
@@ -7,10 +6,11 @@ from x690.types import Integer, ObjectIdentifier, OctetString
 
 import puresnmp.mpm.v3 as mpm
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
-from puresnmp.credentials import V3, V2C
+from puresnmp.credentials import V2C, V3
 from puresnmp.exc import SnmpError
-from puresnmp.pdu import GetRequest, GetResponse
-from puresnmp.security.usm import USMSecurityParameters, UserSecurityModel
+from puresnmp.pdu import GetRequest, GetResponse, PDUContent
+from puresnmp.security.usm import UserSecurityModel, USMSecurityParameters
+from puresnmp.snmp import VarBind
 
 
 @pytest.fixture
@@ -30,15 +30,15 @@ def mock_handler():
                     OctetString(b"engine-id"),
                     OctetString(b"context"),
                     GetResponse(
-                        123,
-                        [
-                            VarBind(
-                                ObjectIdentifier(
-                                    0,
-                                ),
-                                Integer(10),
-                            )
-                        ],
+                        PDUContent(
+                            123,
+                            [
+                                VarBind(
+                                    ObjectIdentifier(),
+                                    Integer(10),
+                                )
+                            ],
+                        ),
                     ),
                 ),
             )
@@ -51,7 +51,7 @@ def mock_handler():
 @pytest.mark.asyncio
 async def test_encode(mock_handler):
     instance = mpm.create(mock_handler, {})
-    pdu = GetRequest(123, [])
+    pdu = GetRequest(PDUContent(123, []))
     with patch("puresnmp.security.usm.get_request_id", return_value=123):
         result = await instance.encode(
             123, V3("username", None, None), b"engine-id", b"context", pdu
@@ -68,7 +68,7 @@ async def test_encode_engine_id_default(mock_handler):
     If we don't get an engine-id we take the one from the remote device
     """
     instance = mpm.create(mock_handler, {})
-    pdu = GetRequest(123, [])
+    pdu = GetRequest(PDUContent(123, []))
     with patch("puresnmp.security.usm.get_request_id", return_value=123):
         result = await instance.encode(
             123, V3("username", None, None), b"", b"context", pdu
@@ -112,4 +112,4 @@ def test_decode():
     lcd = {}
     instance = mpm.create(mock_handler, lcd)
     result = instance.decode(raw_response, V3("username", None, None))
-    assert result == GetRequest(123, [])
+    assert result == GetRequest(PDUContent(123, []))

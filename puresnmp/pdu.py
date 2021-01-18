@@ -11,6 +11,7 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       and community). This can then replace some duplicated code in
 #       "puresnmp.get", "puresnmp.walk" & co.
 
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -22,8 +23,11 @@ from typing import (
     cast,
 )
 
-from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type, pop_tlv
+from x690 import decode
+from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
+
+from puresnmp import priv
 
 from .const import MAX_VARBINDS
 from .exc import (
@@ -41,7 +45,73 @@ if TYPE_CHECKING:
     from typing import Iterator, Optional
 
 
-class PDU(Type[Any]):
+@dataclass
+class PDUContent:
+    request_id: int
+    varbinds: List[VarBind]
+    error_status: int = 0
+    error_index: int = 0
+
+
+def decode_pdu_content(data: bytes, slc: slice = slice(None)) -> PDUContent:
+    """
+    This method takes a :py:class:`bytes` object and converts it to
+    an application object. This is callable from each subclass of
+    :py:class:`~.PDU`.
+    """
+    # TODO (advanced): recent tests revealed that this is *not symmetric*
+    # with __bytes__ of this class. This should be ensured!
+    if not data:
+        raise EmptyMessage("No data to decode!")
+    request_id, next_start = decode(data, slc.start or 0)
+    error_status, next_start = decode(data, next_start)
+    error_index, next_start = decode(data, next_start)
+
+    if error_status.value:
+        error_detail, next_start = cast(
+            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+            decode(data, next_start),
+        )
+        if not isinstance(error_detail, Sequence):
+            raise TypeError(
+                "error-detail should be a sequence but got %r"
+                % type(error_detail)
+            )
+        varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
+        if error_index.value != 0:
+            offending_oid = varbinds[error_index.value - 1].oid
+        else:
+            # Offending OID is unknown
+            offending_oid = None
+        exception = ErrorResponse.construct(error_status.value, offending_oid)
+        raise exception
+
+    values, next_start = cast(
+        Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+        decode(data, next_start),
+    )
+
+    if not isinstance(values, Sequence):
+        raise TypeError(
+            "PDUs can only be decoded from sequences but got "
+            "%r instead" % type(values)
+        )
+
+    varbinds = []
+    for oid, value in values:
+        # NOTE: this uses the "is" check to make 100% sure we check against
+        # the sentinel object defined in this module!
+        if isinstance(value, EndOfMibView):
+            varbinds.append(VarBind(oid, value))
+            break
+        varbinds.append(VarBind(oid, value))
+
+    return PDUContent(
+        request_id.value, varbinds, error_status.value, error_index.value
+    )
+
+
+class PDU(Type[PDUContent]):
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
@@ -49,113 +119,32 @@ class PDU(Type[Any]):
     TYPECLASS = TypeClass.CONTEXT
     TAG = 0
 
-    request_id: int
-    error_status: int
-    error_index: int
-    varbinds: List[VarBind]
+    decode_raw = staticmethod(decode_pdu_content)
 
-    @classmethod
-    def decode(cls, data: bytes) -> "PDU":
-        """
-        This method takes a :py:class:`bytes` object and converts it to
-        an application object. This is callable from each subclass of
-        :py:class:`~.PDU`.
-        """
-        # TODO (advanced): recent tests revealed that this is *not symmetric*
-        # with __bytes__ of this class. This should be ensured!
-        if not data:
-            raise EmptyMessage("No data to decode!")
-        request_id, data = pop_tlv(data)
-        error_status, data = pop_tlv(data)
-        error_index, data = pop_tlv(data)
-        if error_status.value:
-            error_detail, data = cast(
-                Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
-                pop_tlv(data),
-            )
-            if not isinstance(error_detail, Sequence):
-                raise TypeError(
-                    "error-detail should be a sequence but got %r"
-                    % type(error_detail)
-                )
-            varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
-            if error_index.value != 0:
-                offending_oid = varbinds[error_index.value - 1].oid
-            else:
-                # Offending OID is unknown
-                offending_oid = None
-            assert data == b""
-            exception = ErrorResponse.construct(
-                error_status.value, offending_oid
-            )
-            raise exception
+    def encode_raw(self) -> bytes:
 
-        values, data = cast(
-            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes], pop_tlv(data)
-        )
-        if not isinstance(values, Sequence):
-            raise TypeError(
-                "PDUs can only be decoded from sequences but got "
-                "%r instead" % type(values)
-            )
-
-        varbinds = []
-        for oid, value in values:
-            # NOTE: this uses the "is" check to make 100% sure we check against
-            # the sentinel object defined in this module!
-            if isinstance(value, EndOfMibView):
-                varbinds.append(VarBind(oid, value))
-                break
-            varbinds.append(VarBind(oid, value))
-
-        return cls(
-            request_id.value, varbinds, error_status.value, error_index.value
-        )
-
-    def __init__(
-        self,
-        request_id: int,
-        varbinds: Union[VarBind, List[VarBind]],
-        error_status: int = 0,
-        error_index: int = 0,
-    ) -> None:
-        self.request_id = request_id
-        self.error_status = error_status
-        self.error_index = error_index
-        if isinstance(varbinds, VarBind):
-            self.varbinds = [VarBind(*varbinds)]
-        else:
-            self.varbinds = varbinds
-
-    def __bytes__(self) -> bytes:
-
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]  # type: ignore
+        wrapped_varbinds = [
+            Sequence([vb.oid, vb.value]) for vb in self.value.varbinds
+        ]
         data: List[Type[Any]] = [
-            Integer(self.request_id),
-            Integer(self.error_status),
-            Integer(self.error_index),
-            Sequence(*wrapped_varbinds),
+            Integer(self.value.request_id),
+            Integer(self.value.error_status),
+            Integer(self.value.error_index),
+            Sequence(wrapped_varbinds),
         ]
         payload = b"".join([bytes(chunk) for chunk in data])
-
-        tinfo = TypeInfo(TypeClass.CONTEXT, TypeNature.CONSTRUCTED, self.TAG)
-        length = encode_length(len(payload))
-        return bytes(tinfo) + length + payload
+        return payload
 
     def __repr__(self) -> str:
         return "%s(%r, %r)" % (
             self.__class__.__name__,
-            self.request_id,
-            self.varbinds,
+            self.value.request_id,
+            self.value.varbinds,
         )
 
     def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
-        return (
-            type(other) == type(self)
-            and self.request_id == other.request_id
-            and self.varbinds == other.varbinds
-        )
+        return type(other) == type(self) and self.value == other.value
 
     def pretty(self, depth: int = 0) -> str:  # pragma: no cover
         """
@@ -177,16 +166,48 @@ class PDU(Type[Any]):
 
         return "\n".join(lines)
 
-    def get_value(
-        self, oid: ObjectIdentifier, default: Optional[Any] = None
-    ) -> Any:
-        """
-        Returns the value for the given OID, *default* if it was not found.
-        """
-        for varbind in self.varbinds:
-            if varbind.oid == oid:
-                return varbind.value
-        return default
+
+
+class NoSuchObject(Type[bytes]):
+    """
+    Sentinel value to detect noSuchObject
+    """
+
+    # This subclassesPDU for type-consistency
+    TYPECLASS = TypeClass.CONTEXT
+    NATURE = [TypeNature.PRIMITIVE]
+    TAG = 0
+
+    def __init__(self, value: bytes = b"") -> None:
+        super().__init__()
+        self.value = value
+
+    @classmethod
+    def decode(cls, data: bytes) -> "NoSuchObject":
+        if data != b"":
+            raise SnmpError("no-such-object should not contain data!")
+        return NoSuchObject(data)
+
+
+class NoSuchInstance(Type[bytes]):
+    """
+    Sentinel value to detect noSuchInstance
+    """
+
+    # This subclassesPDU for type-consistency
+    TYPECLASS = TypeClass.CONTEXT
+    NATURE = [TypeNature.PRIMITIVE]
+    TAG = 1
+
+    def __init__(self, value: bytes = b"") -> None:
+        super().__init__()
+        self.value = value
+
+    @classmethod
+    def decode(cls, data: bytes) -> "NoSuchInstance":
+        if data != b"":
+            raise SnmpError("no-such-object should not contain data!")
+        return NoSuchInstance(data)
 
 
 class EndOfMibView(Type[bytes]):
@@ -198,16 +219,6 @@ class EndOfMibView(Type[bytes]):
     TYPECLASS = TypeClass.CONTEXT
     NATURE = [TypeNature.PRIMITIVE]
     TAG = 2
-
-    def __init__(self, value: bytes = b"") -> None:
-        super().__init__()
-        self.value = value
-
-    @classmethod
-    def decode(cls, data: bytes) -> "EndOfMibView":
-        if data != b"":
-            raise SnmpError("end-of-mibview should not contain data!")
-        return EndOfMibView(data)
 
 
 class NoSuchOIDPacket(Type[bytes]):
@@ -221,8 +232,7 @@ class NoSuchOIDPacket(Type[bytes]):
     TAG = 1
 
     def __init__(self, value: bytes = b"") -> None:
-        super().__init__()
-        self.value = value
+        super().__init__(value)
 
     @classmethod
     def decode(cls, data: bytes) -> "EndOfMibView":
@@ -237,19 +247,7 @@ class GetRequest(PDU):
     """
 
     TAG = 0
-
-    def __init__(
-        self,
-        request_id: int,
-        varbinds: Union[VarBind, List[VarBind]],
-        error_status: int = 0,
-        error_index: int = 0,
-    ) -> None:
-        # GetRequest varbinds should use a "NULL" value. Let's ensure this.
-        if isinstance(varbinds, VarBind):
-            varbinds = [varbinds]
-        varbinds = [VarBind(vb.oid, Null()) for vb in varbinds]
-        super().__init__(request_id, varbinds)
+    decode_raw = staticmethod(decode_pdu_content)
 
 
 class GetResponse(PDU):
@@ -259,9 +257,10 @@ class GetResponse(PDU):
     """
 
     TAG = 2
+    decode_raw = staticmethod(decode_pdu_content)
 
     @classmethod
-    def decode(cls, data):
+    def decode_old(cls, data):
         # type: (bytes) -> PDU
         """
         Try decoding the response. If nothing was returned (the message was
@@ -322,12 +321,12 @@ class BulkGetRequest(Type[Any]):
             self.varbinds.append(VarBind(oid, Null()))
 
     def __bytes__(self) -> bytes:
-        wrapped_varbinds = [Sequence(vb.oid, vb.value) for vb in self.varbinds]  # type: ignore
+        wrapped_varbinds = [Sequence([vb.oid, vb.value]) for vb in self.varbinds]  # type: ignore
         data: List[Type[Any]] = [
             Integer(self.request_id),
             Integer(self.non_repeaters),
             Integer(self.max_repeaters),
-            Sequence(*wrapped_varbinds),
+            Sequence(wrapped_varbinds),
         ]
         payload = b"".join([bytes(chunk) for chunk in data])
 

@@ -2,7 +2,8 @@ from dataclasses import dataclass, replace
 from textwrap import indent
 from typing import Awaitable, Callable, Tuple
 
-from x690.types import Integer, OctetString, Sequence, pop_tlv
+from x690 import decode
+from x690.types import Integer, OctetString, Sequence
 from x690.util import INDENT_STRING
 
 import puresnmp.auth as auth
@@ -10,7 +11,7 @@ import puresnmp.priv as priv
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import InvalidResponseId, SnmpError
-from puresnmp.pdu import GetRequest
+from puresnmp.pdu import GetRequest, PDUContent
 from puresnmp.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE, get_request_id
 
@@ -79,7 +80,7 @@ class USMSecurityParameters:
         """
         Construct a USMSecurityParameters instance from pure bytes
         """
-        seq, _ = pop_tlv(data, enforce_type=Sequence)
+        seq, _ = decode(data, enforce_type=Sequence)
         return USMSecurityParameters.from_snmp_type(seq)
 
     @staticmethod
@@ -98,12 +99,14 @@ class USMSecurityParameters:
 
     def as_snmp_type(self) -> Sequence:
         return Sequence(
-            OctetString(self.authoritative_engine_id),
-            Integer(self.authoritative_engine_boots),
-            Integer(self.authoritative_engine_time),
-            OctetString(self.user_name),
-            OctetString(self.auth_params),
-            OctetString(self.priv_params),
+            [
+                OctetString(self.authoritative_engine_id),
+                Integer(self.authoritative_engine_boots),
+                Integer(self.authoritative_engine_time),
+                OctetString(self.user_name),
+                OctetString(self.auth_params),
+                OctetString(self.priv_params),
+            ]
         )
 
     def pretty(self, depth: int = 0) -> str:
@@ -252,24 +255,24 @@ def decrypt_message(message: Message, credentials: V3) -> Message:
         return message
     priv_method = priv.create(credentials.priv.method)
     key = credentials.priv.key
-    try:
-        if not isinstance(message.scoped_pdu, OctetString):
-            raise SnmpError(
-                "Unexpectedly received unencrypted PDU with a security level requesting encryption!"
-            )
-        security_parameters = USMSecurityParameters.decode(
-            message.security_parameters
+    if not isinstance(message.scoped_pdu, OctetString):
+        raise SnmpError(
+            "Unexpectedly received unencrypted PDU with a security level requesting encryption!"
         )
+    security_parameters = USMSecurityParameters.decode(
+        message.security_parameters
+    )
+    try:
         decrypted = priv_method.decrypt_data(
             key,
             message.scoped_pdu.value,
             security_parameters.authoritative_engine_id,
             security_parameters.priv_params,
         )
-        message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
-        return message
     except Exception as exc:
         raise DecryptionError(f"Unable to decrypt message ({exc})") from exc
+    message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
+    return message
 
 
 class UserSecurityModel(SecurityModel):
@@ -330,7 +333,6 @@ class UserSecurityModel(SecurityModel):
 
         verify_authentication(message, credentials, security_params)
         message = decrypt_message(message, credentials)
-
         return message
 
     async def send_discovery_message(
@@ -374,16 +376,16 @@ class UserSecurityModel(SecurityModel):
             ScopedPDU(
                 OctetString(),
                 OctetString(),
-                GetRequest(request_id, []),
+                GetRequest(PDUContent(request_id, [])),
             ),
         )
         payload = bytes(discovery_message)
         raw_response = await transport_handler(payload)
-        response, _ = pop_tlv(raw_response, Sequence)
+        response, _ = decode(raw_response, enforce_type=Sequence)
 
         response_msg = Message.from_sequence(response)
 
-        response_id = response_msg.scoped_pdu.data.request_id
+        response_id = response_msg.scoped_pdu.data.value.request_id
         validate_response_id(response_id, request_id)
 
         # The engine-id is available in two places: The response directly, and also
@@ -394,7 +396,7 @@ class UserSecurityModel(SecurityModel):
         auth_security_params = USMSecurityParameters.decode(
             response_msg.security_parameters
         )
-        unknown_engine_ids = response_msg.scoped_pdu.data.varbinds[
+        unknown_engine_ids = response_msg.scoped_pdu.data.value.varbinds[
             0
         ].value.pythonize()
 

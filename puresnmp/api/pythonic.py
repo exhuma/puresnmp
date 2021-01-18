@@ -33,7 +33,7 @@ from ..util import BulkResult
 from . import raw
 
 LOG = logging.getLogger(__name__)
-OID = ObjectIdentifier.from_string
+OID = ObjectIdentifier
 TWalkResponse = Generator[VarBind, None, None]
 
 
@@ -285,14 +285,14 @@ class TrapInfo:
         """
         Returns the uptime of the device.
         """
-        return self.raw_trap.varbinds[0].value.pythonize()  # type: ignore
+        return self.raw_trap.value.varbinds[0].value.pythonize()  # type: ignore
 
     @property
     def oid(self) -> str:
         """
         Returns the Trap-OID
         """
-        return self.raw_trap.varbinds[1].value.pythonize()  # type: ignore
+        return self.raw_trap.value.varbinds[1].value.pythonize()  # type: ignore
 
     @property
     def values(self):
@@ -302,7 +302,7 @@ class TrapInfo:
         OIDs to values.
         """
         output = {}
-        for oid_raw, value_raw in self.raw_trap.varbinds[2:]:
+        for oid_raw, value_raw in self.raw_trap.value.varbinds[2:]:
             oid = oid_raw.pythonize()
             value = value_raw.pythonize()
             output[oid] = value

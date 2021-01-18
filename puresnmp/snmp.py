@@ -39,7 +39,7 @@ class VarBind:
     # TODO: This class should be split in two for both the raw and pythonic
     #       API, that would simplify the typing of both "oid" and "value"a lot
     #       and keep things explicit
-    oid: ObjectIdentifier = ObjectIdentifier(0)
+    oid: ObjectIdentifier = ObjectIdentifier()
     value: Union[Any, Type[Any], None] = None
 
     def __init__(self, oid, value):
@@ -50,7 +50,7 @@ class VarBind:
                 " instances! Your value: %r" % oid
             )
         if isinstance(oid, str):
-            oid = ObjectIdentifier.from_string(oid)
+            oid = ObjectIdentifier(oid)
         self.oid = oid
         self.value = value
 

@@ -1,6 +1,6 @@
 # pylint: skip-file
 
-import six
+from x690 import decode
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.const import Version
@@ -12,6 +12,7 @@ from puresnmp.pdu import (
     GetRequest,
     GetResponse,
     Null,
+    PDUContent,
     SetRequest,
     VarBind,
 )
@@ -54,10 +55,14 @@ class TestGet(ByteTester):
         )
 
         request = GetRequest(
-            1913359423,
-            VarBind(ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0), Null()),
+            PDUContent(
+                1913359423,
+                [VarBind(ObjectIdentifier("1.3.6.1.2.1.1.2.0"), Null())],
+            )
         )
-        packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
+        packet = Sequence(
+            [Integer(Version.V2C), OctetString("public"), request]
+        )
         result = bytes(packet)
 
         self.assertBytesEqual(result, expected)
@@ -73,19 +78,23 @@ class TestGet(ByteTester):
             b"\x06\x08\x2b\x06\x01\x02\x01\x01\x02\x00"
             b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a"
         )
-        result = Sequence.decode(data)[0]
+        result, _ = decode(data)
         expected = Sequence(
-            Integer(Version.V2C),
-            OctetString("public"),
-            GetResponse(
-                1913359423,  # request-id
-                [
-                    VarBind(
-                        ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0),
-                        ObjectIdentifier(1, 3, 6, 1, 4, 1, 8072, 3, 2, 10),
-                    )
-                ],
-            ),
+            [
+                Integer(Version.V2C),
+                OctetString("public"),
+                GetResponse(
+                    PDUContent(
+                        1913359423,  # request-id
+                        [
+                            VarBind(
+                                ObjectIdentifier("1.3.6.1.2.1.1.2.0"),
+                                ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10"),
+                            )
+                        ],
+                    ),
+                ),
+            ]
         )
         self.assertEqual(result, expected)
 
@@ -101,13 +110,18 @@ class TestGet(ByteTester):
             b"\x06\x0a\x2b\x06\x01\x04\x01\xbf\x08\x03\x02\x0a"
         )
         with self.assertRaisesRegex(SnmpError, "too big"):
-            Sequence.decode(data)[0]
+            result, _ = decode(data)
+            # We need to "consume" result.value to trigger the error because
+            # it's lazy
+            str(result.value)
 
     def test_get_repr(self):
-        oid = ObjectIdentifier(1, 3, 6, 1, 2, 1, 1, 2, 0)
+        oid = ObjectIdentifier("1.3.6.1.2.1.1.2.0")
         request = GetRequest(
-            1913359423,
-            VarBind(oid, Null()),
+            PDUContent(
+                1913359423,
+                [VarBind(oid, Null())],
+            )
         )
         result = repr(request)
         self.assertTrue(
@@ -120,43 +134,53 @@ class TestGet(ByteTester):
     def test_multiget_request(self):
         expected = readbytes("multiget.hex")
         request = GetRequest(
-            1913359423,
-            [
-                VarBind(
-                    ObjectIdentifier.from_string("1.3.6.1.2.1.1.2.0"), Null()
-                ),
-                VarBind(
-                    ObjectIdentifier.from_string("1.3.6.1.2.1.1.1.0"), Null()
-                ),
-            ],
+            PDUContent(
+                1913359423,
+                [
+                    VarBind(
+                        ObjectIdentifier("1.3.6.1.2.1.1.2.0"),
+                        Null(),
+                    ),
+                    VarBind(
+                        ObjectIdentifier("1.3.6.1.2.1.1.1.0"),
+                        Null(),
+                    ),
+                ],
+            )
         )
-        packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
+        packet = Sequence(
+            [Integer(Version.V2C), OctetString("public"), request]
+        )
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
     def test_multiget_response(self):
         data = readbytes("multiget_response.hex")
-        result = Sequence.decode(data)[0]
+        result, _ = decode(data)
         expected = Sequence(
-            Integer(Version.V2C),
-            OctetString("public"),
-            GetResponse(
-                1913359423,  # request-id
-                [
-                    VarBind(
-                        ObjectIdentifier.from_string("1.3.6.1.2.1.1.2.0"),
-                        ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10"),
+            [
+                Integer(Version.V2C),
+                OctetString("public"),
+                GetResponse(
+                    PDUContent(
+                        1913359423,  # request-id
+                        [
+                            VarBind(
+                                ObjectIdentifier("1.3.6.1.2.1.1.2.0"),
+                                ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10"),
+                            ),
+                            VarBind(
+                                ObjectIdentifier("1.3.6.1.2.1.1.1.0"),
+                                OctetString(
+                                    "Linux 7fbf2f0c363d 4.4.0-28-generic "
+                                    "#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC "
+                                    "2016 x86_64"
+                                ),
+                            ),
+                        ],
                     ),
-                    VarBind(
-                        ObjectIdentifier.from_string("1.3.6.1.2.1.1.1.0"),
-                        OctetString(
-                            "Linux 7fbf2f0c363d 4.4.0-28-generic "
-                            "#47-Ubuntu SMP Fri Jun 24 10:09:13 UTC "
-                            "2016 x86_64"
-                        ),
-                    ),
-                ],
-            ),
+                ),
+            ]
         )
         self.assertEqual(result, expected)
 
@@ -171,9 +195,11 @@ class TestWalk(ByteTester):
         expected = readbytes("walk_dot.hex")
 
         request = GetNextRequest(
-            499509692, VarBind(ObjectIdentifier(1), Null())
+            PDUContent(499509692, [VarBind(ObjectIdentifier("1"), Null())])
         )
-        packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
+        packet = Sequence(
+            [Integer(Version.V2C), OctetString("public"), request]
+        )
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
@@ -183,13 +209,19 @@ class TestSet(ByteTester):
         expected = readbytes("set_request.hex")
 
         request = SetRequest(
-            499509692,
-            VarBind(
-                ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.0"),
-                OctetString(b"hello@world.com"),
-            ),
+            PDUContent(
+                499509692,
+                [
+                    VarBind(
+                        ObjectIdentifier("1.3.6.1.2.1.2.2.0"),
+                        OctetString(b"hello@world.com"),
+                    )
+                ],
+            )
         )
-        packet = Sequence(Integer(Version.V2C), OctetString("private"), request)
+        packet = Sequence(
+            [Integer(Version.V2C), OctetString("private"), request]
+        )
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
@@ -207,18 +239,20 @@ class TestBulkGet(ByteTester):
             437387882,
             0,  # non-repeaters
             5,  # max-repeaters
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.0"),
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.3.0"),
+            ObjectIdentifier("1.3.6.1.2.1.2.2.0"),
+            ObjectIdentifier("1.3.6.1.2.1.2.3.0"),
         )
-        packet = Sequence(Integer(Version.V2C), OctetString("public"), request)
+        packet = Sequence(
+            [Integer(Version.V2C), OctetString("public"), request]
+        )
 
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
     def test_repr(self):
-        request = BulkGetRequest(1234, 1, 2, ObjectIdentifier((1, 2, 3)))
+        request = BulkGetRequest(1234, 1, 2, ObjectIdentifier("1.2.3"))
         result = repr(request)
-        expected = "BulkGetRequest(1234, 1, 2, ObjectIdentifier((1, 2, 3)))"
+        expected = "BulkGetRequest(1234, 1, 2, ObjectIdentifier('1.2.3'))"
         self.assertEqual(result, expected)
 
 
@@ -230,33 +264,33 @@ class TestError(ByteTester):
 
     def test_gen_error(self):
         pdu = PDU(
-            123,
-            [VarBind(ObjectIdentifier.from_string("1.2.3"), Integer(1))],
-            error_status=5,
-            error_index=1,
+            PDUContent(
+                123,
+                [VarBind(ObjectIdentifier("1.2.3"), Integer(1))],
+                error_status=5,
+                error_index=1,
+            )
         )
 
         with self.assertRaisesRegex(SnmpError, "genErr.*1.2.3") as exc:
             PDU.decode(bytes(pdu))
 
         self.assertEqual(exc.exception.error_status, 5)
-        self.assertEqual(
-            exc.exception.offending_oid, ObjectIdentifier.from_string("1.2.3")
-        )
+        self.assertEqual(exc.exception.offending_oid, ObjectIdentifier("1.2.3"))
 
     def test_non_standard_error(self):
         pdu = PDU(
-            123,
-            [VarBind(ObjectIdentifier.from_string("1.2.3"), Integer(1))],
-            error_status=7,
-            error_index=1,
+            PDUContent(
+                123,
+                [VarBind(ObjectIdentifier("1.2.3"), Integer(1))],
+                error_status=7,
+                error_index=1,
+            )
         )
         with self.assertRaisesRegex(SnmpError, "unknown.*error.*1.2.3") as exc:
             PDU.decode(bytes(pdu))
         self.assertEqual(exc.exception.error_status, 7)
-        self.assertEqual(
-            exc.exception.offending_oid, ObjectIdentifier.from_string("1.2.3")
-        )
+        self.assertEqual(exc.exception.offending_oid, ObjectIdentifier("1.2.3"))
 
 
 class TestVarBind(ByteTester):
@@ -272,18 +306,18 @@ class TestVarBind(ByteTester):
         VarBinds should be unpackagbe/destructuring should work
         """
         a, b = self.varbind
-        self.assertEqual((a, b), (ObjectIdentifier(1, 2), "world"))
+        self.assertEqual((a, b), (ObjectIdentifier("1.2"), "world"))
 
     def test_indexing(self):
         """
         Accessing values by index should work
         """
         a, b = self.varbind[0], self.varbind[1]
-        self.assertEqual((a, b), (ObjectIdentifier(1, 2), "world"))
+        self.assertEqual((a, b), (ObjectIdentifier("1.2"), "world"))
 
     def test_attrs(self):
         """
         Accessing values by attribute should work
         """
         a, b = self.varbind.oid, self.varbind.value
-        self.assertEqual((a, b), (ObjectIdentifier(1, 2), "world"))
+        self.assertEqual((a, b), (ObjectIdentifier("1.2"), "world"))

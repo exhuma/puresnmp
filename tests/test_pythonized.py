@@ -10,7 +10,6 @@ import asyncio
 import unittest
 from typing import Any
 from unittest.mock import Mock, call, patch
-from .conftest import AsyncIter
 
 import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString
@@ -18,10 +17,12 @@ from x690.types import Integer, ObjectIdentifier, OctetString
 from puresnmp import Client
 from puresnmp.api.pythonic import traps
 from puresnmp.api.raw import RawClient
-from puresnmp.pdu import Trap, VarBind
+from puresnmp.pdu import PDUContent, Trap, VarBind
 from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.typevars import SocketInfo
 from puresnmp.util import BulkResult
+
+from .conftest import AsyncIter
 
 
 def async_result(data: Any) -> asyncio.Future:
@@ -55,7 +56,7 @@ async def test_get_oid():
     client = Client(raw_client=raw_client)
     expected = "1.3.6.1.4.1.8072.3.2.10"
     raw_client.get.return_value = async_result(
-        ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10")
+        ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10")
     )
     result = await client.get("::1", "private", "1.2.3")
     assert result == expected
@@ -67,7 +68,7 @@ async def test_set_string():
     client = Client(raw_client=raw_client)
     expected = b"foo"
     raw_client.multiset.return_value = async_result(
-        {ObjectIdentifier.from_string("1.2.3"): OctetString(b"foo")}
+        {ObjectIdentifier("1.2.3"): OctetString(b"foo")}
     )
     result = await client.set("1.2.3", OctetString(b"foo"))
     assert result == expected
@@ -79,7 +80,7 @@ async def test_set_string_absolute():
     client = Client(raw_client=raw_client)
     expected = b"foo"
     raw_client.multiset.return_value = async_result(
-        {ObjectIdentifier.from_string("1.2.3"): OctetString(b"foo")}
+        {ObjectIdentifier("1.2.3"): OctetString(b"foo")}
     )
     result = await client.set(".1.2.3", OctetString(b"foo"))
     assert result == expected
@@ -98,11 +99,11 @@ async def test_walk():
     raw_client.walk.return_value = AsyncIter(
         [
             VarBind(
-                ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.5.1"),
+                ObjectIdentifier("1.3.6.1.2.1.2.2.1.5.1"),
                 Gauge(10000000),
             ),
             VarBind(
-                ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.5.13"),
+                ObjectIdentifier("1.3.6.1.2.1.2.2.1.5.13"),
                 Integer(4294967295),
             ),
         ]
@@ -124,7 +125,7 @@ async def test_multiget():
     ]
     raw_client.multiget.return_value = async_result(
         [
-            ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10"),
+            ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10"),
             OctetString(
                 b"Linux 7fbf2f0c363d 4.4.0-28-generic "
                 b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
@@ -134,8 +135,8 @@ async def test_multiget():
     )
     result = await client.multiget(
         [
-            "1.3.6.1.2.1.1.2.0",
-            "1.3.6.1.2.1.1.1.0",
+            tuple(int(n) for n in "1.3.6.1.2.1.1.2.0".split(".")),
+            tuple(int(n) for n in "1.3.6.1.2.1.1.1.0".split(".")),
         ]
     )
     assert result == expected
@@ -155,19 +156,19 @@ async def test_multi_walk():
     raw_client.multiwalk.return_value = AsyncIter(
         [
             VarBind(
-                ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.1.1"),
+                ObjectIdentifier("1.3.6.1.2.1.2.2.1.1.1"),
                 Integer(1),
             ),
             VarBind(
-                ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.2.1"),
+                ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.1"),
                 OctetString(b"lo"),
             ),
             VarBind(
-                ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.1.78"),
+                ObjectIdentifier("1.3.6.1.2.1.2.2.1.1.78"),
                 Integer(78),
             ),
             VarBind(
-                ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.2.78"),
+                ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.78"),
                 OctetString(b"eth0"),
             ),
         ]
@@ -243,7 +244,7 @@ async def test_getnext():
 
     raw_client.getnext.return_value = async_result(
         VarBind(
-            ObjectIdentifier.from_string("1.3.6.1.6.3.1.1.6.1.0"),
+            ObjectIdentifier("1.3.6.1.6.3.1.1.6.1.0"),
             Integer(354522558),
         )
     )
@@ -308,7 +309,7 @@ async def test_bulkwalk():
             VarBind("1.3.6.1.2.1.2.2.1.1.1", Integer(1)),
             VarBind("1.3.6.1.2.1.2.2.1.1.10", Integer(10)),
             VarBind("1.3.6.1.2.1.2.2.1.2.1", OctetString(b"lo")),
-            VarBind("1.3.6.1.2.1.2.2.1.22.10", ObjectIdentifier(0, 0)),
+            VarBind("1.3.6.1.2.1.2.2.1.22.10", ObjectIdentifier("0.0")),
         ]
     )
 
@@ -367,18 +368,22 @@ async def test_bulktable():
 class TestTraps(unittest.TestCase):
     def test_traps(self):
         with patch("puresnmp.api.pythonic.raw") as mck:
-            oid = ObjectIdentifier.from_string
+            oid = ObjectIdentifier
             mck.traps.return_value = [
                 Trap(
-                    request_id=1,
-                    error_status=0,
-                    error_index=0,
-                    varbinds=[
-                        VarBind(oid("1.2.1.1"), OctetString(b"fake-uptime")),
-                        VarBind(oid("1.2.1.2"), ObjectIdentifier(1, 2, 3, 4)),
-                        VarBind(oid("1.2.1.3"), Integer(13)),
-                        VarBind(oid("1.2.1.4"), OctetString(b"fake-value-2")),
-                    ],
+                    PDUContent(
+                        1,
+                        [
+                            VarBind(
+                                oid("1.2.1.1"), OctetString(b"fake-uptime")
+                            ),
+                            VarBind(oid("1.2.1.2"), oid("1.2.3.4")),
+                            VarBind(oid("1.2.1.3"), Integer(13)),
+                            VarBind(
+                                oid("1.2.1.4"), OctetString(b"fake-value-2")
+                            ),
+                        ],
+                    )
                 )
             ]
             result = []
@@ -401,10 +406,8 @@ class TestTraps(unittest.TestCase):
         We want to be able to see where a trap was sent from
         """
         with patch("puresnmp.api.pythonic.raw") as mck:
-            oid = ObjectIdentifier.from_string
-            mck.traps.return_value = [
-                Trap(request_id=1, error_status=0, error_index=0, varbinds=[])
-            ]
+            oid = ObjectIdentifier
+            mck.traps.return_value = [Trap(PDUContent(1, []))]
             mck.traps.return_value[-1].source = SocketInfo("192.0.2.1", 64001)
             result = []
             for trap in traps():

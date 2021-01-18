@@ -6,8 +6,8 @@ import unittest
 from logging import Handler, LogRecord, getLevelName
 from os.path import dirname, join
 from typing import TYPE_CHECKING
-from .conftest import get_byte_diff
 
+from .conftest import get_byte_diff
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Generator, List, Tuple, TypeVar, Union

@@ -1,11 +1,13 @@
 import sys
 from dataclasses import dataclass
 from textwrap import indent
-from typing import Union, cast
+from typing import TYPE_CHECKING, Union, cast
 
-from x690.types import Integer, OctetString, Sequence, pop_tlv
+from x690 import decode
+from x690.types import Integer, OctetString, Sequence
 
-from puresnmp.pdu import PDU
+if TYPE_CHECKING:
+    from puresnmp.pdu import PDU
 
 if sys.stdout.isatty():
     INDENT_STRING = " \u001b[38;5;22m│\u001b[0m "
@@ -55,10 +57,12 @@ class HeaderData:
 
     def as_snmp_type(self) -> Sequence:
         return Sequence(
-            Integer(self.message_id),
-            Integer(self.message_max_size),
-            OctetString(bytes(self.flags)),
-            Integer(self.security_model),
+            [
+                Integer(self.message_id),
+                Integer(self.message_max_size),
+                OctetString(bytes(self.flags)),
+                Integer(self.security_model),
+            ]
         )
 
     def __bytes__(self) -> bytes:
@@ -80,14 +84,14 @@ class HeaderData:
 class ScopedPDU:
     context_engine_id: OctetString
     context_name: OctetString
-    data: PDU
+    data: "PDU"
 
     def __bytes__(self) -> bytes:
         return bytes(self.as_snmp_type())
 
     @staticmethod
-    def decode(data: bytes) -> "ScopedPDU":
-        sequence, _ = pop_tlv(data, Sequence, strict=False)
+    def decode(data: bytes, slc: slice = slice(None)) -> "ScopedPDU":
+        sequence, _ = decode(data, enforce_type=Sequence, strict=False)
         output = ScopedPDU(
             context_engine_id=sequence[0],
             context_name=sequence[1],
@@ -97,9 +101,11 @@ class ScopedPDU:
 
     def as_snmp_type(self) -> Sequence:
         return Sequence(
-            self.context_engine_id,
-            self.context_name,
-            self.data,
+            [
+                self.context_engine_id,
+                self.context_name,
+                self.data,
+            ]
         )
 
     def pretty(self, depth: int = 0) -> str:
@@ -135,12 +141,14 @@ class Message:
     def __bytes__(self) -> bytes:
         output = bytes(
             Sequence(
-                self.version,
-                self.global_data.as_snmp_type(),
-                OctetString(self.security_parameters),
-                self.scoped_pdu
-                if isinstance(self.scoped_pdu, bytes)
-                else self.scoped_pdu,
+                [
+                    self.version,
+                    self.global_data.as_snmp_type(),
+                    OctetString(self.security_parameters),
+                    self.scoped_pdu
+                    if isinstance(self.scoped_pdu, bytes)
+                    else self.scoped_pdu,
+                ]
             )
         )
         return output
@@ -182,7 +190,7 @@ class Message:
         Construct a new SNMPv3 message from a bytes object
         """
 
-        message, _ = pop_tlv(data, Sequence)
+        message, _ = decode(data, enforce_type=Sequence)
         return Message.from_sequence(message)
 
     def pretty(self, depth: int = 0) -> str:

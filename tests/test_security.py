@@ -11,9 +11,9 @@ import puresnmp.security.usm as usm
 import puresnmp.security.v1 as v1
 import puresnmp.security.v2c as v2c
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
-from puresnmp.credentials import V2C, V3, Auth, Credentials, Priv
-from puresnmp.exc import SnmpError, InvalidResponseId
-from puresnmp.pdu import GetRequest, GetResponse
+from puresnmp.credentials import V2C, V3, Auth, Priv
+from puresnmp.exc import InvalidResponseId, SnmpError
+from puresnmp.pdu import GetRequest, GetResponse, PDUContent
 from puresnmp.snmp import VarBind
 
 
@@ -23,15 +23,17 @@ def make_msg():
         HeaderData(123, 234, V3Flags(True, True, True), 3),
         bytes(
             Sequence(
-                OctetString(b"engine-id"),
-                Integer(1),
-                Integer(2),
-                OctetString(b"user-name"),
-                OctetString(b"auth-params"),
-                OctetString(b"priv_params"),
+                [
+                    OctetString(b"engine-id"),
+                    Integer(1),
+                    Integer(2),
+                    OctetString(b"user-name"),
+                    OctetString(b"auth-params"),
+                    OctetString(b"priv_params"),
+                ]
             )
         ),
-        GetRequest(123, []),
+        GetRequest(PDUContent(123, [])),
     )
 
 
@@ -55,30 +57,34 @@ def test_usm_reset_digest():
         HeaderData(123, 234, V3Flags(True, True, True), 3),
         bytes(
             Sequence(
-                OctetString(b"engine-id"),
-                Integer(1),
-                Integer(2),
-                OctetString(b"user-name"),
-                OctetString(b"auth-params"),
-                OctetString(b"priv_params"),
+                [
+                    OctetString(b"engine-id"),
+                    Integer(1),
+                    Integer(2),
+                    OctetString(b"user-name"),
+                    OctetString(b"auth-params"),
+                    OctetString(b"priv_params"),
+                ]
             )
         ),
-        GetRequest(123, []),
+        GetRequest(PDUContent(123, [])),
     )
     expected = Message(
         3,
         HeaderData(123, 234, V3Flags(True, True, True), 3),
         bytes(
             Sequence(
-                OctetString(b"engine-id"),
-                Integer(1),
-                Integer(2),
-                OctetString(b"user-name"),
-                OctetString(12 * b"\x00"),
-                OctetString(b"priv_params"),
+                [
+                    OctetString(b"engine-id"),
+                    Integer(1),
+                    Integer(2),
+                    OctetString(b"user-name"),
+                    OctetString(12 * b"\x00"),
+                    OctetString(b"priv_params"),
+                ]
             )
         ),
-        GetRequest(123, []),
+        GetRequest(PDUContent(123, [])),
     )
     result = usm.reset_digest(message)
     assert result == expected
@@ -152,7 +158,7 @@ def test_request_message_nanp():
             b"\x04\x00"
             b"\x04\x00"
         ),
-        scoped_pdu=GetRequest(123, []),
+        scoped_pdu=GetRequest(PDUContent(123, [])),
     )
     assert result == expected
 
@@ -186,7 +192,7 @@ def test_request_message_anp():
             b"\x04\x0c>\xb8\xff\x7fA<\x00\xfa\x066r\xed"
             b"\x04\x00"
         ),
-        scoped_pdu=GetRequest(123, []),
+        scoped_pdu=GetRequest(PDUContent(123, [])),
     )
     assert result == expected
 
@@ -235,25 +241,29 @@ async def test_send_disco():
         HeaderData(123, 65507, V3Flags(False, False, False), 3),
         bytes(
             Sequence(
-                OctetString(b"engine-id"),
-                Integer(1),
-                Integer(75101),
-                OctetString(b""),
-                OctetString(b""),
-                OctetString(b""),
+                [
+                    OctetString(b"engine-id"),
+                    Integer(1),
+                    Integer(75101),
+                    OctetString(b""),
+                    OctetString(b""),
+                    OctetString(b""),
+                ]
             )
         ),
         ScopedPDU(
             OctetString(b"engine-id"),
             OctetString(b"context-name"),
             GetResponse(
-                123,
-                [
-                    VarBind(
-                        ObjectIdentifier(1, 3, 6, 1, 6, 3, 15, 1, 1, 4, 0),
-                        Integer(6),
-                    )
-                ],
+                PDUContent(
+                    123,
+                    [
+                        VarBind(
+                            ObjectIdentifier("1.3.6.1.6.3.15.1.1.4.0"),
+                            Integer(6),
+                        )
+                    ],
+                )
             ),
         ),
     )
@@ -364,13 +374,15 @@ def test_incoming_message():
             context_engine_id=OctetString(b"\x01\x00&4\x04puresnmp-26938"),
             context_name=OctetString(b""),
             data=GetResponse(
-                1610635889,
-                [
-                    VarBind(
-                        ObjectIdentifier((1, 3, 6, 1, 6, 3, 16, 1, 1, 1, 1, 0)),
-                        OctetString(b""),
-                    )
-                ],
+                PDUContent(
+                    1610635889,
+                    [
+                        VarBind(
+                            ObjectIdentifier("1.3.6.1.6.3.16.1.1.1.1.0"),
+                            OctetString(b""),
+                        )
+                    ],
+                )
             ),
         ),
     )

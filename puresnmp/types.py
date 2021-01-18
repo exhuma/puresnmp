@@ -18,7 +18,13 @@ from ipaddress import IPv4Address
 from struct import pack
 from typing import Optional, Union
 
-from x690.types import Integer, OctetString, Type
+from x690.types import (
+    Integer,
+    OctetString,
+    Type,
+    _SENTINEL_UNINITIALISED,
+    UNINITIALISED,
+)
 from x690.util import TypeClass
 
 
@@ -30,9 +36,8 @@ class IpAddress(OctetString):
     TYPECLASS = TypeClass.APPLICATION
     TAG = 0x00
 
-    def __init__(self, value):
-        # type: (bytes) -> None
-        if isinstance(value, IPv4Address):
+    def __init__(self, value: Optional[bytes] = None) -> None:
+        if value and isinstance(value, IPv4Address):
             remainder = int(value)
             octet_4, remainder = remainder & 0xFF, remainder >> 8
             octet_3, remainder = remainder & 0xFF, remainder >> 8
@@ -66,12 +71,17 @@ class Counter(Integer):
     TYPECLASS = TypeClass.APPLICATION
     TAG = 0x01
 
-    def __init__(self, value):
-        # type: (int) -> None
-        value &= 0xFFFFFFFF if value >= 2 ** 32 else value
-        if value <= 0:
-            value = 0
+    def __init__(
+        self, value: Union[int, _SENTINEL_UNINITIALISED] = UNINITIALISED
+    ) -> None:
+        if value is not UNINITIALISED:
+            value &= 0xFFFFFFFF if value >= 2 ** 32 else value
+            if value <= 0:
+                value = 0
         super().__init__(value)
+
+    def __eq__(self, other):
+        return super().__eq__(other)
 
 
 class Gauge(Integer):
@@ -93,13 +103,13 @@ class TimeTicks(Integer):
     TYPECLASS = TypeClass.APPLICATION
     TAG = 0x03
 
-    def __init__(self, value):
-        # type: (Union[timedelta, int]) -> None
+    def __init__(
+        self,
+        value: Union[timedelta, int, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+    ) -> None:
         if isinstance(value, timedelta):
-            value_int = int(value.total_seconds() * 100)
-        else:
-            value_int = value
-        super().__init__(value_int)
+            value = int(value.total_seconds() * 100)
+        super().__init__(value)
 
     def pythonize(self) -> Optional[timedelta]:  # type: ignore
         """
@@ -141,11 +151,13 @@ class Counter64(Integer):
     TYPECLASS = TypeClass.APPLICATION
     TAG = 0x06
 
-    def __init__(self, value):
-        # type: (int) -> None
-        value &= 0xFFFFFFFFFFFFFFFF if value >= 2 ** 64 else value
-        if value <= 0:
-            value = 0
+    def __init__(
+        self, value: Union[int, _SENTINEL_UNINITIALISED] = UNINITIALISED
+    ) -> None:
+        if value is not UNINITIALISED:
+            value &= 0xFFFFFFFFFFFFFFFF if value >= 2 ** 64 else value
+            if value <= 0:
+                value = 0
         super().__init__(value)
 
 

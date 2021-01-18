@@ -150,10 +150,10 @@ def tablify(varbinds, num_base_nodes=0, base_oid=""):
     Example::
 
         >>> data = [
-        ...     (ObjectIdentifier.from_string('1.2.1.1'), 'row 1 col 1'),
-        ...     (ObjectIdentifier.from_string('1.2.1.2'), 'row 2 col 1'),
-        ...     (ObjectIdentifier.from_string('1.2.2.1'), 'row 1 col 2'),
-        ...     (ObjectIdentifier.from_string('1.2.2.2'), 'row 2 col 2'),
+        ...     (ObjectIdentifier('1.2.1.1'), 'row 1 col 1'),
+        ...     (ObjectIdentifier('1.2.1.2'), 'row 2 col 1'),
+        ...     (ObjectIdentifier('1.2.2.1'), 'row 1 col 2'),
+        ...     (ObjectIdentifier('1.2.2.2'), 'row 2 col 2'),
         ... ]
         >>> tablify(data)
         [{'0': '1', '1': 'row 1 col 1', '2': 'row 1 col 2'}, {'0': '2', '1': 'row 2 col 1', '2': 'row 2 col 2'}]
@@ -162,10 +162,10 @@ def tablify(varbinds, num_base_nodes=0, base_oid=""):
     Example with longer row ids (using the *first* two as table identifiers)::
 
         >>> data = [
-        ...     (ObjectIdentifier.from_string('1.2.1.5.10'), 'row 5.10 col 1'),
-        ...     (ObjectIdentifier.from_string('1.2.1.6.10'), 'row 6.10 col 1'),
-        ...     (ObjectIdentifier.from_string('1.2.2.5.10'), 'row 5.10 col 2'),
-        ...     (ObjectIdentifier.from_string('1.2.2.6.10'), 'row 6.10 col 2'),
+        ...     (ObjectIdentifier('1.2.1.5.10'), 'row 5.10 col 1'),
+        ...     (ObjectIdentifier('1.2.1.6.10'), 'row 6.10 col 1'),
+        ...     (ObjectIdentifier('1.2.2.5.10'), 'row 5.10 col 2'),
+        ...     (ObjectIdentifier('1.2.2.6.10'), 'row 6.10 col 2'),
         ... ]
         >>> tablify(data, num_base_nodes=2)
         [{'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'}, {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'}]
@@ -173,7 +173,7 @@ def tablify(varbinds, num_base_nodes=0, base_oid=""):
 
     if isinstance(base_oid, str) and base_oid:
 
-        base_oid_parsed = ObjectIdentifier.from_string(base_oid)
+        base_oid_parsed = ObjectIdentifier(base_oid)
         # Each table has a sub-index for the table "entry" so the number of
         # base-nodes needs to be incremented by 1
         num_base_nodes = len(base_oid_parsed)
@@ -181,12 +181,12 @@ def tablify(varbinds, num_base_nodes=0, base_oid=""):
     rows = {}  # type: Dict[str, Dict[str, Type[Any]]]
     for oid, value in varbinds:
         if num_base_nodes:
-            tail = oid.identifiers[num_base_nodes:]
+            tail = oid.nodes[num_base_nodes:]
             col_id, row_id = tail[0], tail[1:]
             row_id = ".".join([str(node) for node in row_id])
         else:
-            col_id = str(oid.identifiers[-2])
-            row_id = str(oid.identifiers[-1])
+            col_id = str(oid.nodes[-2])
+            row_id = str(oid.nodes[-1])
         tmp = {
             "0": row_id,
         }

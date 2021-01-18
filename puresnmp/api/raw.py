@@ -54,6 +54,8 @@ from ..pdu import (
     GetNextRequest,
     GetRequest,
     GetResponse,
+    NoSuchOIDPacket,
+    PDUContent,
     SetRequest,
     Trap,
 )
@@ -69,7 +71,7 @@ T = TypeVar("T", bound=TType[PyType])  # pylint: disable=invalid-name
 _set = set
 
 LOG = logging.getLogger(__name__)
-OID = ObjectIdentifier.from_string
+OID = ObjectIdentifier
 
 
 class TFetcher(Protocol):
@@ -130,12 +132,16 @@ class RawClient:
         Executes a simple SNMP GET request and returns a pure Python data
         structure.
 
-        Example::
-
-            >>> get('192.168.1.1', 'private', '1.2.3.4')  # doctest: +SKIP
-            'non-functional example'
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> # The line below needs to be "awaited" to get the result.
+        >>> # This is not shown here to make it work with doctest
+        >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
+        <coroutine object ...>
         """
         result = await self.multiget([oid], timeout=timeout)
+        if isinstance(result[0], NoSuchOIDPacket):
+            raise NoSuchOID(oid)
         return result[0]
 
     async def multiget(
@@ -146,19 +152,21 @@ class RawClient:
         Python objects. The order of the output items is the same order as the OIDs
         given as arguments.
 
-        Example::
-
-            >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])  # doctest: +SKIP
-            ['non-functional example', 'second value']
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> # The line below needs to be "awaited" to get the result.
+        >>> # This is not shown here to make it work with doctest
+        >>> client.multiget(['1.2.3.4', '1.2.3.5'])
+        <coroutine object ...>
         """
 
         parsed_oids = [VarBind(oid, Null()) for oid in oids]
 
         request_id = get_request_id()
-        pdu = GetRequest(request_id, parsed_oids)
+        pdu = GetRequest(PDUContent(request_id, parsed_oids))
         response = await self._send(pdu, request_id, timeout)
 
-        output = [value for _, value in response.varbinds]
+        output = [value for _, value in response.value.varbinds]
         if len(output) != len(oids):
             raise SnmpError(
                 "Unexpected response. Expected %d varbind, "
@@ -172,10 +180,12 @@ class RawClient:
         """
         Executes a single SNMP GETNEXT request (used inside *walk*).
 
-        Example::
-
-            >>> getnext('192.168.1.1', 'private', '1.2.3')  # doctest: +SKIP
-            VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> # The line below needs to be "awaited" to get the result.
+        >>> # This is not shown here to make it work with doctest
+        >>> client.getnext('1.2.3.4')
+        <coroutine object ...>
         """
         result = await self.multigetnext([oid], timeout=timeout)
         return result[0]
@@ -193,22 +203,32 @@ class RawClient:
         The generator stops when hitting an OID which is *not* a sub-node of the
         given start OID or at the end of the tree (whichever comes first).
 
-        Example::
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client.walk('1.3.6.1.2.1.1')  # doctest: +ELLIPSIS
+        <async_generator object ...>
 
-            >>> walk('127.0.0.1', 'private', '1.3.6.1.2.1.1')  # doctest: +SKIP
-            <generator object multiwalk at 0x7fa2f775cf68>
-
-            >>> from pprint import pprint
-            >>> def example():
-            ...     result = walk('127.0.0.1', 'private', '1.3.6.1.2.1.3')
-            ...     res = []
-            ...     for x in gen:
-            ...         res.append(x)
-            ...     pprint(res)
-            >>> example()  # doctest: +SKIP
-            [VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 1, 24, 1, 172, 17, 0, 1)), value=24),
-             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 2, 24, 1, 172, 17, 0, 1)), value=b'\\x02B\\xef\\x14@\\xf5'),
-             VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 3, 1, 1, 3, 24, 1, 172, 17, 0, 1)), value=64, b'\\xac\\x11\\x00\\x01')]
+        >>> async def example():
+        ...     result = client.walk('1.3.6.1.2.1.3')
+        ...     res = []
+        ...     async for x in gen:
+        ...         res.append(x)
+        ...     pprint(res)
+        >>> example()  # doctest: +SKIP
+        [
+            VarBind(
+                oid=ObjectIdentifier("1.3.6.1.2.1.3.1.1.1.24.1.172.17.0.1"),
+                value=24
+            ),
+            VarBind(
+                oid=ObjectIdentifier("1.3.6.1.2.1.3.1.1.2.24.1.172.17.0.1"),
+                value=b'\\x02B\\xef\\x14@\\xf5'
+            ),
+            VarBind(
+                oid=ObjectIdentifier("1.3.6.1.2.1.3.1.1.3.24.1.172.17.0.1"),
+                value=64, b'\\xac\\x11\\x00\\x01'
+            )
+        ]
         """
 
         async for row in self.multiwalk([oid], timeout=timeout, errors=errors):
@@ -228,11 +248,12 @@ class RawClient:
         This is the same as :py:func:`~.walk` except that it is capable of
         iterating over multiple OIDs at the same time.
 
-        Example::
-
-            >>> multiwalk('127.0.0.1', 'private', [  # doctest: +SKIP
-            ...     '1.3.6.1.2.1.1', '1.3.6.1.4.1.1'])
-            <generator object multiwalk at 0x7fa2f775cf68>
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client.multiwalk(  # doctest: +ELLIPSIS
+        ...     ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1']
+        ... )
+        <async_generator object ...>
         """
         if fetcher is None:
             fetcher = self.multigetnext
@@ -240,6 +261,7 @@ class RawClient:
         LOG.debug("Walking on %d OIDs using %s", len(oids), fetcher.__name__)
 
         varbinds = await fetcher(oids, timeout)
+        # TODO: oids should be ObjectIdentifier instances on the "raw" API calls
         requested_oids = [OID(oid) for oid in oids]
         grouped_oids = group_varbinds(varbinds, requested_oids)
         unfinished_oids = get_unfinished_walk_oids(grouped_oids)
@@ -315,27 +337,27 @@ class RawClient:
         The request sends one packet to the remote host requesting the value of the
         OIDs following one or more given OIDs.
 
-        Example::
-
-            >>> multigetnext('192.168.1.1', 'private', ['1.2.3', '1.2.4'])  # doctest: +SKIP
-            [
-                VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example'),
-                VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
-            ]
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client.multigetnext(['1.2.3', '1.2.4'])  # doctest: +SKIP
+        [
+            VarBind(ObjectIdentifier("1.2.3.0"), Integer(1)),
+            VarBind(ObjectIdentifier("1.2.4.0"), Integer(2))
+        ]
         """
 
         varbinds = [VarBind(oid, Null()) for oid in oids]
         request_id = get_request_id()
-        pdu = GetNextRequest(request_id, varbinds)
+        pdu = GetNextRequest(PDUContent(request_id, varbinds))
         response_object = await self._send(pdu, request_id, timeout)
-        if len(response_object.varbinds) != len(oids):
+        if len(response_object.value.varbinds) != len(oids):
             raise SnmpError(
                 "Invalid response! Expected exactly %d varbind, "
-                "but got %d" % (len(oids), len(response_object.varbinds))
+                "but got %d" % (len(oids), len(response_object.value.varbinds))
             )
 
         output = []
-        for oid, value in response_object.varbinds:
+        for oid, value in response_object.value.varbinds:
             if isinstance(value, EndOfMibView):
                 break
             output.append(VarBind(oid, value))
@@ -370,7 +392,9 @@ class RawClient:
 
         Example output (using fake data):
 
-        >>> table('192.0.2.1', 'private', '1.3.6.1.2.1.2.2')  # doctest: +SKIP
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client.table("1.3.6.1.2.1.2.2")  # doctest: +SKIP
         [{'0': '1', '1': Integer(1), '2': Counter(30)},
          {'0': '2', '1': Integer(2), '2': Counter(123)}]
         """
@@ -396,11 +420,12 @@ class RawClient:
         data structure. The value must be a subclass of
         :py:class:`~x690.types.Type`.
 
-        Example::
-
-            >>> set('127.0.0.1', 'private', '1.3.6.1.2.1.1.4.0',  # doctest: +SKIP
-            ...     OctetString(b'I am contact'))
-            b'I am contact'
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client.set(  # doctest: +SKIP
+        ...     "1.3.6.1.2.1.1.4.0", OctetString(b'I am contact')
+        ... )
+        OctetString(b'I am contact')
         """
 
         result = await self.multiset({oid: value}, timeout=timeout)
@@ -415,13 +440,13 @@ class RawClient:
         Executes an SNMP SET request on multiple OIDs. The result is returned as
         pure Python data structure.
 
-        Fake Example::
-
-            >>> multiset(  # doctest: +SKIP
-            ...     '127.0.0.1', 'private',
-            ...     [('1.2.3', OctetString(b'foo')),
-            ...     ('2.3.4', OctetString(b'bar'))])
-            {'1.2.3': b'foo', '2.3.4': b'bar'}
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client.multiset([  # doctest: +SKIP
+        ...     ('1.2.3', OctetString(b'foo')),
+        ...     ('2.3.4', OctetString(b'bar'))
+        ... ])
+        {'1.2.3': b'foo', '2.3.4': b'bar'}
         """
 
         if not isinstance(self.credentials, V2C):
@@ -435,16 +460,10 @@ class RawClient:
 
         binds = [VarBind(OID(k), v) for k, v in mappings.items()]
 
-        request = SetRequest(get_request_id(), binds)
-        packet = Sequence(
-            Integer(1), OctetString(self.credentials.community), request
-        )
-        response = await self.sender(
-            str(self.ip), self.port, bytes(packet), timeout=timeout
-        )
-        seq = Sequence.decode(response)
-        raw_response = cast(Tuple[Any, Any, GetResponse], seq[0])
-        output = {str(oid): value for oid, value in raw_response[2].varbinds}
+        pdu = SetRequest(PDUContent(get_request_id(), binds))
+        response = await self._send(pdu, get_request_id(), timeout)
+
+        output = {str(oid): value for oid, value in response.value.varbinds}
         if len(output) != len(mappings):
             raise SnmpError(
                 "Unexpected response. Expected %d varbinds, "
@@ -484,44 +503,40 @@ class RawClient:
         :param repeating_oids: contains the OIDs that should be fetched as list.
         :param max_list_size: defines the max length of each list.
 
-        Example::
-
-            >>> ip = '192.168.1.1'
-            >>> community = 'private'
-            >>> result = bulkget(  # doctest: +SKIP
-            ...     ip,
-            ...     community,
-            ...     scalar_oids=['1.3.6.1.2.1.1.1',
-            ...                  '1.3.6.1.2.1.1.2'],
-            ...     repeating_oids=['1.3.6.1.2.1.3.1',
-            ...                     '1.3.6.1.2.1.5.1'],
-            ...     max_list_size=10)
-            BulkResult(
-                scalars={'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
-                         '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
-                                              b'generic #47-Ubuntu SMP Fri Jun 24 '
-                                              b'10:09:13 UTC 2016 x86_64'},
-                listing=OrderedDict([
-                    ('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1', 10),
-                    ('1.3.6.1.2.1.5.1.0', b'\x01'),
-                    ('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1', b'\x02B\x8e>\x9ee'),
-                    ('1.3.6.1.2.1.5.2.0', b'\x00'),
-                    ('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1', b'\xac\x11\x00\x01'),
-                    ('1.3.6.1.2.1.5.3.0', b'\x00'),
-                    ('1.3.6.1.2.1.4.1.0', 1),
-                    ('1.3.6.1.2.1.5.4.0', b'\x01'),
-                    ('1.3.6.1.2.1.4.3.0', b'\x00\xb1'),
-                    ('1.3.6.1.2.1.5.5.0', b'\x00'),
-                    ('1.3.6.1.2.1.4.4.0', b'\x00'),
-                    ('1.3.6.1.2.1.5.6.0', b'\x00'),
-                    ('1.3.6.1.2.1.4.5.0', b'\x00'),
-                    ('1.3.6.1.2.1.5.7.0', b'\x00'),
-                    ('1.3.6.1.2.1.4.6.0', b'\x00'),
-                    ('1.3.6.1.2.1.5.8.0', b'\x00'),
-                    ('1.3.6.1.2.1.4.7.0', b'\x00'),
-                    ('1.3.6.1.2.1.5.9.0', b'\x00'),
-                    ('1.3.6.1.2.1.4.8.0', b'\x00'),
-                    ('1.3.6.1.2.1.5.10.0', b'\x00')]))
+        >>> from puresnmp import RawClient
+        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> result = client.bulkget(  # doctest: +SKIP
+        ...     scalar_oids=['1.3.6.1.2.1.1.1',
+        ...                  '1.3.6.1.2.1.1.2'],
+        ...     repeating_oids=['1.3.6.1.2.1.3.1',
+        ...                     '1.3.6.1.2.1.5.1'],
+        ...     max_list_size=10)
+        BulkResult(
+            scalars={'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
+                        '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
+                                            b'generic #47-Ubuntu SMP Fri Jun 24 '
+                                            b'10:09:13 UTC 2016 x86_64'},
+            listing=OrderedDict([
+                ('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1', 10),
+                ('1.3.6.1.2.1.5.1.0', b'\x01'),
+                ('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1', b'\x02B\x8e>\x9ee'),
+                ('1.3.6.1.2.1.5.2.0', b'\x00'),
+                ('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1', b'\xac\x11\x00\x01'),
+                ('1.3.6.1.2.1.5.3.0', b'\x00'),
+                ('1.3.6.1.2.1.4.1.0', 1),
+                ('1.3.6.1.2.1.5.4.0', b'\x01'),
+                ('1.3.6.1.2.1.4.3.0', b'\x00\xb1'),
+                ('1.3.6.1.2.1.5.5.0', b'\x00'),
+                ('1.3.6.1.2.1.4.4.0', b'\x00'),
+                ('1.3.6.1.2.1.5.6.0', b'\x00'),
+                ('1.3.6.1.2.1.4.5.0', b'\x00'),
+                ('1.3.6.1.2.1.5.7.0', b'\x00'),
+                ('1.3.6.1.2.1.4.6.0', b'\x00'),
+                ('1.3.6.1.2.1.5.8.0', b'\x00'),
+                ('1.3.6.1.2.1.4.7.0', b'\x00'),
+                ('1.3.6.1.2.1.5.9.0', b'\x00'),
+                ('1.3.6.1.2.1.4.8.0', b'\x00'),
+                ('1.3.6.1.2.1.5.10.0', b'\x00')]))
         """
 
         scalar_oids = scalar_oids or []  # protect against empty values
@@ -543,7 +558,7 @@ class RawClient:
         r = max(len(oids) - n, 0)  # pylint: disable=invalid-name
         expected_max_varbinds = n + (m * r)
 
-        n_retrieved_varbinds = len(get_response.varbinds)
+        n_retrieved_varbinds = len(get_response.value.varbinds)
         if n_retrieved_varbinds > expected_max_varbinds:
             raise SnmpError(
                 "Unexpected response. Expected no more than %d "
@@ -552,8 +567,8 @@ class RawClient:
             )
 
         # cut off the scalar OIDs from the listing(s)
-        scalar_tmp = get_response.varbinds[0 : len(scalar_oids)]
-        repeating_tmp = get_response.varbinds[len(scalar_oids) :]
+        scalar_tmp = get_response.value.varbinds[0 : len(scalar_oids)]
+        repeating_tmp = get_response.value.varbinds[len(scalar_oids) :]
 
         # prepare output for scalar OIDs
         scalar_out = {str(oid): value for oid, value in scalar_tmp}
@@ -624,12 +639,12 @@ class RawClient:
             ...     for row in result:
             ...         print(row)
             >>> example()  # doctest: +SKIP
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 2, 1)), value=b'lo')
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 6, 1)), value=b'')
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 1)), value='0.0')
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 2, 38)), value=b'eth0')
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 6, 38)), value=b'\x02B\xac\x11\x00\x02')
-            VarBind(oid=ObjectIdentifier((1, 3, 6, 1, 2, 1, 2, 2, 1, 22, 38)), value='0.0')
+            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.1"), value=b'lo')
+            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.6.1"), value=b'')
+            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.22.1"), value='0.0')
+            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.38"), value=b'eth0')
+            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.6.38"), value=b'\x02B\xac\x11\x00\x02')
+            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.22.38"), value='0.0')
         """
 
         if not isinstance(oids, list):

@@ -18,7 +18,13 @@ from puresnmp.api.raw import RawClient, register_trap_callback
 from puresnmp.const import Version
 from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
-from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetResponse, VarBind
+from puresnmp.pdu import (
+    BulkGetRequest,
+    GetNextRequest,
+    GetResponse,
+    PDUContent,
+    VarBind,
+)
 from puresnmp.transport import SocketResponse
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.typevars import SocketInfo
@@ -46,7 +52,7 @@ async def test_get_string(mocked_raw):
 async def test_get_oid(mocked_raw):
     data = readbytes("get_sysoid_01.hex")
     mocked_raw.sender.set_values([data])
-    expected = ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10")
+    expected = ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10")
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 1401558560
         result = await mocked_raw.get("1.2.3")
@@ -90,11 +96,11 @@ async def test_walk(mocked_raw):
 
     expected = [
         VarBind(
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.5.1"),
+            ObjectIdentifier("1.3.6.1.2.1.2.2.1.5.1"),
             Gauge(10000000),
         ),
         VarBind(
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.5.13"),
+            ObjectIdentifier("1.3.6.1.2.1.2.2.1.5.13"),
             Gauge(4294967295),
         ),
     ]
@@ -127,7 +133,7 @@ async def test_multiget(mocked_raw):
     data = readbytes("multiget_response.hex")
     mocked_raw.sender.set_values([data])
     expected = [
-        ObjectIdentifier.from_string("1.3.6.1.4.1.8072.3.2.10"),
+        ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10"),
         OctetString(
             b"Linux 7fbf2f0c363d 4.4.0-28-generic "
             b"#47-Ubuntu SMP Fri Jun 24 10:09:13 "
@@ -150,19 +156,19 @@ async def test_multi_walk(mocked_raw):
 
     expected = [
         VarBind(
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.1.1"),
+            ObjectIdentifier("1.3.6.1.2.1.2.2.1.1.1"),
             Integer(1),
         ),
         VarBind(
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.2.1"),
+            ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.1"),
             OctetString(b"lo"),
         ),
         VarBind(
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.1.78"),
+            ObjectIdentifier("1.3.6.1.2.1.2.2.1.1.78"),
             Integer(78),
         ),
         VarBind(
-            ObjectIdentifier.from_string("1.3.6.1.2.1.2.2.1.2.78"),
+            ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.78"),
             OctetString(b"eth0"),
         ),
     ]
@@ -186,18 +192,22 @@ async def test_multiwalk_non_containment(mocked_raw):
 
     First case: Returned OIDs are the same
     """
-    OID = ObjectIdentifier.from_string
+    OID = ObjectIdentifier
 
     response = Sequence(
-        Integer(1),
-        OctetString(b"public"),
-        GetResponse(
-            123,
-            [
-                VarBind(oid=OID("1.2.3"), value=Integer(30)),
-                VarBind(oid=OID("2.3.4"), value=Integer(40)),
-            ],
-        ),
+        [
+            Integer(1),
+            OctetString(b"public"),
+            GetResponse(
+                PDUContent(
+                    123,
+                    [
+                        VarBind(oid=OID("1.2.3"), value=Integer(30)),
+                        VarBind(oid=OID("2.3.4"), value=Integer(40)),
+                    ],
+                )
+            ),
+        ]
     )
     mocked_raw.sender.set_values([bytes(response)])
     with patch("puresnmp.api.raw.get_request_id") as gri:
@@ -215,17 +225,21 @@ async def test_multiwalk_non_containment_2(mocked_raw):
 
     Second case: Returned OIDs are smaller
     """
-    OID = ObjectIdentifier.from_string
+    OID = ObjectIdentifier
     response = Sequence(
-        Integer(1),
-        OctetString(b"public"),
-        GetResponse(
-            123,
-            [
-                VarBind(oid=OID("1.2.2"), value=Integer(30)),
-                VarBind(oid=OID("2.3.3"), value=Integer(40)),
-            ],
-        ),
+        [
+            Integer(1),
+            OctetString(b"public"),
+            GetResponse(
+                PDUContent(
+                    123,
+                    [
+                        VarBind(oid=OID("1.2.2"), value=Integer(30)),
+                        VarBind(oid=OID("2.3.3"), value=Integer(40)),
+                    ],
+                )
+            ),
+        ]
     )
     mocked_raw.sender.set_values([bytes(response)])
     with patch("puresnmp.api.raw.get_request_id") as gri:
@@ -255,7 +269,7 @@ def test_eom(self):
         )
         result = list(result)
 
-    OID = ObjectIdentifier.from_string
+    OID = ObjectIdentifier
     root = "1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1."
     expected = [
         VarBind(OID(root + "0"), Integer(1)),
@@ -296,9 +310,11 @@ async def test_get_call_args(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
     mocked_raw.sender.set_values([data])
     packet = Sequence(
-        Integer(Version.V2C),
-        OctetString("public"),
-        GetNextRequest(0, VarBind(ObjectIdentifier(1, 2, 3), Null())),
+        [
+            Integer(Version.V2C),
+            OctetString("public"),
+            GetNextRequest(0, VarBind(ObjectIdentifier("1.2.3"), Null())),
+        ]
     )
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 0
@@ -325,11 +341,15 @@ async def test_getnext_increasing_oid_strict(mocked_raw):
     in. If not, this can cause endless-loops in the worst case. Faulty SNMP
     implementations may behave this way!
     """
-    requested_oid = ObjectIdentifier(1, 2, 3, 4)
+    requested_oid = ObjectIdentifier("1.2.3.4")
     response_object = Sequence(
-        Integer(1),
-        OctetString(b"public"),
-        GetResponse(234, [VarBind(requested_oid, Integer(123))]),
+        [
+            Integer(1),
+            OctetString(b"public"),
+            GetResponse(
+                PDUContent(234, [VarBind(requested_oid, Integer(123))])
+            ),
+        ]
     )
     response_bytes = bytes(response_object)
     mocked_raw.sender.set_values([response_bytes])
@@ -352,13 +372,19 @@ async def test_walk_increasing_oid_lenient(mocked_raw):
     logger.addHandler(handler)
 
     response_binds = [
-        VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
-        VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
-        VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
-        VarBind(ObjectIdentifier(1, 2, 1), Integer(121)),  # non-increasing
+        VarBind(ObjectIdentifier("1.2.3"), Integer(123)),
+        VarBind(ObjectIdentifier("1.2.4"), Integer(124)),
+        VarBind(ObjectIdentifier("1.2.5"), Integer(125)),
+        VarBind(ObjectIdentifier("1.2.1"), Integer(121)),  # non-increasing
     ]
     response_packets = [
-        Sequence(Integer(1), OctetString(b"public"), GetResponse(234, [bind]))
+        Sequence(
+            [
+                Integer(1),
+                OctetString(b"public"),
+                GetResponse(PDUContent(234, [bind])),
+            ]
+        )
         for bind in response_binds
     ]
     response_bytes = [bytes(packet) for packet in response_packets]
@@ -373,9 +399,9 @@ async def test_walk_increasing_oid_lenient(mocked_raw):
     # The last OID in the mocked responses is decreasing so we want to read
     # just up to that point.
     expected = [
-        VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
-        VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
-        VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
+        VarBind(ObjectIdentifier("1.2.3"), Integer(123)),
+        VarBind(ObjectIdentifier("1.2.4"), Integer(124)),
+        VarBind(ObjectIdentifier("1.2.5"), Integer(125)),
     ]
     assert result == expected
 
@@ -393,15 +419,21 @@ async def test_walk_endless_loop(mocked_raw):
     loop. This test fakes such a case and revents the loop.
     """
     response_binds = [
-        VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
-        VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
-        VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
-        VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),  # same OID
-        VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),  # same OID
-        VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),  # same OID
+        VarBind(ObjectIdentifier("1.2.3"), Integer(123)),
+        VarBind(ObjectIdentifier("1.2.4"), Integer(124)),
+        VarBind(ObjectIdentifier("1.2.5"), Integer(125)),
+        VarBind(ObjectIdentifier("1.2.5"), Integer(125)),  # same OID
+        VarBind(ObjectIdentifier("1.2.5"), Integer(125)),  # same OID
+        VarBind(ObjectIdentifier("1.2.5"), Integer(125)),  # same OID
     ]
     response_packets = [
-        Sequence(Integer(1), OctetString(b"public"), GetResponse(234, [bind]))
+        Sequence(
+            [
+                Integer(1),
+                OctetString(b"public"),
+                GetResponse(PDUContent(234, [bind])),
+            ]
+        )
         for bind in response_binds
     ]
     response_bytes = [bytes(packet) for packet in response_packets]
@@ -420,9 +452,9 @@ async def test_walk_endless_loop(mocked_raw):
     # The last OID in the mocked responses is decreasing so we want to read
     # just up to that point.
     expected = [
-        VarBind(ObjectIdentifier(1, 2, 3), Integer(123)),
-        VarBind(ObjectIdentifier(1, 2, 4), Integer(124)),
-        VarBind(ObjectIdentifier(1, 2, 5), Integer(125)),
+        VarBind(ObjectIdentifier("1.2.3"), Integer(123)),
+        VarBind(ObjectIdentifier("1.2.4"), Integer(124)),
+        VarBind(ObjectIdentifier("1.2.5"), Integer(125)),
     ]
     assert result == expected
 
@@ -435,11 +467,17 @@ async def test_get_call_args(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
     mocked_raw.sender.set_values([data])
     packet = Sequence(
-        Integer(Version.V2C),
-        OctetString("private"),
-        BulkGetRequest(
-            0, 1, 2, ObjectIdentifier(1, 2, 3), ObjectIdentifier(1, 2, 4)
-        ),
+        [
+            Integer(Version.V2C),
+            OctetString("private"),
+            BulkGetRequest(
+                0,
+                1,
+                2,
+                ObjectIdentifier("1.2.3"),
+                ObjectIdentifier("1.2.4"),
+            ),
+        ]
     )
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 0
@@ -512,9 +550,11 @@ async def test_get_call_args(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
     mocked_raw.sender.set_values([data])
     packet = Sequence(
-        Integer(Version.V2C),
-        OctetString("private"),
-        BulkGetRequest(3262242864, 0, 2, ObjectIdentifier(1, 2, 3)),
+        [
+            Integer(Version.V2C),
+            OctetString("private"),
+            BulkGetRequest(3262242864, 0, 2, ObjectIdentifier("1.2.3")),
+        ]
     )
     with patch("puresnmp.api.raw.get_request_id") as gri:
         gri.return_value = 3262242864
@@ -612,8 +652,8 @@ async def test_bulkwalk(mocked_raw):
         VarBind("1.3.6.1.2.1.2.2.1.20.10", Counter(0)),
         VarBind("1.3.6.1.2.1.2.2.1.21.1", Gauge(0)),
         VarBind("1.3.6.1.2.1.2.2.1.21.10", Gauge(0)),
-        VarBind("1.3.6.1.2.1.2.2.1.22.1", ObjectIdentifier(0, 0)),
-        VarBind("1.3.6.1.2.1.2.2.1.22.10", ObjectIdentifier(0, 0)),
+        VarBind("1.3.6.1.2.1.2.2.1.22.1", ObjectIdentifier("0.0")),
+        VarBind("1.3.6.1.2.1.2.2.1.22.10", ObjectIdentifier("0.0")),
     ]
     assert result == expected
 
@@ -658,7 +698,7 @@ async def test_bulktable(mocked_raw):
             "19": Counter(0),
             "20": Counter(0),
             "21": Gauge(0),
-            "22": ObjectIdentifier(0, 0),
+            "22": ObjectIdentifier("0.0"),
         },
         {
             "0": "4",
@@ -683,7 +723,7 @@ async def test_bulktable(mocked_raw):
             "19": Counter(0),
             "20": Counter(0),
             "21": Gauge(0),
-            "22": ObjectIdentifier(0, 0),
+            "22": ObjectIdentifier("0.0"),
         },
     ]
     assert sorted(result, key=lambda x: x["0"]) == expected
@@ -699,37 +739,31 @@ class TestTraps(unittest.TestCase):
                 yield SocketResponse(blob, SocketInfo("192.0.2.1", 64001))
 
         expected = [
+            VarBind(ObjectIdentifier("1.3.6.1.2.1.1.3.0"), TimeTicks(794602)),
             VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)), TimeTicks(794602)
+                ObjectIdentifier("1.3.6.1.6.3.1.1.4.1.0"),
+                ObjectIdentifier("1.3.6.1.4.1.8072.2.3.0.1"),
             ),
             VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
-                ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1)),
-            ),
-            VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                ObjectIdentifier("1.3.6.1.4.1.8072.2.3.2.1"),
                 Integer(123456),
             ),
+            VarBind(ObjectIdentifier("1.3.6.1.2.1.1.3.0").TimeTicks(795345)),
             VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)), TimeTicks(795345)
+                ObjectIdentifier("1.3.6.1.6.3.1.1.4.1.0"),
+                ObjectIdentifier("1.3.6.1.4.1.8072.2.3.0.1"),
             ),
             VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
-                ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1)),
-            ),
-            VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                ObjectIdentifier("1.3.6.1.4.1.8072.2.3.2.1"),
                 Integer(123457),
             ),
+            VarBind(ObjectIdentifier("1.3.6.1.2.1.1.3.0").TimeTicks(795538)),
             VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 2, 1, 1, 3, 0)), TimeTicks(795538)
+                ObjectIdentifier("1.3.6.1.6.3.1.1.4.1.0"),
+                ObjectIdentifier("1.3.6.1.4.1.8072.2.3.0.1"),
             ),
             VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0)),
-                ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 0, 1)),
-            ),
-            VarBind(
-                ObjectIdentifier((1, 3, 6, 1, 4, 1, 8072, 2, 3, 2, 1)),
+                ObjectIdentifier("1.3.6.1.4.1.8072.2.3.2.1"),
                 Integer(123459),
             ),
         ]

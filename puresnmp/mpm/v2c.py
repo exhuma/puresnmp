@@ -1,6 +1,7 @@
 from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
-from x690.types import Integer, OctetString, Sequence, pop_tlv
+from x690 import decode
+from x690.types import Integer, OctetString, Sequence
 
 from puresnmp.credentials import V2C, Credentials
 from puresnmp.mpm import MessageProcessingModel
@@ -28,7 +29,7 @@ class V2CMPM(MessageProcessingModel):
         context_name
         if not isinstance(credentials, V2C):
             raise TypeError("SNMPv2c MPM should be used with V2C credentials!")
-        packet = Sequence(Integer(1), OctetString(credentials.community), pdu)
+        packet = Sequence([Integer(1), OctetString(credentials.community), pdu])
         return bytes(packet), None
 
     def decode(
@@ -40,7 +41,7 @@ class V2CMPM(MessageProcessingModel):
         The Message Processing Subsystem provides this service primitive for
         preparing the abstract data elements from an incoming SNMP message:
         """
-        decoded, _ = pop_tlv(whole_msg)
+        decoded, _ = decode(whole_msg)
         return decoded[2]
 
 

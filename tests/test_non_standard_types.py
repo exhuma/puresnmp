@@ -3,6 +3,8 @@
 from datetime import timedelta
 from ipaddress import ip_address
 
+import pytest
+
 from puresnmp import types as t
 
 from . import ByteTester
@@ -10,8 +12,9 @@ from . import ByteTester
 
 class TestIpAddress(ByteTester):
     def test_decoding(self):
-        result = t.IpAddress.decode(b"\x80\x96\xa1\x09")
-        expected = t.IpAddress(b"\x80\x96\xa1\x09")
+        result = t.IpAddress.decode_raw(b"\x80\x96\xa1\x09")
+        # TODO 2.0.0 wrapped value should be an ip-address instance
+        expected = b"\x80\x96\xa1\x09"
         self.assertEqual(result, expected)
 
     def test_encoding(self):
@@ -41,8 +44,8 @@ class TestIpAddress(ByteTester):
 
 class TestTimeTicks(ByteTester):
     def test_decoding(self):
-        result = t.TimeTicks.decode(b"\x0a")
-        expected = t.TimeTicks(10)
+        result = t.TimeTicks.decode_raw(b"\x0a")
+        expected = 10
         self.assertEqual(result, expected)
 
     def test_encoding(self):
