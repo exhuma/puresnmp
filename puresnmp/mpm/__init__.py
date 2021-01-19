@@ -1,16 +1,14 @@
 import importlib
 import pkgutil
-from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 from typing_extensions import Protocol
 
 import puresnmp.mpm
-from puresnmp.adt import V3Flags
 from puresnmp.credentials import Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
-from puresnmp.security.usm import DiscoData  # TODO: Too specific to USM
 
 
 class TMPMPlugin(Protocol):
@@ -44,20 +42,6 @@ class UnknownMessageProcessingModel(MPMException):
         )
 
 
-class PreparedData(NamedTuple):
-    security_model: SecurityModel
-    security_name: bytes
-    security_level: "V3Flags"
-    context_engine_id: bytes
-    context_name: bytes
-    pdu_version: int
-    pdu: PDU
-    pdu_type: int
-    max_size_response_scoped_pdu: int
-    status_information: int
-    state_reference: Any
-
-
 class MessageProcessingModel:
     """
     Each Message Processing Model defines the format of a particular version of
@@ -68,7 +52,7 @@ class MessageProcessingModel:
     """
 
     IDENTIFIER: int
-    disco: Optional[DiscoData]
+    disco: Optional[Any]
 
     def __init__(
         self,
@@ -99,36 +83,6 @@ class MessageProcessingModel:
     ) -> PDU:
         raise NotImplementedError(
             "decode is not yet implemented in %r" % type(self)
-        )
-
-    def prepare_outgoing_message(
-        self,
-        message_id: int,
-        security_model: SecurityModel,  # Security Model to use
-        security_name,  # on behalf of this principal
-        security_level,  # Level of Security requested
-        context_engine_id,  # data from/at this entity
-        context_name,  # data from/in this context
-        pdu_version,  # the version of the PDU
-        pdu,  # SNMP Protocol Data Unit
-        expect_response,  # TRUE or FALSE
-    ) -> bytes:
-        raise NotImplementedError(
-            "prepare_outgoing_message is not yet implemented in %r" % type(self)
-        )
-
-    def prepare_data_elements(
-        self,
-        whole_msg,  # as received from the network
-        security_model: SecurityModel,
-    ) -> PreparedData:
-        """
-        The Message Processing Subsystem provides this service primitive for
-        preparing the abstract data elements from an incoming SNMP message:
-        """
-        # XXX TODO should raise "SnmpFailure" on error
-        raise NotImplementedError(
-            "prepare_data_elements is not yet implemented in %r" % type(self)
         )
 
 
