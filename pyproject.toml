@@ -78,8 +78,7 @@ python = "^3.6"
 t61codec = "^1.0.1"
 dataclasses = {version = "^0.7", python = "<3.7"}
 pycrypto = "^2.6.1"
-x690 = {version = "^0.4.0", allow-prereleases = true}
-pytest-dependency = "^0.5.1"
+x690 = "0.5.0a1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.1"
