@@ -17,24 +17,28 @@ Example folder-structure for a privacy plugin::
 
 Note that there is no ``__init__.py`` file!
 
-In order for modules to be detected as privacy plugin, they must follow the
-following rules:
+In order for modules to be detected as plugin, they must follow the following
+rules:
 
 * Have a function ``encrypt_data`` implementing the
   :py:meth:`puresnmp.priv.TPriv.encrypt_data` protocol.
 * Have a function ``decrypt_data`` implementing the
   :py:meth:`puresnmp.priv.TPriv.decrypt_data` protocol.
-* Contain a string-variable ``IDENTIFIER``. This variable is used to uniquely
-  identify this privacy module.
+* Contain a string-variable ``IDENTIFIER``. This variable should be
+  user-friends and is used to uniquely identify this privacy module.
+* Contain a int-variable ``IANA_ID``. This variable should have a value from
+  IANA registered privacy protocols and is used to avoid duplicate plugin
+  registrations. See
+  https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
+  and :rfc:`3411`
 """
 import importlib
-import pkgutil
-from types import ModuleType
-from typing import Dict, Generator, NamedTuple
+from typing import Dict, NamedTuple
 
 from typing_extensions import Protocol
 
 from puresnmp.adt import EncryptedMessage, PlainMessage
+from puresnmp.util import iter_namespace
 
 
 class EncryptionResult(NamedTuple):
@@ -84,33 +88,24 @@ class TPriv(Protocol):
 #: Global registry of detected plugins
 DISCOVERED_PLUGINS: Dict[str, TPriv] = {}
 
-
-def iter_namespace(
-    ns_pkg: ModuleType,
-) -> Generator[pkgutil.ModuleInfo, None, None]:
-    """
-    Iterates over modules inside the given namespace
-    """
-    # Specifying the second argument (prefix) to iter_modules makes the
-    # returned name an absolute name instead of a relative one. This allows
-    # import_module to work without having to do additional modification to
-    # the name.
-    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")  # type: ignore
+#: Global registry of detected plugins by IANA ID
+IANA_IDS: Dict[int, TPriv] = {}
 
 
 def discover_plugins():
     """
     Load all privacy plugins into a global cache
     """
-    plugin_container = importlib.import_module("puresnmp.priv")
+    namespace = importlib.import_module("puresnmp.priv")
 
-    for _, name, _ in iter_namespace(plugin_container):
+    for _, name, _ in iter_namespace(namespace):
         mod = importlib.import_module(name)
         if not all(
             [
                 hasattr(mod, "encrypt_data"),
                 hasattr(mod, "decrypt_data"),
                 hasattr(mod, "IDENTIFIER"),
+                hasattr(mod, "IANA_ID"),
             ]
         ):
             continue
@@ -120,7 +115,14 @@ def discover_plugins():
                 "This is already used by %r"
                 % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])
             )
+        if mod.IANA_ID in IANA_IDS:
+            raise ImportError(
+                "Plugin %r uses a IANA ID (%d) which "
+                "is already registered by %r"
+                % (mod, mod.IANA_ID, IANA_IDS[mod.IANA_ID])
+            )
         DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
+        IANA_IDS[mod.IANA_ID] = mod
 
 
 def create(name: str) -> TPriv:

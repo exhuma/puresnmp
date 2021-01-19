@@ -273,7 +273,6 @@ def decrypt_message(message: Message, credentials: V3) -> PlainMessage:
 
 class UserSecurityModel(SecurityModel):
     def set_engine_timing(self, engine_id, boots, time):
-        # TODO redundant with set_timing_values?
         engine_config = self.local_config.setdefault(engine_id, {})
         engine_config["authoritative_engine_boots"] = boots
         engine_config["authoritative_engine_time"] = time

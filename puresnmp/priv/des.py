@@ -13,6 +13,7 @@ from puresnmp.exc import SnmpError
 from puresnmp.util import password_to_key
 
 IDENTIFIER = "des"
+IANA_ID = 2
 
 
 def pad_packet(data: bytes, block_size: int = 8) -> bytes:

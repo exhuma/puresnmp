@@ -1,12 +1,15 @@
 """
 Colleciton of utility functions for the puresnmp package.
 """
+import pkgutil
 from dataclasses import dataclass
 from functools import lru_cache
+from types import ModuleType
 from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     Iterable,
     List,
     Optional,
@@ -343,3 +346,16 @@ def validate_response_id(request_id: int, response_id: int) -> None:
         raise InvalidResponseId(
             f"Invalid response ID {response_id} for request id {request_id}"
         )
+
+
+def iter_namespace(
+    ns_pkg: ModuleType,
+) -> Generator[pkgutil.ModuleInfo, None, None]:
+    """
+    Iterates over modules inside the given namespace
+    """
+    # Specifying the second argument (prefix) to iter_modules makes the
+    # returned name an absolute name instead of a relative one. This allows
+    # import_module to work without having to do additional modification to
+    # the name.
+    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")  # type: ignore
