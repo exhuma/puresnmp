@@ -163,7 +163,6 @@ def create(identifier: int) -> SecurityModel:
 
     If no plugin with the given identifier is found, a *KeyError* is raised
     """
-
     if not DISCOVERED_PLUGINS:
         discover_plugins()
     if identifier not in DISCOVERED_PLUGINS:

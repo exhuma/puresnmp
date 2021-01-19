@@ -1,9 +1,13 @@
+"""
+This module provides the plugin for MD5-based authentication
+"""
 import hashlib
 
 import puresnmp.auth.hashbase as hashbase
 from puresnmp.util import password_to_key
 
 IDENTIFIER = "md5"
+IANA_ID = 2
 
 hasher = password_to_key(hashlib.md5, 16)
 authenticate_incoming_message = hashbase.for_incoming(hasher, "md5")

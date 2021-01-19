@@ -51,8 +51,11 @@ class BulkResult:
     listing: Dict[str, Any]
 
 
-def group_varbinds(varbinds, effective_roots, user_roots=None):
-    # type: (List[VarBind], List[ObjectIdentifier], Optional[List[ObjectIdentifier]]) -> Dict[ObjectIdentifier, List[VarBind]]
+def group_varbinds(
+    varbinds: List[VarBind],
+    effective_roots: List[ObjectIdentifier],
+    user_roots: Optional[List[ObjectIdentifier]] = None,
+) -> Dict[ObjectIdentifier, List[VarBind]]:
     """
     Takes a list of varbinds and a list of base OIDs and returns a mapping from
     those base IDs to lists of varbinds.
@@ -95,8 +98,9 @@ def group_varbinds(varbinds, effective_roots, user_roots=None):
     return results
 
 
-def get_unfinished_walk_oids(grouped_oids):
-    # type: (Dict[ObjectIdentifier, List[VarBind]]) -> List[Tuple[ObjectIdentifier, WalkRow]]
+def get_unfinished_walk_oids(
+    grouped_oids: Dict[ObjectIdentifier, List[VarBind]]
+) -> List[Tuple[ObjectIdentifier, WalkRow]]:
     """
     :param grouped_oids: A dictionary containing VarBinds as values. The keys
         are the base OID of those VarBinds as requested by the user. We need to
@@ -129,8 +133,11 @@ def get_unfinished_walk_oids(grouped_oids):
     return output
 
 
-def tablify(varbinds, num_base_nodes=0, base_oid=""):
-    # type: ( Iterable[Union[VarBind, Tuple[Any, Any]]], int, str ) -> List[Dict[str, Any]]
+def tablify(
+    varbinds: Iterable[Union[VarBind, Tuple[Any, Any]]],
+    num_base_nodes: int = 0,
+    base_oid: str = "",
+) -> List[Dict[str, Any]]:
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By

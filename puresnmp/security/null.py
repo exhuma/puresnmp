@@ -1,3 +1,6 @@
+"""
+This defines a no-op security model which can be used as fallback
+"""
 from puresnmp.security import SecurityModel
 
 IDENTIFIER = 0
@@ -14,4 +17,7 @@ class NullSecurityModel(SecurityModel):
 
 
 def create() -> NullSecurityModel:
+    """
+    Create a new instance of the security model
+    """
     return NullSecurityModel()

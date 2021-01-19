@@ -46,7 +46,7 @@ def make_msg():
         (3, usm.UserSecurityModel),
     ],
 )
-def test_null(identifier, cls):
+def test_create(identifier, cls):
     model = sec.create(identifier)
     assert isinstance(model, cls)
 
