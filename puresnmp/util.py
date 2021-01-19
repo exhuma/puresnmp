@@ -17,7 +17,7 @@ from typing import (
 
 from x690.types import ObjectIdentifier
 
-from puresnmp.exc import SnmpError
+from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.snmp import VarBind
 from puresnmp.typevars import TAnyIp
 
@@ -328,3 +328,18 @@ def generate_engine_id_octets(pen: int, octets: bytes) -> bytes:
     buffer.append(5)
     buffer.extend(octets)
     return bytes(buffer)
+
+
+def validate_response_id(request_id: int, response_id: int) -> None:
+    """
+    Compare request and response IDs and raise an appropriate error.
+
+    Raises an appropriate error if the IDs differ. Otherwise returns
+
+    This helper method ensures we're always returning the same exception type
+    on invalid response IDs.
+    """
+    if response_id != request_id:
+        raise InvalidResponseId(
+            f"Invalid response ID {response_id} for request id {request_id}"
+        )

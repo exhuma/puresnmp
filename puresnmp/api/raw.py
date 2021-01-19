@@ -61,8 +61,13 @@ from ..pdu import (
 )
 from ..snmp import VarBind
 from ..transport import TSender, get_request_id, listen, send
-from ..util import BulkResult  # NOQA (must be here for type detection)
-from ..util import get_unfinished_walk_oids, group_varbinds, tablify
+from ..util import (
+    BulkResult,
+    get_unfinished_walk_oids,
+    group_varbinds,
+    tablify,
+    validate_response_id,
+)
 
 PyType = Any  # TODO
 TWalkResponse = AsyncGenerator[VarBind, None]
@@ -120,11 +125,7 @@ class RawClient:
             str(self.ip), self.port, bytes(packet), timeout=timeout
         )
         response = self.mpm.decode(raw_response, self.credentials)
-        if response.request_id != request_id:
-            raise SnmpError(
-                "Mismatching request-id in request/response (%r != %r)"
-                % (response.request_id, request_id)
-            )
+        validate_response_id(request_id, response.value.request_id)
         return response
 
     async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:

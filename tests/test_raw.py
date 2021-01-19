@@ -82,7 +82,7 @@ async def test_get_non_existing_oid(mocked_raw):
     data = readbytes("get_non_existing.hex")
     mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
-        gri.return_value = -1
+        gri.return_value = 1807074322
         with pytest.raises(NoSuchOID):
             await mocked_raw.get("1.2.3")
 
@@ -291,7 +291,7 @@ async def test_multiset(mocked_raw):
     data = readbytes("multiset_response.hex")
     mocked_raw.sender.set_values([data])
     with patch("puresnmp.api.raw.get_request_id") as gri:
-        gri.return_value = 0
+        gri.return_value = 1403406017
         result = await mocked_raw.multiset(
             {
                 "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),

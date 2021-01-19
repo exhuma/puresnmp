@@ -10,10 +10,11 @@ import puresnmp.auth as auth
 import puresnmp.priv as priv
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V3, Credentials
-from puresnmp.exc import InvalidResponseId, SnmpError
+from puresnmp.exc import SnmpError
 from puresnmp.pdu import GetRequest, PDUContent
 from puresnmp.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE, get_request_id
+from puresnmp.util import validate_response_id
 
 IDENTIFIER = 3
 
@@ -125,18 +126,6 @@ class USMSecurityParameters:
             ]
         )
         return indent("\n".join(lines), INDENT_STRING * depth)
-
-
-def validate_response_id(request_id: int, response_id: int) -> None:
-    """
-    Helper method to keep the error on mismatching IDs the same
-
-    Raises an appropriate error if the IDs differ. Otherwise returns
-    """
-    if response_id != request_id:
-        raise InvalidResponseId(
-            f"Invalid response ID {response_id} for request id {request_id}"
-        )
 
 
 def apply_encryption(
