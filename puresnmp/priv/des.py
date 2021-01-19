@@ -1,3 +1,8 @@
+"""
+Implementation of the DES encryption algorithm for SNMPv3
+
+This module is a plugin for :py:mod:`puresnmp.priv`
+"""
 import hashlib
 from random import randint
 from typing import Generator, Tuple

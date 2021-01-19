@@ -77,7 +77,8 @@ def discover_plugins():
             continue
         if mod.IDENTIFIER in DISCOVERED_PLUGINS:
             raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. This is already used by %r"
+                "Plugin %r causes a name-clash with the identifier %r. "
+                "This is already used by %r"
                 % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])
             )
         DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
