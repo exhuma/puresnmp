@@ -89,7 +89,12 @@ class ScopedPDU:
 
     @staticmethod
     def decode(data: bytes, slc: slice = slice(None)) -> "ScopedPDU":
-        sequence, _ = decode(data, enforce_type=Sequence, strict=False)
+        sequence, _ = decode(
+            data,
+            start_index=slc.start or 0,
+            enforce_type=Sequence,
+            strict=False,
+        )
         output = ScopedPDU(
             context_engine_id=sequence[0],
             context_name=sequence[1],
