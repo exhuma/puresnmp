@@ -241,30 +241,7 @@ class GetResponse(PDU):
     """
 
     TAG = 2
-    decode_raw = staticmethod(decode_pdu_content)
-
-    @classmethod
-    def decode_old(cls, data):
-        # type: (bytes) -> PDU
-        """
-        Try decoding the response. If nothing was returned (the message was
-        empty), raise a :py:exc:`~puresnmp.exc.NoSuchOID` exception.
-        """
-        # TODO This is not reslly clean, but it should work. A GetResponse has
-        #      the same type identifier as a "endOfMibView" *value*. The way
-        #      puresnmp is structured (recursively calling "pop_tlv") makes it
-        #      difficult to distinguish between a valid GetResponse object and
-        #      an endOfMibView value, except that the endOfMibView had no data.
-        if not data:
-            return EndOfMibView()
-        value = super().decode(data)
-        for varbind in value.varbinds:
-            if isinstance(varbind.value, NoSuchOIDPacket):
-                raise NoSuchOID(
-                    varbind.oid,
-                    "Nothing found at the given OID (%s)" % varbind.oid,
-                )
-        return value
+    decode_raw = staticmethod(decode_pdu_content)  # type: ignore
 
 
 class GetNextRequest(GetRequest):
