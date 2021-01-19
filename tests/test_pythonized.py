@@ -15,7 +15,6 @@ import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString
 
 from puresnmp import Client
-from puresnmp.api.pythonic import traps
 from puresnmp.api.raw import RawClient
 from puresnmp.pdu import PDUContent, Trap, VarBind
 from puresnmp.types import Counter, Gauge, IpAddress
@@ -363,54 +362,3 @@ async def test_bulktable():
         {"0": "2", "1": 2},
     ]
     assert result == expected
-
-
-class TestTraps(unittest.TestCase):
-    def test_traps(self):
-        with patch("puresnmp.api.pythonic.raw") as mck:
-            oid = ObjectIdentifier
-            mck.traps.return_value = [
-                Trap(
-                    PDUContent(
-                        1,
-                        [
-                            VarBind(
-                                oid("1.2.1.1"), OctetString(b"fake-uptime")
-                            ),
-                            VarBind(oid("1.2.1.2"), oid("1.2.3.4")),
-                            VarBind(oid("1.2.1.3"), Integer(13)),
-                            VarBind(
-                                oid("1.2.1.4"), OctetString(b"fake-value-2")
-                            ),
-                        ],
-                    )
-                )
-            ]
-            result = []
-            for trap in traps():
-                result.append((trap.uptime, trap.oid, trap.values))
-        expected = [
-            (
-                b"fake-uptime",
-                "1.2.3.4",
-                {
-                    "1.2.1.3": 13,
-                    "1.2.1.4": b"fake-value-2",
-                },
-            )
-        ]
-        self.assertEqual(result, expected)
-
-    def test_trap_origins(self):
-        """
-        We want to be able to see where a trap was sent from
-        """
-        with patch("puresnmp.api.pythonic.raw") as mck:
-            oid = ObjectIdentifier
-            mck.traps.return_value = [Trap(PDUContent(1, []))]
-            mck.traps.return_value[-1].source = SocketInfo("192.0.2.1", 64001)
-            result = []
-            for trap in traps():
-                result.append(trap.origin)
-        expected = ["192.0.2.1"]
-        self.assertEqual(result, expected)

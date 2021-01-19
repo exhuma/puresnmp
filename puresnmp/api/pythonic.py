@@ -307,12 +307,3 @@ class TrapInfo:
             value = value_raw.pythonize()
             output[oid] = value
         return output
-
-
-def traps(listen_address="0.0.0.0", port=162, buffer_size=1024):
-    # type: (str, int, int) -> Generator[TrapInfo, None, None]
-    """
-    A "pythonic" wrapper around :py:func:`puresnmp.api.raw.traps` output.
-    """
-    for raw_trap in raw.traps(listen_address, port, buffer_size):
-        yield TrapInfo(raw_trap)
