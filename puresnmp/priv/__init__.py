@@ -1,8 +1,8 @@
 import importlib
 import pkgutil
-from typing import Dict
+from typing import Dict, Tuple
 
-from typing_extensions import Protocol, Tuple
+from typing_extensions import Protocol
 
 import puresnmp.priv
 from puresnmp.adt import Message

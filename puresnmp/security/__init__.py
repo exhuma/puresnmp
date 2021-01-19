@@ -5,7 +5,7 @@ from typing import Any, Dict
 from typing_extensions import Protocol
 
 import puresnmp.security
-from puresnmp.adt import Message
+from puresnmp.adt import Message, PlainMessage
 from puresnmp.credentials import Credentials
 from puresnmp.exc import InvalidSecurityModel
 
@@ -38,11 +38,22 @@ class SecurityModel:
         security_engine_id: bytes,
         credentials: Credentials,
     ) -> Message:
-        raise NotImplementedError("Not yet implemented")
+        raise NotImplementedError("Not yet implemented in %s", self.__class__)
 
     def process_incoming_message(
         self, message: Message, credentials: Credentials
-    ) -> Message:
+    ) -> PlainMessage:
+        raise NotImplementedError("Not yet implemented in %s", self.__class__)
+
+    def set_engine_timing(
+        self,
+        engine_id: bytes,
+        engine_boots: int,
+        engine_time: int,
+    ) -> None:
+        raise NotImplementedError("Not yet implemented in %s", self.__class__)
+
+    async def send_discovery_message(self, handler: Any) -> Any:
         raise NotImplementedError("Not yet implemented in %s", self.__class__)
 
 

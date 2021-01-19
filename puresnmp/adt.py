@@ -1,16 +1,21 @@
 import sys
 from dataclasses import dataclass
 from textwrap import indent
-from typing import Union, cast
+from typing import Type, TypeVar, Union, cast
 
 from x690 import decode
 from x690.types import Integer, OctetString, Sequence
+
+from puresnmp.pdu import PDU
 
 if sys.stdout.isatty():
     # Add some colour for TTYs
     INDENT_STRING = " \u001b[38;5;22m│\u001b[0m "
 else:
     INDENT_STRING = " │ "
+
+
+TMessageType = TypeVar("TMessageType", bound="Message")
 
 
 @dataclass(frozen=True)
@@ -156,9 +161,9 @@ class Message:
         )
         return output
 
-    @staticmethod
-    def from_sequence(seq: Sequence) -> "Message":
-        version = seq[0]
+    @classmethod
+    def from_sequence(cls: Type[TMessageType], seq: Sequence) -> TMessageType:
+        version = cast(Integer, seq[0])
         global_data = cast(Sequence, seq[1])
         security_parameters = cast(OctetString, seq[2]).value
 
@@ -171,9 +176,11 @@ class Message:
             payload: Union[OctetString, ScopedPDU] = cast(OctetString, seq[3])
         else:
             scoped_pdu = cast(Sequence, seq[3])
-            payload = ScopedPDU(scoped_pdu[0], scoped_pdu[1], scoped_pdu[2])
+            engine_id = cast(OctetString, scoped_pdu[0])
+            context_name = cast(OctetString, scoped_pdu[1])
+            payload = ScopedPDU(engine_id, context_name, scoped_pdu[2])
 
-        output = Message(
+        output = cls(
             version,
             HeaderData(
                 msg_id.pythonize(),
@@ -217,3 +224,17 @@ class Message:
         else:
             lines.extend(self.scoped_pdu.pretty(depth + 1).splitlines())
         return indent("\n".join(lines), INDENT_STRING * depth)
+
+
+class PlainMessage(Message):
+    version: Integer
+    global_data: HeaderData
+    security_parameters: bytes
+    scoped_pdu: ScopedPDU
+
+
+class EncryptedMessage(Message):
+    version: Integer
+    global_data: HeaderData
+    security_parameters: bytes
+    scoped_pdu: bytes

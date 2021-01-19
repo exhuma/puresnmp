@@ -82,10 +82,7 @@ class PDU(Type[PDUContent]):
             )
             raise exception
 
-        values, next_start = cast(
-            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
-            decode(data, next_start),
-        )
+        values, next_start = decode(data, next_start)
 
         if not isinstance(values, Sequence):
             raise TypeError(
@@ -138,13 +135,13 @@ class PDU(Type[PDUContent]):
         prefix = "  " * depth
         lines = [
             f"{prefix}{self.__class__.__name__} (tag: {self.TAG})",
-            f"{prefix}  Request ID: {self.request_id}",
-            f"{prefix}  Error Status: {self.error_status}",
-            f"{prefix}  Error Index: {self.error_index}",
+            f"{prefix}  Request ID: {self.value.request_id}",
+            f"{prefix}  Error Status: {self.value.error_status}",
+            f"{prefix}  Error Index: {self.value.error_index}",
         ]
-        if self.varbinds:
+        if self.value.varbinds:
             lines.append(f"{prefix}  Varbinds: ")
-            for bind in self.varbinds:
+            for bind in self.value.varbinds:
                 lines.append(f"{prefix}    {bind.oid}: {bind.value}")
         else:
             lines.append(f"{prefix}  Varbinds: <none>")
@@ -163,8 +160,7 @@ class NoSuchObject(Type[bytes]):
     TAG = 0
 
     def __init__(self, value: bytes = b"") -> None:
-        super().__init__()
-        self.value = value
+        super().__init__(value)
 
 
 class NoSuchInstance(Type[bytes]):
@@ -178,8 +174,7 @@ class NoSuchInstance(Type[bytes]):
     TAG = 1
 
     def __init__(self, value: bytes = b"") -> None:
-        super().__init__()
-        self.value = value
+        super().__init__(value)
 
 
 class EndOfMibView(Type[bytes]):

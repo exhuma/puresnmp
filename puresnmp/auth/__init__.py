@@ -1,13 +1,10 @@
 import importlib
 import pkgutil
+from typing import Dict
 
 from typing_extensions import Protocol
 
 import puresnmp.auth
-from puresnmp.adt import Message
-
-#: Global registry of detected plugins
-DISCOVERED_PLUGINS = {}
 
 
 class TAuth(Protocol):
@@ -24,6 +21,10 @@ class TAuth(Protocol):
         engine_id: bytes,
     ) -> None:
         ...
+
+
+#: Global registry of detected plugins
+DISCOVERED_PLUGINS: Dict[str, TAuth] = {}
 
 
 def iter_namespace(ns_pkg):

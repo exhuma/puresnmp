@@ -44,7 +44,7 @@ class IpAddress(OctetString):
             octet_2, remainder = remainder & 0xFF, remainder >> 8
             octet_1, remainder = remainder & 0xFF, remainder >> 8
             value = pack("BBBB", octet_1, octet_2, octet_3, octet_4)
-        super().__init__(value)
+        super().__init__(value or b"")
 
     def pythonize(self):
         # type: () -> bytes
@@ -74,7 +74,7 @@ class Counter(Integer):
     def __init__(
         self, value: Union[int, _SENTINEL_UNINITIALISED] = UNINITIALISED
     ) -> None:
-        if value is not UNINITIALISED:
+        if not isinstance(value, _SENTINEL_UNINITIALISED):
             value &= 0xFFFFFFFF if value >= 2 ** 32 else value
             if value <= 0:
                 value = 0
@@ -154,7 +154,7 @@ class Counter64(Integer):
     def __init__(
         self, value: Union[int, _SENTINEL_UNINITIALISED] = UNINITIALISED
     ) -> None:
-        if value is not UNINITIALISED:
+        if not isinstance(value, _SENTINEL_UNINITIALISED):
             value &= 0xFFFFFFFFFFFFFFFF if value >= 2 ** 64 else value
             if value <= 0:
                 value = 0

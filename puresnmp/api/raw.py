@@ -94,7 +94,7 @@ class RawClient:
         )
 
     async def _send(self, pdu: PDU, request_id: int, timeout: int) -> PDU:
-        packet, security_model = await self.mpm.encode(
+        packet, _ = await self.mpm.encode(
             request_id,
             self.credentials,
             self.engine_id,
@@ -672,7 +672,7 @@ def register_trap_callback(
     callback: Callable[[PDU], Any],
     listen_address: str = "0.0.0.0",
     port: int = 162,
-    credentials: Optional[Credentials] = None,
+    credentials: Credentials = V2C("public"),
     loop: Optional[AbstractEventLoop] = None,
 ) -> AbstractEventLoop:
     """
@@ -697,9 +697,9 @@ def register_trap_callback(
 
         lcd: Dict[str, Any] = {}
 
-        obj = cast(
-            Tuple[Integer, Integer, Trap], Sequence.decode(packet.data)[0]
-        )
+        as_sequence = Sequence.decode(packet.data)
+
+        obj = cast(Tuple[Integer, Integer, Trap], as_sequence[0])
 
         mproc = mpm.create(obj[0].value, handler, lcd)
         trap = mproc.decode(packet.data, credentials)

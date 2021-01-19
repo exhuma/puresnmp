@@ -3,12 +3,19 @@ from textwrap import indent
 from typing import Awaitable, Callable
 
 from x690 import decode
-from x690.types import Integer, OctetString, Sequence
+from x690.types import Integer, Null, OctetString, Sequence
 from x690.util import INDENT_STRING
 
 import puresnmp.auth as auth
 import puresnmp.priv as priv
-from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
+from puresnmp.adt import (
+    EncryptedMessage,
+    HeaderData,
+    Message,
+    PlainMessage,
+    ScopedPDU,
+    V3Flags,
+)
 from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import GetRequest, PDUContent
@@ -129,13 +136,13 @@ class USMSecurityParameters:
 
 
 def apply_encryption(
-    message: Message,
+    message: PlainMessage,
     credentials: V3,
     security_name: bytes,
     security_engine_id: bytes,
     engine_boots: int,
     engine_time: int,
-) -> Message:
+) -> EncryptedMessage:
     # TODO: This functions takes arguments which should be available inside the
     #       message itself (I think). Verify if this redundancy can be removed.
     if credentials.priv is not None and not credentials.priv.method:
@@ -239,7 +246,7 @@ def verify_authentication(
         ) from exc
 
 
-def decrypt_message(message: Message, credentials: V3) -> Message:
+def decrypt_message(message: Message, credentials: V3) -> PlainMessage:
     if not message.global_data.flags.priv:
         return message
     priv_method = priv.create(credentials.priv.method)
@@ -304,7 +311,7 @@ class UserSecurityModel(SecurityModel):
 
     def process_incoming_message(
         self, message: Message, credentials: Credentials
-    ) -> Message:
+    ) -> PlainMessage:
         # TODO: Validate engine-id.
         # TODO: Validate incoming username against the request
 
@@ -371,8 +378,17 @@ class UserSecurityModel(SecurityModel):
         payload = bytes(discovery_message)
         raw_response = await transport_handler(payload)
         response, _ = decode(raw_response, enforce_type=Sequence)
+        if isinstance(response, Null):
+            raise SnmpError("Unexpectedly got a NULL object")
 
-        response_msg = Message.from_sequence(response)
+        # Arguably, this should pass through the message-processing model
+        # allowing for more complex implementations. However this would require
+        # a back-reference to the MPM (calling something "above" the current
+        # abstraction level). As there is currently no implementation known to
+        # me that requires this, I opted to go for a simpler architecture
+        # instead. This means that discovery-messages cannot be encrypted.
+        # Which they currently are not. So this should do.
+        response_msg = PlainMessage.from_sequence(response)
 
         response_id = response_msg.scoped_pdu.data.value.request_id
         validate_response_id(response_id, request_id)

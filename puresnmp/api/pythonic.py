@@ -21,7 +21,7 @@ of :py:class:`x690.types.Type`.
 import logging
 from collections import OrderedDict
 from datetime import timedelta
-from typing import Any, Dict, Generator, List
+from typing import Any, AsyncGenerator, Dict, List
 from warnings import warn
 
 from x690.types import ObjectIdentifier
@@ -34,7 +34,7 @@ from . import raw
 
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier
-TWalkResponse = Generator[VarBind, None, None]
+TWalkResponse = AsyncGenerator[VarBind, None]
 
 
 class Client:

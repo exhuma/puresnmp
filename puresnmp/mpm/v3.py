@@ -26,7 +26,7 @@ class EncodingResult(NamedTuple):
 class V3MPM(MessageProcessingModel):
     def decode(
         self,
-        whole_msg,  # as received from the network
+        whole_msg: bytes,  # as received from the network
         credentials: Credentials,
     ) -> PDU:
         security_model_id = 3
@@ -58,7 +58,7 @@ class V3MPM(MessageProcessingModel):
             self.disco = await self.security_model.send_discovery_message(
                 self.transport_handler
             )
-        security_engine_id = self.disco.authoritative_engine_id
+        security_engine_id = self.disco.authoritative_engine_id  # type: ignore
 
         if engine_id == b"":
             engine_id = security_engine_id
@@ -86,7 +86,7 @@ class V3MPM(MessageProcessingModel):
             )
 
         snmp_version = 3
-        msg = Message(Integer(snmp_version), global_data, None, scoped_pdu)
+        msg = Message(Integer(snmp_version), global_data, b"", scoped_pdu)
         output = self.security_model.generate_request_message(
             msg,
             security_engine_id,

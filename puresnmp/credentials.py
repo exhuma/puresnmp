@@ -26,7 +26,7 @@ class V1(Credentials):
         super().__init__(0)
         self.community = community
 
-    def __eq__(self, other: "V1") -> bool:
+    def __eq__(self, other: object) -> bool:
         return isinstance(other, V1) and other.community == self.community
 
 
@@ -50,7 +50,7 @@ class V3(Credentials):
         self.auth = auth
         self.priv = priv
 
-    def __eq__(self, other: "V3") -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, V3)
             and other.username == self.username

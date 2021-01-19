@@ -94,8 +94,8 @@ class MessageProcessingModel:
 
     def decode(
         self,
-        whole_msg,  # as received from the network
-        credentials: Optional[Credentials] = None,
+        whole_msg: bytes,  # as received from the network
+        credentials: Credentials,
     ) -> PDU:
         raise NotImplementedError(
             "decode is not yet implemented in %r" % type(self)
