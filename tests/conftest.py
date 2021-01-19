@@ -41,13 +41,6 @@ def mocked_raw():
     yield client
 
 
-@pytest.fixture
-def mocked_pythonic():
-    sender = FakeSend()
-    client = Client("192.0.2.1", V2C("private"), sender=sender)
-    yield client
-
-
 def get_byte_diff(a: bytes, b: bytes) -> List[str]:
     comparisons = []
     a = bytearray(a)
