@@ -12,22 +12,11 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       "puresnmp.get", "puresnmp.walk" & co.
 
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, Iterable, List, Optional, Tuple, cast
 
 from x690 import decode
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
-
-from puresnmp import priv
 
 from .const import MAX_VARBINDS
 from .exc import (
@@ -39,10 +28,6 @@ from .exc import (
 )
 from .snmp import VarBind
 from .typevars import SocketInfo
-
-if TYPE_CHECKING:
-    # pylint: disable=unused-import
-    from typing import Iterator, Optional
 
 
 @dataclass
@@ -165,7 +150,6 @@ class PDU(Type[PDUContent]):
             lines.append(f"{prefix}  Varbinds: <none>")
 
         return "\n".join(lines)
-
 
 
 class NoSuchObject(Type[bytes]):

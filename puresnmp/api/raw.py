@@ -16,32 +16,14 @@ from asyncio import get_event_loop
 from asyncio.events import AbstractEventLoop
 from collections import OrderedDict
 from ipaddress import ip_address
-from typing import (
-    Any,
-    AsyncGenerator,
-    Callable,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Tuple
 from typing import Type as TType
 from typing import TypeVar, cast
 
 from typing_extensions import Protocol
-from x690.types import (
-    Integer,
-    Null,
-    ObjectIdentifier,
-    OctetString,
-    Sequence,
-    Type,
-)
+from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 
 import puresnmp.mpm as mpm
-from puresnmp import security
-from puresnmp.security import create as create_sm
 from puresnmp.typevars import SocketResponse
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
@@ -53,7 +35,6 @@ from ..pdu import (
     EndOfMibView,
     GetNextRequest,
     GetRequest,
-    GetResponse,
     NoSuchOIDPacket,
     PDUContent,
     SetRequest,
@@ -120,7 +101,6 @@ class RawClient:
             self.context_name,
             pdu,
         )
-
         raw_response = await self.sender(
             str(self.ip), self.port, bytes(packet), timeout=timeout
         )

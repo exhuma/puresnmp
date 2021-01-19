@@ -19,11 +19,11 @@ from struct import pack
 from typing import Optional, Union
 
 from x690.types import (
+    _SENTINEL_UNINITIALISED,
+    UNINITIALISED,
     Integer,
     OctetString,
     Type,
-    _SENTINEL_UNINITIALISED,
-    UNINITIALISED,
 )
 from x690.util import TypeClass
 

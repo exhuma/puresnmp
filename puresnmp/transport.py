@@ -16,7 +16,7 @@ import logging
 from asyncio.events import AbstractEventLoop
 from asyncio.transports import BaseTransport
 from time import time
-from typing import Any, AsyncGenerator, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 from typing_extensions import Protocol
 from x690.util import visible_octets
@@ -25,7 +25,7 @@ from .exc import Timeout
 from .typevars import SocketInfo, SocketResponse
 
 LOG = logging.getLogger(__name__)
-MESSAGE_MAX_SIZE = 65507  # TODO determine a better value here
+MESSAGE_MAX_SIZE = 65507
 
 
 class TSender(Protocol):

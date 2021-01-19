@@ -1,6 +1,6 @@
 from dataclasses import dataclass, replace
 from textwrap import indent
-from typing import Awaitable, Callable, Tuple
+from typing import Awaitable, Callable
 
 from x690 import decode
 from x690.types import Integer, OctetString, Sequence

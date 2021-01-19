@@ -1,15 +1,13 @@
 import sys
 from dataclasses import dataclass
 from textwrap import indent
-from typing import TYPE_CHECKING, Union, cast
+from typing import Union, cast
 
 from x690 import decode
 from x690.types import Integer, OctetString, Sequence
 
-if TYPE_CHECKING:
-    from puresnmp.pdu import PDU
-
 if sys.stdout.isatty():
+    # Add some colour for TTYs
     INDENT_STRING = " \u001b[38;5;22m│\u001b[0m "
 else:
     INDENT_STRING = " │ "
