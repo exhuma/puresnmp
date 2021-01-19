@@ -61,6 +61,11 @@ OID = ObjectIdentifier
 
 
 class TFetcher(Protocol):
+    """
+    Protocol for a callable that is responsible to fetch a collection of OIDs
+    from the remote device
+    """
+
     async def __call__(
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
     ) -> List[VarBind]:  # pragma: no cover
@@ -68,6 +73,24 @@ class TFetcher(Protocol):
 
 
 class RawClient:
+    """
+    A client to execute SNMP commands on a remote device.
+
+    To run SNMP commands on a remote device, create an instance for that
+    device, and then call the instance methods.
+
+    All functions are based on asyncio and must be used in an async context.
+
+    Credentials need to be instances of classes taken from
+    :py:mod:`puresnmp.credentials` which are used to determine the
+    appropriate communication model for this client instance.
+
+    >>> from puresnmp.credentials import V2C
+    >>> client = RawClient("192.0.2.1", V2C("public"))
+    >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
+    <coroutine ...>
+    """
+
     def __init__(
         self,
         ip: str,
@@ -129,9 +152,9 @@ class RawClient:
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
     ) -> List[Type]:
         """
-        Executes an SNMP GET request with multiple OIDs and returns a list of pure
-        Python objects. The order of the output items is the same order as the OIDs
-        given as arguments.
+        Executes an SNMP GET request with multiple OIDs and returns a list of
+        pure Python objects. The order of the output items is the same order
+        as the OIDs given as arguments.
 
         >>> from puresnmp import RawClient
         >>> import warnings
@@ -182,11 +205,12 @@ class RawClient:
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
-        Executes a sequence of SNMP GETNEXT requests and returns a generator over
-        :py:class:`~puresnmp.pdu.VarBind` instances.
+        Executes a sequence of SNMP GETNEXT requests and returns a generator
+        over :py:class:`~puresnmp.pdu.VarBind` instances.
 
-        The generator stops when hitting an OID which is *not* a sub-node of the
-        given start OID or at the end of the tree (whichever comes first).
+        The generator stops when hitting an OID which is *not* a sub-node of
+        the given start OID or at the end of the tree (whichever comes
+        first).
 
         >>> from puresnmp import RawClient
         >>> client = RawClient("192.0.2.1", V2C("private"))
@@ -227,8 +251,8 @@ class RawClient:
         errors: str = ERRORS_STRICT,
     ):
         """
-        Executes a sequence of SNMP GETNEXT requests and returns a generator over
-        :py:class:`~puresnmp.pdu.VarBind` instances.
+        Executes a sequence of SNMP GETNEXT requests and returns a generator
+        over :py:class:`~puresnmp.pdu.VarBind` instances.
 
         This is the same as :py:func:`~.walk` except that it is capable of
         iterating over multiple OIDs at the same time.
@@ -322,8 +346,8 @@ class RawClient:
         """
         Executes a single multi-oid GETNEXT request.
 
-        The request sends one packet to the remote host requesting the value of the
-        OIDs following one or more given OIDs.
+        The request sends one packet to the remote host requesting the value
+        of the OIDs following one or more given OIDs.
 
         >>> from puresnmp import RawClient
         >>> client = RawClient("192.0.2.1", V2C("private"))
@@ -350,7 +374,7 @@ class RawClient:
                 break
             output.append(VarBind(oid, value))
 
-        # Verify that the OIDs we retrieved are successors of the requested OIDs.
+        # Verify that the OIDs we retrieved are successors of the requested OIDs
         for requested, retrieved in zip(oids, output):
             if not OID(requested) < retrieved.oid:
                 # TODO remove when Py2 is dropped
@@ -368,8 +392,8 @@ class RawClient:
         """
         Fetch an SNMP table
 
-        The resulting output will be a list of dictionaries where each dictionary
-        corresponds to a row of the table.
+        The resulting output will be a list of dictionaries where each
+        dictionary corresponds to a row of the table.
 
         The index of the row will be contained in key ``'0'`` as a string
         representing an OID. This key ``'0'`` is automatically injected by
@@ -404,8 +428,8 @@ class RawClient:
         timeout: int = DEFAULT_TIMEOUT,
     ) -> T:
         """
-        Executes a simple SNMP SET request. The result is returned as pure Python
-        data structure. The value must be a subclass of
+        Executes a simple SNMP SET request. The result is returned as pure
+        Python data structure. The value must be a subclass of
         :py:class:`~x690.types.Type`.
 
         >>> from puresnmp import RawClient
@@ -469,22 +493,23 @@ class RawClient:
         # pylint: disable=unused-argument, too-many-locals
         """
         Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
-        instance.  This contains both a mapping for the scalar variables (the
-        "non-repeaters") and an OrderedDict instance containing the remaining list
-        (the "repeaters").
+        instance. This contains both a mapping for the scalar variables (the
+        "non-repeaters") and an OrderedDict instance containing the remaining
+        list (the "repeaters").
 
-        The OrderedDict is ordered the same way as the SNMP response (whatever the
-        remote device returns).
+        The OrderedDict is ordered the same way as the SNMP response
+        (whatever the remote device returns).
 
-        This operation can retrieve both single/scalar values *and* lists of values
-        ("repeating values") in one single request. You can for example retrieve
-        the hostname (a scalar value), the list of interfaces (a repeating value)
-        and the list of physical entities (another repeating value) in one single
-        request.
+        This operation can retrieve both single/scalar values *and* lists of
+        values ("repeating values") in one single request. You can for
+        example retrieve the hostname (a scalar value), the list of
+        interfaces (a repeating value) and the list of physical entities
+        (another repeating value) in one single request.
 
-        Note that this behaves like a **getnext** request for scalar values! So you
-        will receive the value of the OID which is *immediately following* the OID
-        you specified for both scalar and repeating values!
+        Note that this behaves like a **getnext** request for scalar values!
+        So you will receive the value of the OID which is *immediately
+        following* the OID you specified for both scalar and repeating
+        values!
 
         :param scalar_oids: contains the OIDs that should be fetched as single
             value.
@@ -500,10 +525,11 @@ class RawClient:
         ...                     '1.3.6.1.2.1.5.1'],
         ...     max_list_size=10)
         BulkResult(
-            scalars={'1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
-                        '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
-                                            b'generic #47-Ubuntu SMP Fri Jun 24 '
-                                            b'10:09:13 UTC 2016 x86_64'},
+            scalars={
+                '1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
+                '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
+                                     b'generic #47-Ubuntu SMP Fri Jun 24 '
+                                     b'10:09:13 UTC 2016 x86_64'},
             listing=OrderedDict([
                 ('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1', 10),
                 ('1.3.6.1.2.1.5.1.0', b'\x01'),

@@ -38,10 +38,26 @@ TWalkResponse = AsyncGenerator[VarBind, None]
 
 
 class Client:
+    """
+    A client which wraps a :py:class:`puresnmp.api.raw.RawClient` instance
+    and applies type-converstions to data-types to make day-do-day work a bit
+    easier.
+
+    The converted types may lose some features (f.ex. for Object
+    Identifiers), but will decouple the calls from the SNMP library by
+    sticking to pure-python types.
+    """
+
     def __init__(self, raw_client: raw.RawClient) -> None:
         self.raw_client = raw_client
 
     async def get(self, *args, **kwargs) -> None:
+        """
+        Delegates to :py:meth:`~puresnmp.api.raw.Client.get` but returns
+        a simple Python type.
+
+        See the "raw" equivalent for detailed documentation & examples.
+        """
         raw_value = await self.raw_client.get(*args, **kwargs)
         return raw_value.pythonize()
 
@@ -189,8 +205,8 @@ class Client:
         Fetches a table from the SNMP agent. Each value will be converted to a
         pure-python type.
 
-        See :py:func:`puresnmp.api.raw.table` for more information of the returned
-        structure.
+        See :py:func:`puresnmp.api.raw.table` for more information of the
+        returned structure.
         """
         if num_base_nodes:
             warn(
