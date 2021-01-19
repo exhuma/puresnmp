@@ -1,22 +1,61 @@
+"""
+This module provides a plugin architecture for message-processing models (mpm).
+
+Each mpm plugin can be distributed as separate package by providing
+modules inside the namespace-package "puresnmp.mpm". Note that in order
+to be a valid namespace-package, such a package *must not* have a
+``__init__.py`` file!
+
+Example folder-structure for a mpm plugin::
+
+    my-security-plugin/
+     +- setup.py (or pyproject.toml)
+     +- puresnmp/
+         +- mpm/
+             +- mymodule.py
+             +- myothermodule.py
+
+Note that there is no ``__init__.py`` file!
+
+In order for modules to be detected as plugin, they must follow the following
+rules:
+
+* Have a function ``create`` returning an instance of a class implementing the
+  message-processing model. The function must take a network-transport handler
+  and a "local configuration directory" as arguments. A reference
+  implementation can be found in :py:class:`puresnmp.mpm.v3.V3MPM`.
+* Contain a int-variable ``IDENTIFIER``. This variable should map to the
+  message-processing model identifiers as defined in the SNMPv3 standard. See
+  https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
+  and :rfc:`3411`
+"""
 import importlib
-import pkgutil
 from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 
 from typing_extensions import Protocol
 
-import puresnmp.mpm
 from puresnmp.credentials import Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
+from puresnmp.util import iter_namespace
 
 
 class TMPMPlugin(Protocol):
+    """
+    Protocol for the plugin factory function.
+    """
+
+    # pylint: disable=too-few-public-methods
+
     def create(
         self,
         transport_handler: Callable[[bytes], Awaitable[bytes]],
         lcd: Dict[str, Any],
     ) -> "MessageProcessingModel":
+        """
+        See :py:func:`~.create`
+        """
         ...
 
 
@@ -70,32 +109,49 @@ class MessageProcessingModel:
         credentials: Credentials,
         engine_id: bytes,
         context_name: bytes,
-        pdu,
+        pdu: PDU,
     ) -> Tuple[bytes, Optional[SecurityModel]]:
+        """
+        Convert an SNMP PDU into raw bytes for the network.
+
+        :param request_id: A unique ID for the request.
+        :param credentials: Credentials which are used by the model if needed
+            (encryption, authentication, ...).
+        :param engine_id: The engine-id for use in SNMPv3.
+            :py:mod:`puresnmp.util` contains helper methods to create those
+            according to the RFC.
+        :param context_name: An identifier for the SNMPv3 context
+        :param pdu: The plain SNMP PDU to process
+        :returns: Raw bytes that can be sent to the network
+        """
         raise NotImplementedError(
             "encode is not yet implemented in %r" % type(self)
         )
 
     def decode(
         self,
-        whole_msg: bytes,  # as received from the network
+        whole_msg: bytes,
         credentials: Credentials,
     ) -> PDU:
+        """
+        Convert bytes (as received raw from the network) into an SNMP PDU
+
+        :param whole_msg: The message as received from the network
+        :param credentials: Credentials which will be used if required by the
+            model.
+        :returns: A plain SNMP PDU
+        """
         raise NotImplementedError(
             "decode is not yet implemented in %r" % type(self)
         )
 
 
-def iter_namespace(ns_pkg):
-    # Specifying the second argument (prefix) to iter_modules makes the
-    # returned name an absolute name instead of a relative one. This allows
-    # import_module to work without having to do additional modification to
-    # the name.
-    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
-
-
 def discover_plugins():
-    for _, name, _ in iter_namespace(puresnmp.mpm):
+    """
+    Load all privacy plugins into a global cache
+    """
+    namespace = importlib.import_module("puresnmp.mpm")
+    for _, name, _ in iter_namespace(namespace):
         mod = importlib.import_module(name)
         if not all(
             [
@@ -106,7 +162,8 @@ def discover_plugins():
             continue
         if mod.IDENTIFIER in DISCOVERED_PLUGINS:
             raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. This is already used by %r"
+                "Plugin %r causes a name-clash with the identifier %r. "
+                "This is already used by %r"
                 % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])
             )
         DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
@@ -117,6 +174,18 @@ def create(
     transport_handler: Callable[[bytes], Awaitable[bytes]],
     lcd: Dict[str, Any],
 ) -> MessageProcessingModel:
+    """
+    Creates a new instance of a message-processing-model
+
+    :param identifier: The IANA ID for the message-processing model
+    :param transport_handler: A callable that is responsible to send data to
+        the network. It will be called with bytes to be sent, and should
+        return bytes. It should by itself already be aware of *where* to send
+        them.
+    :param lcd: A "local configuration directory" which is dynamically
+        updated with "discovery" data if required.
+    :returns: A new Message Processing Model instance
+    """
     # See https://tools.ietf.org/html/rfc3412#section-4.1.1
 
     if not DISCOVERED_PLUGINS:
