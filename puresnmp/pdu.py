@@ -166,12 +166,6 @@ class NoSuchObject(Type[bytes]):
         super().__init__()
         self.value = value
 
-    @classmethod
-    def decode(cls, data: bytes) -> "NoSuchObject":
-        if data != b"":
-            raise SnmpError("no-such-object should not contain data!")
-        return NoSuchObject(data)
-
 
 class NoSuchInstance(Type[bytes]):
     """
@@ -186,12 +180,6 @@ class NoSuchInstance(Type[bytes]):
     def __init__(self, value: bytes = b"") -> None:
         super().__init__()
         self.value = value
-
-    @classmethod
-    def decode(cls, data: bytes) -> "NoSuchInstance":
-        if data != b"":
-            raise SnmpError("no-such-object should not contain data!")
-        return NoSuchInstance(data)
 
 
 class EndOfMibView(Type[bytes]):
@@ -217,12 +205,6 @@ class NoSuchOIDPacket(Type[bytes]):
 
     def __init__(self, value: bytes = b"") -> None:
         super().__init__(value)
-
-    @classmethod
-    def decode(cls, data: bytes) -> "EndOfMibView":
-        if data != b"":
-            raise SnmpError("no-such-oid should not contain data!")
-        return NoSuchOIDPacket(data)
 
 
 class GetRequest(PDU):
