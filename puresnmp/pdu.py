@@ -38,64 +38,6 @@ class PDUContent:
     error_index: int = 0
 
 
-def decode_pdu_content(data: bytes, slc: slice = slice(None)) -> PDUContent:
-    """
-    This method takes a :py:class:`bytes` object and converts it to
-    an application object. This is callable from each subclass of
-    :py:class:`~.PDU`.
-    """
-    # TODO (advanced): recent tests revealed that this is *not symmetric*
-    # with __bytes__ of this class. This should be ensured!
-    if not data:
-        raise EmptyMessage("No data to decode!")
-    request_id, next_start = decode(data, slc.start or 0)
-    error_status, next_start = decode(data, next_start)
-    error_index, next_start = decode(data, next_start)
-
-    if error_status.value:
-        error_detail, next_start = cast(
-            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
-            decode(data, next_start),
-        )
-        if not isinstance(error_detail, Sequence):
-            raise TypeError(
-                "error-detail should be a sequence but got %r"
-                % type(error_detail)
-            )
-        varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
-        if error_index.value != 0:
-            offending_oid = varbinds[error_index.value - 1].oid
-        else:
-            # Offending OID is unknown
-            offending_oid = None
-        exception = ErrorResponse.construct(error_status.value, offending_oid)
-        raise exception
-
-    values, next_start = cast(
-        Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
-        decode(data, next_start),
-    )
-
-    if not isinstance(values, Sequence):
-        raise TypeError(
-            "PDUs can only be decoded from sequences but got "
-            "%r instead" % type(values)
-        )
-
-    varbinds = []
-    for oid, value in values:
-        # NOTE: this uses the "is" check to make 100% sure we check against
-        # the sentinel object defined in this module!
-        if isinstance(value, EndOfMibView):
-            varbinds.append(VarBind(oid, value))
-            break
-        varbinds.append(VarBind(oid, value))
-
-    return PDUContent(
-        request_id.value, varbinds, error_status.value, error_index.value
-    )
-
-
 class PDU(Type[PDUContent]):
     """
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
@@ -104,7 +46,65 @@ class PDU(Type[PDUContent]):
     TYPECLASS = TypeClass.CONTEXT
     TAG = 0
 
-    decode_raw = staticmethod(decode_pdu_content)
+    @classmethod
+    def decode_raw(cls, data: bytes, slc: slice = slice(None)) -> PDUContent:
+        """
+        This method takes a :py:class:`bytes` object and converts it to
+        an application object. This is callable from each subclass of
+        :py:class:`~.PDU`.
+        """
+        # TODO (advanced): recent tests revealed that this is *not symmetric*
+        # with __bytes__ of this class. This should be ensured!
+        if not data:
+            raise EmptyMessage("No data to decode!")
+        request_id, next_start = decode(data, slc.start or 0)
+        error_status, next_start = decode(data, next_start)
+        error_index, next_start = decode(data, next_start)
+
+        if error_status.value:
+            error_detail, next_start = cast(
+                Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+                decode(data, next_start),
+            )
+            if not isinstance(error_detail, Sequence):
+                raise TypeError(
+                    "error-detail should be a sequence but got %r"
+                    % type(error_detail)
+                )
+            varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
+            if error_index.value != 0:
+                offending_oid = varbinds[error_index.value - 1].oid
+            else:
+                # Offending OID is unknown
+                offending_oid = None
+            exception = ErrorResponse.construct(
+                error_status.value, offending_oid
+            )
+            raise exception
+
+        values, next_start = cast(
+            Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
+            decode(data, next_start),
+        )
+
+        if not isinstance(values, Sequence):
+            raise TypeError(
+                "PDUs can only be decoded from sequences but got "
+                "%r instead" % type(values)
+            )
+
+        varbinds = []
+        for oid, value in values:
+            # NOTE: this uses the "is" check to make 100% sure we check against
+            # the sentinel object defined in this module!
+            if isinstance(value, EndOfMibView):
+                varbinds.append(VarBind(oid, value))
+                break
+            varbinds.append(VarBind(oid, value))
+
+        return PDUContent(
+            request_id.value, varbinds, error_status.value, error_index.value
+        )
 
     def encode_raw(self) -> bytes:
 
@@ -231,7 +231,6 @@ class GetRequest(PDU):
     """
 
     TAG = 0
-    decode_raw = staticmethod(decode_pdu_content)
 
 
 class GetResponse(PDU):
@@ -241,7 +240,6 @@ class GetResponse(PDU):
     """
 
     TAG = 2
-    decode_raw = staticmethod(decode_pdu_content)  # type: ignore
 
 
 class GetNextRequest(GetRequest):
