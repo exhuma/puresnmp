@@ -134,6 +134,8 @@ class RawClient:
         given as arguments.
 
         >>> from puresnmp import RawClient
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
         >>> client = RawClient("192.0.2.1", V2C("private"))
         >>> # The line below needs to be "awaited" to get the result.
         >>> # This is not shown here to make it work with doctest
@@ -162,6 +164,8 @@ class RawClient:
         Executes a single SNMP GETNEXT request (used inside *walk*).
 
         >>> from puresnmp import RawClient
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
         >>> client = RawClient("192.0.2.1", V2C("private"))
         >>> # The line below needs to be "awaited" to get the result.
         >>> # This is not shown here to make it work with doctest
@@ -230,10 +234,13 @@ class RawClient:
         iterating over multiple OIDs at the same time.
 
         >>> from puresnmp import RawClient
+        >>> import warnings
         >>> client = RawClient("192.0.2.1", V2C("private"))
-        >>> client.multiwalk(  # doctest: +ELLIPSIS
-        ...     ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1']
-        ... )
+        >>> with warnings.catch_warnings():
+        ...     warnings.simplefilter("ignore")
+        ...     client.multiwalk(  # doctest: +ELLIPSIS
+        ...         ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1']
+        ...     )
         <async_generator object ...>
         """
         if fetcher is None:
