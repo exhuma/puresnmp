@@ -1,6 +1,9 @@
+"""
+This module implements the "User Security Model" as defined in :rfc:`3414`
+"""
 from dataclasses import dataclass, replace
 from textwrap import indent
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Union
 
 from x690 import decode
 from x690.types import Integer, Null, OctetString, Sequence
@@ -27,6 +30,16 @@ IDENTIFIER = 3
 
 
 def reset_digest(message: Message) -> Message:
+    """
+    Replace the current message-digest in a message with zeroes.
+
+    As the digest is embedded inside the message, it needs to be zeroed out
+    when deriving the digest from a message. Otherwise the digest of the same
+    message would change, because the digest changes.
+
+    :param message: The message (with or without digest)
+    :returns: A new message with zeroed digest
+    """
     # As per https://tools.ietf.org/html/rfc3414#section-6.3.1,
     # the auth-key needs to be initialised to 12 zeroes
     secparams = USMSecurityParameters.decode(message.security_parameters)
@@ -39,31 +52,49 @@ def reset_digest(message: Message) -> Message:
 
 
 class USMError(SnmpError):
-    pass
+    """
+    Generic exception for errors cased by the USM module
+    """
 
 
 class UnsupportedSecurityLevel(USMError):
-    pass
+    """
+    This error is raised when the data included in the credentials is invalid
+    or incomplete.
+    """
 
 
 class EncryptionError(USMError):
-    pass
+    """
+    This error is raised whenever something goes wrong during encryption
+    """
 
 
 class DecryptionError(USMError):
-    pass
+    """
+    This error is raised whenever something goes wrong during decryption
+    """
 
 
 class AuthenticationError(USMError):
-    pass
+    """
+    This error is raised whenever something goes wrong during authentication
+    """
 
 
 class UnknownUser(USMError):
-    pass
+    """
+    This error is raised when a message is processed that is not consistent
+    with the user-name passed in the credentials.
+    """
 
 
 @dataclass(frozen=True)
 class DiscoData:
+    """
+    Helper class to wrap data received from a SNMPv3 discovery message.
+    """
+
     authoritative_engine_id: bytes
     authoritative_engine_boots: int
     authoritative_engine_time: int
@@ -93,6 +124,9 @@ class USMSecurityParameters:
 
     @staticmethod
     def from_snmp_type(seq: Sequence) -> "USMSecurityParameters":
+        """
+        Construct a USMSecurityParameters instance from an SNMP/X690 Sequence
+        """
         return USMSecurityParameters(
             authoritative_engine_id=seq[0].pythonize(),
             authoritative_engine_boots=seq[1].pythonize(),
@@ -106,6 +140,9 @@ class USMSecurityParameters:
         return bytes(self.as_snmp_type())
 
     def as_snmp_type(self) -> Sequence:
+        """
+        Convert this instance into a plain SNMP (x690) object.
+        """
         return Sequence(
             [
                 OctetString(self.authoritative_engine_id),
@@ -121,15 +158,16 @@ class USMSecurityParameters:
         """
         Return a value for CLI display
         """
+        idt = INDENT_STRING
         lines = ["Security Parameters"]
         lines.extend(
             [
-                f"{INDENT_STRING}Engine ID   : {self.authoritative_engine_id!r}",
-                f"{INDENT_STRING}Engine Boots: {self.authoritative_engine_boots}",
-                f"{INDENT_STRING}Engine Time : {self.authoritative_engine_time}",
-                f"{INDENT_STRING}Username    : {self.user_name!r}",
-                f"{INDENT_STRING}Auth Params : {self.auth_params!r}",
-                f"{INDENT_STRING}Priv Params : {self.priv_params!r}",
+                f"{idt}Engine ID   : {self.authoritative_engine_id!r}",
+                f"{idt}Engine Boots: {self.authoritative_engine_boots}",
+                f"{idt}Engine Time : {self.authoritative_engine_time}",
+                f"{idt}Username    : {self.user_name!r}",
+                f"{idt}Auth Params : {self.auth_params!r}",
+                f"{idt}Priv Params : {self.priv_params!r}",
             ]
         )
         return indent("\n".join(lines), INDENT_STRING * depth)
@@ -143,6 +181,10 @@ def apply_encryption(
     engine_boots: int,
     engine_time: int,
 ) -> EncryptedMessage:
+    """
+    Derive a new encrypted message from a plain message given
+    user-credentials and target-engine information.
+    """
     # TODO: This functions takes arguments which should be available inside the
     #       message itself (I think). Verify if this redundancy can be removed.
     if credentials.priv is not None and not credentials.priv.method:
@@ -183,10 +225,14 @@ def apply_encryption(
 
 
 def apply_authentication(
-    unauthed_message: Message,
+    unauthed_message: PlainMessage,
     credentials: V3,
     security_engine_id: bytes,
-) -> Message:
+) -> PlainMessage:
+    """
+    Calculate the digest of the message and return a new message including
+    that digest.
+    """
     if credentials.auth is not None and not credentials.auth.method:
         raise UnsupportedSecurityLevel(
             "Incomplete data for authentication. "
@@ -220,7 +266,12 @@ def apply_authentication(
 
 def verify_authentication(
     message: Message, credentials: V3, security_params: USMSecurityParameters
-):
+) -> None:
+    """
+    Verify authenticity of the message using the credentials.
+
+    Raises :py:exc:`AuthenticationError` if it fails. Otherwise it's a no-op
+    """
 
     if not message.global_data.flags.auth:
         return
@@ -246,14 +297,20 @@ def verify_authentication(
         ) from exc
 
 
-def decrypt_message(message: Message, credentials: V3) -> PlainMessage:
+def decrypt_message(
+    message: Union[PlainMessage, EncryptedMessage], credentials: V3
+) -> PlainMessage:
+    """
+    Decrypt a message using the given credentials
+    """
     if not message.global_data.flags.priv:
         return message
     priv_method = priv.create(credentials.priv.method)
     key = credentials.priv.key
     if not isinstance(message.scoped_pdu, OctetString):
         raise SnmpError(
-            "Unexpectedly received unencrypted PDU with a security level requesting encryption!"
+            "Unexpectedly received unencrypted PDU with a security level "
+            "requesting encryption!"
         )
     security_parameters = USMSecurityParameters.decode(
         message.security_parameters
@@ -272,10 +329,20 @@ def decrypt_message(message: Message, credentials: V3) -> PlainMessage:
 
 
 class UserSecurityModel(SecurityModel):
-    def set_engine_timing(self, engine_id, boots, time):
+    """
+    Implementation of the use-security model as defined by
+    :py:class:`puresnmp.security.SecurityModel`
+    """
+
+    def set_engine_timing(
+        self,
+        engine_id: bytes,
+        engine_boots: int,
+        engine_time: int,
+    ) -> None:
         engine_config = self.local_config.setdefault(engine_id, {})
-        engine_config["authoritative_engine_boots"] = boots
-        engine_config["authoritative_engine_time"] = time
+        engine_config["authoritative_engine_boots"] = engine_boots
+        engine_config["authoritative_engine_time"] = engine_time
 
     def generate_request_message(
         self,
@@ -309,7 +376,9 @@ class UserSecurityModel(SecurityModel):
         return authed_message
 
     def process_incoming_message(
-        self, message: Message, credentials: Credentials
+        self,
+        message: Union[PlainMessage, EncryptedMessage],
+        credentials: Credentials,
     ) -> PlainMessage:
         # TODO: Validate engine-id.
         # TODO: Validate incoming username against the request
@@ -390,14 +459,14 @@ class UserSecurityModel(SecurityModel):
         response_msg = PlainMessage.from_sequence(response)
 
         response_id = response_msg.scoped_pdu.data.value.request_id
-        validate_response_id(response_id, request_id)
+        validate_response_id(request_id, response_id)
 
-        # The engine-id is available in two places: The response directly, and also
-        # the Report PDU. In initial tests these values were identical, and
-        # fetching them from the wrapping message would be easier. But because the
-        # RFC explicitly states that it's the value from inside the PDU I picked it
-        # out from there instead.
-        auth_security_params = USMSecurityParameters.decode(
+        # The engine-id is available in two places: The response directly, and
+        # also the Report PDU. In initial tests these values were identical,
+        # and fetching them from the wrapping message would be easier. But
+        # because the RFC explicitly states that it's the value from inside the
+        # PDU I picked it out from there instead.
+        security = USMSecurityParameters.decode(
             response_msg.security_parameters
         )
         unknown_engine_ids = response_msg.scoped_pdu.data.value.varbinds[
@@ -405,13 +474,16 @@ class UserSecurityModel(SecurityModel):
         ].value.pythonize()
 
         out = DiscoData(
-            authoritative_engine_id=auth_security_params.authoritative_engine_id,
-            authoritative_engine_boots=auth_security_params.authoritative_engine_boots,
-            authoritative_engine_time=auth_security_params.authoritative_engine_time,
+            authoritative_engine_id=security.authoritative_engine_id,
+            authoritative_engine_boots=security.authoritative_engine_boots,
+            authoritative_engine_time=security.authoritative_engine_time,
             unknown_engine_ids=unknown_engine_ids,
         )
         return out
 
 
 def create() -> UserSecurityModel:
+    """
+    Creates a new instance of the USM
+    """
     return UserSecurityModel()
