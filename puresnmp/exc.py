@@ -40,6 +40,10 @@ class ErrorResponse(SnmpError):
         subclass for the given *error_status* value. The message is optional,
         and if not specified, will use the default message for the given class.
         """
+        # pylint: disable=too-many-return-statements
+        # |
+        # | A dictionary would probably be more efficient. But this is not a
+        # | performance bottle-neck and I find the code more readable like this.
         if error_status == 1:
             return TooBig(offending_oid, message)
         if error_status == 2:
@@ -128,7 +132,7 @@ class NoAccess(ErrorResponse):
     DEFAULT_MESSAGE = "No Access!"
 
     def __init__(self, offending_oid: str, message: str = "") -> None:
-        super(NoAccess, self).__init__(6, offending_oid, message)
+        super().__init__(6, offending_oid, message)
 
 
 class GenErr(ErrorResponse):

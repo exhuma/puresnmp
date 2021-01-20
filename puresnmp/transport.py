@@ -29,11 +29,21 @@ MESSAGE_MAX_SIZE = 65507
 
 
 class Endpoint(NamedTuple):
+    """
+    A tuple representing an UDP endpoint where a connection should be made to.
+    """
+
     ip: TAnyIp
     port: int
 
 
 class TSender(Protocol):
+    """
+    A typing-protocol for callables which send data out to the network
+    """
+
+    # pylint: disable=too-few-public-methods
+
     async def __call__(
         self,
         endpoint: Endpoint,
@@ -57,9 +67,17 @@ def get_request_id() -> int:  # pragma: no cover
 
 
 class SNMPTrapReceiverProtocol(asyncio.DatagramProtocol):
+    """
+    A protocol to handle incoming SNMP traps.
+
+    The protocol requires a callable which is called with a
+    :py:class:`~.SocketResponse` instance whenever a trap is received.
+    """
+
     def __init__(self, callback: Callable[[SocketResponse], Any]) -> None:
         super().__init__()
         self.callback = callback
+        self.transport: Optional[BaseTransport] = None
 
     def connection_made(self, transport: BaseTransport) -> None:
         self.transport = transport
@@ -181,7 +199,10 @@ async def send(  # type: ignore
 
 
 def default_trap_handler(info: SocketResponse) -> None:
-    LOG.debug(f"Trap Received: {info!r}")
+    """
+    A no-op implementation for trap handlers which only logs traps.
+    """
+    LOG.debug("Trap Received: %r", info)
 
 
 async def listen(
@@ -208,7 +229,7 @@ async def listen(
     """
     if loop is None:
         loop = asyncio.get_event_loop()
-    transport, protocol = await loop.create_datagram_endpoint(
+    await loop.create_datagram_endpoint(
         lambda: SNMPTrapReceiverProtocol(callback),
         local_addr=(bind_address, port),
     )

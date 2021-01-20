@@ -75,6 +75,8 @@ class TFetcher(Protocol):
     from the remote device
     """
 
+    # pylint: disable=too-few-public-methods
+
     async def __call__(
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
     ) -> List[VarBind]:  # pragma: no cover
