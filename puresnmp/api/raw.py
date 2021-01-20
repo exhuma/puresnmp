@@ -51,7 +51,7 @@ from ..pdu import (
     Trap,
 )
 from ..snmp import VarBind
-from ..transport import TSender, get_request_id, listen, send
+from ..transport import Endpoint, TSender, get_request_id, listen, send
 from ..util import (
     BulkResult,
     get_unfinished_walk_oids,
@@ -140,8 +140,7 @@ class RawClient:
         context_name: bytes = b"",
         engine_id: bytes = b"",
     ) -> None:
-        self.ip = ip_address(ip)
-        self.port = port
+        self.endpoint = Endpoint(ip_address(ip), port)
         self.credentials = credentials
         self.sender = sender
         self.engine_id = engine_id
@@ -149,7 +148,7 @@ class RawClient:
         self.lcd: Dict[str, Any] = {}
 
         async def handler(data: bytes) -> bytes:  # pragma: no cover
-            return await sender(str(self.ip), port, data)
+            return await sender(self.endpoint, data)
 
         self.transport_handler = handler
         self.mpm = mpm.create(
@@ -165,7 +164,7 @@ class RawClient:
             pdu,
         )
         raw_response = await self.sender(
-            str(self.ip), self.port, bytes(packet), timeout=timeout
+            self.endpoint, bytes(packet), timeout=timeout
         )
         response = self.mpm.decode(raw_response, self.credentials)
         validate_response_id(request_id, response.value.request_id)
@@ -345,7 +344,7 @@ class RawClient:
                         "implementation on device %r! Upon running a "
                         "GetNext on OIDs %r it returned the following "
                         "error: %s",
-                        self.ip,
+                        self.endpoint,
                         next_fetches_str,
                         exc,
                     )

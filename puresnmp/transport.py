@@ -16,23 +16,27 @@ import logging
 from asyncio.events import AbstractEventLoop
 from asyncio.transports import BaseTransport
 from time import time
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
 
 from typing_extensions import Protocol
 from x690.util import visible_octets
 
 from .exc import Timeout
-from .typevars import SocketInfo, SocketResponse
+from .typevars import SocketInfo, SocketResponse, TAnyIp
 
 LOG = logging.getLogger(__name__)
 MESSAGE_MAX_SIZE = 65507
 
 
+class Endpoint(NamedTuple):
+    ip: TAnyIp
+    port: int
+
+
 class TSender(Protocol):
     async def __call__(
         self,
-        ip: str,
-        port: int,
+        endpoint: Endpoint,
         packet: bytes,
         timeout: int = 6,
         loop: Optional[AbstractEventLoop] = None,
@@ -147,9 +151,11 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
 
 
 async def send(  # type: ignore
-    ip, port, packet, timeout=6, loop=None
-):  # pragma: no cover
-    # type: ( str, int, bytes, int, Optional[AbstractEventLoop] ) -> bytes
+    endpoint: Endpoint,
+    packet: bytes,
+    timeout: int = 6,
+    loop: Optional[AbstractEventLoop] = None,
+) -> bytes:  # pragma: no cover
     # pylint: disable=arguments-differ
     """
     A coroutine that opens a UDP socket to *ip:port*, sends a packet with
@@ -166,7 +172,7 @@ async def send(  # type: ignore
     # TODO: Yes, retries are necessary
     _, protocol = await loop.create_datagram_endpoint(
         lambda: SNMPClientProtocol(packet, loop),  # type: ignore
-        remote_addr=(ip, port),
+        remote_addr=(str(endpoint.ip), endpoint.port),
     )
 
     response = await protocol.get_data(timeout)  # type: ignore

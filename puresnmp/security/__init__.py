@@ -33,9 +33,9 @@ from typing import Any, Awaitable, Callable, Dict, Union
 from typing_extensions import Protocol
 
 from puresnmp.adt import EncryptedMessage, PlainMessage
-from puresnmp.util import iter_namespace
 from puresnmp.credentials import Credentials
 from puresnmp.exc import InvalidSecurityModel
+from puresnmp.util import iter_namespace
 
 
 class TSecurityPlugin(Protocol):

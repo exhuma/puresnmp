@@ -8,6 +8,7 @@ PureSNMP object instances.
 
 
 import unittest
+from ipaddress import ip_address
 from logging import WARNING, getLogger
 from unittest.mock import call, patch
 
@@ -25,7 +26,7 @@ from puresnmp.pdu import (
     PDUContent,
     VarBind,
 )
-from puresnmp.transport import SocketResponse
+from puresnmp.transport import Endpoint, SocketResponse
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.typevars import SocketInfo
 from puresnmp.util import BulkResult
@@ -562,7 +563,9 @@ async def test_get_call_args(mocked_raw):
         async for _ in mocked_raw.bulkwalk(["1.2.3"], bulk_size=2):
             pass
         assert mocked_raw.sender.mock_calls == [
-            call("192.0.2.1", 161, bytes(packet), timeout=6)
+            call(
+                Endpoint(ip_address("192.0.2.1"), 161), bytes(packet), timeout=6
+            )
         ]
 
 
@@ -601,9 +604,9 @@ async def test_bulkwalk(mocked_raw):
             result.append(row)
 
     assert mocked_raw.sender.mock_calls == [
-        call("192.0.2.1", 161, req1, timeout=6),
-        call("192.0.2.1", 161, req2, timeout=6),
-        call("192.0.2.1", 161, req3, timeout=6),
+        call(Endpoint(ip_address("192.0.2.1"), 161), req1, timeout=6),
+        call(Endpoint(ip_address("192.0.2.1"), 161), req2, timeout=6),
+        call(Endpoint(ip_address("192.0.2.1"), 161), req3, timeout=6),
     ]
 
     expected = [
