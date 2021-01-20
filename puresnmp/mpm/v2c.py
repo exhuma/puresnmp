@@ -1,13 +1,16 @@
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, cast
+"""
+This module contains the definition for the community-based
+message-processing model for SNMPv2
+"""
+from typing import Any, Awaitable, Callable, Dict, cast
 
 from x690 import decode
 from x690.types import Integer, Null, OctetString, Sequence
 
 from puresnmp.credentials import V2C, Credentials
 from puresnmp.exc import SnmpError
-from puresnmp.mpm import MessageProcessingModel
+from puresnmp.mpm import EncodingResult, MessageProcessingModel
 from puresnmp.pdu import PDU
-from puresnmp.security import SecurityModel
 
 IDENTIFIER = 1
 
@@ -23,11 +26,8 @@ class V2CMPM(MessageProcessingModel):
         credentials: Credentials,
         engine_id: bytes,
         context_name: bytes,
-        pdu,
-    ) -> Tuple[bytes, Optional[SecurityModel]]:
-        request_id
-        engine_id
-        context_name
+        pdu: PDU,
+    ) -> EncodingResult:
         if not isinstance(credentials, V2C):
             raise TypeError("SNMPv2c MPM should be used with V2C credentials!")
         # TODO we should delegate to the security model here to encode the
@@ -37,7 +37,7 @@ class V2CMPM(MessageProcessingModel):
 
     def decode(
         self,
-        whole_msg: bytes,  # as received from the network
+        whole_msg: bytes,
         credentials: Credentials,
     ) -> PDU:
         """
@@ -59,4 +59,7 @@ def create(
     transport_handler: Callable[[bytes], Awaitable[bytes]],
     lcd: Dict[str, Any],
 ) -> "MessageProcessingModel":
+    """
+    Creates a new instance of the V2C message-processing-model
+    """
     return V2CMPM(transport_handler, lcd)

@@ -30,7 +30,7 @@ rules:
   and :rfc:`3411`
 """
 import importlib
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Tuple
 
 from typing_extensions import Protocol
 
@@ -81,6 +81,15 @@ class UnknownMessageProcessingModel(MPMException):
         )
 
 
+class EncodingResult(NamedTuple):
+    """
+    A simple data-structure representing the output for encoded messages
+    """
+
+    data: bytes
+    security_model: SecurityModel
+
+
 class MessageProcessingModel:
     """
     Each Message Processing Model defines the format of a particular version of
@@ -110,7 +119,7 @@ class MessageProcessingModel:
         engine_id: bytes,
         context_name: bytes,
         pdu: PDU,
-    ) -> Tuple[bytes, Optional[SecurityModel]]:
+    ) -> EncodingResult:
         """
         Convert an SNMP PDU into raw bytes for the network.
 

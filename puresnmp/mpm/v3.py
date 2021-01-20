@@ -1,29 +1,34 @@
-from typing import Any, Awaitable, Callable, Dict, NamedTuple
+"""
+This module contains the implementation for the SNMPv3 message-processing model
+"""
+from typing import Any, Awaitable, Callable, Dict
 
 from x690.types import Integer, OctetString
 
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V3, Credentials
-from puresnmp.mpm import MessageProcessingModel
+from puresnmp.mpm import MessageProcessingModel, EncodingResult
 from puresnmp.pdu import PDU, GetRequest
-from puresnmp.security import SecurityModel
 from puresnmp.security import create as create_sm
 from puresnmp.transport import MESSAGE_MAX_SIZE
 
 IDENTIFIER = 3
 
 
-def is_confirmed(pdu: PDU):
+def is_confirmed(pdu: PDU) -> bool:
+    """
+    Return True if the given PDU instance expects a response.
+    """
     # XXX TODO This might be doable cleaner with subclassing in puresnmp.pdu
     return isinstance(pdu, GetRequest)
 
 
-class EncodingResult(NamedTuple):
-    data: bytes
-    security_model: SecurityModel
-
-
 class V3MPM(MessageProcessingModel):
+    """
+    This class contains the concrete implementation for the v3
+    message-processing-model.
+    """
+
     def decode(
         self,
         whole_msg: bytes,  # as received from the network
@@ -101,4 +106,7 @@ def create(
     transport_handler: Callable[[bytes], Awaitable[bytes]],
     lcd: Dict[str, Any],
 ) -> "MessageProcessingModel":
+    """
+    Creates a new instance of the V3 message-processing-model
+    """
     return V3MPM(transport_handler, lcd)
