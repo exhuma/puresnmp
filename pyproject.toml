@@ -15,7 +15,7 @@ disable = ["C0330", "C0326", "duplicate-code", "fixme"]
 
 [tool.pylint.format]
 max-line-length = 80
-ignore-long-lines = "(^\\s*(#)?<?https?://\\S+>?$|.*VarBind.*ObjectIdentifier.*|# TODO|# type:)"
+ignore-long-lines = ".*(https?://|VarBind|ObjectIdentifier|# type: ignore).*"
 
 [tool.pylint.master]
 ignore = [".git", "env"]

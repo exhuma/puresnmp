@@ -138,6 +138,7 @@ def tablify(
     num_base_nodes: int = 0,
     base_oid: str = "",
 ) -> List[Dict[str, Any]]:
+    # pylint: disable=line-too-long
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
     can be used for table which row-ids consist of multiple OID tree nodes. By
@@ -180,6 +181,7 @@ def tablify(
         >>> tablify(data, num_base_nodes=2)
         [{'0': '5.10', '1': 'row 5.10 col 1', '2': 'row 5.10 col 2'}, {'0': '6.10', '1': 'row 6.10 col 1', '2': 'row 6.10 col 2'}]
     """
+    # pylint: enable=line-too-long
 
     if isinstance(base_oid, str) and base_oid:
 
@@ -206,16 +208,34 @@ def tablify(
 
 
 def password_to_key(
-    hash_implementation: Callable[..., Any], padding_length: int
+    hash_implementation: Callable[[bytes], Any], padding_length: int
 ) -> Callable[[bytes, bytes], bytes]:
+    """
+    Create a helper function to convert passwords to SNMP compliant keys.
+
+    :param hash_implementation: A callable that creates an object with a
+        ".digest()" method from a bytes-object. Usable examples are
+        `hashlib.md5` and `hashlib.sha1`
+    :param padding_length: The padding length to be used during hashing (as
+        defined in the SNMP rfc)
+    :returns: A callable which can be used to derive an SNMP compliant key
+        from a password.
+    """
+
     @lru_cache(maxsize=None)
     def hasher(password: bytes, engine_id: bytes) -> bytes:
-        hash_instance = hash_implementation()
-        # Hash 1MB worth of data
+        """
+        Derive a key from a password and engine-id.
+
+        :param password: The user password
+        :param engine_id: The target engine ID
+        :returns: The derived key
+        """
+        # Hash 1MB worth of data (as per SNMP rfc)
         hash_size = 1024 * 1024
         num_words = hash_size // len(password)
         tmp = (password * (num_words + 1))[:hash_size]
-        hash_instance.update(tmp)
+        hash_instance = hash_implementation(tmp)
         key = hash_instance.digest()
         localised_buffer = (
             key[:padding_length] + engine_id + key[:padding_length]
@@ -325,7 +345,7 @@ def generate_engine_id_octets(pen: int, octets: bytes) -> bytes:
             ASN.1 definition for engine-id encoding
         `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
             List of valid engine-id variants
-        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
             List of publicly registered private enterprise numbers
     """
     if len(octets) > 27:

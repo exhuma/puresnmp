@@ -12,26 +12,34 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       "puresnmp.get", "puresnmp.walk" & co.
 
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional, Tuple, cast
+from typing import Any, Iterable, List, Optional, Tuple, Union, cast
 
 from x690 import decode
-from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
+from x690.types import (
+    _SENTINEL_UNINITIALISED,
+    Integer,
+    Null,
+    ObjectIdentifier,
+    Sequence,
+    TWrappedPyType,
+    Type,
+    UNINITIALISED,
+)
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
 
 from .const import MAX_VARBINDS
-from .exc import (
-    EmptyMessage,
-    ErrorResponse,
-    NoSuchOID,
-    SnmpError,
-    TooManyVarbinds,
-)
+from .exc import EmptyMessage, ErrorResponse, TooManyVarbinds
 from .snmp import VarBind
 from .typevars import SocketInfo
 
 
 @dataclass
 class PDUContent:
+    """
+    A helper class to wrap PDU data into a single "value" variable for x.690
+    types.
+    """
+
     request_id: int
     varbinds: List[VarBind]
     error_status: int = 0
@@ -104,6 +112,9 @@ class PDU(Type[PDUContent]):
         )
 
     def encode_raw(self) -> bytes:
+        """
+        Encodes this instance into raw x.690 bytes (excluding type & lenght)
+        """
 
         wrapped_varbinds = [
             Sequence([vb.oid, vb.value]) for vb in self.value.varbinds
@@ -154,13 +165,24 @@ class NoSuchObject(Type[bytes]):
     Sentinel value to detect noSuchObject
     """
 
+    # pylint: disable=too-few-public-methods
+    # |
+    # | This class make exclusive use of the parent-implementation, only
+    # | modifying class-level "type-detection" variables
+
     # This subclassesPDU for type-consistency
     TYPECLASS = TypeClass.CONTEXT
     NATURE = [TypeNature.PRIMITIVE]
     TAG = 0
 
-    def __init__(self, value: bytes = b"") -> None:
-        super().__init__(value)
+    def __init__(
+        self,
+        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+    ) -> None:
+        if value is UNINITIALISED:
+            super().__init__(value=b"")
+        else:
+            super().__init__(value=value)
 
 
 class NoSuchInstance(Type[bytes]):
@@ -168,19 +190,35 @@ class NoSuchInstance(Type[bytes]):
     Sentinel value to detect noSuchInstance
     """
 
+    # pylint: disable=too-few-public-methods
+    # |
+    # | This class make exclusive use of the parent-implementation, only
+    # | modifying class-level "type-detection" variables
+
     # This subclassesPDU for type-consistency
     TYPECLASS = TypeClass.CONTEXT
     NATURE = [TypeNature.PRIMITIVE]
     TAG = 1
 
-    def __init__(self, value: bytes = b"") -> None:
-        super().__init__(value)
+    def __init__(
+        self,
+        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+    ) -> None:
+        if value is UNINITIALISED:
+            super().__init__(value=b"")
+        else:
+            super().__init__(value=value)
 
 
 class EndOfMibView(Type[bytes]):
     """
     Sentinel value to detect endOfMibView
     """
+
+    # pylint: disable=too-few-public-methods
+    # |
+    # | This class make exclusive use of the parent-implementation, only
+    # | modifying class-level "type-detection" variables
 
     # This subclassesPDU for type-consistency
     TYPECLASS = TypeClass.CONTEXT
@@ -193,13 +231,24 @@ class NoSuchOIDPacket(Type[bytes]):
     Sentinel value to detect no-such-oid error
     """
 
+    # pylint: disable=too-few-public-methods
+    # |
+    # | This class make exclusive use of the parent-implementation, only
+    # | modifying class-level "type-detection" variables
+
     # This subclassesPDU for type-consistency
     TYPECLASS = TypeClass.CONTEXT
     NATURE = [TypeNature.PRIMITIVE]
     TAG = 1
 
-    def __init__(self, value: bytes = b"") -> None:
-        super().__init__(value)
+    def __init__(
+        self,
+        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+    ) -> None:
+        if value is UNINITIALISED:
+            super().__init__(value=b"")
+        else:
+            super().__init__(value=value)
 
 
 class GetRequest(PDU):

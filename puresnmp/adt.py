@@ -1,3 +1,7 @@
+"""
+This module contains simple "abstract data types" which are used for both
+type-hinting and to keep the code more expressive & readable.
+"""
 import sys
 from dataclasses import dataclass
 from textwrap import indent
@@ -53,12 +57,19 @@ class V3Flags:
 
 @dataclass(frozen=True)
 class HeaderData:
+    """
+    Header information for an SNMPv3 message
+    """
+
     message_id: int
     message_max_size: int
     flags: V3Flags
     security_model: int
 
     def as_snmp_type(self) -> Sequence:
+        """
+        Convert this header-data object into an x.690 Sequence
+        """
         return Sequence(
             [
                 Integer(self.message_id),
@@ -72,6 +83,14 @@ class HeaderData:
         return bytes(self.as_snmp_type())
 
     def pretty(self, depth: int = 0) -> str:
+        """
+        Return a prettyfied string of this object.
+
+        This prettyfied string is useful for debugging and introspection.
+
+        :param depth: How many levels of indentation to apply. This is used
+            internally for nested structures.
+        """
         lines = []
         lines.append("Global Data")
         lines.append(f"{INDENT_STRING}Message ID: {self.message_id}")
@@ -85,15 +104,27 @@ class HeaderData:
 
 @dataclass(frozen=True)
 class ScopedPDU:
+    """
+    A data-structure wrapping the different values from a SNMPv3 "Scoped PDU"
+    """
+
     context_engine_id: OctetString
     context_name: OctetString
-    data: "PDU"
+    data: PDU
 
     def __bytes__(self) -> bytes:
         return bytes(self.as_snmp_type())
 
     @staticmethod
     def decode(data: bytes, slc: slice = slice(None)) -> "ScopedPDU":
+        """
+        Create a ScopedPDU instance from an x.690 bytes object
+
+        :param bytes: the bytes object which contains the PDU.
+        :param slc: The slice at which the object is located. If left to the
+            default, it will assume that the object is located in the beginning
+            of the bytes object.
+        """
         sequence, _ = decode(
             data,
             start_index=slc.start or 0,
@@ -108,6 +139,9 @@ class ScopedPDU:
         return output
 
     def as_snmp_type(self) -> Sequence:
+        """
+        Convert this message into an x.690 Sequence
+        """
         return Sequence(
             [
                 self.context_engine_id,
@@ -117,14 +151,21 @@ class ScopedPDU:
         )
 
     def pretty(self, depth: int = 0) -> str:
+        """
+        Return a prettyfied string of this object.
+
+        This prettyfied string is useful for debugging and introspection.
+
+        :param depth: How many levels of indentation to apply. This is used
+            internally for nested structures.
+        """
+        ids = INDENT_STRING
         lines = []
         lines.append("Scoped PDU")
         lines.append(
-            f"{INDENT_STRING}Context Engine ID: {self.context_engine_id.value!r}"
+            f"{ids}Context Engine ID: {self.context_engine_id.value!r}"
         )
-        lines.append(
-            f"{INDENT_STRING}Context Name: {self.context_name.value!r}"
-        )
+        lines.append(f"{ids}Context Name: {self.context_name.value!r}")
         lines.extend(self.data.pretty(1).splitlines())
         return indent("\n".join(lines), INDENT_STRING * depth)
 
@@ -163,6 +204,9 @@ class Message:
 
     @classmethod
     def from_sequence(cls: Type[TMessageType], seq: Sequence) -> TMessageType:
+        """
+        Construct a Message instance from an X.690 Sequence
+        """
         version = cast(Integer, seq[0])
         global_data = cast(Sequence, seq[1])
         security_parameters = cast(OctetString, seq[2]).value
@@ -204,19 +248,25 @@ class Message:
         return Message.from_sequence(message)
 
     def pretty(self, depth: int = 0) -> str:
+        """
+        Return a prettyfied string of this object.
+
+        This prettyfied string is useful for debugging and introspection.
+
+        :param depth: How many levels of indentation to apply. This is used
+            internally for nested structures.
+        """
         lines = []
 
         lines.append(f"SNMP Message (version-identifier={self.version})")
         lines.extend(self.global_data.pretty(depth + 1).splitlines())
-        lines.append(
-            indent(f"Security Parameters", INDENT_STRING * (depth + 1))
-        )
+        lines.append(indent("Security Parameters", INDENT_STRING * (depth + 1)))
         lines.extend(
             OctetString(self.security_parameters).pretty(depth + 2).splitlines()
         )
         if isinstance(self.scoped_pdu, bytes):
             lines.append(
-                indent(f"Scoped PDU (encrypted)", INDENT_STRING * (depth + 1))
+                indent("Scoped PDU (encrypted)", INDENT_STRING * (depth + 1))
             )
             lines.extend(
                 OctetString(self.scoped_pdu).pretty(depth + 2).splitlines()
@@ -227,6 +277,10 @@ class Message:
 
 
 class PlainMessage(Message):
+    """
+    A message whose PDU is not encrypted
+    """
+
     version: Integer
     global_data: HeaderData
     security_parameters: bytes
@@ -234,6 +288,10 @@ class PlainMessage(Message):
 
 
 class EncryptedMessage(Message):
+    """
+    A message whose PDU is encrypted
+    """
+
     version: Integer
     global_data: HeaderData
     security_parameters: bytes

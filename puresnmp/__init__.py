@@ -13,4 +13,4 @@ from puresnmp.api.pythonic import Client
 from puresnmp.api.raw import RawClient
 from puresnmp.credentials import V1, V2C, V3
 
-__all__ = ["Client", "RawClient", "Transport", "V1", "V2C", "V3"]
+__all__ = ["Client", "RawClient", "V1", "V2C", "V3"]

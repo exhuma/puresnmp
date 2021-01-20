@@ -46,8 +46,10 @@ class IpAddress(OctetString):
             value = pack("BBBB", octet_1, octet_2, octet_3, octet_4)
         super().__init__(value or b"")
 
-    def pythonize(self):
-        # type: () -> bytes
+    def pythonize(self) -> bytes:
+        """
+        Returns the wrapped value as pure-python type
+        """
         return self.value
 
         # TODO The following code breaks backwards compatbility and should be
@@ -79,9 +81,6 @@ class Counter(Integer):
             if value <= 0:
                 value = 0
         super().__init__(value)
-
-    def __eq__(self, other):
-        return super().__eq__(other)
 
 
 class Gauge(Integer):

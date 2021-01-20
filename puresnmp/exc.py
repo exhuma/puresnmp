@@ -44,6 +44,7 @@ class ErrorResponse(SnmpError):
         # |
         # | A dictionary would probably be more efficient. But this is not a
         # | performance bottle-neck and I find the code more readable like this.
+        # TODO: Add new status-codes from https://tools.ietf.org/html/rfc3416#section-3
         if error_status == 1:
             return TooBig(offending_oid, message)
         if error_status == 2:
