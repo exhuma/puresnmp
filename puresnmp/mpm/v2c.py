@@ -30,6 +30,8 @@ class V2CMPM(MessageProcessingModel):
         context_name
         if not isinstance(credentials, V2C):
             raise TypeError("SNMPv2c MPM should be used with V2C credentials!")
+        # TODO we should delegate to the security model here to encode the
+        #      community.
         packet = Sequence([Integer(1), OctetString(credentials.community), pdu])
         return bytes(packet), None
 
@@ -43,6 +45,8 @@ class V2CMPM(MessageProcessingModel):
         preparing the abstract data elements from an incoming SNMP message:
         """
         decoded, _ = decode(whole_msg, enforce_type=Sequence)
+        # TODO we should delegate to the security model here to check the
+        #      community
         if isinstance(decoded, Null):
             raise SnmpError(
                 "Unable to construct a PDU from packet "
