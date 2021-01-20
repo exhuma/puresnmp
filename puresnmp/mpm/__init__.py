@@ -87,7 +87,7 @@ class EncodingResult(NamedTuple):
     """
 
     data: bytes
-    security_model: SecurityModel
+    security_model: Optional[SecurityModel]
 
 
 class MessageProcessingModel:

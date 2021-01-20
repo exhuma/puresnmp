@@ -12,18 +12,18 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 #       "puresnmp.get", "puresnmp.walk" & co.
 
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional, Tuple, Union, cast
+from typing import Any, List, Optional, Union, cast
 
 from x690 import decode
 from x690.types import (
     _SENTINEL_UNINITIALISED,
+    UNINITIALISED,
     Integer,
     Null,
     ObjectIdentifier,
     Sequence,
     TWrappedPyType,
     Type,
-    UNINITIALISED,
 )
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
 
@@ -65,32 +65,22 @@ class PDU(Type[PDUContent]):
         # with __bytes__ of this class. This should be ensured!
         if not data:
             raise EmptyMessage("No data to decode!")
-        request_id, next_start = decode(data, slc.start or 0)
-        error_status, next_start = decode(data, next_start)
-        error_index, next_start = decode(data, next_start)
+        request_id, nxt = decode(data, slc.start or 0, enforce_type=Integer)
+        error_status, nxt = decode(data, nxt, enforce_type=Integer)
+        error_index, nxt = decode(data, nxt, enforce_type=Integer)
 
         if error_status.value:
-            error_detail, next_start = cast(
-                Tuple[Iterable[Tuple[ObjectIdentifier, int]], bytes],
-                decode(data, next_start),
-            )
-            if not isinstance(error_detail, Sequence):
-                raise TypeError(
-                    "error-detail should be a sequence but got %r"
-                    % type(error_detail)
-                )
+            error_detail, nxt = decode(data, nxt, enforce_type=Sequence)
             varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
+            offending_oid = None
             if error_index.value != 0:
                 offending_oid = varbinds[error_index.value - 1].oid
-            else:
-                # Offending OID is unknown
-                offending_oid = None
             exception = ErrorResponse.construct(
                 error_status.value, offending_oid
             )
             raise exception
 
-        values, next_start = decode(data, next_start)
+        values, nxt = decode(data, nxt, enforce_type=Sequence)
 
         if not isinstance(values, Sequence):
             raise TypeError(
@@ -99,9 +89,9 @@ class PDU(Type[PDUContent]):
             )
 
         varbinds = []
-        for oid, value in values:
-            # NOTE: this uses the "is" check to make 100% sure we check against
-            # the sentinel object defined in this module!
+        for oid, value in values:  # type: ignore
+            oid = cast(ObjectIdentifier, oid)  # type: ignore
+            value = cast(Type[Any], value)  # type: ignore
             if isinstance(value, EndOfMibView):
                 varbinds.append(VarBind(oid, value))
                 break
@@ -123,7 +113,7 @@ class PDU(Type[PDUContent]):
             Integer(self.value.request_id),
             Integer(self.value.error_status),
             Integer(self.value.error_index),
-            Sequence(wrapped_varbinds),
+            Sequence(wrapped_varbinds),  # type: ignore
         ]
         payload = b"".join([bytes(chunk) for chunk in data])
         return payload
@@ -311,7 +301,7 @@ class BulkGetRequest(Type[Any]):
             Integer(self.request_id),
             Integer(self.non_repeaters),
             Integer(self.max_repeaters),
-            Sequence(wrapped_varbinds),
+            Sequence(wrapped_varbinds),  # type: ignore
         ]
         payload = b"".join([bytes(chunk) for chunk in data])
 
@@ -319,8 +309,7 @@ class BulkGetRequest(Type[Any]):
         length = encode_length(len(payload))
         return bytes(tinfo) + length + payload
 
-    def __repr__(self):
-        # type: () -> str
+    def __repr__(self) -> str:
         oids = [repr(oid) for oid, _ in self.varbinds]
         return "%s(%r, %r, %r, %s)" % (
             self.__class__.__name__,

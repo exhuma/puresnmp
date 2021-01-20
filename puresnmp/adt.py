@@ -8,7 +8,8 @@ from textwrap import indent
 from typing import Type, TypeVar, Union, cast
 
 from x690 import decode
-from x690.types import Integer, OctetString, Sequence
+from x690.types import Any, Integer, OctetString, Sequence
+from x690.types import Type as XType
 
 from puresnmp.pdu import PDU
 
@@ -131,10 +132,13 @@ class ScopedPDU:
             enforce_type=Sequence,
             strict=False,
         )
+        engine_id = cast(OctetString, sequence[0])
+        cname = cast(OctetString, sequence[1])
+        pdu = cast(PDU, sequence[2])
         output = ScopedPDU(
-            context_engine_id=sequence[0],
-            context_name=sequence[1],
-            data=sequence[2],
+            context_engine_id=engine_id,
+            context_name=cname,
+            data=pdu,
         )
         return output
 
@@ -185,18 +189,22 @@ class Message:
     version: Integer
     global_data: HeaderData
     security_parameters: bytes
-    scoped_pdu: Union[bytes, ScopedPDU]
+    scoped_pdu: Union[OctetString, ScopedPDU]
 
     def __bytes__(self) -> bytes:
+        spdu: XType[Any]
+        if isinstance(self.scoped_pdu, ScopedPDU):
+            spdu = self.scoped_pdu.as_snmp_type()
+        else:
+            spdu = self.scoped_pdu
+
         output = bytes(
-            Sequence(
+            Sequence(  # type: ignore
                 [
                     self.version,
                     self.global_data.as_snmp_type(),
                     OctetString(self.security_parameters),
-                    self.scoped_pdu
-                    if isinstance(self.scoped_pdu, bytes)
-                    else self.scoped_pdu,
+                    spdu,
                 ]
             )
         )
@@ -222,7 +230,8 @@ class Message:
             scoped_pdu = cast(Sequence, seq[3])
             engine_id = cast(OctetString, scoped_pdu[0])
             context_name = cast(OctetString, scoped_pdu[1])
-            payload = ScopedPDU(engine_id, context_name, scoped_pdu[2])
+            pdu = cast(PDU, scoped_pdu[2])
+            payload = ScopedPDU(engine_id, context_name, pdu)
 
         output = cls(
             version,
@@ -239,13 +248,18 @@ class Message:
         return output
 
     @staticmethod
-    def decode(data: bytes) -> "Message":
+    def decode(data: bytes) -> Union["PlainMessage", "EncryptedMessage"]:
         """
         Construct a new SNMPv3 message from a bytes object
         """
 
         message, _ = decode(data, enforce_type=Sequence)
-        return Message.from_sequence(message)
+        cls = (
+            EncryptedMessage
+            if isinstance(message[3], OctetString)
+            else PlainMessage
+        )
+        return cls.from_sequence(message)  # type: ignore
 
     def pretty(self, depth: int = 0) -> str:
         """
@@ -295,4 +309,4 @@ class EncryptedMessage(Message):
     version: Integer
     global_data: HeaderData
     security_parameters: bytes
-    scoped_pdu: bytes
+    scoped_pdu: OctetString

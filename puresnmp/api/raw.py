@@ -756,7 +756,10 @@ def register_trap_callback(
 
     def decode(packet: SocketResponse) -> None:
         async def handler(data: bytes) -> bytes:
-            return await send(str(packet.info.address), packet.info.port, data)
+            return await send(
+                Endpoint(ip_address(packet.info.address), packet.info.port),
+                data,
+            )
 
         lcd: Dict[str, Any] = {}
 

@@ -3,7 +3,7 @@ This module implements the "User Security Model" as defined in :rfc:`3414`
 """
 from dataclasses import dataclass, replace
 from textwrap import indent
-from typing import Awaitable, Callable, Union
+from typing import Awaitable, Callable, Union, cast
 
 from x690 import decode
 from x690.types import Integer, Null, OctetString, Sequence
@@ -180,7 +180,7 @@ def apply_encryption(
     security_engine_id: bytes,
     engine_boots: int,
     engine_time: int,
-) -> EncryptedMessage:
+) -> Union[PlainMessage, EncryptedMessage]:
     """
     Derive a new encrypted message from a plain message given
     user-credentials and target-engine information.
@@ -190,22 +190,33 @@ def apply_encryption(
     if credentials.priv is not None and not credentials.priv.method:
         raise UnsupportedSecurityLevel("Encryption method is missing")
 
-    if credentials.priv is not None:
-        priv_method = priv.create(credentials.priv.method)
-        key = credentials.priv.key
-        try:
-            encrypted, salt = priv_method.encrypt_data(
-                key,
-                security_engine_id,
-                engine_boots,
-                bytes(message.scoped_pdu),
-            )
-            scoped_pdu = OctetString(encrypted)
-        except Exception as exc:
-            raise EncryptionError(f"Unable to encrypt message ({exc})") from exc
-    else:
-        scoped_pdu = message.scoped_pdu
-        salt = b""
+    if credentials.priv is None:
+        return replace(
+            message,
+            security_parameters=bytes(
+                USMSecurityParameters(
+                    security_engine_id,
+                    engine_boots,
+                    engine_time,
+                    security_name,
+                    b"",
+                    b"",
+                )
+            ),
+        )
+
+    priv_method = priv.create(credentials.priv.method)
+    key = credentials.priv.key
+    try:
+        encrypted, salt = priv_method.encrypt_data(
+            key,
+            security_engine_id,
+            engine_boots,
+            bytes(message.scoped_pdu),
+        )
+        scoped_pdu = OctetString(encrypted)
+    except Exception as exc:
+        raise EncryptionError(f"Unable to encrypt message ({exc})") from exc
 
     unauthed_message = replace(
         message,
@@ -225,10 +236,10 @@ def apply_encryption(
 
 
 def apply_authentication(
-    unauthed_message: PlainMessage,
+    unauthed_message: Union[PlainMessage, EncryptedMessage],
     credentials: V3,
     security_engine_id: bytes,
-) -> PlainMessage:
+) -> Union[PlainMessage, EncryptedMessage]:
     """
     Calculate the digest of the message and return a new message including
     that digest.
@@ -303,8 +314,11 @@ def decrypt_message(
     """
     Decrypt a message using the given credentials
     """
-    if not message.global_data.flags.priv:
+    if isinstance(message, PlainMessage):
         return message
+
+    if not credentials.priv:
+        raise SnmpError("Attempting to decrypt a message without priv object")
     priv_method = priv.create(credentials.priv.method)
     key = credentials.priv.key
     if not isinstance(message.scoped_pdu, OctetString):
@@ -324,7 +338,9 @@ def decrypt_message(
         )
     except Exception as exc:
         raise DecryptionError(f"Unable to decrypt message ({exc})") from exc
-    message = replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
+    message = cast(
+        PlainMessage, replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
+    )
     return message
 
 
@@ -346,10 +362,10 @@ class UserSecurityModel(SecurityModel):
 
     def generate_request_message(
         self,
-        message: Message,
+        message: PlainMessage,
         security_engine_id: bytes,
         credentials: Credentials,
-    ) -> Message:
+    ) -> Union[PlainMessage, EncryptedMessage]:
         if not isinstance(credentials, V3):
             raise TypeError(
                 "Credentials must be a V3 instance for this scurity model!"
@@ -469,9 +485,13 @@ class UserSecurityModel(SecurityModel):
         security = USMSecurityParameters.decode(
             response_msg.security_parameters
         )
-        unknown_engine_ids = response_msg.scoped_pdu.data.value.varbinds[
-            0
-        ].value.pythonize()
+        wrapped_vars = response_msg.scoped_pdu.data.value.varbinds
+        if not wrapped_vars:
+            raise SnmpError("Invalid discovery response (no varbinds returned)")
+        unknown_engine_id_var = wrapped_vars[0]
+        if not unknown_engine_id_var.value:
+            raise SnmpError("Discovery data did not contain valid data")
+        unknown_engine_ids = unknown_engine_id_var.value.pythonize()
 
         out = DiscoData(
             authoritative_engine_id=security.authoritative_engine_id,

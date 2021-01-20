@@ -33,7 +33,7 @@ class V2CMPM(MessageProcessingModel):
         # TODO we should delegate to the security model here to encode the
         #      community.
         packet = Sequence([Integer(1), OctetString(credentials.community), pdu])
-        return bytes(packet), None
+        return EncodingResult(bytes(packet), None)
 
     def decode(
         self,

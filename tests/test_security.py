@@ -10,15 +10,22 @@ import puresnmp.security.null as null
 import puresnmp.security.usm as usm
 import puresnmp.security.v1 as v1
 import puresnmp.security.v2c as v2c
-from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
+from puresnmp.adt import (
+    EncryptedMessage,
+    HeaderData,
+    Message,
+    PlainMessage,
+    ScopedPDU,
+    V3Flags,
+)
 from puresnmp.credentials import V2C, V3, Auth, Priv
 from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.pdu import GetRequest, GetResponse, PDUContent
 from puresnmp.snmp import VarBind
 
 
-def make_msg():
-    return Message(
+def make_msg(cls=PlainMessage):
+    return cls(
         3,
         HeaderData(123, 234, V3Flags(True, True, True), 3),
         bytes(
@@ -142,7 +149,7 @@ def test_request_message_nanp():
         b"engine-id",
         V3("username", None, None),
     )
-    expected = Message(
+    expected = PlainMessage(
         version=3,
         global_data=HeaderData(
             message_id=123,
@@ -176,7 +183,7 @@ def test_request_message_anp():
         b"engine-id",
         V3("username", Auth(b"authkey", "md5"), None),
     )
-    expected = Message(
+    expected = PlainMessage(
         version=3,
         global_data=HeaderData(
             message_id=123,
@@ -212,7 +219,7 @@ def test_request_message_ap():
         b"engine-id",
         V3("username", Auth(b"authkey", "md5"), Priv(b"pkey", "des")),
     )
-    expected = Message(
+    expected = PlainMessage(
         version=3,
         global_data=HeaderData(
             message_id=123,
@@ -427,7 +434,8 @@ def test_incoming_auth_error():
 
 def test_incoming_priv_error():
     msg = replace(
-        make_msg(), global_data=HeaderData(1, 1, V3Flags(True, True), 1)
+        make_msg(EncryptedMessage),
+        global_data=HeaderData(1, 1, V3Flags(True, True), 1),
     )
     with pytest.raises(usm.DecryptionError) as exc:
         with patch("puresnmp.security.usm.priv") as priv:
@@ -447,23 +455,11 @@ def test_decrypt_noop():
     An incoming message which doesn't have the "privacy" flag does not need
     to be decrypted.
     """
-    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(), 1))
-    result = usm.decrypt_message(msg, V3(b"", None, None))
-    assert result == msg
-
-
-def test_decrypt_needed():
-    """
-    Passing a non-binary message to decrypt_message indicates an error
-    """
     msg = replace(
-        make_msg(), global_data=HeaderData(1, 1, V3Flags(True, True), 1)
+        make_msg(PlainMessage), global_data=HeaderData(1, 1, V3Flags(), 1)
     )
-    with pytest.raises(SnmpError) as exc:
-        usm.decrypt_message(
-            msg, V3(b"", Auth(b"foo", "md5"), Priv(b"bar", "des"))
-        )
-    exc.match(r"unencrypted")
+    result = usm.decrypt_message(msg, V3(b"", None, None))
+    assert result is msg
 
 
 def test_incoming_cred_version():

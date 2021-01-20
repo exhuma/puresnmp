@@ -5,9 +5,9 @@ from typing import Any, Awaitable, Callable, Dict
 
 from x690.types import Integer, OctetString
 
-from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
+from puresnmp.adt import HeaderData, Message, PlainMessage, ScopedPDU, V3Flags
 from puresnmp.credentials import V3, Credentials
-from puresnmp.mpm import MessageProcessingModel, EncodingResult
+from puresnmp.mpm import EncodingResult, MessageProcessingModel
 from puresnmp.pdu import PDU, GetRequest
 from puresnmp.security import create as create_sm
 from puresnmp.transport import MESSAGE_MAX_SIZE
@@ -91,7 +91,7 @@ class V3MPM(MessageProcessingModel):
             )
 
         snmp_version = 3
-        msg = Message(Integer(snmp_version), global_data, b"", scoped_pdu)
+        msg = PlainMessage(Integer(snmp_version), global_data, b"", scoped_pdu)
         output = self.security_model.generate_request_message(
             msg,
             security_engine_id,
