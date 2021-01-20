@@ -15,6 +15,7 @@ import logging
 from asyncio import get_event_loop
 from asyncio.events import AbstractEventLoop
 from collections import OrderedDict
+from dataclasses import dataclass
 from ipaddress import ip_address
 from typing import (
     Any,
@@ -112,6 +113,16 @@ def deduped_varbinds(
             yield varbind
 
 
+@dataclass
+class Context:
+    """
+    Information about the current SNMP context
+    """
+
+    engine_id: bytes
+    name: bytes
+
+
 class RawClient:
     """
     A client to execute SNMP commands on a remote device.
@@ -143,8 +154,7 @@ class RawClient:
         self.endpoint = Endpoint(ip_address(ip), port)
         self.credentials = credentials
         self.sender = sender
-        self.engine_id = engine_id
-        self.context_name = context_name
+        self.context = Context(engine_id, context_name)
         self.lcd: Dict[str, Any] = {}
 
         async def handler(data: bytes) -> bytes:  # pragma: no cover
@@ -159,8 +169,8 @@ class RawClient:
         packet, _ = await self.mpm.encode(
             request_id,
             self.credentials,
-            self.engine_id,
-            self.context_name,
+            self.context.engine_id,
+            self.context.name,
             pdu,
         )
         raw_response = await self.sender(
