@@ -458,8 +458,8 @@ class RawClient:
         timeout: int = DEFAULT_TIMEOUT,
     ) -> T:
         """
-        Executes a simple SNMP SET request. The result is returned as pure
-        Python data structure. The value must be a subclass of
+        Executes a simple SNMP SET request. The result is returned as an x690
+        data structure. The value must be a subclass of
         :py:class:`~x690.types.Type`.
 
         >>> from puresnmp import RawClient
@@ -469,7 +469,6 @@ class RawClient:
         ... )
         OctetString(b'I am contact')
         """
-
         result = await self.multiset({oid: value}, timeout=timeout)
         return result[oid.lstrip(".")]
 
@@ -484,15 +483,12 @@ class RawClient:
 
         >>> from puresnmp import RawClient
         >>> client = RawClient("192.0.2.1", V2C("private"))
-        >>> client.multiset([  # doctest: +SKIP
-        ...     ('1.2.3', OctetString(b'foo')),
-        ...     ('2.3.4', OctetString(b'bar'))
-        ... ])
+        >>> client.multiset({  # doctest: +SKIP
+        ...     '1.2.3': OctetString(b'foo'),
+        ...     '2.3.4': OctetString(b'bar')
+        ... })
         {'1.2.3': b'foo', '2.3.4': b'bar'}
         """
-
-        if not isinstance(self.credentials, V2C):
-            raise SnmpError("Currently only SNMPv2c is supported!")
 
         if any([not isinstance(v, Type) for v in mappings.values()]):
             raise TypeError(

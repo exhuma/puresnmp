@@ -11,6 +11,7 @@ import unittest
 from ipaddress import ip_address
 from logging import WARNING, getLogger
 from unittest.mock import call, patch
+import asyncio
 
 import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
@@ -304,6 +305,16 @@ async def test_multiset(mocked_raw):
         "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
     }
     assert result == expected
+
+
+@pytest.mark.asyncio
+async def test_set(mocked_raw):
+    with patch("puresnmp.api.raw.RawClient.multiset") as mset:
+        future = asyncio.Future()
+        future.set_result({"1.2.3": OctetString(b"hello")})
+        mset.return_value = future
+        result = await mocked_raw.set("1.2.3", OctetString(b"hello"))
+    assert result == OctetString(b"hello")
 
 
 @pytest.mark.asyncio
