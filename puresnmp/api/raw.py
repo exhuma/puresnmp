@@ -328,13 +328,6 @@ class RawClient:
         requested_oids = [OID(oid) for oid in oids]
         grouped_oids = group_varbinds(varbinds, requested_oids)
         unfinished_oids = get_unfinished_walk_oids(grouped_oids)
-
-        if LOG.isEnabledFor(logging.DEBUG) and len(oids) > 1:
-            LOG.debug(
-                "%d of %d OIDs need to be continued",
-                len(unfinished_oids),
-                len(oids),
-            )
         yielded: Set[ObjectIdentifier] = set()
         for varbind in deduped_varbinds(requested_oids, grouped_oids, yielded):
             yield varbind
