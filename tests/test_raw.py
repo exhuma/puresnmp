@@ -7,11 +7,11 @@ PureSNMP object instances.
 """
 
 
+import asyncio
 import unittest
 from ipaddress import ip_address
 from logging import WARNING, getLogger
 from unittest.mock import call, patch
-import asyncio
 
 import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence

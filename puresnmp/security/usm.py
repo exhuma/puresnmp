@@ -343,7 +343,8 @@ def decrypt_message(
             message.scoped_pdu.value,
         )
         message = cast(
-            PlainMessage, replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
+            PlainMessage,
+            replace(message, scoped_pdu=ScopedPDU.decode(decrypted)),
         )
     except Exception as exc:
         raise DecryptionError(f"Unable to decrypt message ({exc})") from exc

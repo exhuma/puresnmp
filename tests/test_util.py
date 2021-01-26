@@ -97,6 +97,9 @@ def test_password_to_key():
 
 
 def test_md5_key():
+    """
+    Ensure we conform to https://tools.ietf.org/html/rfc3414#appendix-A.3.1
+    """
     engine_id = unhexlify("000000000000000000000002")
     hasher = password_to_key(hashlib.md5, 16)
     result = hasher(b"maplesyrup", engine_id)
@@ -105,6 +108,9 @@ def test_md5_key():
 
 
 def test_sha_key():
+    """
+    Ensure we conform to https://tools.ietf.org/html/rfc3414#appendix-A.3.2
+    """
     engine_id = unhexlify("000000000000000000000002")
     hasher = password_to_key(hashlib.sha1, 20)
     result = hasher(b"maplesyrup", engine_id)
