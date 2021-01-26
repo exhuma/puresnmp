@@ -3,7 +3,7 @@ SNMP Set
 
 See :py:func:`puresnmp.set`
 
-.. note:: 
+.. note::
     For a list of available/implemented types, see :ref:`type_tree`
 
 Python Code
