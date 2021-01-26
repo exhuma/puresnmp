@@ -339,11 +339,11 @@ def decrypt_message(
             security_parameters.priv_params,
             message.scoped_pdu.value,
         )
+        message = cast(
+            PlainMessage, replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
+        )
     except Exception as exc:
         raise DecryptionError(f"Unable to decrypt message ({exc})") from exc
-    message = cast(
-        PlainMessage, replace(message, scoped_pdu=ScopedPDU.decode(decrypted))
-    )
     return message
 
 
