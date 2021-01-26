@@ -113,9 +113,9 @@ def discover_plugins():
     """
     Load all privacy plugins into a global cache
     """
-    namespace = importlib.import_module("puresnmp.priv")
+    import puresnmp.priv
 
-    for _, name, _ in iter_namespace(namespace):
+    for _, name, _ in iter_namespace(puresnmp.priv):
         mod = importlib.import_module(name)
         if not all(
             [
