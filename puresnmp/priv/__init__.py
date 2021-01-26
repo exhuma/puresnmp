@@ -49,7 +49,7 @@ class EncryptionResult(NamedTuple):
     """
 
     encrypted_data: bytes
-    salt: bytes
+    priv_params: bytes
 
 
 class TPriv(Protocol):

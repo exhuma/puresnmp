@@ -5,11 +5,12 @@ This module is a plugin for :py:mod:`puresnmp.priv`
 """
 import hashlib
 from random import randint
-from typing import Generator, Tuple
+from typing import Generator
 
 from Crypto.Cipher import DES as CDES
 
 from puresnmp.exc import SnmpError
+from puresnmp.priv import EncryptionResult
 from puresnmp.util import password_to_key
 
 IDENTIFIER = "des"
@@ -63,7 +64,7 @@ def encrypt_data(
     engine_boots: int,
     engine_time: int,
     data: bytes,
-) -> Tuple[bytes, bytes]:
+) -> EncryptionResult:
     """
     See https://tools.ietf.org/html/rfc3414#section-1.6
     """
@@ -83,7 +84,7 @@ def encrypt_data(
     cdes = CDES.new(des_key, mode=CDES.MODE_CBC, IV=init_vector)
     padded = pad_packet(data)
     encrypted = cdes.encrypt(padded)
-    return encrypted, salt
+    return EncryptionResult(encrypted, salt)
 
 
 def decrypt_data(
