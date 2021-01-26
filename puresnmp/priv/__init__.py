@@ -58,7 +58,12 @@ class TPriv(Protocol):
     """
 
     def encrypt_data(
-        self, key: bytes, engine_id: bytes, engine_boots: int, data: bytes
+        self,
+        key: bytes,
+        engine_id: bytes,
+        engine_boots: int,
+        engine_time: int,
+        data: bytes,
     ) -> EncryptionResult:
         """
         Encrypts data from an SNMP PDU following the SNMPv3 spec.

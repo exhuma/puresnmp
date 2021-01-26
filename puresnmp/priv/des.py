@@ -58,7 +58,11 @@ SALTPOT = reference_saltpot()
 
 
 def encrypt_data(
-    key: bytes, engine_id: bytes, engine_boots: int, data: bytes
+    key: bytes,
+    engine_id: bytes,
+    engine_boots: int,
+    engine_time: int,
+    data: bytes,
 ) -> Tuple[bytes, bytes]:
     """
     See https://tools.ietf.org/html/rfc3414#section-1.6

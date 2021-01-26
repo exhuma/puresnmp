@@ -212,6 +212,7 @@ def apply_encryption(
             key,
             security_engine_id,
             engine_boots,
+            engine_time,
             bytes(message.scoped_pdu),
         )
         scoped_pdu = OctetString(encrypted)
