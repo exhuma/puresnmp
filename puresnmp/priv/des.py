@@ -88,9 +88,11 @@ def encrypt_data(
 
 def decrypt_data(
     decrypt_key: bytes,
-    data: bytes,
-    authoritative_engine_id: bytes,
+    engine_id: bytes,
+    engine_boots: int,
+    engine_time: int,
     salt: bytes,
+    data: bytes,
 ) -> bytes:
     """
     See https://tools.ietf.org/html/rfc3414#section-1.6
@@ -101,7 +103,7 @@ def decrypt_data(
         )
 
     hasher = password_to_key(hashlib.md5, 16)
-    private_privacy_key = hasher(decrypt_key, authoritative_engine_id)
+    private_privacy_key = hasher(decrypt_key, engine_id)
     des_key = private_privacy_key[:8]
 
     pre_iv = private_privacy_key[8:]

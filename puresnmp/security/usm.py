@@ -333,9 +333,11 @@ def decrypt_message(
     try:
         decrypted = priv_method.decrypt_data(
             key,
-            message.scoped_pdu.value,
             security_parameters.authoritative_engine_id,
+            security_parameters.authoritative_engine_boots,
+            security_parameters.authoritative_engine_time,
             security_parameters.priv_params,
+            message.scoped_pdu.value,
         )
     except Exception as exc:
         raise DecryptionError(f"Unable to decrypt message ({exc})") from exc

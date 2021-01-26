@@ -22,5 +22,5 @@ def test_decrypt_invalid_data():
     Trying to decrypt data with invalid length should raise
     """
     with pytest.raises(SnmpError) as exc:
-        des.decrypt_data(b"key", b"invalid-data", b"engine-id", b"salt")
+        des.decrypt_data(b"key", b"engine-id", 0, 0, b"salt", b"invalid-data")
     exc.match("multiple of 8")

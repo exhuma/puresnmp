@@ -80,17 +80,21 @@ class TPriv(Protocol):
     def decrypt_data(
         self,
         decrypt_key: bytes,
-        data: bytes,
-        authoritative_engine_id: bytes,
+        engine_id: bytes,
+        engine_boots: int,
+        engine_time: int,
         salt: bytes,
+        data: bytes,
     ) -> bytes:
         """
         Decrypts a message
 
         :param decrypt_key: The key used for decryption
-        :param data: The encrypted SNMP message
-        :param authoritative_engine_id: The remote engine-id
+        :param engine_id: The remote engine-id
+        :param engine_boots: The number of engine-boots
+        :param engine_time: Timeliness parameter for encryption
         :param salt: The salt used during encryption
+        :param data: The encrypted SNMP message
         :returns: The unencrypted data.
         """
         ...
