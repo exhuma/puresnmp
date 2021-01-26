@@ -1,4 +1,5 @@
 import random
+from binascii import unhexlify
 from dataclasses import replace
 from unittest.mock import Mock, patch
 
@@ -205,7 +206,7 @@ def test_request_message_anp():
 
 
 @pytest.mark.dependency(depends=["test_request_message_anp"])
-def test_request_message_ap():
+def test_request_message_ap_des():
     # Apply static random seed for testing
     random.seed(123)
     message = make_msg()
@@ -238,6 +239,45 @@ def test_request_message_ap():
         scoped_pdu=OctetString(b"\xde\xe24\x01b\xbdk\x9b#\x01\xe4|\x8a\xe6\r7"),
     )
     assert result == expected
+
+
+@pytest.mark.dependency(depends=["test_request_message_anp"])
+def test_request_message_ap_aes():
+    # Apply static random seed for testing
+    random.seed(123)
+    message = make_msg()
+    instance = usm.UserSecurityModel()
+    instance.local_config[b"engine-id"] = {
+        "authoritative_engine_boots": 1,
+        "authoritative_engine_time": 12,
+    }
+    result = instance.generate_request_message(
+        message,
+        b"engine-id",
+        V3("username", Auth(b"authkey", "md5"), Priv(b"pkey", "aes")),
+    )
+    expected = PlainMessage(
+        version=3,
+        global_data=HeaderData(
+            message_id=123,
+            message_max_size=234,
+            flags=V3Flags(auth=True, priv=True, reportable=True),
+            security_model=3,
+        ),
+        security_parameters=(
+            b"03\x04\tengine-id"
+            b"\x02\x01\x01"
+            b"\x02\x01\x0c"
+            b"\x04\x08username"
+            b"\x04\x0co\xc3\x03\xde\xbe\x1c\xed\xb3\x18\xe8\x1b\x8a"
+            b"\x04\x08D\x86}\xb3\rg\xb3g"
+        ),
+        scoped_pdu=OctetString(unhexlify("437eec8e6e128dfd4b9923b679d6a24c")),
+    )
+    assert result.security_parameters == expected.security_parameters
+    assert (
+        result.scoped_pdu.value == expected.scoped_pdu.value
+    ), "Invalid cipher text"
 
 
 @pytest.mark.asyncio
