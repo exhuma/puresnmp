@@ -59,7 +59,7 @@ SALTPOT = reference_saltpot()
 
 
 def encrypt_data(
-    key: bytes,
+    localised_key: bytes,
     engine_id: bytes,
     engine_boots: int,
     engine_time: int,
@@ -69,10 +69,8 @@ def encrypt_data(
     See https://tools.ietf.org/html/rfc3414#section-1.6
     """
 
-    hasher = password_to_key(hashlib.md5, 16)
-    private_privacy_key = hasher(key, engine_id)
-    des_key = private_privacy_key[:8]
-    pre_iv = private_privacy_key[8:]
+    des_key = localised_key[:8]
+    pre_iv = localised_key[8:]
 
     local_salt = next(SALTPOT)
     salt = (engine_boots & 0xFF).to_bytes(4, "big") + (
@@ -88,7 +86,7 @@ def encrypt_data(
 
 
 def decrypt_data(
-    decrypt_key: bytes,
+    localised_key: bytes,
     engine_id: bytes,
     engine_boots: int,
     engine_time: int,
@@ -103,11 +101,8 @@ def decrypt_data(
             "Invalid payload lenght for decryption (not a multiple of 8)"
         )
 
-    hasher = password_to_key(hashlib.md5, 16)
-    private_privacy_key = hasher(decrypt_key, engine_id)
-    des_key = private_privacy_key[:8]
-
-    pre_iv = private_privacy_key[8:]
+    des_key = localised_key[:8]
+    pre_iv = localised_key[8:]
     init_vector = bytes(a ^ b for a, b in zip(salt, pre_iv))
     cdes = CDES.new(des_key, mode=CDES.MODE_CBC, IV=init_vector)
     decrypted = cdes.decrypt(data)

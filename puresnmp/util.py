@@ -1,6 +1,7 @@
 """
 Colleciton of utility functions for the puresnmp package.
 """
+import hashlib
 import pkgutil
 from dataclasses import dataclass
 from functools import lru_cache
@@ -20,6 +21,7 @@ from typing import (
 
 from x690.types import ObjectIdentifier
 
+from puresnmp.credentials import V3
 from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.snmp import VarBind
 from puresnmp.typevars import TAnyIp
@@ -386,3 +388,43 @@ def iter_namespace(
     # import_module to work without having to do additional modification to
     # the name.
     return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")  # type: ignore
+
+
+def localise_key(credentials: V3, engine_id: bytes) -> bytes:
+    """
+    Derive a localised key from the user-credentials.
+
+    This follows the logic as dicted by :rfc:`3414` melding the recipient
+    engine-id with the user-credentials into a kay used for de-/en-cryption
+    of packets.
+
+    .. seealso: https://tools.ietf.org/html/rfc3414#section-2.6
+
+    >>> from puresnmp.credentials import V3, Auth, Priv
+    >>> localised = localise_key(
+    ...     V3(b"user", Auth(b"maplesyrup", "md5"), Priv(b"privkey", "des")),
+    ...     b"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02"
+    ... )
+    >>> localised.hex()
+    '4924c679907476d038b258097995a15c'
+    """
+    if credentials.priv is None:
+        raise SnmpError(
+            "Attempting to derive a localised key from an empty "
+            "privacy object!"
+        )
+    if credentials.auth is None:
+        raise SnmpError(
+            "Attempting to derive a localised key from an empty " "auth object!"
+        )
+    if credentials.auth.method == "md5":
+        hasher = password_to_key(hashlib.md5, 16)
+    elif credentials.auth.method == "sha1":
+        hasher = password_to_key(hashlib.sha1, 20)
+    else:
+        raise SnmpError(
+            "Unknown authentication method: %r" % credentials.auth.method
+        )
+
+    output = hasher(credentials.priv.key, engine_id)
+    return output

@@ -59,7 +59,7 @@ class TPriv(Protocol):
 
     def encrypt_data(
         self,
-        key: bytes,
+        localised_key: bytes,
         engine_id: bytes,
         engine_boots: int,
         engine_time: int,
@@ -68,7 +68,8 @@ class TPriv(Protocol):
         """
         Encrypts data from an SNMP PDU following the SNMPv3 spec.
 
-        :param key: The encryption key
+        :param localisedkey: The encryption key localised to the given
+            engine-id
         :param engine_id: The ID of the recipient SNMP-engine
         :param engine_boots: Number of times the recipient engine has been
             restarted
@@ -79,7 +80,7 @@ class TPriv(Protocol):
 
     def decrypt_data(
         self,
-        decrypt_key: bytes,
+        localised_key: bytes,
         engine_id: bytes,
         engine_boots: int,
         engine_time: int,
@@ -89,7 +90,8 @@ class TPriv(Protocol):
         """
         Decrypts a message
 
-        :param decrypt_key: The key used for decryption
+        :param localised_key: The decryption key localised to the given
+            engine-id
         :param engine_id: The remote engine-id
         :param engine_boots: The number of engine-boots
         :param engine_time: Timeliness parameter for encryption

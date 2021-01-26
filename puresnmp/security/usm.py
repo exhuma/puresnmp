@@ -24,7 +24,7 @@ from puresnmp.exc import SnmpError
 from puresnmp.pdu import GetRequest, PDUContent
 from puresnmp.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE, get_request_id
-from puresnmp.util import validate_response_id
+from puresnmp.util import localise_key, validate_response_id
 
 IDENTIFIER = 3
 
@@ -206,10 +206,10 @@ def apply_encryption(
         )
 
     priv_method = priv.create(credentials.priv.method)
-    key = credentials.priv.key
+    localised_key = localise_key(credentials, security_engine_id)
     try:
         encrypted, salt = priv_method.encrypt_data(
-            key,
+            localised_key,
             security_engine_id,
             engine_boots,
             engine_time,
@@ -330,9 +330,12 @@ def decrypt_message(
     security_parameters = USMSecurityParameters.decode(
         message.security_parameters
     )
+    localised_key = localise_key(
+        credentials, security_parameters.authoritative_engine_id
+    )
     try:
         decrypted = priv_method.decrypt_data(
-            key,
+            localised_key,
             security_parameters.authoritative_engine_id,
             security_parameters.authoritative_engine_boots,
             security_parameters.authoritative_engine_time,
