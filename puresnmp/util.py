@@ -233,7 +233,7 @@ def password_to_key(
         :param engine_id: The target engine ID
         :returns: The derived key
         """
-        # Hash 1MB worth of data (as per SNMP rfc)
+        # Repeat the password for a total of 1MB worth of data (as per SNMP rfc)
         hash_size = 1024 * 1024
         num_words = hash_size // len(password)
         tmp = (password * (num_words + 1))[:hash_size]
