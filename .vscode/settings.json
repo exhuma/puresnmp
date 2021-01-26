@@ -1,0 +1,10 @@
+{
+    "files.watcherExclude": {
+        "**/.venv/**": true
+    },
+    "python.formatting.provider": "black",
+    "python.pythonPath": ".venv/bin/python",
+    "editor.rulers": [
+        80
+    ]
+}
