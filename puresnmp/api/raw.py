@@ -409,11 +409,9 @@ class Client:
         # Verify that the OIDs we retrieved are successors of the requested OIDs
         for requested, retrieved in zip(oids, output):
             if not OID(requested) < retrieved.oid:
-                # TODO remove when Py2 is dropped
-                stringified = str(retrieved.oid)
                 raise FaultySNMPImplementation(
                     "The OID %s is not a successor of %s!"
-                    % (stringified, requested)
+                    % (retrieved.oid, requested)
                 )
         return output
 
