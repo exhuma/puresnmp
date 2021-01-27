@@ -67,12 +67,6 @@ class TestBasics(ByteTester):
         0b11100010, PRIVATE, CONSTRUCTED, 0b00010
     )
 
-    def test_identifier_long(self):
-        self.skipTest(
-            "This is not yet implemented. I have not understood the "
-            "spec to confidently write a test"
-        )  # TODO
-
 
 class TestClassDetector(ByteTester):
     pass
