@@ -39,7 +39,7 @@ TWalkResponse = AsyncGenerator[VarBind, None]
 
 class PyWrapper:
     """
-    A wrapper around a :py:class:`puresnmp.api.raw.RawClient` instance.
+    A wrapper around a :py:class:`puresnmp.api.raw.Client` instance.
 
     The wrapper ensures converstion of internal API data-type to and from
     Python-native types.
@@ -53,7 +53,7 @@ class PyWrapper:
     with internally used data-types.
     """
 
-    def __init__(self, client: raw.RawClient) -> None:
+    def __init__(self, client: raw.Client) -> None:
         self.client = client
 
     async def get(self, *args, **kwargs) -> None:
@@ -82,7 +82,7 @@ class PyWrapper:
 
     async def set(self, oid, value, timeout: int = 6) -> Dict[str, Any]:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.RawClient.set` but returns
+        Delegates to :py:meth:`~puresnmp.api.raw.Client.set` but returns
         simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
@@ -93,7 +93,7 @@ class PyWrapper:
 
     async def multiset(self, mappings, timeout: int = 6):
         """
-        Delegates to :py:func:`~puresnmp.api.raw.RawClient.multiset` but
+        Delegates to :py:func:`~puresnmp.api.raw.Client.multiset` but
         returns simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
@@ -112,7 +112,7 @@ class PyWrapper:
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.RawClient.walk` but returns
+        Delegates to :py:meth:`~puresnmp.api.raw.Client.walk` but returns
         simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
@@ -128,7 +128,7 @@ class PyWrapper:
         timeout: int = DEFAULT_TIMEOUT,
     ) -> TWalkResponse:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.RawClient.multiwalk` but
+        Delegates to :py:meth:`~puresnmp.api.raw.Client.multiwalk` but
         returns simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
@@ -140,7 +140,7 @@ class PyWrapper:
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
     ) -> List[Any]:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.RawClientmultiget` but
+        Delegates to :py:meth:`~puresnmp.api.raw.Client.multiget` but
         returns simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
@@ -178,7 +178,7 @@ class PyWrapper:
         timeout: int = DEFAULT_TIMEOUT,
     ) -> BulkResult:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.RawClient.bulkget` but
+        Delegates to :py:meth:`~puresnmp.api.raw.Client.bulkget` but
         returns simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
@@ -236,7 +236,7 @@ class PyWrapper:
         Fetch an SNMP table using "bulk" requests converting the values into
         pure Python types.
 
-        See :py:func:`puresnmp.api.raw.RawClient.table` for more
+        See :py:func:`puresnmp.api.raw.Client.table` for more
         information of the returned structure.
 
         .. versionadded: 1.7.0

@@ -16,7 +16,7 @@ from unittest.mock import call, patch
 import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 
-from puresnmp.api.raw import RawClient, register_trap_callback
+from puresnmp.api.raw import Client, register_trap_callback
 from puresnmp.const import Version
 from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
@@ -263,7 +263,7 @@ def test_eom(self):
     ) as gri:
         mck().send.side_effect = data_generator
         gri.return_value = 0
-        client = RawClient("::1", V2C("public"))
+        client = Client("::1", V2C("public"))
         result = client.multiwalk(
             [
                 "1.3.6.1.6.3.16.1.5.2.1.6.6.95.110.111.110.101.95.1",
@@ -309,7 +309,7 @@ async def test_multiset(mocked_raw):
 
 @pytest.mark.asyncio
 async def test_set(mocked_raw):
-    with patch("puresnmp.api.raw.RawClient.multiset") as mset:
+    with patch("puresnmp.api.raw.Client.multiset") as mset:
         future = asyncio.Future()
         future.set_result({"1.2.3": OctetString(b"hello")})
         mset.return_value = future
@@ -820,16 +820,14 @@ def test_traps_origin(mocked_raw):
 
 @pytest.mark.asyncio
 async def test_table_complex_row_id():
-    client = RawClient("192.0.2.1", V2C("private"))
+    client = Client("192.0.2.1", V2C("private"))
     values = [
         VarBind("1.2.1.1.1.1", OctetString(b"row 1.1.1 col 1")),
         VarBind("1.2.1.2.1.1", OctetString(b"row 2.1.1 col 1")),
         VarBind("1.2.2.1.1.1", OctetString(b"row 1.1.1 col 2")),
         VarBind("1.2.2.2.1.1", OctetString(b"row 2.1.1 col 2")),
     ]
-    with patch(
-        "puresnmp.api.raw.RawClient.walk", return_value=AsyncIter(values)
-    ):
+    with patch("puresnmp.api.raw.Client.walk", return_value=AsyncIter(values)):
         result = await client.table("1.2", num_base_nodes=2)
     expected = [
         {
@@ -848,16 +846,14 @@ async def test_table_complex_row_id():
 
 @pytest.mark.asyncio
 async def test_table():
-    client = RawClient("192.0.2.1", V2C("private"))
+    client = Client("192.0.2.1", V2C("private"))
     values = [
         VarBind("1.2.1.1.1", OctetString(b"row 1 col 1")),
         VarBind("1.2.1.1.2", OctetString(b"row 2 col 1")),
         VarBind("1.2.1.2.1", OctetString(b"row 1 col 2")),
         VarBind("1.2.1.2.2", OctetString(b"row 2 col 2")),
     ]
-    with patch(
-        "puresnmp.api.raw.RawClient.walk", return_value=AsyncIter(values)
-    ):
+    with patch("puresnmp.api.raw.Client.walk", return_value=AsyncIter(values)):
         result = await client.table("1.2")
     expected = [
         {
@@ -880,16 +876,14 @@ async def test_table_base_oid():
     The "table" function should be capable of detecting the
     "num_base_nodes" value by itself
     """
-    client = RawClient("192.0.2.1", V2C("private"))
+    client = Client("192.0.2.1", V2C("private"))
     values = [
         VarBind("1.2.1.1.1.1.1", OctetString(b"row 1.1.1 col 1")),
         VarBind("1.2.1.1.2.1.1", OctetString(b"row 2.1.1 col 1")),
         VarBind("1.2.1.2.1.1.1", OctetString(b"row 1.1.1 col 2")),
         VarBind("1.2.1.2.2.1.1", OctetString(b"row 2.1.1 col 2")),
     ]
-    with patch(
-        "puresnmp.api.raw.RawClient.walk", return_value=AsyncIter(values)
-    ):
+    with patch("puresnmp.api.raw.Client.walk", return_value=AsyncIter(values)):
         result = await client.table("1.2")
 
     expected = [

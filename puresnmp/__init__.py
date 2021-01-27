@@ -10,7 +10,7 @@ implementations as possible.
 # SNMP types will not be properly detected!
 import puresnmp.types
 from puresnmp.api.pythonic import PyWrapper
-from puresnmp.api.raw import RawClient
+from puresnmp.api.raw import Client
 from puresnmp.credentials import V1, V2C, V3
 
-__all__ = ["PyWrapper", "RawClient", "V1", "V2C", "V3"]
+__all__ = ["PyWrapper", "Client", "V1", "V2C", "V3"]

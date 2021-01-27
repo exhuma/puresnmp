@@ -15,7 +15,7 @@ import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString
 
 from puresnmp import PyWrapper
-from puresnmp.api.raw import RawClient
+from puresnmp.api.raw import Client
 from puresnmp.pdu import PDUContent, Trap, VarBind
 from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.typevars import SocketInfo
@@ -32,7 +32,7 @@ def async_result(data: Any) -> asyncio.Future:
 
 @pytest.mark.asyncio
 async def test_get_string():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
 
     expected = (
@@ -51,7 +51,7 @@ async def test_get_string():
 
 @pytest.mark.asyncio
 async def test_get_oid():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = "1.3.6.1.4.1.8072.3.2.10"
     raw_client.get.return_value = async_result(
@@ -63,7 +63,7 @@ async def test_get_oid():
 
 @pytest.mark.asyncio
 async def test_set_string():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = b"foo"
     raw_client.multiset.return_value = async_result(
@@ -75,7 +75,7 @@ async def test_set_string():
 
 @pytest.mark.asyncio
 async def test_set_string_absolute():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = b"foo"
     raw_client.multiset.return_value = async_result(
@@ -87,7 +87,7 @@ async def test_set_string_absolute():
 
 @pytest.mark.asyncio
 async def test_walk():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
 
     expected = [
@@ -115,7 +115,7 @@ async def test_walk():
 
 @pytest.mark.asyncio
 async def test_multiget():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = [
         "1.3.6.1.4.1.8072.3.2.10",
@@ -143,7 +143,7 @@ async def test_multiget():
 
 @pytest.mark.asyncio
 async def test_multi_walk():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = [
         VarBind("1.3.6.1.2.1.2.2.1.1.1", 1),
@@ -189,7 +189,7 @@ async def test_multiset():
     NOTE: The OID '1.3.6.1.2.1.1.5.0' below is manually edited for
             unit-testing. It probably has a different type in the real world!
     """
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     raw_client.multiset.return_value = async_result(
         {
@@ -213,7 +213,7 @@ async def test_multiset():
 
 @pytest.mark.asyncio
 async def test_multiset_absolute():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     raw_client.multiset.return_value = async_result(
         {
@@ -236,7 +236,7 @@ async def test_multiset_absolute():
 
 @pytest.mark.asyncio
 async def test_getnext():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
 
     expected = VarBind("1.3.6.1.6.3.1.1.6.1.0", 354522558)
@@ -253,7 +253,7 @@ async def test_getnext():
 
 @pytest.mark.asyncio
 async def test_bulkget():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
 
     expected = BulkResult(
@@ -301,7 +301,7 @@ async def test_bulkget():
 
 @pytest.mark.asyncio
 async def test_bulkwalk():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     raw_client.bulkwalk.return_value = AsyncIter(
         [
@@ -328,7 +328,7 @@ async def test_bulkwalk():
 
 @pytest.mark.asyncio
 async def test_table():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     raw_client.table.return_value = async_result(
         [
@@ -348,7 +348,7 @@ async def test_table():
 
 @pytest.mark.asyncio
 async def test_bulktable():
-    raw_client = Mock(spec=RawClient)
+    raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     raw_client.bulktable.return_value = async_result(
         [

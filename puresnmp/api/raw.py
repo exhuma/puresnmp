@@ -125,7 +125,7 @@ class Context:
     name: bytes
 
 
-class RawClient:
+class Client:
     """
     A client to execute SNMP commands on a remote device.
 
@@ -139,7 +139,7 @@ class RawClient:
     appropriate communication model for this client instance.
 
     >>> from puresnmp.credentials import V2C
-    >>> client = RawClient("192.0.2.1", V2C("public"))
+    >>> client = Client("192.0.2.1", V2C("public"))
     >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
     <coroutine ...>
     """
@@ -189,8 +189,8 @@ class RawClient:
         Executes a simple SNMP GET request and returns a pure Python data
         structure.
 
-        >>> from puresnmp import RawClient
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> # The line below needs to be "awaited" to get the result.
         >>> # This is not shown here to make it work with doctest
         >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
@@ -209,10 +209,10 @@ class RawClient:
         pure Python objects. The order of the output items is the same order
         as the OIDs given as arguments.
 
-        >>> from puresnmp import RawClient
+        >>> from puresnmp import Client
         >>> import warnings
         >>> warnings.simplefilter("ignore")
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> # The line below needs to be "awaited" to get the result.
         >>> # This is not shown here to make it work with doctest
         >>> client.multiget(['1.2.3.4', '1.2.3.5'])
@@ -239,10 +239,10 @@ class RawClient:
         """
         Executes a single SNMP GETNEXT request (used inside *walk*).
 
-        >>> from puresnmp import RawClient
+        >>> from puresnmp import Client
         >>> import warnings
         >>> warnings.simplefilter("ignore")
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> # The line below needs to be "awaited" to get the result.
         >>> # This is not shown here to make it work with doctest
         >>> client.getnext('1.2.3.4')
@@ -265,8 +265,8 @@ class RawClient:
         the given start OID or at the end of the tree (whichever comes
         first).
 
-        >>> from puresnmp import RawClient
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> client.walk('1.3.6.1.2.1.1')  # doctest: +ELLIPSIS
         <async_generator object ...>
 
@@ -310,9 +310,9 @@ class RawClient:
         This is the same as :py:func:`~.walk` except that it is capable of
         iterating over multiple OIDs at the same time.
 
-        >>> from puresnmp import RawClient
+        >>> from puresnmp import Client
         >>> import warnings
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> with warnings.catch_warnings():
         ...     warnings.simplefilter("ignore")
         ...     client.multiwalk(  # doctest: +ELLIPSIS
@@ -381,8 +381,8 @@ class RawClient:
         The request sends one packet to the remote host requesting the value
         of the OIDs following one or more given OIDs.
 
-        >>> from puresnmp import RawClient
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> client.multigetnext(['1.2.3', '1.2.4'])  # doctest: +SKIP
         [
             VarBind(ObjectIdentifier("1.2.3.0"), Integer(1)),
@@ -436,8 +436,8 @@ class RawClient:
 
         Example output (using fake data):
 
-        >>> from puresnmp import RawClient
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> client.table("1.3.6.1.2.1.2.2")  # doctest: +SKIP
         [{'0': '1', '1': Integer(1), '2': Counter(30)},
          {'0': '2', '1': Integer(2), '2': Counter(123)}]
@@ -464,8 +464,8 @@ class RawClient:
         data structure. The value must be a subclass of
         :py:class:`~x690.types.Type`.
 
-        >>> from puresnmp import RawClient
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> client.set(  # doctest: +SKIP
         ...     "1.3.6.1.2.1.1.4.0", OctetString(b'I am contact')
         ... )
@@ -483,8 +483,8 @@ class RawClient:
         Executes an SNMP SET request on multiple OIDs. The result is returned as
         pure Python data structure.
 
-        >>> from puresnmp import RawClient
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> client.multiset({  # doctest: +SKIP
         ...     '1.2.3': OctetString(b'foo'),
         ...     '2.3.4': OctetString(b'bar')
@@ -544,8 +544,8 @@ class RawClient:
         :param repeating_oids: contains the OIDs that should be fetched as list.
         :param max_list_size: defines the max length of each list.
 
-        >>> from puresnmp import RawClient
-        >>> client = RawClient("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client
+        >>> client = Client("192.0.2.1", V2C("private"))
         >>> result = client.bulkget(  # doctest: +SKIP
         ...     scalar_oids=['1.3.6.1.2.1.1.1',
         ...                  '1.3.6.1.2.1.1.2'],
@@ -667,7 +667,7 @@ class RawClient:
 
         Example::
 
-            >>> from puresnmp import RawClient, V2C
+            >>> from puresnmp import Client, V2C
             >>> def example():
             ...     ip = '127.0.0.1'
             ...     community = 'private'
@@ -676,7 +676,7 @@ class RawClient:
             ...         '1.3.6.1.2.1.2.2.1.6',   # MAC
             ...         '1.3.6.1.2.1.2.2.1.22',  # ?
             ...     ]
-            ...     client = RawClient(ip, V2C(community))
+            ...     client = Client(ip, V2C(community))
             ...     result = client.bulkwalk(oids)
             ...     for row in result:
             ...         print(row)

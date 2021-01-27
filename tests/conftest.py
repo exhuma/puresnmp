@@ -33,11 +33,11 @@ class FakeSend:
 
 @pytest.fixture
 def mocked_raw():
-    from puresnmp import RawClient
+    from puresnmp import Client
     from puresnmp.credentials import V2C
 
     sender = FakeSend()
-    client = RawClient("192.0.2.1", V2C("private"), sender=sender)
+    client = Client("192.0.2.1", V2C("private"), sender=sender)
     yield client
 
 
