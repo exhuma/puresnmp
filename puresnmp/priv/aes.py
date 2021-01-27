@@ -73,7 +73,11 @@ def get_iv(engine_boots: int, engine_time: int, local_salt: bytes) -> bytes:
     # | engine-boots = xxxx............ (big endian int)
     # | engine-time  = ....xxxx........ (big endian int)
     # | local_salt   = ........xxxxxxxx (big endian int)
-    output = (engine_boots<<(64+32) | engine_time<<64 | int.from_bytes(local_salt, "big"))
+    output = (
+        engine_boots << (64 + 32)
+        | engine_time << 64
+        | int.from_bytes(local_salt, "big")
+    )
     return output.to_bytes(16, "big")
 
 
