@@ -14,8 +14,7 @@ for the definition of the new types.
 # pylint: disable=too-few-public-methods
 
 from datetime import timedelta
-from ipaddress import IPv4Address
-from struct import pack
+from ipaddress import IPv4Address, ip_address
 from typing import Optional, Union
 
 from x690.types import (
@@ -28,40 +27,27 @@ from x690.types import (
 from x690.util import TypeClass
 
 
-class IpAddress(OctetString):
+class IpAddress(Type[IPv4Address]):
     """
     SNMP Type for IPv4 Addresses
     """
 
+    NATURE = OctetString.NATURE
     TYPECLASS = TypeClass.APPLICATION
     TAG = 0x00
 
-    def __init__(self, value: Optional[bytes] = None) -> None:
-        if value and isinstance(value, IPv4Address):
-            remainder = int(value)
-            octet_4, remainder = remainder & 0xFF, remainder >> 8
-            octet_3, remainder = remainder & 0xFF, remainder >> 8
-            octet_2, remainder = remainder & 0xFF, remainder >> 8
-            octet_1, remainder = remainder & 0xFF, remainder >> 8
-            value = pack("BBBB", octet_1, octet_2, octet_3, octet_4)
-        super().__init__(value or b"")
+    def encode_raw(self) -> bytes:
+        numeric = int(self.value)
+        return numeric.to_bytes(4, "big")
 
-    def pythonize(self) -> bytes:
-        """
-        Returns the wrapped value as pure-python type
-        """
-        return self.value
+    @staticmethod
+    def decode_raw(data: bytes, slc: slice = slice(None)) -> IPv4Address:
+        value = ip_address(int.from_bytes(data[slc], "big"))
+        return value
 
-        # TODO The following code breaks backwards compatbility and should be
-        # released in the next mator verion
-
-        # TODO v2.0.0 intvalue = 0
-        # TODO v2.0.0 for i, octet in enumerate(reversed(self.value)):
-        # TODO v2.0.0     if sys.version_info < (3, 0):
-        # TODO v2.0.0         # Python 2 assumes has str === bytes so we need to cast
-        # TODO v2.0.0         octet = ord(octet)
-        # TODO v2.0.0     intvalue |= octet << (8*i)
-        # TODO v2.0.0 return ip_address(intvalue)
+    def __eq__(self, other: object) -> bool:
+        # TODO: no longer necessary in x690 > 0.5.0a4
+        return isinstance(other, IpAddress) and self.value == other.value
 
 
 class Counter(Integer):

@@ -3,8 +3,6 @@
 from datetime import timedelta
 from ipaddress import ip_address
 
-import pytest
-
 from puresnmp import types as t
 
 from . import ByteTester
@@ -12,32 +10,18 @@ from . import ByteTester
 
 class TestIpAddress(ByteTester):
     def test_decoding(self):
-        result = t.IpAddress.decode_raw(b"\x80\x96\xa1\x09")
-        # TODO 2.0.0 wrapped value should be an ip-address instance
-        expected = b"\x80\x96\xa1\x09"
+        result = t.IpAddress.decode_raw(b"\xc0\x00\x02\x01")
+        expected = ip_address("192.0.2.1")
         self.assertEqual(result, expected)
 
     def test_encoding(self):
-        value = t.IpAddress(b"\x80\x96\xa1\x09")
+        value = t.IpAddress(ip_address("192.0.2.1"))
         result = bytes(value)
-        expected = b"\x40\x04\x80\x96\xa1\x09"
+        expected = b"\x40\x04\xc0\x00\x02\x01"
         self.assertBytesEqual(result, expected)
 
-    def test_conversion_to_python(self):
-        result = t.IpAddress(b"\x80\x96\xa1\x09").pythonize()
-        expected = b"\x80\x96\xa1\x09"
-        # TODO 2.0.0 expected = ip_address('128.150.161.9')
-        self.assertEqual(result, expected)
-
-    def test_conversion_from_python(self):
-        input = ip_address("128.150.161.9")
-        result = t.IpAddress(input)
-        expected = t.IpAddress(b"\x80\x96\xa1\x09")
-        self.assertEqual(result, expected)
-
     def test_conversion_symmetry(self):
-        input = b"\x80\x96\xa1\t"
-        # TODO 2.0.0 input = ip_address('128.150.161.9')
+        input = ip_address("192.0.2.1")
         result = t.IpAddress(input).pythonize()
         self.assertEqual(result, input)
 

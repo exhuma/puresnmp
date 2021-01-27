@@ -8,6 +8,7 @@ to use.
 """
 import asyncio
 import unittest
+from ipaddress import ip_address
 from typing import Any
 from unittest.mock import Mock, call, patch
 
@@ -264,7 +265,7 @@ async def test_bulkget():
         {
             "1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1": 10,
             "1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1": b"\x02B\xe2\xc5\x8d\t",
-            "1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1": b"\xac\x11\x00\x01",
+            "1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1": ip_address("172.17.0.1"),
             "1.3.6.1.2.1.4.1.0": 1,
             "1.3.6.1.2.1.4.3.0": 57,
         },
@@ -284,7 +285,7 @@ async def test_bulkget():
                     b"\x02B\xe2\xc5\x8d\t"
                 ),
                 "1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1": IpAddress(
-                    b"\xac\x11\x00\x01"
+                    ip_address("172.17.0.1")
                 ),
                 "1.3.6.1.2.1.4.1.0": Integer(1),
                 "1.3.6.1.2.1.4.3.0": Counter(57),

@@ -517,7 +517,7 @@ async def test_bulkget(mocked_raw):
                 b"\x02B\xe2\xc5\x8d\t"
             ),
             "1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1": IpAddress(
-                b"\xac\x11\x00\x01"
+                ip_address("172.17.0.1")
             ),
             "1.3.6.1.2.1.4.1.0": Integer(1),
             "1.3.6.1.2.1.4.3.0": Counter(57),
@@ -745,7 +745,7 @@ async def test_bulktable(mocked_raw):
 
 class TestTraps(unittest.TestCase):
     def test_traps(self):
-        raise pytest.skip("TODO")
+        raise pytest.skip("TODO - Have not yet figured out how to test this")
         data_generator = readbytes_multiple("trap_requests.hex")
 
         def socket_response_generator():
