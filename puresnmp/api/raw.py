@@ -158,6 +158,8 @@ class RawClient:
         self.sender = sender
         self.context = Context(engine_id, context_name)
         self.lcd: Dict[str, Any] = {}
+        self.ip = ip
+        self.port = port
 
         async def handler(data: bytes) -> bytes:  # pragma: no cover
             return await sender(self.endpoint, data)
