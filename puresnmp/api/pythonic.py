@@ -37,19 +37,24 @@ OID = ObjectIdentifier
 TWalkResponse = AsyncGenerator[VarBind, None]
 
 
-class Client:
+class PyWrapper:
     """
-    A client which wraps a :py:class:`puresnmp.api.raw.RawClient` instance
-    and applies type-converstions to data-types to make day-do-day work a bit
-    easier.
+    A wrapper around a :py:class:`puresnmp.api.raw.RawClient` instance.
 
-    The converted types may lose some features (f.ex. for Object
-    Identifiers), but will decouple the calls from the SNMP library by
-    sticking to pure-python types.
+    The wrapper ensures converstion of internal API data-type to and from
+    Python-native types.
+
+    Using Python native types shields from internal changes internally in
+    :py:mod:`puresnmp` at the cost of loss of flexibility. Most applications
+    should mostly benefit from this.
+
+    In cases internal data-types are still wanted, one can access the
+    ``.client`` attribute of PyWrapper instances which exposes the same API but
+    with internally used data-types.
     """
 
-    def __init__(self, raw_client: raw.RawClient) -> None:
-        self.raw_client = raw_client
+    def __init__(self, client: raw.RawClient) -> None:
+        self.client = client
 
     async def get(self, *args, **kwargs) -> None:
         """
@@ -58,7 +63,7 @@ class Client:
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        raw_value = await self.raw_client.get(*args, **kwargs)
+        raw_value = await self.client.get(*args, **kwargs)
         return raw_value.pythonize()
 
     async def getnext(
@@ -70,7 +75,7 @@ class Client:
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        result_oid, result_value = await self.raw_client.getnext(
+        result_oid, result_value = await self.client.getnext(
             oid, timeout=timeout
         )
         return VarBind(result_oid.pythonize(), result_value.pythonize())
@@ -94,7 +99,7 @@ class Client:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        raw_output = await self.raw_client.multiset(mappings, timeout=timeout)
+        raw_output = await self.client.multiset(mappings, timeout=timeout)
         pythonized = {
             str(oid): value.pythonize() for oid, value in raw_output.items()
         }
@@ -113,7 +118,7 @@ class Client:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        raw_result = self.raw_client.walk(oid, timeout, errors)
+        raw_result = self.client.walk(oid, timeout, errors)
         async for raw_oid, raw_value in raw_result:
             yield VarBind(raw_oid, raw_value.pythonize())
 
@@ -128,9 +133,7 @@ class Client:
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        async for oid, value in self.raw_client.multiwalk(
-            oids, timeout=timeout
-        ):
+        async for oid, value in self.client.multiwalk(oids, timeout=timeout):
             yield VarBind(oid, value.pythonize())
 
     async def multiget(
@@ -142,7 +145,7 @@ class Client:
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        raw_output = await self.raw_client.multiget(oids, timeout)
+        raw_output = await self.client.multiget(oids, timeout)
         pythonized = [value.pythonize() for value in raw_output]
         return pythonized
 
@@ -159,7 +162,7 @@ class Client:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        result = self.raw_client.bulkwalk(
+        result = self.client.bulkwalk(
             oids,
             bulk_size=bulk_size,
             timeout=timeout,
@@ -181,7 +184,7 @@ class Client:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        raw_output = await self.raw_client.bulkget(
+        raw_output = await self.client.bulkget(
             scalar_oids,
             repeating_oids,
             max_list_size=max_list_size,
@@ -215,7 +218,7 @@ class Client:
                 DeprecationWarning,
                 stacklevel=2,
             )
-        tmp = await self.raw_client.table(
+        tmp = await self.client.table(
             oid, num_base_nodes=num_base_nodes, timeout=timeout
         )
         output = []
@@ -245,7 +248,7 @@ class Client:
                 DeprecationWarning,
                 stacklevel=2,
             )
-        tmp = await self.raw_client.bulktable(
+        tmp = await self.client.bulktable(
             oid, num_base_nodes=num_base_nodes, bulk_size=bulk_size
         )
         output = []

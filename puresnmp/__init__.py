@@ -9,8 +9,8 @@ implementations as possible.
 # Types and thus populates the Registry. If this is not included, Non x.690
 # SNMP types will not be properly detected!
 import puresnmp.types
-from puresnmp.api.pythonic import Client
+from puresnmp.api.pythonic import PyWrapper
 from puresnmp.api.raw import RawClient
 from puresnmp.credentials import V1, V2C, V3
 
-__all__ = ["Client", "RawClient", "V1", "V2C", "V3"]
+__all__ = ["PyWrapper", "RawClient", "V1", "V2C", "V3"]
