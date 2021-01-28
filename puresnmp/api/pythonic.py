@@ -28,13 +28,13 @@ from x690.types import ObjectIdentifier
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT
 from ..pdu import Trap
-from ..snmp import VarBind
 from ..util import BulkResult
+from ..varbind import PyVarBind
 from . import raw
 
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier
-TWalkResponse = AsyncGenerator[VarBind, None]
+TWalkResponse = AsyncGenerator[PyVarBind, None]
 
 
 class PyWrapper:
@@ -68,17 +68,17 @@ class PyWrapper:
 
     async def getnext(
         self, oid: str, timeout: int = DEFAULT_TIMEOUT
-    ) -> VarBind:
+    ) -> PyVarBind:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.getnext` but returns
         simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        result_oid, result_value = await self.client.getnext(
-            oid, timeout=timeout
+        varbind = await self.client.getnext(
+            ObjectIdentifier(oid), timeout=timeout
         )
-        return VarBind(result_oid.pythonize(), result_value.pythonize())
+        return PyVarBind.from_raw(varbind)
 
     async def set(self, oid, value, timeout: int = 6) -> Dict[str, Any]:
         """
@@ -118,9 +118,9 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        raw_result = self.client.walk(oid, timeout, errors)
-        async for raw_oid, raw_value in raw_result:
-            yield VarBind(raw_oid, raw_value.pythonize())
+        raw_result = self.client.walk(ObjectIdentifier(oid), timeout, errors)
+        async for varbind in raw_result:
+            yield PyVarBind.from_raw(varbind)
 
     async def multiwalk(
         self,
@@ -133,8 +133,11 @@ class PyWrapper:
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        async for oid, value in self.client.multiwalk(oids, timeout=timeout):
-            yield VarBind(oid, value.pythonize())
+        oids_internal = [ObjectIdentifier(oid) for oid in oids]
+        async for varbind in self.client.multiwalk(
+            oids_internal, timeout=timeout
+        ):
+            yield PyVarBind.from_raw(varbind)
 
     async def multiget(
         self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
@@ -145,7 +148,8 @@ class PyWrapper:
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        raw_output = await self.client.multiget(oids, timeout)
+        oids_internal = [ObjectIdentifier(oid) for oid in oids]
+        raw_output = await self.client.multiget(oids_internal, timeout)
         pythonized = [value.pythonize() for value in raw_output]
         return pythonized
 
@@ -162,13 +166,14 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
+        oids_internal = [ObjectIdentifier(oid) for oid in oids]
         result = self.client.bulkwalk(
-            oids,
+            oids_internal,
             bulk_size=bulk_size,
             timeout=timeout,
         )
-        async for oid, value in result:
-            yield VarBind(oid.pythonize(), value.pythonize())
+        async for varbind in result:
+            yield PyVarBind.from_raw(varbind)
 
     async def bulkget(
         self,
@@ -184,9 +189,11 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
+        scalar_oids_int = [ObjectIdentifier(oid) for oid in scalar_oids]
+        repeating_oids_int = [ObjectIdentifier(oid) for oid in repeating_oids]
         raw_output = await self.client.bulkget(
-            scalar_oids,
-            repeating_oids,
+            scalar_oids_int,
+            repeating_oids_int,
             max_list_size=max_list_size,
             timeout=timeout,
         )
@@ -219,7 +226,9 @@ class PyWrapper:
                 stacklevel=2,
             )
         tmp = await self.client.table(
-            oid, num_base_nodes=num_base_nodes, timeout=timeout
+            ObjectIdentifier(oid),
+            num_base_nodes=num_base_nodes,
+            timeout=timeout,
         )
         output = []
         for row in tmp:
@@ -249,7 +258,9 @@ class PyWrapper:
                 stacklevel=2,
             )
         tmp = await self.client.bulktable(
-            oid, num_base_nodes=num_base_nodes, bulk_size=bulk_size
+            ObjectIdentifier(oid),
+            num_base_nodes=num_base_nodes,
+            bulk_size=bulk_size,
         )
         output = []
         for row in tmp:
@@ -321,8 +332,7 @@ class TrapInfo:
         OIDs to values.
         """
         output = {}
-        for oid_raw, value_raw in self.raw_trap.value.varbinds[2:]:
-            oid = oid_raw.pythonize()
-            value = value_raw.pythonize()
-            output[oid] = value
+        for varbind in self.raw_trap.value.varbinds[2:]:
+            pyvarbind = PyVarBind.from_raw(varbind)
+            output[pyvarbind.oid] = pyvarbind.value
         return output

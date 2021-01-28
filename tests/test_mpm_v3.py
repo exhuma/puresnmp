@@ -7,10 +7,9 @@ from x690.types import Integer, ObjectIdentifier, OctetString
 import puresnmp.mpm.v3 as mpm
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V2C, V3
-from puresnmp.exc import SnmpError
 from puresnmp.pdu import GetRequest, GetResponse, PDUContent
 from puresnmp.security.usm import UserSecurityModel, USMSecurityParameters
-from puresnmp.snmp import VarBind
+from puresnmp.varbind import VarBind
 
 
 @pytest.fixture

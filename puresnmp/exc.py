@@ -4,6 +4,8 @@ Exceptions for the puresnmp package.
 
 import socket
 
+from x690.types import ObjectIdentifier
+
 from puresnmp.const import MAX_VARBINDS
 
 
@@ -33,7 +35,7 @@ class ErrorResponse(SnmpError):
 
     @staticmethod
     def construct(
-        error_status, offending_oid: str, message: str = ""
+        error_status, offending_oid: ObjectIdentifier, message: str = ""
     ) -> "ErrorResponse":
         """
         Creates a new instance of an ErrorResponse class, using the proper
@@ -60,7 +62,7 @@ class ErrorResponse(SnmpError):
         return ErrorResponse(error_status, offending_oid, message)
 
     def __init__(
-        self, error_status, offending_oid: str, message: str = ""
+        self, error_status, offending_oid: ObjectIdentifier, message: str = ""
     ) -> None:
         super().__init__(
             "%s (status-code: %r) on OID %s"
@@ -82,7 +84,9 @@ class TooBig(ErrorResponse):
 
     DEFAULT_MESSAGE = "SNMP response was too big!"
 
-    def __init__(self, offending_oid: str, message: str = "") -> None:
+    def __init__(
+        self, offending_oid: ObjectIdentifier, message: str = ""
+    ) -> None:
         super().__init__(1, offending_oid)
 
 
@@ -98,7 +102,9 @@ class NoSuchOID(ErrorResponse):
 
     DEFAULT_MESSAGE = "No such name/oid"
 
-    def __init__(self, offending_oid: str, message: str = "") -> None:
+    def __init__(
+        self, offending_oid: ObjectIdentifier, message: str = ""
+    ) -> None:
         super().__init__(2, offending_oid, message)
 
 
@@ -110,7 +116,9 @@ class BadValue(ErrorResponse):
 
     DEFAULT_MESSAGE = "Bad value"
 
-    def __init__(self, offending_oid: str, message: str = "") -> None:
+    def __init__(
+        self, offending_oid: ObjectIdentifier, message: str = ""
+    ) -> None:
         super().__init__(3, offending_oid, message)
 
 
@@ -121,7 +129,9 @@ class ReadOnly(ErrorResponse):
 
     DEFAULT_MESSAGE = "Value is read-only!"
 
-    def __init__(self, offending_oid: str, message: str = "") -> None:
+    def __init__(
+        self, offending_oid: ObjectIdentifier, message: str = ""
+    ) -> None:
         super().__init__(4, offending_oid, message)
 
 
@@ -132,7 +142,9 @@ class NoAccess(ErrorResponse):
 
     DEFAULT_MESSAGE = "No Access!"
 
-    def __init__(self, offending_oid: str, message: str = "") -> None:
+    def __init__(
+        self, offending_oid: ObjectIdentifier, message: str = ""
+    ) -> None:
         super().__init__(6, offending_oid, message)
 
 
@@ -144,7 +156,9 @@ class GenErr(ErrorResponse):
 
     DEFAULT_MESSAGE = "General Error (genErr)"
 
-    def __init__(self, offending_oid: str, message: str = "") -> None:
+    def __init__(
+        self, offending_oid: ObjectIdentifier, message: str = ""
+    ) -> None:
         super().__init__(5, offending_oid, message)
 
 

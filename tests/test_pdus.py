@@ -299,7 +299,7 @@ class TestVarBind(ByteTester):
     """
 
     def setUp(self):
-        self.varbind = VarBind("1.2", "world")
+        self.varbind = VarBind(ObjectIdentifier("1.2"), "world")
 
     def test_unpacking(self):
         """

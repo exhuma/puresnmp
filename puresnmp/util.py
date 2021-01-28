@@ -23,8 +23,8 @@ from x690.types import ObjectIdentifier
 
 from puresnmp.credentials import V3
 from puresnmp.exc import InvalidResponseId, SnmpError
-from puresnmp.snmp import VarBind
 from puresnmp.typevars import TAnyIp
+from puresnmp.varbind import VarBind
 
 
 @dataclass
@@ -49,8 +49,8 @@ class BulkResult:
     values" (lists). This wrapper makes these terms a bit friendlier to use.
     """
 
-    scalars: Dict[str, Any]
-    listing: Dict[str, Any]
+    scalars: Dict[ObjectIdentifier, Any]
+    listing: Dict[ObjectIdentifier, Any]
 
 
 def group_varbinds(
@@ -136,7 +136,7 @@ def get_unfinished_walk_oids(
 
 
 def tablify(
-    varbinds: Iterable[Union[VarBind, Tuple[Any, Any]]],
+    varbinds: Iterable[VarBind],
     num_base_nodes: int = 0,
     base_oid: str = "",
 ) -> List[Dict[str, Any]]:
@@ -196,8 +196,9 @@ def tablify(
     for oid, value in varbinds:
         if num_base_nodes:
             tail = oid.nodes[num_base_nodes:]
-            col_id, row_id = tail[0], tail[1:]
-            row_id = ".".join([str(node) for node in row_id])
+            col_id_nodes, row_id_nodes = tail[0], tail[1:]
+            col_id = str(col_id_nodes)
+            row_id = ".".join([str(node) for node in row_id_nodes])
         else:
             col_id = str(oid.nodes[-2])
             row_id = str(oid.nodes[-1])

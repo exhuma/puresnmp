@@ -2,7 +2,7 @@
 This module contains the definition for the community-based
 message-processing model for SNMPv2
 """
-from typing import Any, Awaitable, Callable, Dict, cast
+from typing import Any, Awaitable, Callable, Dict, Union, cast
 
 from x690 import decode
 from x690.types import Integer, Null, OctetString, Sequence
@@ -10,7 +10,7 @@ from x690.types import Integer, Null, OctetString, Sequence
 from puresnmp.credentials import V2C, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.mpm import EncodingResult, MessageProcessingModel
-from puresnmp.pdu import PDU
+from puresnmp.pdu import PDU, BulkGetRequest
 
 IDENTIFIER = 1
 
@@ -26,7 +26,7 @@ class V2CMPM(MessageProcessingModel):
         credentials: Credentials,
         engine_id: bytes,
         context_name: bytes,
-        pdu: PDU,
+        pdu: Union[PDU, BulkGetRequest],
     ) -> EncodingResult:
         if not isinstance(credentials, V2C):
             raise TypeError("SNMPv2c MPM should be used with V2C credentials!")

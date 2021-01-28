@@ -21,8 +21,11 @@ from puresnmp.pdu import PDUContent, Trap, VarBind
 from puresnmp.types import Counter, Gauge, IpAddress
 from puresnmp.typevars import SocketInfo
 from puresnmp.util import BulkResult
+from puresnmp.varbind import PyVarBind
 
 from .conftest import AsyncIter
+
+OID = ObjectIdentifier
 
 
 def async_result(data: Any) -> asyncio.Future:
@@ -135,8 +138,8 @@ async def test_multiget():
     )
     result = await client.multiget(
         [
-            tuple(int(n) for n in "1.3.6.1.2.1.1.2.0".split(".")),
-            tuple(int(n) for n in "1.3.6.1.2.1.1.1.0".split(".")),
+            "1.3.6.1.2.1.1.2.0",
+            "1.3.6.1.2.1.1.1.0",
         ]
     )
     assert result == expected
@@ -306,10 +309,10 @@ async def test_bulkwalk():
     client = PyWrapper(client=raw_client)
     raw_client.bulkwalk.return_value = AsyncIter(
         [
-            VarBind("1.3.6.1.2.1.2.2.1.1.1", Integer(1)),
-            VarBind("1.3.6.1.2.1.2.2.1.1.10", Integer(10)),
-            VarBind("1.3.6.1.2.1.2.2.1.2.1", OctetString(b"lo")),
-            VarBind("1.3.6.1.2.1.2.2.1.22.10", ObjectIdentifier("0.0")),
+            VarBind(OID("1.3.6.1.2.1.2.2.1.1.1"), Integer(1)),
+            VarBind(OID("1.3.6.1.2.1.2.2.1.1.10"), Integer(10)),
+            VarBind(OID("1.3.6.1.2.1.2.2.1.2.1"), OctetString(b"lo")),
+            VarBind(OID("1.3.6.1.2.1.2.2.1.22.10"), ObjectIdentifier("0.0")),
         ]
     )
 
@@ -318,10 +321,10 @@ async def test_bulkwalk():
         result.append(row)
 
     expected = [
-        VarBind("1.3.6.1.2.1.2.2.1.1.1", 1),
-        VarBind("1.3.6.1.2.1.2.2.1.1.10", 10),
-        VarBind("1.3.6.1.2.1.2.2.1.2.1", b"lo"),
-        VarBind("1.3.6.1.2.1.2.2.1.22.10", "0.0"),
+        PyVarBind("1.3.6.1.2.1.2.2.1.1.1", 1),
+        PyVarBind("1.3.6.1.2.1.2.2.1.1.10", 10),
+        PyVarBind("1.3.6.1.2.1.2.2.1.2.1", b"lo"),
+        PyVarBind("1.3.6.1.2.1.2.2.1.22.10", "0.0"),
     ]
 
     assert result == expected

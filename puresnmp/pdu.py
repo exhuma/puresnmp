@@ -29,8 +29,8 @@ from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
 
 from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, TooManyVarbinds
-from .snmp import VarBind
 from .typevars import SocketInfo
+from .varbind import VarBind
 
 
 @dataclass
@@ -71,12 +71,12 @@ class PDU(Type[PDUContent]):
 
         if error_status.value:
             error_detail, nxt = decode(data, nxt, enforce_type=Sequence)
-            varbinds = [VarBind(*raw_varbind) for raw_varbind in error_detail]
+            varbinds = [VarBind(oid, value) for oid, value in error_detail]  # type: ignore
             offending_oid = None
             if error_index.value != 0:
                 offending_oid = varbinds[error_index.value - 1].oid
             exception = ErrorResponse.construct(
-                error_status.value, offending_oid
+                error_status.value, offending_oid or ObjectIdentifier()
             )
             raise exception
 

@@ -24,12 +24,13 @@ from typing import (
     Dict,
     Generator,
     List,
+    NamedTuple,
     Optional,
     Set,
     Tuple,
 )
 from typing import Type as TType
-from typing import TypeVar, cast
+from typing import TypeVar, Union, cast
 
 from typing_extensions import Protocol
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
@@ -51,7 +52,6 @@ from ..pdu import (
     SetRequest,
     Trap,
 )
-from ..snmp import VarBind
 from ..transport import Endpoint, TSender, get_request_id, listen, send
 from ..util import (
     BulkResult,
@@ -60,6 +60,7 @@ from ..util import (
     tablify,
     validate_response_id,
 )
+from ..varbind import VarBind
 
 PyType = Any  # TODO
 TWalkResponse = AsyncGenerator[VarBind, None]
@@ -78,8 +79,8 @@ class TFetcher(Protocol):
     # pylint: disable=too-few-public-methods
 
     async def __call__(
-        self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
-    ) -> List[VarBind]:  # pragma: no cover
+        self, oids: List[ObjectIdentifier], timeout: int = DEFAULT_TIMEOUT
+    ) -> List["VarBind"]:  # pragma: no cover
         ...
 
 
@@ -169,7 +170,9 @@ class Client:
             self.credentials.mpm, self.transport_handler, self.lcd
         )
 
-    async def _send(self, pdu: PDU, request_id: int, timeout: int) -> PDU:
+    async def _send(
+        self, pdu: Union[PDU, BulkGetRequest], request_id: int, timeout: int
+    ) -> PDU:
         packet, _ = await self.mpm.encode(
             request_id,
             self.credentials,
@@ -184,7 +187,9 @@ class Client:
         validate_response_id(request_id, response.value.request_id)
         return response
 
-    async def get(self, oid: str, timeout: int = DEFAULT_TIMEOUT) -> Type:
+    async def get(
+        self, oid: ObjectIdentifier, timeout: int = DEFAULT_TIMEOUT
+    ) -> Type:
         """
         Executes a simple SNMP GET request and returns a pure Python data
         structure.
@@ -202,7 +207,7 @@ class Client:
         return result[0]
 
     async def multiget(
-        self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
+        self, oids: List[ObjectIdentifier], timeout: int = DEFAULT_TIMEOUT
     ) -> List[Type]:
         """
         Executes an SNMP GET request with multiple OIDs and returns a list of
@@ -234,18 +239,18 @@ class Client:
         return output
 
     async def getnext(
-        self, oid: str, timeout: int = DEFAULT_TIMEOUT
+        self, oid: ObjectIdentifier, timeout: int = DEFAULT_TIMEOUT
     ) -> VarBind:
         """
         Executes a single SNMP GETNEXT request (used inside *walk*).
 
-        >>> from puresnmp import Client
+        >>> from puresnmp import Client, ObjectIdentifier as OID
         >>> import warnings
         >>> warnings.simplefilter("ignore")
         >>> client = Client("192.0.2.1", V2C("private"))
         >>> # The line below needs to be "awaited" to get the result.
         >>> # This is not shown here to make it work with doctest
-        >>> client.getnext('1.2.3.4')
+        >>> client.getnext(OID('1.2.3.4'))
         <coroutine object ...>
         """
         result = await self.multigetnext([oid], timeout=timeout)
@@ -253,7 +258,7 @@ class Client:
 
     async def walk(
         self,
-        oid: str,
+        oid: ObjectIdentifier,
         timeout: int = DEFAULT_TIMEOUT,
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
@@ -298,7 +303,7 @@ class Client:
 
     async def multiwalk(
         self,
-        oids: List[str],
+        oids: List[ObjectIdentifier],
         timeout: int = DEFAULT_TIMEOUT,
         fetcher: Optional[TFetcher] = None,
         errors: str = ERRORS_STRICT,
@@ -324,23 +329,19 @@ class Client:
             fetcher = self.multigetnext
 
         LOG.debug("Walking on %d OIDs using %s", len(oids), fetcher.__name__)
-
         varbinds = await fetcher(oids, timeout)
-        # TODO: oids should be ObjectIdentifier instances on the "raw" API calls
-        requested_oids = [OID(oid) for oid in oids]
-        grouped_oids = group_varbinds(varbinds, requested_oids)
+        grouped_oids = group_varbinds(varbinds, oids)
         unfinished_oids = get_unfinished_walk_oids(grouped_oids)
         yielded: Set[ObjectIdentifier] = set()
-        for varbind in deduped_varbinds(requested_oids, grouped_oids, yielded):
+        for varbind in deduped_varbinds(oids, grouped_oids, yielded):
             yield varbind
 
         # As long as we have unfinished OIDs, we need to continue the walk for
         # those.
         while unfinished_oids:
             next_fetches = [_[1].value.oid for _ in unfinished_oids]
-            next_fetches_str = [str(_) for _ in next_fetches]
             try:
-                varbinds = await fetcher(next_fetches_str, timeout)
+                varbinds = await fetcher(next_fetches, timeout)
             except NoSuchOID:
                 # Reached end of OID tree, finish iteration
                 break
@@ -352,13 +353,13 @@ class Client:
                         "GetNext on OIDs %r it returned the following "
                         "error: %s",
                         self.endpoint,
-                        next_fetches_str,
+                        next_fetches,
                         exc,
                     )
                     break
                 raise
             grouped_oids = group_varbinds(
-                varbinds, next_fetches, user_roots=requested_oids
+                varbinds, next_fetches, user_roots=oids
             )
             unfinished_oids = get_unfinished_walk_oids(grouped_oids)
             if LOG.isEnabledFor(logging.DEBUG) and len(oids) > 1:
@@ -367,13 +368,11 @@ class Client:
                     len(unfinished_oids),
                     len(oids),
                 )
-            for varbind in deduped_varbinds(
-                requested_oids, grouped_oids, yielded
-            ):
+            for varbind in deduped_varbinds(oids, grouped_oids, yielded):
                 yield varbind
 
     async def multigetnext(
-        self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
+        self, oids: List[ObjectIdentifier], timeout: int = DEFAULT_TIMEOUT
     ) -> List[VarBind]:
         """
         Executes a single multi-oid GETNEXT request.
@@ -408,7 +407,7 @@ class Client:
 
         # Verify that the OIDs we retrieved are successors of the requested OIDs
         for requested, retrieved in zip(oids, output):
-            if not OID(requested) < retrieved.oid:
+            if not requested < retrieved.oid:
                 raise FaultySNMPImplementation(
                     "The OID %s is not a successor of %s!"
                     % (retrieved.oid, requested)
@@ -416,9 +415,11 @@ class Client:
         return output
 
     async def table(
-        self, oid: str, num_base_nodes: int = 0, timeout: int = DEFAULT_TIMEOUT
+        self,
+        oid: ObjectIdentifier,
+        num_base_nodes: int = 0,
+        timeout: int = DEFAULT_TIMEOUT,
     ) -> List[Dict[str, Any]]:
-
         """
         Fetch an SNMP table
 
@@ -442,8 +443,7 @@ class Client:
         """
         tmp = []
         if num_base_nodes == 0:
-            parsed_oid = OID(oid)
-            num_base_nodes = len(parsed_oid) + 1
+            num_base_nodes = len(oid)
 
         varbinds = self.walk(oid, timeout=timeout)
         async for varbind in varbinds:
@@ -496,7 +496,7 @@ class Client:
                 '"set" request must be an instance of "Type"!'
             )
 
-        binds = [VarBind(OID(k), v) for k, v in mappings.items()]
+        binds = [VarBind(OID(k), v) for k, v in mappings.items()]  # type: ignore
 
         pdu = SetRequest(PDUContent(get_request_id(), binds))
         response = await self._send(pdu, get_request_id(), timeout)
@@ -511,8 +511,8 @@ class Client:
 
     async def bulkget(
         self,
-        scalar_oids: List[str],
-        repeating_oids: List[str],
+        scalar_oids: List[ObjectIdentifier],
+        repeating_oids: List[ObjectIdentifier],
         max_list_size: int = 1,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> BulkResult:
@@ -582,9 +582,7 @@ class Client:
         scalar_oids = scalar_oids or []  # protect against empty values
         repeating_oids = repeating_oids or []  # protect against empty values
 
-        oids = [OID(oid) for oid in scalar_oids] + [
-            OID(oid) for oid in repeating_oids
-        ]
+        oids = list(scalar_oids) + list(repeating_oids)
 
         non_repeaters = len(scalar_oids)
 
@@ -611,14 +609,16 @@ class Client:
         repeating_tmp = get_response.value.varbinds[len(scalar_oids) :]
 
         # prepare output for scalar OIDs
-        scalar_out = {str(oid): value for oid, value in scalar_tmp}
+        scalar_out = {oid: value for oid, value in scalar_tmp}
 
         # prepare output for listing
-        repeating_out = OrderedDict()  # type: Dict[str, Type[PyType]]
+        repeating_out = (
+            OrderedDict()
+        )  # type: Dict[ObjectIdentifier, Type[PyType]]
         for oid, value in repeating_tmp:
             if isinstance(value, EndOfMibView):
                 break
-            repeating_out[str(oid)] = value
+            repeating_out[oid] = value
 
         return BulkResult(scalar_out, repeating_out)
 
@@ -628,7 +628,7 @@ class Client:
         """
 
         async def fetcher(
-            oids: List[str],
+            oids: List[ObjectIdentifier],
             timeout: int = DEFAULT_TIMEOUT,
         ) -> List[VarBind]:
             """
@@ -637,14 +637,14 @@ class Client:
             result = await self.bulkget(
                 [], oids, max_list_size=bulk_size, timeout=timeout
             )
-            return [VarBind(OID(k), v) for k, v in result.listing.items()]
+            return [VarBind((k), v) for k, v in result.listing.items()]
 
         fetcher.__name__ = "_bulkwalk_fetcher(%d)" % bulk_size
         return fetcher
 
     async def bulkwalk(
         self,
-        oids: List[str],
+        oids: List[ObjectIdentifier],
         bulk_size: int = 10,
         timeout: int = DEFAULT_TIMEOUT,
     ) -> TWalkResponse:
@@ -699,7 +699,10 @@ class Client:
             yield VarBind(oid, value)
 
     async def bulktable(
-        self, oid: str, num_base_nodes: int = 0, bulk_size: int = 10
+        self,
+        oid: ObjectIdentifier,
+        num_base_nodes: int = 0,
+        bulk_size: int = 10,
     ) -> List[Dict[str, Any]]:
         """
         Fetch an SNMP table using "bulk" requests.
@@ -710,8 +713,7 @@ class Client:
         """
         tmp = []
         if num_base_nodes == 0:
-            parsed_oid = OID(oid)
-            num_base_nodes = len(parsed_oid) + 1
+            num_base_nodes = len(oid) + 1
 
         varbinds = self.bulkwalk([oid], bulk_size=bulk_size)
         async for varbind in varbinds:

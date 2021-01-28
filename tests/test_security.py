@@ -22,7 +22,7 @@ from puresnmp.adt import (
 from puresnmp.credentials import V2C, V3, Auth, Priv
 from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.pdu import GetRequest, GetResponse, PDUContent
-from puresnmp.snmp import VarBind
+from puresnmp.varbind import VarBind
 
 
 def make_msg(cls=PlainMessage):

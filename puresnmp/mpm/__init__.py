@@ -30,13 +30,13 @@ rules:
   and :rfc:`3411`
 """
 import importlib
-from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Union
 
 from typing_extensions import Protocol
 
 from puresnmp.credentials import Credentials
 from puresnmp.exc import SnmpError
-from puresnmp.pdu import PDU
+from puresnmp.pdu import PDU, BulkGetRequest
 from puresnmp.security import SecurityModel
 from puresnmp.util import iter_namespace
 
@@ -118,7 +118,7 @@ class MessageProcessingModel:
         credentials: Credentials,
         engine_id: bytes,
         context_name: bytes,
-        pdu: PDU,
+        pdu: Union[PDU, BulkGetRequest],
     ) -> EncodingResult:
         """
         Convert an SNMP PDU into raw bytes for the network.
