@@ -66,6 +66,27 @@ def group_varbinds(
     returned as "interleaved" list. This functions extracts these interleaved
     items into a more usable dictionary.
 
+    >>> from x690.types import Integer
+    >>> result = group_varbinds(
+    ...     [
+    ...         VarBind(ObjectIdentifier("1.1.1"), Integer(1)),
+    ...         VarBind(ObjectIdentifier("2.2.2"), Integer(1)),
+    ...         VarBind(ObjectIdentifier("1.1.2"), Integer(1)),
+    ...         VarBind(ObjectIdentifier("2.2.3"), Integer(1)),
+    ...     ],
+    ...     [
+    ...         ObjectIdentifier("1.1"),
+    ...         ObjectIdentifier("2.2"),
+    ...     ],
+    ... )
+    >>> sorted(result.keys())
+    [ObjectIdentifier('1.1'), ObjectIdentifier('2.2')]
+    >>> result[ObjectIdentifier("1.1")]
+    [VarBind(oid=ObjectIdentifier('1.1.1'), value=Integer(1)), VarBind(oid=ObjectIdentifier('1.1.2'), value=Integer(1))]
+    >>> result[ObjectIdentifier("2.2")]
+    [VarBind(oid=ObjectIdentifier('2.2.2'), value=Integer(1)), VarBind(oid=ObjectIdentifier('2.2.3'), value=Integer(1))]
+
+
     :param varbinds: A list of VarBind instances.
     :param effective_roots: The list of OIDs that were requested from the SNMP
         agent.

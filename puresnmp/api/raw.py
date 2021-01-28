@@ -307,7 +307,7 @@ class Client:
         timeout: int = DEFAULT_TIMEOUT,
         fetcher: Optional[TFetcher] = None,
         errors: str = ERRORS_STRICT,
-    ):
+    ) -> TWalkResponse:
         """
         Executes a sequence of SNMP GETNEXT requests and returns a generator
         over :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -388,7 +388,6 @@ class Client:
             VarBind(ObjectIdentifier("1.2.4.0"), Integer(2))
         ]
         """
-
         varbinds = [VarBind(oid, Null()) for oid in oids]
         request_id = get_request_id()
         pdu = GetNextRequest(PDUContent(request_id, varbinds))
