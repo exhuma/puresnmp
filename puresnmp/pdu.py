@@ -92,9 +92,6 @@ class PDU(Type[PDUContent]):
         for oid, value in values:  # type: ignore
             oid = cast(ObjectIdentifier, oid)  # type: ignore
             value = cast(Type[Any], value)  # type: ignore
-            if isinstance(value, EndOfMibView):
-                varbinds.append(VarBind(oid, value))
-                break
             varbinds.append(VarBind(oid, value))
 
         return PDUContent(
