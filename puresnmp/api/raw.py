@@ -52,9 +52,10 @@ from ..pdu import (
     SetRequest,
     Trap,
 )
-from ..transport import Endpoint, TSender, get_request_id, listen, send
+from ..transport import Endpoint, TSender, listen, send
 from ..util import (
     BulkResult,
+    get_request_id,
     get_unfinished_walk_oids,
     group_varbinds,
     tablify,

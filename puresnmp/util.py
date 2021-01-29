@@ -5,6 +5,7 @@ import hashlib
 import pkgutil
 from dataclasses import dataclass
 from functools import lru_cache
+from time import time
 from types import ModuleType
 from typing import (
     Any,
@@ -450,3 +451,13 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
 
     output = hasher(credentials.priv.key, engine_id)
     return output
+
+
+def get_request_id() -> int:  # pragma: no cover
+    """
+    Generates a SNMP request ID.
+
+    This returns a simple integer used to validate if a given response
+    matches with the given request.
+    """
+    return int(time())

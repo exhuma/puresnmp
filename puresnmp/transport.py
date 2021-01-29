@@ -54,18 +54,6 @@ class TSender(Protocol):
         ...
 
 
-def get_request_id() -> int:  # pragma: no cover
-    """
-    Generates a SNMP request ID. This value should be unique for each
-    request.
-    """
-    # TODO check if this is good enough. My gut tells me "no"! Depends if
-    # it has to be unique across all clients, or just one client. If it's
-    # just one client it *may* be enough.
-
-    return int(time())
-
-
 class SNMPTrapReceiverProtocol(asyncio.DatagramProtocol):
     """
     A protocol to handle incoming SNMP traps.

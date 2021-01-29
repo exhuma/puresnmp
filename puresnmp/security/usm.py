@@ -23,8 +23,8 @@ from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import GetRequest, PDUContent
 from puresnmp.security import SecurityModel
-from puresnmp.transport import MESSAGE_MAX_SIZE, get_request_id
-from puresnmp.util import localise_key, validate_response_id
+from puresnmp.transport import MESSAGE_MAX_SIZE
+from puresnmp.util import get_request_id, localise_key, validate_response_id
 
 IDENTIFIER = 3
 
