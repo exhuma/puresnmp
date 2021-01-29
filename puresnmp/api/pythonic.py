@@ -7,8 +7,18 @@ implementations as possible.
 This module provides "syntactic sugar" around the lower-level, but almost
 identical, module :py:mod:`puresnmp.api.raw`.
 
-The "raw" module returns the variable types unmodified which are all subclasses
-of :py:class:`x690.types.Type`.
+While this "pythonic" API returns native Python types, the "raw" module
+returns the variable types unmodified which are all subclasses of
+:py:class:`x690.types.Type`.
+
+
+>>> import asyncio
+>>> from puresnmp import Client, V2C, PyWrapper
+>>>
+>>> async def example():
+...    client = PyWrapper(Client("192.0.2.1", V2C("public")))
+...    output = await client.get("1.3.6.1.2.1.1.1.0")
+...    return output
 """
 
 import logging
@@ -34,12 +44,12 @@ class PyWrapper:
     """
     A wrapper around a :py:class:`puresnmp.api.raw.Client` instance.
 
-    The wrapper ensures converstion of internal API data-type to and from
+    The wrapper ensures converstion of internal API data-types to and from
     Python-native types.
 
     Using Python native types shields from internal changes internally in
-    :py:mod:`puresnmp` at the cost of loss of flexibility. Most applications
-    should mostly benefit from this.
+    :py:mod:`puresnmp` at the cost of flexibility. Most applications should
+    mostly benefit from this.
 
     In cases internal data-types are still wanted, one can access the
     ``.client`` attribute of PyWrapper instances which exposes the same API but
@@ -51,10 +61,8 @@ class PyWrapper:
 
     async def get(self, oid: str) -> Any:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.get` but returns
-        a simple Python type.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.get` but
+        converts internal types to simple Python types.
         """
         oid_internal = ObjectIdentifier(oid)
         raw_value = await self.client.get(oid_internal)
@@ -62,31 +70,24 @@ class PyWrapper:
 
     async def getnext(self, oid: str) -> PyVarBind:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.getnext` but returns
-        simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.getnext` but
+        converts internal types to simple Python types.
         """
         varbind = await self.client.getnext(ObjectIdentifier(oid))
         return PyVarBind.from_raw(varbind)
 
     async def set(self, oid: str, value: Type[Any]) -> Dict[str, Any]:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.set` but returns
-        simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.set` but
+        converts internal types to simple Python types.
         """
-
         result = await self.multiset({oid: value})
         return result[oid.lstrip(".")]  # type: ignore
 
     async def multiset(self, mappings: Dict[str, Type[Any]]) -> Dict[str, Any]:
         """
-        Delegates to :py:func:`~puresnmp.api.raw.Client.multiset` but
-        returns simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.multiset` but
+        converts internal types to simple Python types.
         """
 
         mappings_internal = {
@@ -104,22 +105,17 @@ class PyWrapper:
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.walk` but returns
-        simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.walk` but
+        converts internal types to simple Python types.
         """
-
         raw_result = self.client.walk(ObjectIdentifier(oid), errors)
         async for varbind in raw_result:
             yield PyVarBind.from_raw(varbind)
 
     async def multiwalk(self, oids: List[str]) -> TWalkResponse:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.multiwalk` but
-        returns simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.multiwalk` but
+        converts internal types to simple Python types.
         """
         oids_internal = [ObjectIdentifier(oid) for oid in oids]
         async for varbind in self.client.multiwalk(oids_internal):
@@ -127,10 +123,8 @@ class PyWrapper:
 
     async def multiget(self, oids: List[str]) -> List[Any]:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.multiget` but
-        returns simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.multiget` but
+        converts internal types to simple Python types.
         """
         oids_internal = [ObjectIdentifier(oid) for oid in oids]
         raw_output = await self.client.multiget(oids_internal)
@@ -143,12 +137,9 @@ class PyWrapper:
         bulk_size: int = 10,
     ) -> TWalkResponse:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.bulkwalk` but returns
-        simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.bulkwalk` but
+        converts internal types to simple Python types.
         """
-
         oids_internal = [ObjectIdentifier(oid) for oid in oids]
         result = self.client.bulkwalk(oids_internal, bulk_size=bulk_size)
         async for varbind in result:
@@ -158,13 +149,11 @@ class PyWrapper:
         self,
         scalar_oids: List[str],
         repeating_oids: List[str],
-        max_list_size: int = 1,
+        max_list_size: int = 10,
     ) -> BulkResult:
         """
-        Delegates to :py:meth:`~puresnmp.api.raw.Client.bulkget` but
-        returns simple Python types.
-
-        See the "raw" equivalent for detailed documentation & examples.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.bulkget` but
+        converts internal types to simple Python types.
         """
 
         scalar_oids_int = [ObjectIdentifier(oid) for oid in scalar_oids]
@@ -189,11 +178,8 @@ class PyWrapper:
         self, oid: str, num_base_nodes: int = 0
     ) -> List[Dict[str, Any]]:
         """
-        Fetches a table from the SNMP agent. Each value will be converted to a
-        pure-python type.
-
-        See :py:func:`puresnmp.api.raw.table` for more information of the
-        returned structure.
+        Delegates to :py:meth:`puresnmp.api.raw.Client.table` but
+        converts internal types to simple Python types.
         """
         if num_base_nodes:
             warn(
@@ -218,13 +204,8 @@ class PyWrapper:
         self, oid: str, num_base_nodes: int = 0, bulk_size: int = 10
     ) -> List[Dict[str, Any]]:
         """
-        Fetch an SNMP table using "bulk" requests converting the values into
-        pure Python types.
-
-        See :py:func:`puresnmp.api.raw.Client.table` for more
-        information of the returned structure.
-
-        .. versionadded: 1.7.0
+        Delegates to :py:meth:`puresnmp.api.raw.Client.bulktable` but
+        converts internal types to simple Python types.
         """
         if num_base_nodes:
             warn(
