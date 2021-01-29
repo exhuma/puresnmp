@@ -128,10 +128,21 @@ class Context:
 
 @dataclass(frozen=True)
 class ClientConfig:
+    """
+    Overridable configuration for SNMP clients
+
+    These settings can be overridden via :py:meth:`Client.reconfigure`
+    """
+
+    #: The credentials used to apply to SNMP requests
     credentials: Credentials
+    #: The SNMPv3 Context. For SNMPv1 or SNMPv2 this value is ignored
     context: Context
+    #: The SNMPv3 "local config cache". For SNMPv1 or SNMPv2 this value is
+    #: ignored
     lcd: Dict[str, Any]
-    mpm: mpm.MessageProcessingModel
+    #: The socket timeout for network requests. This value is passed through
+    #: to the client's "sender" callable
     timeout: int = DEFAULT_TIMEOUT
 
 
@@ -172,12 +183,12 @@ class Client:
         self.sender = sender
         self.transport_handler = handler
         self.endpoint = endpoint
+        self.mpm = mpm.create(credentials.mpm, handler, lcd)
 
         self.config = ClientConfig(
             credentials=credentials,
             context=Context(engine_id, context_name),
             lcd=lcd,
-            mpm=mpm.create(credentials.mpm, handler, lcd),
         )
 
     @property
@@ -187,10 +198,6 @@ class Client:
     @property
     def context(self) -> Context:
         return self.config.context
-
-    @property
-    def mpm(self) -> mpm.MessageProcessingModel:
-        return self.config.mpm
 
     @property
     def ip(self) -> TAnyIp:
@@ -217,12 +224,24 @@ class Client:
         :py:class:`~.ClientConfig`. Any fields in that class can be overridden
         """
         old_config = self.config
+        old_mpm = self.mpm
         new_config = replace(old_config, **kwargs)
+
         try:
+            if "credentials" in kwargs and type(
+                self.config.credentials
+            ) != type(kwargs["credentials"]):
+                # New credentials may switch from one SNMP version to another
+                # so we need to create a new message-processing-model
+                lcd: Dict[str, Any] = {}
+                self.mpm = mpm.create(
+                    kwargs["credentials"].mpm, self.transport_handler, lcd
+                )
             self.config = new_config
             yield
         finally:
             self.config = old_config
+            self.mpm = old_mpm
 
     async def _send(
         self, pdu: Union[PDU, BulkGetRequest], request_id: int
