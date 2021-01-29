@@ -37,12 +37,13 @@ OID = ObjectIdentifier
 async def test_get_string(mocked_raw):
     data = readbytes("get_sysdescr_01.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
     expected = OctetString(
         b"Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP "
         b"Fri Jun 24 10:09:13 UTC 2016 x86_64"
     )
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 3262242864
         result = await mocked_raw.get(OID("1.2.3"))
     assert result == expected
@@ -52,9 +53,10 @@ async def test_get_string(mocked_raw):
 async def test_get_oid(mocked_raw):
     data = readbytes("get_sysoid_01.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
     expected = OID("1.3.6.1.4.1.8072.3.2.10")
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 1401558560
         result = await mocked_raw.get(OID("1.2.3"))
     assert result == expected
@@ -67,8 +69,9 @@ async def test_get_multiple_return_binds(mocked_raw):
     """
     data = readbytes("get_sysoid_01_error.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("hello")
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("hello")):
         gri.return_value = 123
         with pytest.raises(SnmpError) as exc:
             await mocked_raw.get(OID("1.2.3"))
@@ -83,8 +86,9 @@ async def test_get_non_existing_oid(mocked_raw):
     """
     data = readbytes("get_non_existing.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 1807074322
         with pytest.raises(NoSuchOID):
             await mocked_raw.get(OID("1.2.3"))
@@ -96,7 +100,6 @@ async def test_walk(mocked_raw):
     response_2 = readbytes("walk_response_2.hex")
     response_3 = readbytes("walk_response_3.hex")
     mocked_raw.sender.set_values([response_1, response_2, response_3])
-    mocked_raw.credentials = V2C("public")
 
     expected = [
         VarBind(
@@ -109,7 +112,9 @@ async def test_walk(mocked_raw):
         ),
     ]
 
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.side_effect = [463373299, 463373300, 463373301]
         result = []
         async for row in mocked_raw.walk(OID("1.3.6.1.2.1.2.2.1.5")):
@@ -124,8 +129,9 @@ async def test_walk_multiple_return_binds(mocked_raw):
     """
     data = readbytes("get_sysoid_01_error.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("hello")
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("hello")):
         gri.return_value = 123
         with pytest.raises(SnmpError) as exc:
             async for _ in mocked_raw.walk(OID("1.2.3")):
@@ -137,7 +143,6 @@ async def test_walk_multiple_return_binds(mocked_raw):
 async def test_multiget(mocked_raw):
     data = readbytes("multiget_response.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
     expected = [
         ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10"),
         OctetString(
@@ -146,7 +151,9 @@ async def test_multiget(mocked_raw):
             b"UTC 2016 x86_64"
         ),
     ]
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 1913359423
         result = await mocked_raw.multiget(
             [OID("1.3.6.1.2.1.1.2.0"), OID("1.3.6.1.2.1.1.1.0")]
@@ -156,7 +163,6 @@ async def test_multiget(mocked_raw):
 
 @pytest.mark.asyncio
 async def test_multi_walk(mocked_raw):
-    mocked_raw.credentials = V2C("public")
     response_1 = readbytes("multiwalk_response_1.hex")
     response_2 = readbytes("multiwalk_response_2.hex")
     response_3 = readbytes("multiwalk_response_3.hex")
@@ -181,7 +187,9 @@ async def test_multi_walk(mocked_raw):
     ]
 
     mocked_raw.sender.set_values([response_1, response_2, response_3])
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 1474004155
         result = []
         async for row in mocked_raw.multiwalk(
@@ -328,7 +336,6 @@ async def test_set(mocked_raw):
 @pytest.mark.asyncio
 async def test_get_call_args_getnext(mocked_raw):
     data = readbytes("getnext_response.hex")  # any dump would do
-    mocked_raw.credentials = V2C("public")
     mocked_raw.sender.set_values([data])
     packet = Sequence(
         [
@@ -342,7 +349,9 @@ async def test_get_call_args_getnext(mocked_raw):
         ]
     )
 
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 2089242883
         await mocked_raw.getnext(OID("1.2.3"))
         assert mocked_raw.sender.mock_calls == [
@@ -356,10 +365,11 @@ async def test_get_call_args_getnext(mocked_raw):
 async def test_getnext(mocked_raw):
     data = readbytes("getnext_response.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
     expected = VarBind(OID("1.3.6.1.6.3.1.1.6.1.0"), Integer(354522558))
 
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 2089242883
         result = await mocked_raw.getnext(OID("1.3.6.1.5"))
     assert result == expected
@@ -497,7 +507,6 @@ async def test_walk_endless_loop(mocked_raw):
 async def test_get_call_args_bulkget(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
     packet = Sequence(
         [
             Integer(Version.V2C),
@@ -511,7 +520,9 @@ async def test_get_call_args_bulkget(mocked_raw):
             ),
         ]
     )
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 3262242864
         await mocked_raw.bulkget(
             [OID("1.2.3")], [OID("1.2.4")], max_list_size=2
@@ -525,7 +536,6 @@ async def test_get_call_args_bulkget(mocked_raw):
 async def test_bulkget(mocked_raw):
     data = readbytes("bulk_get_response.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
     expected = BulkResult(
         {
             OID("1.3.6.1.2.1.1.1.0"): OctetString(
@@ -546,7 +556,9 @@ async def test_bulkget(mocked_raw):
         },
     )
 
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 1105659629
         result = await mocked_raw.bulkget(
             [OID("1.3.6.1.2.1.1.1")],
@@ -584,7 +596,6 @@ async def test_eom_bulkwalk(mocked_raw):
 async def test_get_call_args_bulkwalk(mocked_raw):
     data = readbytes("dummy.hex")  # any dump would do
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
     packet = Sequence(
         [
             Integer(Version.V2C),
@@ -592,7 +603,9 @@ async def test_get_call_args_bulkwalk(mocked_raw):
             BulkGetRequest(3262242864, 0, 2, OID("1.2.3")),
         ]
     )
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 3262242864
         # we need to consume this to trigger the error
         async for _ in mocked_raw.bulkwalk([OID("1.2.3")], bulk_size=2):

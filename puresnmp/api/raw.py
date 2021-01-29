@@ -15,7 +15,8 @@ import logging
 from asyncio import get_event_loop
 from asyncio.events import AbstractEventLoop
 from collections import OrderedDict
-from dataclasses import dataclass
+from contextlib import contextmanager
+from dataclasses import dataclass, replace
 from ipaddress import ip_address
 from typing import (
     Any,
@@ -35,7 +36,7 @@ from typing_extensions import Protocol
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 
 import puresnmp.mpm as mpm
-from puresnmp.typevars import SocketResponse
+from puresnmp.typevars import SocketResponse, TAnyIp
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
@@ -78,7 +79,7 @@ class TFetcher(Protocol):
     # pylint: disable=too-few-public-methods
 
     async def __call__(
-        self, oids: List[ObjectIdentifier], timeout: int = DEFAULT_TIMEOUT
+        self, oids: List[ObjectIdentifier]
     ) -> List["VarBind"]:  # pragma: no cover
         ...
 
@@ -125,6 +126,15 @@ class Context:
     name: bytes
 
 
+@dataclass(frozen=True)
+class ClientConfig:
+    credentials: Credentials
+    context: Context
+    lcd: Dict[str, Any]
+    mpm: mpm.MessageProcessingModel
+    timeout: int = DEFAULT_TIMEOUT
+
+
 class Client:
     """
     A client to execute SNMP commands on a remote device.
@@ -153,24 +163,69 @@ class Client:
         context_name: bytes = b"",
         engine_id: bytes = b"",
     ) -> None:
-        self.endpoint = Endpoint(ip_address(ip), port)
-        self.credentials = credentials
-        self.sender = sender
-        self.context = Context(engine_id, context_name)
-        self.lcd: Dict[str, Any] = {}
-        self.ip = ip
-        self.port = port
+        endpoint = Endpoint(ip_address(ip), port)
+        lcd: Dict[str, Any] = {}
 
         async def handler(data: bytes) -> bytes:  # pragma: no cover
-            return await sender(self.endpoint, data)
+            return await sender(endpoint, data)
 
+        self.sender = sender
         self.transport_handler = handler
-        self.mpm = mpm.create(
-            self.credentials.mpm, self.transport_handler, self.lcd
+        self.endpoint = endpoint
+
+        self.config = ClientConfig(
+            credentials=credentials,
+            context=Context(engine_id, context_name),
+            lcd=lcd,
+            mpm=mpm.create(credentials.mpm, handler, lcd),
         )
 
+    @property
+    def credentials(self) -> Credentials:
+        return self.config.credentials
+
+    @property
+    def context(self) -> Context:
+        return self.config.context
+
+    @property
+    def mpm(self) -> mpm.MessageProcessingModel:
+        return self.config.mpm
+
+    @property
+    def ip(self) -> TAnyIp:
+        return self.endpoint.ip
+
+    @property
+    def port(self) -> int:
+        return self.endpoint.port
+
+    @contextmanager
+    def reconfigure(self, **kwargs) -> Generator[None, None, None]:
+        """
+        Temporarily reconfigure the client.
+
+        Some values may need to be modified during the lifetime of the client
+        for some requests. A typical example would be using different
+        credentials for "set" commands, or different socket timeouts for some
+        targeted requests.
+
+        This is provided via this context-manager. When the context-manager
+        exits, the previous config is restored
+
+        The values that can be overridden delegate to
+        :py:class:`~.ClientConfig`. Any fields in that class can be overridden
+        """
+        old_config = self.config
+        new_config = replace(old_config, **kwargs)
+        try:
+            self.config = new_config
+            yield
+        finally:
+            self.config = old_config
+
     async def _send(
-        self, pdu: Union[PDU, BulkGetRequest], request_id: int, timeout: int
+        self, pdu: Union[PDU, BulkGetRequest], request_id: int
     ) -> PDU:
         packet, _ = await self.mpm.encode(
             request_id,
@@ -180,15 +235,13 @@ class Client:
             pdu,
         )
         raw_response = await self.sender(
-            self.endpoint, bytes(packet), timeout=timeout
+            self.endpoint, bytes(packet), timeout=self.config.timeout
         )
         response = self.mpm.decode(raw_response, self.credentials)
         validate_response_id(request_id, response.value.request_id)
         return response
 
-    async def get(
-        self, oid: ObjectIdentifier, timeout: int = DEFAULT_TIMEOUT
-    ) -> Type:
+    async def get(self, oid: ObjectIdentifier) -> Type:
         """
         Executes a simple SNMP GET request and returns a pure Python data
         structure.
@@ -200,14 +253,12 @@ class Client:
         >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
         <coroutine object ...>
         """
-        result = await self.multiget([oid], timeout=timeout)
+        result = await self.multiget([oid])
         if isinstance(result[0], NoSuchOIDPacket):
             raise NoSuchOID(oid)
         return result[0]
 
-    async def multiget(
-        self, oids: List[ObjectIdentifier], timeout: int = DEFAULT_TIMEOUT
-    ) -> List[Type]:
+    async def multiget(self, oids: List[ObjectIdentifier]) -> List[Type]:
         """
         Executes an SNMP GET request with multiple OIDs and returns a list of
         pure Python objects. The order of the output items is the same order
@@ -227,7 +278,7 @@ class Client:
 
         request_id = get_request_id()
         pdu = GetRequest(PDUContent(request_id, parsed_oids))
-        response = await self._send(pdu, request_id, timeout)
+        response = await self._send(pdu, request_id)
 
         output = [value for _, value in response.value.varbinds]
         if len(output) != len(oids):
@@ -237,9 +288,7 @@ class Client:
             )
         return output
 
-    async def getnext(
-        self, oid: ObjectIdentifier, timeout: int = DEFAULT_TIMEOUT
-    ) -> VarBind:
+    async def getnext(self, oid: ObjectIdentifier) -> VarBind:
         """
         Executes a single SNMP GETNEXT request (used inside *walk*).
 
@@ -252,13 +301,12 @@ class Client:
         >>> client.getnext(OID('1.2.3.4'))
         <coroutine object ...>
         """
-        result = await self.multigetnext([oid], timeout=timeout)
+        result = await self.multigetnext([oid])
         return result[0]
 
     async def walk(
         self,
         oid: ObjectIdentifier,
-        timeout: int = DEFAULT_TIMEOUT,
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
@@ -297,13 +345,12 @@ class Client:
         ]
         """
 
-        async for row in self.multiwalk([oid], timeout=timeout, errors=errors):
+        async for row in self.multiwalk([oid], errors=errors):
             yield row
 
     async def multiwalk(
         self,
         oids: List[ObjectIdentifier],
-        timeout: int = DEFAULT_TIMEOUT,
         fetcher: Optional[TFetcher] = None,
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
@@ -328,7 +375,7 @@ class Client:
             fetcher = self.multigetnext
 
         LOG.debug("Walking on %d OIDs using %s", len(oids), fetcher.__name__)
-        varbinds = await fetcher(oids, timeout)
+        varbinds = await fetcher(oids)
         grouped_oids = group_varbinds(varbinds, oids)
         unfinished_oids = get_unfinished_walk_oids(grouped_oids)
         yielded: Set[ObjectIdentifier] = set()
@@ -340,7 +387,7 @@ class Client:
         while unfinished_oids:
             next_fetches = [_[1].value.oid for _ in unfinished_oids]
             try:
-                varbinds = await fetcher(next_fetches, timeout)
+                varbinds = await fetcher(next_fetches)
             except NoSuchOID:
                 # Reached end of OID tree, finish iteration
                 break
@@ -370,9 +417,7 @@ class Client:
             for varbind in deduped_varbinds(oids, grouped_oids, yielded):
                 yield varbind
 
-    async def multigetnext(
-        self, oids: List[ObjectIdentifier], timeout: int = DEFAULT_TIMEOUT
-    ) -> List[VarBind]:
+    async def multigetnext(self, oids: List[ObjectIdentifier]) -> List[VarBind]:
         """
         Executes a single multi-oid GETNEXT request.
 
@@ -390,7 +435,7 @@ class Client:
         varbinds = [VarBind(oid, Null()) for oid in oids]
         request_id = get_request_id()
         pdu = GetNextRequest(PDUContent(request_id, varbinds))
-        response_object = await self._send(pdu, request_id, timeout)
+        response_object = await self._send(pdu, request_id)
         if len(response_object.value.varbinds) != len(oids):
             raise SnmpError(
                 "Invalid response! Expected exactly %d varbind, "
@@ -416,7 +461,6 @@ class Client:
         self,
         oid: ObjectIdentifier,
         num_base_nodes: int = 0,
-        timeout: int = DEFAULT_TIMEOUT,
     ) -> List[Dict[str, Any]]:
         """
         Fetch an SNMP table
@@ -443,7 +487,7 @@ class Client:
         if num_base_nodes == 0:
             num_base_nodes = len(oid)
 
-        varbinds = self.walk(oid, timeout=timeout)
+        varbinds = self.walk(oid)
         async for varbind in varbinds:
             tmp.append(varbind)
         as_table = tablify(tmp, num_base_nodes=num_base_nodes)
@@ -453,7 +497,6 @@ class Client:
         self,
         oid: str,
         value: T,
-        timeout: int = DEFAULT_TIMEOUT,
     ) -> T:
         """
         Executes a simple SNMP SET request. The result is returned as an x690
@@ -467,14 +510,10 @@ class Client:
         ... )
         OctetString(b'I am contact')
         """
-        result = await self.multiset({oid: value}, timeout=timeout)
+        result = await self.multiset({oid: value})
         return result[oid.lstrip(".")]
 
-    async def multiset(
-        self,
-        mappings: Dict[str, T],
-        timeout: int = DEFAULT_TIMEOUT,
-    ) -> Dict[str, T]:
+    async def multiset(self, mappings: Dict[str, T]) -> Dict[str, T]:
         """
         Executes an SNMP SET request on multiple OIDs. The result is returned as
         pure Python data structure.
@@ -497,7 +536,7 @@ class Client:
         binds = [VarBind(OID(k), v) for k, v in mappings.items()]  # type: ignore
 
         pdu = SetRequest(PDUContent(get_request_id(), binds))
-        response = await self._send(pdu, get_request_id(), timeout)
+        response = await self._send(pdu, get_request_id())
 
         output = {str(oid): value for oid, value in response.value.varbinds}
         if len(output) != len(mappings):
@@ -512,7 +551,6 @@ class Client:
         scalar_oids: List[ObjectIdentifier],
         repeating_oids: List[ObjectIdentifier],
         max_list_size: int = 1,
-        timeout: int = DEFAULT_TIMEOUT,
     ) -> BulkResult:
         # pylint: disable=unused-argument, too-many-locals
         """
@@ -586,7 +624,7 @@ class Client:
 
         request_id = get_request_id()
         pdu = BulkGetRequest(request_id, non_repeaters, max_list_size, *oids)
-        get_response = await self._send(pdu, request_id, timeout)
+        get_response = await self._send(pdu, request_id)
 
         # See RFC=3416 for details of the following calculation
         n = min(non_repeaters, len(oids))
@@ -623,16 +661,11 @@ class Client:
         Create a bulk fetcher with a fixed limit on "repeatable" OIDs.
         """
 
-        async def fetcher(
-            oids: List[ObjectIdentifier],
-            timeout: int = DEFAULT_TIMEOUT,
-        ) -> List[VarBind]:
+        async def fetcher(oids: List[ObjectIdentifier]) -> List[VarBind]:
             """
             Executes a SNMP BulkGet request.
             """
-            result = await self.bulkget(
-                [], oids, max_list_size=bulk_size, timeout=timeout
-            )
+            result = await self.bulkget([], oids, max_list_size=bulk_size)
             return [VarBind((k), v) for k, v in result.listing.items()]
 
         fetcher.__name__ = "_bulkwalk_fetcher(%d)" % bulk_size
@@ -642,7 +675,6 @@ class Client:
         self,
         oids: List[ObjectIdentifier],
         bulk_size: int = 10,
-        timeout: int = DEFAULT_TIMEOUT,
     ) -> TWalkResponse:
         """
         More efficient implementation of :py:func:`~.walk`. It uses
@@ -651,13 +683,9 @@ class Client:
         Just like :py:func:`~.multiwalk`, it returns a generator over
         :py:class:`~puresnmp.pdu.VarBind` instances.
 
-        :param ip: The IP address of the target host.
-        :param community: The community string for the SNMP connection.
         :param oids: A list of base OIDs to use in the walk operation.
         :param bulk_size: How many varbinds to request from the remote host with
             one request.
-        :param port: The TCP port of the remote host.
-        :param timeout: The TCP timeout for network calls
 
         Example::
 
@@ -689,7 +717,6 @@ class Client:
         result = self.multiwalk(
             oids,
             fetcher=self._bulkwalk_fetcher(bulk_size),
-            timeout=timeout,
         )
         async for oid, value in result:
             yield VarBind(oid, value)

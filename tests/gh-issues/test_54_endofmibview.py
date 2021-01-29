@@ -13,8 +13,9 @@ OID = ObjectIdentifier
 async def test_54_endofmibview(mocked_raw):
     data = readbytes("gh-issues/54-endofmibview.hex")
     mocked_raw.sender.set_values([data])
-    mocked_raw.credentials = V2C("public")
-    with patch("puresnmp.api.raw.get_request_id") as gri:
+    with patch(
+        "puresnmp.api.raw.get_request_id"
+    ) as gri, mocked_raw.reconfigure(credentials=V2C("public")):
         gri.return_value = 1540273572
         result = await mocked_raw.bulkget([], [OID("1.2.3")], max_list_size=10)
     assert result.scalars == {}

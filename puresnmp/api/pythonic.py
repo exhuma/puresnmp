@@ -19,7 +19,7 @@ from warnings import warn
 
 from x690.types import ObjectIdentifier
 
-from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT
+from ..const import ERRORS_STRICT
 from ..pdu import Trap
 from ..util import BulkResult
 from ..varbind import PyVarBind
@@ -59,21 +59,17 @@ class PyWrapper:
         raw_value = await self.client.get(*args, **kwargs)
         return raw_value.pythonize()
 
-    async def getnext(
-        self, oid: str, timeout: int = DEFAULT_TIMEOUT
-    ) -> PyVarBind:
+    async def getnext(self, oid: str) -> PyVarBind:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.getnext` but returns
         simple Python types.
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        varbind = await self.client.getnext(
-            ObjectIdentifier(oid), timeout=timeout
-        )
+        varbind = await self.client.getnext(ObjectIdentifier(oid))
         return PyVarBind.from_raw(varbind)
 
-    async def set(self, oid, value, timeout: int = 6) -> Dict[str, Any]:
+    async def set(self, oid, value) -> Dict[str, Any]:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.set` but returns
         simple Python types.
@@ -81,10 +77,10 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        result = await self.multiset({oid: value}, timeout)
+        result = await self.multiset({oid: value})
         return result[oid.lstrip(".")]  # type: ignore
 
-    async def multiset(self, mappings, timeout: int = 6):
+    async def multiset(self, mappings):
         """
         Delegates to :py:func:`~puresnmp.api.raw.Client.multiset` but
         returns simple Python types.
@@ -92,7 +88,7 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        raw_output = await self.client.multiset(mappings, timeout=timeout)
+        raw_output = await self.client.multiset(mappings)
         pythonized = {
             str(oid): value.pythonize() for oid, value in raw_output.items()
         }
@@ -101,7 +97,6 @@ class PyWrapper:
     async def walk(
         self,
         oid: str,
-        timeout: int = DEFAULT_TIMEOUT,
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
@@ -111,15 +106,11 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        raw_result = self.client.walk(ObjectIdentifier(oid), timeout, errors)
+        raw_result = self.client.walk(ObjectIdentifier(oid), errors)
         async for varbind in raw_result:
             yield PyVarBind.from_raw(varbind)
 
-    async def multiwalk(
-        self,
-        oids: List[str],
-        timeout: int = DEFAULT_TIMEOUT,
-    ) -> TWalkResponse:
+    async def multiwalk(self, oids: List[str]) -> TWalkResponse:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.multiwalk` but
         returns simple Python types.
@@ -127,14 +118,10 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
         oids_internal = [ObjectIdentifier(oid) for oid in oids]
-        async for varbind in self.client.multiwalk(
-            oids_internal, timeout=timeout
-        ):
+        async for varbind in self.client.multiwalk(oids_internal):
             yield PyVarBind.from_raw(varbind)
 
-    async def multiget(
-        self, oids: List[str], timeout: int = DEFAULT_TIMEOUT
-    ) -> List[Any]:
+    async def multiget(self, oids: List[str]) -> List[Any]:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.multiget` but
         returns simple Python types.
@@ -142,7 +129,7 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
         oids_internal = [ObjectIdentifier(oid) for oid in oids]
-        raw_output = await self.client.multiget(oids_internal, timeout)
+        raw_output = await self.client.multiget(oids_internal)
         pythonized = [value.pythonize() for value in raw_output]
         return pythonized
 
@@ -150,7 +137,6 @@ class PyWrapper:
         self,
         oids: List[str],
         bulk_size: int = 10,
-        timeout: int = DEFAULT_TIMEOUT,
     ) -> TWalkResponse:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.bulkwalk` but returns
@@ -160,11 +146,7 @@ class PyWrapper:
         """
 
         oids_internal = [ObjectIdentifier(oid) for oid in oids]
-        result = self.client.bulkwalk(
-            oids_internal,
-            bulk_size=bulk_size,
-            timeout=timeout,
-        )
+        result = self.client.bulkwalk(oids_internal, bulk_size=bulk_size)
         async for varbind in result:
             yield PyVarBind.from_raw(varbind)
 
@@ -173,7 +155,6 @@ class PyWrapper:
         scalar_oids: List[str],
         repeating_oids: List[str],
         max_list_size: int = 1,
-        timeout: int = DEFAULT_TIMEOUT,
     ) -> BulkResult:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.bulkget` but
@@ -188,7 +169,6 @@ class PyWrapper:
             scalar_oids_int,
             repeating_oids_int,
             max_list_size=max_list_size,
-            timeout=timeout,
         )
         pythonized_scalars = {
             oid: value.pythonize() for oid, value in raw_output.scalars.items()
@@ -202,7 +182,7 @@ class PyWrapper:
         return BulkResult(pythonized_scalars, pythonized_list)
 
     async def table(
-        self, oid: str, num_base_nodes: int = 0, timeout: int = DEFAULT_TIMEOUT
+        self, oid: str, num_base_nodes: int = 0
     ) -> List[Dict[str, Any]]:
         """
         Fetches a table from the SNMP agent. Each value will be converted to a
@@ -221,7 +201,6 @@ class PyWrapper:
         tmp = await self.client.table(
             ObjectIdentifier(oid),
             num_base_nodes=num_base_nodes,
-            timeout=timeout,
         )
         output = []
         for row in tmp:
