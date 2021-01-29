@@ -200,10 +200,10 @@ async def test_multiset():
     )
 
     result = await client.multiset(
-        [
-            ("1.3.6.1.2.1.1.4.0", OctetString(b"hello@world.com")),
-            ("1.3.6.1.2.1.1.5.0", OctetString(b"hello@world.com")),
-        ],
+        {
+            "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
+            "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
+        },
     )
     expected = {
         "1.3.6.1.2.1.1.4.0": b"hello@world.com",
@@ -223,10 +223,10 @@ async def test_multiset_absolute():
         }
     )
     result = await client.multiset(
-        [
-            (".1.3.6.1.2.1.1.4.0", OctetString(b"hello@world.com")),
-            (".1.3.6.1.2.1.1.5.0", OctetString(b"hello@world.com")),
-        ],
+        {
+            ".1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
+            ".1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
+        },
     )
     expected = {
         "1.3.6.1.2.1.1.4.0": b"hello@world.com",

@@ -82,7 +82,7 @@ IANA_IDS: Dict[int, TAuth] = {}
 DISCOVERY_LOCK = Lock()
 
 
-def discover_plugins():
+def discover_plugins() -> None:
     """
     Load all privacy plugins into a global cache
     """
@@ -101,20 +101,20 @@ def discover_plugins():
             ]
         ):
             continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:
+        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
             raise ImportError(
                 "Plugin %r causes a name-clash with the identifier %r. "
                 "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])
+                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
             )
-        if mod.IANA_ID in IANA_IDS:
+        if mod.IANA_ID in IANA_IDS:  # type: ignore
             raise ImportError(
                 "Plugin %r uses a IANA ID (%d) which "
                 "is already registered by %r"
-                % (mod, mod.IANA_ID, IANA_IDS[mod.IANA_ID])
+                % (mod, mod.IANA_ID, IANA_IDS[mod.IANA_ID])  # type: ignore
             )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
-        IANA_IDS[mod.IANA_ID] = mod
+        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
+        IANA_IDS[mod.IANA_ID] = mod  # type: ignore
 
 
 def create(name: str) -> TAuth:

@@ -37,9 +37,13 @@ from puresnmp.credentials import Credentials
 from puresnmp.exc import InvalidSecurityModel
 from puresnmp.util import iter_namespace
 
-TUnprocessed = TypeVar("TUnprocessed", bound=Any)
-TProcessed = TypeVar("TProcessed", bound=Any)
+#: The type of an unsecured message inside of "puresnmp"
+TPureSNMPType = TypeVar("TPureSNMPType", bound=Any)
 
+#: The type of a secured message outside of "puresnmp" (on the network)
+TX690Type = TypeVar("TX690Type", bound=Any)
+
+#: A lock to ensure the global plugin dict is not accessed by multiple threads
 DISCOVERY_LOCK = Lock()
 
 
@@ -50,7 +54,7 @@ class TSecurityPlugin(Protocol):
 
     # pylint: disable=too-few-public-methods
 
-    def create(self) -> "SecurityModel":
+    def create(self) -> "SecurityModel[TPureSNMPType, TX690Type]":
         """
         Create a new instance of a security model
         """
@@ -61,7 +65,7 @@ class TSecurityPlugin(Protocol):
 DISCOVERED_PLUGINS: Dict[int, TSecurityPlugin] = {}
 
 
-class SecurityModel(Generic[TUnprocessed, TProcessed]):
+class SecurityModel(Generic[TPureSNMPType, TX690Type]):
     """
     Each Security Model defines the applied protecion on SNMP PDUs
     """
@@ -74,10 +78,10 @@ class SecurityModel(Generic[TUnprocessed, TProcessed]):
 
     def generate_request_message(
         self,
-        message: TUnprocessed,
+        message: TPureSNMPType,
         security_engine_id: bytes,
         credentials: Credentials,
-    ) -> TProcessed:
+    ) -> TX690Type:
         """
         Take a plain unprocessed message and applies security to the message
         as defined by the concrete security model.
@@ -97,9 +101,9 @@ class SecurityModel(Generic[TUnprocessed, TProcessed]):
 
     def process_incoming_message(
         self,
-        message: TProcessed,
+        message: TX690Type,
         credentials: Credentials,
-    ) -> TUnprocessed:
+    ) -> TPureSNMPType:
         """
         Takes a message which included potential security modifications and
         "undoes" these modifications in order to make the message usable
@@ -145,7 +149,7 @@ class SecurityModel(Generic[TUnprocessed, TProcessed]):
         raise NotImplementedError(f"Not yet implemented in {self.__class__}")
 
 
-def discover_plugins():
+def discover_plugins() -> None:
     """
     Load all privacy plugins into a global cache
     """
@@ -163,16 +167,16 @@ def discover_plugins():
             ]
         ):
             continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:
+        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
             raise ImportError(
                 "Plugin %r causes a name-clash with the identifier %r. "
                 "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])
+                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
             )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
+        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
 
 
-def create(identifier: int) -> SecurityModel:
+def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
     """
     Return an instance of the given security module by identifier.
 

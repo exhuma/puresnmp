@@ -5,10 +5,10 @@ type-hinting and to keep the code more expressive & readable.
 import sys
 from dataclasses import dataclass
 from textwrap import indent
-from typing import Type, TypeVar, Union, cast
+from typing import Any, Type, TypeVar, Union, cast
 
 from x690 import decode
-from x690.types import Any, Integer, OctetString, Sequence
+from x690.types import Integer, OctetString, Sequence
 from x690.types import Type as XType
 
 from puresnmp.pdu import PDU
@@ -199,7 +199,7 @@ class Message:
             spdu = self.scoped_pdu
 
         output = bytes(
-            Sequence(  # type: ignore
+            Sequence(
                 [
                     self.version,
                     self.global_data.as_snmp_type(),

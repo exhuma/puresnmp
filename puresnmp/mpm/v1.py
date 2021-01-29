@@ -3,12 +3,12 @@ This module provides the plugin for SNMPv1 message processing
 """
 from typing import Any, Awaitable, Callable, Dict
 
-from puresnmp.mpm import MessageProcessingModel
+from puresnmp.mpm import AbstractEncodingResult, MessageProcessingModel
 
 IDENTIFIER = 0
 
 
-class V1MPM(MessageProcessingModel):
+class V1MPM(MessageProcessingModel[AbstractEncodingResult, Any]):
     """
     Message Processing Model for SNMPv1
     """
@@ -17,7 +17,7 @@ class V1MPM(MessageProcessingModel):
 def create(
     transport_handler: Callable[[bytes], Awaitable[bytes]],
     lcd: Dict[str, Any],
-) -> "MessageProcessingModel":
+) -> "MessageProcessingModel[AbstractEncodingResult, Any]":
     """
     Creates a new instance for V1 message processing
     """

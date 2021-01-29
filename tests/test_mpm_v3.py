@@ -1,3 +1,4 @@
+# type: ignore
 import asyncio
 from unittest.mock import Mock, patch
 
@@ -8,7 +9,7 @@ import puresnmp.mpm.v3 as mpm
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V2C, V3
 from puresnmp.pdu import GetRequest, GetResponse, PDUContent
-from puresnmp.security.usm import UserSecurityModel, USMSecurityParameters
+from puresnmp.security.usm import USMSecurityParameters
 from puresnmp.varbind import VarBind
 
 
@@ -58,7 +59,6 @@ async def test_encode(mock_handler):
     # simple sanity check on length. We could decode it and look into the
     # innards, but this is already covered by other tests
     assert len(result.data) == 91
-    assert isinstance(result.security_model, UserSecurityModel)
 
 
 @pytest.mark.asyncio
@@ -75,7 +75,6 @@ async def test_encode_engine_id_default(mock_handler):
     # simple sanity check on length. We could decode it and look into the
     # innards, but this is already covered by other tests
     assert len(result.data) == 91
-    assert isinstance(result.security_model, UserSecurityModel)
 
 
 @pytest.mark.asyncio

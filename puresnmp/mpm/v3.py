@@ -1,14 +1,22 @@
 """
 This module contains the implementation for the SNMPv3 message-processing model
 """
-from typing import Any, Awaitable, Callable, Dict
+from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Union
 
 from x690.types import Integer, OctetString
 
-from puresnmp.adt import HeaderData, Message, PlainMessage, ScopedPDU, V3Flags
+from puresnmp.adt import (
+    EncryptedMessage,
+    HeaderData,
+    Message,
+    PlainMessage,
+    ScopedPDU,
+    V3Flags,
+)
 from puresnmp.credentials import V3, Credentials
-from puresnmp.mpm import EncodingResult, MessageProcessingModel
+from puresnmp.mpm import AbstractEncodingResult, MessageProcessingModel
 from puresnmp.pdu import PDU, GetRequest
+from puresnmp.security import SecurityModel
 from puresnmp.security import create as create_sm
 from puresnmp.transport import MESSAGE_MAX_SIZE
 
@@ -23,7 +31,19 @@ def is_confirmed(pdu: PDU) -> bool:
     return isinstance(pdu, GetRequest)
 
 
-class V3MPM(MessageProcessingModel):
+TV3SecModel = SecurityModel[PlainMessage, Union[PlainMessage, EncryptedMessage]]
+
+
+class V3EncodingResult(AbstractEncodingResult):
+    """
+    A simple data-structure representing the output for encoded messages
+    """
+
+    data: bytes
+    security_model: Optional[TV3SecModel] = None
+
+
+class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
     """
     This class contains the concrete implementation for the v3
     message-processing-model.
@@ -47,8 +67,8 @@ class V3MPM(MessageProcessingModel):
         credentials: Credentials,
         engine_id: bytes,
         context_name: bytes,
-        pdu,
-    ) -> EncodingResult:
+        pdu: PDU,
+    ) -> V3EncodingResult:
 
         if not isinstance(credentials, V3):
             raise TypeError("Credentials for SNMPv3 must be V3 instances!")
@@ -63,7 +83,7 @@ class V3MPM(MessageProcessingModel):
             self.disco = await self.security_model.send_discovery_message(
                 self.transport_handler
             )
-        security_engine_id = self.disco.authoritative_engine_id  # type: ignore
+        security_engine_id = self.disco.authoritative_engine_id
 
         if engine_id == b"":
             engine_id = security_engine_id
@@ -99,13 +119,13 @@ class V3MPM(MessageProcessingModel):
         )
 
         outgoing_message = bytes(output)
-        return EncodingResult(outgoing_message, self.security_model)
+        return V3EncodingResult(outgoing_message, self.security_model)
 
 
 def create(
     transport_handler: Callable[[bytes], Awaitable[bytes]],
     lcd: Dict[str, Any],
-) -> "MessageProcessingModel":
+) -> "MessageProcessingModel[V3EncodingResult, TV3SecModel]":
     """
     Creates a new instance of the V3 message-processing-model
     """

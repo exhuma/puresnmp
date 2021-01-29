@@ -19,12 +19,42 @@ from typing import (
     Type,
 )
 
+from typing_extensions import Protocol
 from x690.types import ObjectIdentifier
 
 from puresnmp.credentials import V3
 from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
+
+
+class TDigestable(Protocol):
+    """
+    Typing protocol copied from https://github.com/python/typeshed/blob/569fcea637023b3df2fe45c6f08c26037bfa6a74/stdlib/hashlib.pyi#L5
+    """
+
+    digest_size: int
+    block_size: int
+
+    # [Python documentation note] Changed in version 3.4: The name attribute has
+    # been present in CPython since its inception, but until Python 3.4 was not
+    # formally specified, so may not exist on some platforms
+    name: str
+
+    def __init__(self, data: bytes = ...) -> None:
+        ...
+
+    def copy(self) -> "TDigestable":
+        ...
+
+    def digest(self) -> bytes:
+        ...
+
+    def hexdigest(self) -> str:
+        ...
+
+    def update(self, __data: bytes) -> None:
+        ...
 
 
 @dataclass
@@ -232,7 +262,7 @@ def tablify(
 
 
 def password_to_key(
-    hash_implementation: Callable[[bytes], Any], padding_length: int
+    hash_implementation: Callable[[bytes], TDigestable], padding_length: int
 ) -> Callable[[bytes, bytes], bytes]:
     """
     Create a helper function to convert passwords to SNMP compliant keys.

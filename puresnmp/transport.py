@@ -152,7 +152,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
             raise Timeout(f"{timeout} second timeout exceeded") from exc
 
 
-async def send(  # type: ignore
+async def send(
     endpoint: Endpoint,
     packet: bytes,
     timeout: int = 6,

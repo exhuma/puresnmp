@@ -17,7 +17,7 @@ from datetime import timedelta
 from typing import Any, AsyncGenerator, Dict, List
 from warnings import warn
 
-from x690.types import ObjectIdentifier
+from x690.types import ObjectIdentifier, Type
 
 from ..const import ERRORS_STRICT
 from ..pdu import Trap
@@ -70,7 +70,7 @@ class PyWrapper:
         varbind = await self.client.getnext(ObjectIdentifier(oid))
         return PyVarBind.from_raw(varbind)
 
-    async def set(self, oid, value) -> Dict[str, Any]:
+    async def set(self, oid: str, value: Type[Any]) -> Dict[str, Any]:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.set` but returns
         simple Python types.
@@ -81,7 +81,7 @@ class PyWrapper:
         result = await self.multiset({oid: value})
         return result[oid.lstrip(".")]  # type: ignore
 
-    async def multiset(self, mappings):
+    async def multiset(self, mappings: Dict[str, Type[Any]]) -> Dict[str, Any]:
         """
         Delegates to :py:func:`~puresnmp.api.raw.Client.multiset` but
         returns simple Python types.
@@ -89,7 +89,10 @@ class PyWrapper:
         See the "raw" equivalent for detailed documentation & examples.
         """
 
-        raw_output = await self.client.multiset(mappings)
+        mappings_internal = {
+            ObjectIdentifier(oid): value for oid, value in mappings.items()
+        }
+        raw_output = await self.client.multiset(mappings_internal)
         pythonized = {
             str(oid): value.pythonize() for oid, value in raw_output.items()
         }

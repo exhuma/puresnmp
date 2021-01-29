@@ -265,7 +265,7 @@ class SetRequest(PDU):
     TAG = 3
 
 
-class BulkGetRequest(Type[Any]):
+class BulkGetRequest(PDU):
     """
     Represents a SNMP GetBulk request
     """
@@ -287,7 +287,9 @@ class BulkGetRequest(Type[Any]):
             self.varbinds.append(VarBind(oid, Null()))
 
     def __bytes__(self) -> bytes:
-        wrapped_varbinds = [Sequence([vb.oid, vb.value]) for vb in self.varbinds]  # type: ignore
+        wrapped_varbinds = [
+            Sequence([vb.oid, vb.value]) for vb in self.varbinds
+        ]
         data: List[Type[Any]] = [
             Integer(self.request_id),
             Integer(self.non_repeaters),

@@ -31,17 +31,34 @@ rules:
 """
 import importlib
 from threading import Lock
-from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    NamedTuple,
+    Optional,
+    TypeVar,
+)
 
 from typing_extensions import Protocol
 
 from puresnmp.credentials import Credentials
 from puresnmp.exc import SnmpError
-from puresnmp.pdu import PDU, BulkGetRequest
+from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
 from puresnmp.util import iter_namespace
 
+
+class AbstractEncodingResult(NamedTuple):
+    data: bytes
+    security_model: Optional[SecurityModel[Any, Any]] = None
+
+
 DISCOVERY_LOCK = Lock()
+TEncodeResult = TypeVar("TEncodeResult", bound=AbstractEncodingResult)
+TSecurityModel = TypeVar("TSecurityModel", bound=SecurityModel[Any, Any])
 
 
 class TMPMPlugin(Protocol):
@@ -55,7 +72,7 @@ class TMPMPlugin(Protocol):
         self,
         transport_handler: Callable[[bytes], Awaitable[bytes]],
         lcd: Dict[str, Any],
-    ) -> "MessageProcessingModel":
+    ) -> "MessageProcessingModel[TEncodeResult, TSecurityModel]":
         """
         See :py:func:`~.create`
         """
@@ -84,16 +101,7 @@ class UnknownMessageProcessingModel(MPMException):
         )
 
 
-class EncodingResult(NamedTuple):
-    """
-    A simple data-structure representing the output for encoded messages
-    """
-
-    data: bytes
-    security_model: Optional[SecurityModel]
-
-
-class MessageProcessingModel:
+class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
     """
     Each Message Processing Model defines the format of a particular version of
     an SNMP message and coordinates the preparation and extraction of each such
@@ -113,7 +121,7 @@ class MessageProcessingModel:
         self.transport_handler = transport_handler
         self.lcd = lcd
         self.disco = None
-        self.security_model: Optional[SecurityModel] = None
+        self.security_model: Optional[TSecurityModel] = None
 
     async def encode(
         self,
@@ -121,8 +129,8 @@ class MessageProcessingModel:
         credentials: Credentials,
         engine_id: bytes,
         context_name: bytes,
-        pdu: Union[PDU, BulkGetRequest],
-    ) -> EncodingResult:
+        pdu: PDU,
+    ) -> TEncodeResult:
         """
         Convert an SNMP PDU into raw bytes for the network.
 
@@ -158,7 +166,7 @@ class MessageProcessingModel:
         )
 
 
-def discover_plugins():
+def discover_plugins() -> None:
     """
     Load all privacy plugins into a global cache
     """
@@ -176,20 +184,20 @@ def discover_plugins():
             ]
         ):
             continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:
+        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
             raise ImportError(
                 "Plugin %r causes a name-clash with the identifier %r. "
                 "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])
+                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
             )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod
+        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
 
 
 def create(
     identifier: int,
     transport_handler: Callable[[bytes], Awaitable[bytes]],
     lcd: Dict[str, Any],
-) -> MessageProcessingModel:
+) -> MessageProcessingModel[Any, Any]:
     """
     Creates a new instance of a message-processing-model
 
@@ -208,5 +216,6 @@ def create(
         discover_plugins()
     if identifier not in DISCOVERED_PLUGINS:
         raise UnknownMessageProcessingModel(identifier)
+
     mod = DISCOVERED_PLUGINS[identifier]
     return mod.create(transport_handler, lcd)

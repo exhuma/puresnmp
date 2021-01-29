@@ -43,7 +43,7 @@ class IpAddress(Type[IPv4Address]):
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> IPv4Address:
         value = ip_address(int.from_bytes(data[slc], "big"))
-        return value
+        return value  # type: ignore
 
     def __eq__(self, other: object) -> bool:
         # TODO: no longer necessary in x690 > 0.5.0a4

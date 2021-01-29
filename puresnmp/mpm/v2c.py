@@ -2,20 +2,28 @@
 This module contains the definition for the community-based
 message-processing model for SNMPv2
 """
-from typing import Any, Awaitable, Callable, Dict, Union
+from typing import Any, Awaitable, Callable, Dict, Optional, Union
 
 from x690 import decode
 from x690.types import Sequence
 
 from puresnmp.credentials import V2C, Credentials
-from puresnmp.mpm import EncodingResult, MessageProcessingModel
+from puresnmp.mpm import AbstractEncodingResult, MessageProcessingModel
 from puresnmp.pdu import PDU, BulkGetRequest
+from puresnmp.security import SecurityModel
 from puresnmp.security import create as create_sm
 
 IDENTIFIER = 1
 
+TV2SecModel = SecurityModel[PDU, Sequence]
 
-class V2CMPM(MessageProcessingModel):
+
+class V2CEncodingResult(AbstractEncodingResult):
+    data: bytes
+    security_model: Optional[TV2SecModel] = None
+
+
+class V2CMPM(MessageProcessingModel[V2CEncodingResult, TV2SecModel]):
     """
     Message Processing Model for SNMP v2c
     """
@@ -26,8 +34,8 @@ class V2CMPM(MessageProcessingModel):
         credentials: Credentials,
         engine_id: bytes,
         context_name: bytes,
-        pdu: Union[PDU, BulkGetRequest],
-    ) -> EncodingResult:
+        pdu: PDU,
+    ) -> V2CEncodingResult:
         if not isinstance(credentials, V2C):
             raise TypeError("SNMPv2c MPM should be used with V2C credentials!")
 
@@ -39,7 +47,7 @@ class V2CMPM(MessageProcessingModel):
             pdu, b"", credentials
         )
 
-        return EncodingResult(bytes(packet), None)
+        return V2CEncodingResult(bytes(packet))
 
     def decode(
         self,
@@ -64,7 +72,7 @@ class V2CMPM(MessageProcessingModel):
 def create(
     transport_handler: Callable[[bytes], Awaitable[bytes]],
     lcd: Dict[str, Any],
-) -> "MessageProcessingModel":
+) -> "MessageProcessingModel[V2CEncodingResult, Any]":
     """
     Creates a new instance of the V2C message-processing-model
     """

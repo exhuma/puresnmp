@@ -30,7 +30,7 @@ from typing import (
     Tuple,
 )
 from typing import Type as TType
-from typing import TypeVar, Union, cast
+from typing import TypeVar, cast
 
 from typing_extensions import Protocol
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
@@ -208,7 +208,7 @@ class Client:
         return self.endpoint.port
 
     @contextmanager
-    def reconfigure(self, **kwargs) -> Generator[None, None, None]:
+    def reconfigure(self, **kwargs: Any) -> Generator[None, None, None]:
         """
         Temporarily reconfigure the client.
 
@@ -252,9 +252,7 @@ class Client:
             self.config = old_config
             self.mpm = old_mpm
 
-    async def _send(
-        self, pdu: Union[PDU, BulkGetRequest], request_id: int
-    ) -> PDU:
+    async def _send(self, pdu: PDU, request_id: int) -> PDU:
         packet, _ = await self.mpm.encode(
             request_id,
             self.credentials,
@@ -269,7 +267,7 @@ class Client:
         validate_response_id(request_id, response.value.request_id)
         return response
 
-    async def get(self, oid: ObjectIdentifier) -> Type:
+    async def get(self, oid: ObjectIdentifier) -> Type[Any]:
         """
         Executes a simple SNMP GET request and returns a pure Python data
         structure.
@@ -286,7 +284,7 @@ class Client:
             raise NoSuchOID(oid)
         return result[0]
 
-    async def multiget(self, oids: List[ObjectIdentifier]) -> List[Type]:
+    async def multiget(self, oids: List[ObjectIdentifier]) -> List[Type[Any]]:
         """
         Executes an SNMP GET request with multiple OIDs and returns a list of
         pure Python objects. The order of the output items is the same order
@@ -523,7 +521,7 @@ class Client:
 
     async def set(
         self,
-        oid: str,
+        oid: ObjectIdentifier,
         value: T,
     ) -> T:
         """
@@ -538,10 +536,13 @@ class Client:
         ... )
         OctetString(b'I am contact')
         """
-        result = await self.multiset({oid: value})
-        return result[oid.lstrip(".")]
+        value_internal = cast(Type[Any], value)
+        result = await self.multiset({oid: value_internal})
+        return result[oid]  # type: ignore
 
-    async def multiset(self, mappings: Dict[str, T]) -> Dict[str, T]:
+    async def multiset(
+        self, mappings: Dict[ObjectIdentifier, Type[Any]]
+    ) -> Dict[ObjectIdentifier, Type[Any]]:
         """
         Executes an SNMP SET request on multiple OIDs. The result is returned as
         pure Python data structure.

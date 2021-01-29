@@ -38,7 +38,7 @@ class ErrorResponse(SnmpError):
 
     @staticmethod
     def construct(
-        error_status, offending_oid: ObjectIdentifier, message: str = ""
+        error_status: int, offending_oid: ObjectIdentifier, message: str = ""
     ) -> "ErrorResponse":
         """
         Creates a new instance of an ErrorResponse class, using the proper

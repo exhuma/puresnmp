@@ -1,12 +1,14 @@
 """
 This defines a no-op security model which can be used as fallback
 """
+from typing import Any
+
 from puresnmp.security import SecurityModel
 
 IDENTIFIER = 0
 
 
-class NullSecurityModel(SecurityModel):
+class NullSecurityModel(SecurityModel[Any, Any]):
     """
     This is a placeholder class for security models which don't implement any
     logic.
