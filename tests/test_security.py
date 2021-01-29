@@ -461,7 +461,7 @@ def test_incoming_auth_error():
     with pytest.raises(usm.AuthenticationError) as exc:
         with patch("puresnmp.security.usm.auth") as auth:
             mck = Mock()
-            mck.authenticate_incoming_message.side_effect = Exception("yoinks")
+            mck.authenticate_incoming_message.return_value = False
 
             auth.create.return_value = mck
             usm.verify_authentication(
@@ -469,7 +469,7 @@ def test_incoming_auth_error():
                 V3(b"", Auth(b"foo", "md5"), None),
                 usm.USMSecurityParameters(b"", 1, 1, b"", b"", b""),
             )
-    exc.match(r"auth.*yoinks")
+    exc.match(r"authentic")
 
 
 def test_incoming_priv_error():

@@ -293,19 +293,17 @@ def verify_authentication(
         )
 
     auth_method = auth.create(credentials.auth.method)
-
-    try:
-        without_digest = reset_digest(message)
-        auth_method.authenticate_incoming_message(
-            credentials.auth.key,
-            bytes(without_digest),
-            security_params.auth_params,
-            security_params.authoritative_engine_id,
-        )
-    except Exception as exc:
+    without_digest = reset_digest(message)
+    is_authentic = auth_method.authenticate_incoming_message(
+        credentials.auth.key,
+        bytes(without_digest),
+        security_params.auth_params,
+        security_params.authoritative_engine_id,
+    )
+    if not is_authentic:
         raise AuthenticationError(
-            f"Incoming message could not be authenticated! ({exc})"
-        ) from exc
+            "Incoming message could not be authenticated!"
+        )
 
 
 def decrypt_message(

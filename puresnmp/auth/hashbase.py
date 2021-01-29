@@ -6,8 +6,6 @@ from typing import Callable
 
 from typing_extensions import Protocol
 
-from puresnmp.exc import SnmpError
-
 THasher = Callable[[bytes, bytes], bytes]
 
 
@@ -36,7 +34,7 @@ class TIncoming(Protocol):
         data: bytes,
         received_digest: bytes,
         engine_id: bytes,
-    ) -> None:
+    ) -> bool:
         # pylint: disable=unused-argument, missing-docstring
         ...
 
@@ -77,20 +75,27 @@ def for_incoming(hasher: THasher, hmac_method: str) -> TIncoming:
     :return: A callable that can be used in a puresnmp authentication plugin
     """
 
-    def authenticate_incoming_message(
+    def is_authentic(
         auth_key: bytes, data: bytes, received_digest: bytes, engine_id: bytes
-    ) -> None:
+    ) -> bool:
         """
+        Returns whether the given data-block is authentic for a given key.
+
         See https://tools.ietf.org/html/rfc3414#section-1.6
+
+
+        :param auth_key: The authentication key (supplied by a user)
+        :param data: The data-block to verify
+        :param received_digest: The "expected" digest
+        :param engine_id: The SNMP engine-id for which this authentication is
+            applied
         """
         expected_digest = get_message_digest(
             hasher, hmac_method, auth_key, data, engine_id
         )
-        if received_digest != expected_digest:
-            # TODO: Better exception
-            raise SnmpError("authenticationFailure")
+        return received_digest == expected_digest
 
-    return authenticate_incoming_message
+    return is_authentic
 
 
 def get_message_digest(

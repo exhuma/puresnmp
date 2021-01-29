@@ -62,7 +62,7 @@ class TAuth(Protocol):
         data: bytes,
         received_digst: bytes,
         engine_id: bytes,
-    ) -> None:
+    ) -> bool:
         """
         Calculate a digest for an incoming message. Raise an exception on error.
 
