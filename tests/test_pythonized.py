@@ -181,7 +181,6 @@ async def test_multi_walk():
         ["1.3.6.1.2.1.2.2.1.1", "1.3.6.1.2.1.2.2.1.2"],
     ):
         result.append(row)
-    # TODO (advanced): should order matter in the following result?
     assert result == expected
 
 

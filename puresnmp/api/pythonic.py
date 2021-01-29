@@ -11,13 +11,6 @@ The "raw" module returns the variable types unmodified which are all subclasses
 of :py:class:`x690.types.Type`.
 """
 
-# TODO (advanced): This module should not make use of it's own functions. The
-#     is beginning to be too "thick", containing too much business logic for a
-#     mere abstraction layer.
-#     module exists as an abstraction layer only. If one function uses a
-#     "siblng" function, valuable information is lost. In general, this module
-
-
 import logging
 from collections import OrderedDict
 from datetime import timedelta

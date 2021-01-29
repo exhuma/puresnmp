@@ -63,9 +63,8 @@ from ..util import (
 )
 from ..varbind import VarBind
 
-PyType = Any  # TODO
 TWalkResponse = AsyncGenerator[VarBind, None]
-T = TypeVar("T", bound=TType[PyType])  # pylint: disable=invalid-name
+T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name
 
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier
@@ -612,9 +611,7 @@ class Client:
         scalar_out = {oid: value for oid, value in scalar_tmp}
 
         # prepare output for listing
-        repeating_out = (
-            OrderedDict()
-        )  # type: Dict[ObjectIdentifier, Type[PyType]]
+        repeating_out = OrderedDict()  # type: Dict[ObjectIdentifier, Type[Any]]
         for oid, value in repeating_tmp:
             if isinstance(value, EndOfMibView):
                 break

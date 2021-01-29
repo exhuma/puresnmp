@@ -8,9 +8,6 @@ The module is excluded from coverage. It contains all the "dirty" stuff that's
 hard to test.
 """
 
-# TODO (beginner, no-dev): Ignore this file from coverage without adding
-#                          "pragma: no cover" to each function.
-
 import asyncio
 import logging
 from asyncio.events import AbstractEventLoop
@@ -173,9 +170,6 @@ async def send(  # type: ignore
     if loop is None:
         loop = asyncio.get_event_loop()
 
-    # family could be specified here (and is in the sync implementation),
-    # is it needed? are retries necessary for async implementation?
-    # TODO: Yes, retries are necessary
     _, protocol = await loop.create_datagram_endpoint(
         lambda: SNMPClientProtocol(packet, loop),  # type: ignore
         remote_addr=(str(endpoint.ip), endpoint.port),

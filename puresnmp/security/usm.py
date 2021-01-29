@@ -185,8 +185,7 @@ def apply_encryption(
     Derive a new encrypted message from a plain message given
     user-credentials and target-engine information.
     """
-    # TODO: This functions takes arguments which should be available inside the
-    #       message itself (I think). Verify if this redundancy can be removed.
+
     if credentials.priv is not None and not credentials.priv.method:
         raise UnsupportedSecurityLevel("Encryption method is missing")
 
@@ -403,8 +402,6 @@ class UserSecurityModel(SecurityModel):
         message: Union[PlainMessage, EncryptedMessage],
         credentials: Credentials,
     ) -> PlainMessage:
-        # TODO: Validate engine-id.
-        # TODO: Validate incoming username against the request
 
         if not isinstance(credentials, V3):
             raise SnmpError("Supplied credentials is not a V3 instance!")

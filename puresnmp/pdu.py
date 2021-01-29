@@ -7,10 +7,6 @@ their type identifier header (f.ex. ``b'\\xa0'`` for a
 :py:class:`~.GetRequest`).
 """
 
-# TODO: Add a method to wrap a message in a full packet (including SNMP version
-#       and community). This can then replace some duplicated code in
-#       "puresnmp.get", "puresnmp.walk" & co.
-
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union, cast
 
@@ -61,8 +57,6 @@ class PDU(Type[PDUContent]):
         an application object. This is callable from each subclass of
         :py:class:`~.PDU`.
         """
-        # TODO (advanced): recent tests revealed that this is *not symmetric*
-        # with __bytes__ of this class. This should be ensured!
         if not data:
             raise EmptyMessage("No data to decode!")
         request_id, nxt = decode(data, slc.start or 0, enforce_type=Integer)
