@@ -350,7 +350,9 @@ def decrypt_message(
     return message
 
 
-class UserSecurityModel(SecurityModel):
+class UserSecurityModel(
+    SecurityModel[PlainMessage, Union[PlainMessage, EncryptedMessage]]
+):
     """
     Implementation of the use-security model as defined by
     :py:class:`puresnmp.security.SecurityModel`

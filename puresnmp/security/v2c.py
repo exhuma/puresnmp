@@ -1,29 +1,29 @@
 """
 This module implements community based security model for SNMP
 """
-from typing import Union
-
 from x690.types import Integer, OctetString, Sequence
 
-from puresnmp.adt import EncryptedMessage, PlainMessage
 from puresnmp.credentials import V2C, Credentials
 from puresnmp.exc import SnmpError
+from puresnmp.pdu import PDU
 from puresnmp.security import SecurityModel
 
 IDENTIFIER = 2
 
 
-class SNMPv2cSecurityModel(SecurityModel):
+class SNMPv2cSecurityModel(SecurityModel[PDU, Sequence]):
     """
     Implementation of the security model for community based SNMPv2 messages
     """
 
     def generate_request_message(
         self,
-        message: PlainMessage,
+        message: PDU,
         security_engine_id: bytes,
         credentials: Credentials,
-    ) -> Union[PlainMessage, EncryptedMessage]:
+    ) -> Sequence:
+        if not isinstance(credentials, V2C):
+            raise TypeError("Credentials must be V2C instances!")
         packet = Sequence(
             [Integer(1), OctetString(credentials.community), message]
         )
@@ -31,9 +31,9 @@ class SNMPv2cSecurityModel(SecurityModel):
 
     def process_incoming_message(
         self,
-        message: Union[PlainMessage, EncryptedMessage],
+        message: Sequence,
         credentials: Credentials,
-    ) -> PlainMessage:
+    ) -> PDU:
         proto_version, community, pdu = message
         if not isinstance(credentials, V2C):
             raise TypeError("Credentials must be V2C instances!")
@@ -42,7 +42,7 @@ class SNMPv2cSecurityModel(SecurityModel):
         if community.pythonize() != credentials.community.encode("ascii"):
             raise SnmpError("Incorrect community in response mesasge!")
 
-        return pdu
+        return pdu  # type: ignore
 
 
 def create() -> SNMPv2cSecurityModel:

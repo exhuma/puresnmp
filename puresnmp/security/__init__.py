@@ -28,14 +28,16 @@ rules:
   and :rfc:`3411`
 """
 import importlib
-from typing import Any, Awaitable, Callable, Dict, Union
+from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
 
 from typing_extensions import Protocol
 
-from puresnmp.adt import EncryptedMessage, PlainMessage
 from puresnmp.credentials import Credentials
 from puresnmp.exc import InvalidSecurityModel
 from puresnmp.util import iter_namespace
+
+TUnprocessed = TypeVar("TUnprocessed", bound=Any)
+TProcessed = TypeVar("TProcessed", bound=Any)
 
 
 class TSecurityPlugin(Protocol):
@@ -56,7 +58,7 @@ class TSecurityPlugin(Protocol):
 DISCOVERED_PLUGINS: Dict[int, TSecurityPlugin] = {}
 
 
-class SecurityModel:
+class SecurityModel(Generic[TUnprocessed, TProcessed]):
     """
     Each Security Model defines the applied protecion on SNMP PDUs
     """
@@ -69,16 +71,19 @@ class SecurityModel:
 
     def generate_request_message(
         self,
-        message: PlainMessage,
+        message: TUnprocessed,
         security_engine_id: bytes,
         credentials: Credentials,
-    ) -> Union[PlainMessage, EncryptedMessage]:
+    ) -> TProcessed:
         """
-        Take a plain unencrypted message and apply either authentication
-        and/or encryption (depending on credential type).
+        Take a plain unprocessed message and applies security to the message
+        as defined by the concrete security model.
 
-        This returns a new message instance with the additional
-        authentication/encryption details.
+        It returns the processed message including security modifications,
+        ready to be sent out the the net.
+
+        The kind of processing applied to the message depends on the
+        credential type.
 
         :param message: The original message
         :param security_engine_id: The engine-id of the receiving SNMP engine
@@ -89,13 +94,18 @@ class SecurityModel:
 
     def process_incoming_message(
         self,
-        message: Union[PlainMessage, EncryptedMessage],
+        message: TProcessed,
         credentials: Credentials,
-    ) -> PlainMessage:
+    ) -> TUnprocessed:
         """
-        Take a message, decrypt if necessary and authenticate if necessary.
+        Takes a message which included potential security modifications and
+        "undoes" these modifications in order to make the message usable
+        again.
 
-        Returns an unencrypted message if the input was encrypted.
+        Returns an unprocessed message.
+
+        The kind of processing applied to the message depends on the
+        credential type.
 
         :param message: The original message
         :param credentials: A credential object giving information on what
