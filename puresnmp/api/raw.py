@@ -222,6 +222,15 @@ class Client:
 
         The values that can be overridden delegate to
         :py:class:`~.ClientConfig`. Any fields in that class can be overridden
+
+        >>> client = Client("192.0.2.1", V2C("public"))
+        >>> client.config.timeout
+        6
+        >>> with client.reconfigure(timeout=10):
+        ...     client.config.timeout
+        10
+        >>> client.config.timeout
+        6
         """
         old_config = self.config
         old_mpm = self.mpm
