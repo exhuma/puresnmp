@@ -33,6 +33,7 @@ rules:
   and :rfc:`3411`
 """
 import importlib
+from threading import Lock
 from typing import Dict
 
 from typing_extensions import Protocol
@@ -78,12 +79,15 @@ class TAuth(Protocol):
 DISCOVERED_PLUGINS: Dict[str, TAuth] = {}
 #: Global registry of detected plugins by IANA ID
 IANA_IDS: Dict[int, TAuth] = {}
+DISCOVERY_LOCK = Lock()
 
 
 def discover_plugins():
     """
     Load all privacy plugins into a global cache
     """
+    if DISCOVERED_PLUGINS:
+        return
     import puresnmp.auth
 
     for _, name, _ in iter_namespace(puresnmp.auth):
@@ -122,6 +126,6 @@ def create(name: str) -> TAuth:
     If no plugin with the given identifier is found, a *KeyError* is raised
     """
 
-    if not DISCOVERED_PLUGINS:
+    with DISCOVERY_LOCK:
         discover_plugins()
     return DISCOVERED_PLUGINS[name]

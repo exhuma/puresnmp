@@ -30,6 +30,7 @@ rules:
   and :rfc:`3411`
 """
 import importlib
+from threading import Lock
 from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Union
 
 from typing_extensions import Protocol
@@ -39,6 +40,8 @@ from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU, BulkGetRequest
 from puresnmp.security import SecurityModel
 from puresnmp.util import iter_namespace
+
+DISCOVERY_LOCK = Lock()
 
 
 class TMPMPlugin(Protocol):
@@ -159,6 +162,9 @@ def discover_plugins():
     """
     Load all privacy plugins into a global cache
     """
+
+    if DISCOVERED_PLUGINS:
+        return
     import puresnmp.mpm
 
     for _, name, _ in iter_namespace(puresnmp.mpm):
@@ -198,7 +204,7 @@ def create(
     """
     # See https://tools.ietf.org/html/rfc3412#section-4.1.1
 
-    if not DISCOVERED_PLUGINS:
+    with DISCOVERY_LOCK:
         discover_plugins()
     if identifier not in DISCOVERED_PLUGINS:
         raise UnknownMessageProcessingModel(identifier)

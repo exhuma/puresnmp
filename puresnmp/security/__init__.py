@@ -28,6 +28,7 @@ rules:
   and :rfc:`3411`
 """
 import importlib
+from threading import Lock
 from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
 
 from typing_extensions import Protocol
@@ -38,6 +39,8 @@ from puresnmp.util import iter_namespace
 
 TUnprocessed = TypeVar("TUnprocessed", bound=Any)
 TProcessed = TypeVar("TProcessed", bound=Any)
+
+DISCOVERY_LOCK = Lock()
 
 
 class TSecurityPlugin(Protocol):
@@ -146,6 +149,9 @@ def discover_plugins():
     """
     Load all privacy plugins into a global cache
     """
+    if DISCOVERED_PLUGINS:
+        return
+
     import puresnmp.security
 
     for _, name, _ in iter_namespace(puresnmp.security):
@@ -174,7 +180,7 @@ def create(identifier: int) -> SecurityModel:
 
     If no plugin with the given identifier is found, a *KeyError* is raised
     """
-    if not DISCOVERED_PLUGINS:
+    with DISCOVERY_LOCK:
         discover_plugins()
     if identifier not in DISCOVERED_PLUGINS:
         raise InvalidSecurityModel(identifier)
