@@ -1,5 +1,7 @@
 """
 Exceptions for the puresnmp package.
+
+Most exceptions in this module are based on :rfc:`3416`
 """
 
 import socket
@@ -32,6 +34,7 @@ class ErrorResponse(SnmpError):
     """
 
     DEFAULT_MESSAGE = "unknown error"
+    IDENTIFIER = 0
 
     @staticmethod
     def construct(
@@ -42,28 +45,21 @@ class ErrorResponse(SnmpError):
         subclass for the given *error_status* value. The message is optional,
         and if not specified, will use the default message for the given class.
         """
-        # pylint: disable=too-many-return-statements
-        # |
-        # | A dictionary would probably be more efficient. But this is not a
-        # | performance bottle-neck and I find the code more readable like this.
-        # TODO: Add new status-codes from https://tools.ietf.org/html/rfc3416#section-3
-        if error_status == 1:
-            return TooBig(offending_oid, message)
-        if error_status == 2:
-            return NoSuchOID(offending_oid, message)
-        if error_status == 3:
-            return BadValue(offending_oid, message)
-        if error_status == 4:
-            return ReadOnly(offending_oid, message)
-        if error_status == 5:
-            return GenErr(offending_oid, message)
-        if error_status == 6:
-            return NoAccess(offending_oid, message)
-        return ErrorResponse(error_status, offending_oid, message)
+        classes = {
+            cls.IDENTIFIER: cls for cls in ErrorResponse.__subclasses__()
+        }
+        if error_status in classes:
+            cls = classes[error_status]
+            return cls(offending_oid, message)
+        return ErrorResponse(offending_oid, message, error_status=error_status)
 
     def __init__(
-        self, error_status, offending_oid: ObjectIdentifier, message: str = ""
+        self,
+        offending_oid: ObjectIdentifier,
+        message: str = "",
+        error_status: int = 0,
     ) -> None:
+        error_status = error_status or self.IDENTIFIER
         super().__init__(
             "%s (status-code: %r) on OID %s"
             % (
@@ -83,11 +79,7 @@ class TooBig(ErrorResponse):
     """
 
     DEFAULT_MESSAGE = "SNMP response was too big!"
-
-    def __init__(
-        self, offending_oid: ObjectIdentifier, message: str = ""
-    ) -> None:
-        super().__init__(1, offending_oid)
+    IDENTIFIER = 1
 
 
 class NoSuchOID(ErrorResponse):
@@ -101,11 +93,7 @@ class NoSuchOID(ErrorResponse):
     """
 
     DEFAULT_MESSAGE = "No such name/oid"
-
-    def __init__(
-        self, offending_oid: ObjectIdentifier, message: str = ""
-    ) -> None:
-        super().__init__(2, offending_oid, message)
+    IDENTIFIER = 2
 
 
 class BadValue(ErrorResponse):
@@ -115,11 +103,7 @@ class BadValue(ErrorResponse):
     """
 
     DEFAULT_MESSAGE = "Bad value"
-
-    def __init__(
-        self, offending_oid: ObjectIdentifier, message: str = ""
-    ) -> None:
-        super().__init__(3, offending_oid, message)
+    IDENTIFIER = 3
 
 
 class ReadOnly(ErrorResponse):
@@ -128,24 +112,7 @@ class ReadOnly(ErrorResponse):
     """
 
     DEFAULT_MESSAGE = "Value is read-only!"
-
-    def __init__(
-        self, offending_oid: ObjectIdentifier, message: str = ""
-    ) -> None:
-        super().__init__(4, offending_oid, message)
-
-
-class NoAccess(ErrorResponse):
-    """
-    This error is returned whenever .
-    """
-
-    DEFAULT_MESSAGE = "No Access!"
-
-    def __init__(
-        self, offending_oid: ObjectIdentifier, message: str = ""
-    ) -> None:
-        super().__init__(6, offending_oid, message)
+    IDENTIFIER = 4
 
 
 class GenErr(ErrorResponse):
@@ -155,11 +122,64 @@ class GenErr(ErrorResponse):
     """
 
     DEFAULT_MESSAGE = "General Error (genErr)"
+    IDENTIFIER = 5
 
-    def __init__(
-        self, offending_oid: ObjectIdentifier, message: str = ""
-    ) -> None:
-        super().__init__(5, offending_oid, message)
+
+class NoAccess(ErrorResponse):
+    """
+    This error is returned whenever .
+    """
+
+    DEFAULT_MESSAGE = "No Access!"
+    IDENTIFIER = 6
+
+
+class WrongType(ErrorResponse):
+    IDENTIFIER = 7
+
+
+class WrongLength(ErrorResponse):
+    IDENTIFIER = 8
+
+
+class WrongEncoding(ErrorResponse):
+    IDENTIFIER = 9
+
+
+class WrongValue(ErrorResponse):
+    IDENTIFIER = 10
+
+
+class NoCreation(ErrorResponse):
+    IDENTIFIER = 11
+
+
+class InconsistentValue(ErrorResponse):
+    IDENTIFIER = 12
+
+
+class ResourceUnavailable(ErrorResponse):
+    IDENTIFIER = 13
+
+
+class CommitFailed(ErrorResponse):
+    IDENTIFIER = 14
+
+
+class UndoFailed(ErrorResponse):
+    IDENTIFIER = 15
+
+
+class AuthorizationError(ErrorResponse):
+    IDENTIFIER = 16
+
+
+class NotWritable(ErrorResponse):
+    IDENTIFIER = 17
+
+
+class InconsistentName(ErrorResponse):
+    IDENTIFIER = 18
 
 
 class EmptyMessage(SnmpError):
@@ -172,7 +192,6 @@ class TooManyVarbinds(SnmpError):
     """
     Exception which is raised when the number of VarBinds exceeds the limit
     defined in RFC3416.
-    device.
     """
 
     def __init__(self, num_oids):
