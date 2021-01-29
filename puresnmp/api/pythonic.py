@@ -49,14 +49,15 @@ class PyWrapper:
     def __init__(self, client: raw.Client) -> None:
         self.client = client
 
-    async def get(self, *args, **kwargs) -> None:
+    async def get(self, oid: str) -> Any:
         """
         Delegates to :py:meth:`~puresnmp.api.raw.Client.get` but returns
         a simple Python type.
 
         See the "raw" equivalent for detailed documentation & examples.
         """
-        raw_value = await self.client.get(*args, **kwargs)
+        oid_internal = ObjectIdentifier(oid)
+        raw_value = await self.client.get(oid_internal)
         return raw_value.pythonize()
 
     async def getnext(self, oid: str) -> PyVarBind:

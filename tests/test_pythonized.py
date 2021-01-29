@@ -49,7 +49,7 @@ async def test_get_string():
             b"Fri Jun 24 10:09:13 UTC 2016 x86_64"
         )
     )
-    result = await client.get("::1", "private", "1.2.3")
+    result = await client.get("1.2.3")
     assert result == expected
 
 
@@ -61,7 +61,7 @@ async def test_get_oid():
     raw_client.get.return_value = async_result(
         ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10")
     )
-    result = await client.get("::1", "private", "1.2.3")
+    result = await client.get("1.2.3")
     assert result == expected
 
 
