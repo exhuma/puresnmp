@@ -56,6 +56,7 @@ class V2CMPM(MessageProcessingModel):
             self.security_model = create_sm(security_model_id)
 
         decoded, _ = decode(whole_msg, enforce_type=Sequence)
+
         msg = self.security_model.process_incoming_message(decoded, credentials)
         return msg
 

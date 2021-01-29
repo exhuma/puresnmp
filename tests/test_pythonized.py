@@ -7,19 +7,17 @@ The "external" interface is what the user sees. It should be pythonic and easy
 to use.
 """
 import asyncio
-import unittest
 from ipaddress import ip_address
 from typing import Any
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock
 
 import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString
 
 from puresnmp import PyWrapper
 from puresnmp.api.raw import Client
-from puresnmp.pdu import PDUContent, Trap, VarBind
+from puresnmp.pdu import VarBind
 from puresnmp.types import Counter, Gauge, IpAddress
-from puresnmp.typevars import SocketInfo
 from puresnmp.util import BulkResult
 from puresnmp.varbind import PyVarBind
 
