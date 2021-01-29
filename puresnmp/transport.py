@@ -12,7 +12,6 @@ import asyncio
 import logging
 from asyncio.events import AbstractEventLoop
 from asyncio.transports import BaseTransport
-from time import time
 from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
 
 from typing_extensions import Protocol

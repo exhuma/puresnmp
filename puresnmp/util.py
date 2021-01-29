@@ -17,7 +17,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
 )
 
 from x690.types import ObjectIdentifier

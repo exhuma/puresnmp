@@ -24,7 +24,6 @@ from typing import (
     Dict,
     Generator,
     List,
-    NamedTuple,
     Optional,
     Set,
     Tuple,

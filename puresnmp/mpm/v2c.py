@@ -2,13 +2,12 @@
 This module contains the definition for the community-based
 message-processing model for SNMPv2
 """
-from typing import Any, Awaitable, Callable, Dict, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Union
 
 from x690 import decode
-from x690.types import Integer, Null, OctetString, Sequence
+from x690.types import Sequence
 
 from puresnmp.credentials import V2C, Credentials
-from puresnmp.exc import SnmpError
 from puresnmp.mpm import EncodingResult, MessageProcessingModel
 from puresnmp.pdu import PDU, BulkGetRequest
 from puresnmp.security import create as create_sm
