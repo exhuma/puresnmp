@@ -11,6 +11,7 @@ from puresnmp.credentials import V2C, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.mpm import EncodingResult, MessageProcessingModel
 from puresnmp.pdu import PDU, BulkGetRequest
+from puresnmp.security import create as create_sm
 
 IDENTIFIER = 1
 
@@ -30,9 +31,15 @@ class V2CMPM(MessageProcessingModel):
     ) -> EncodingResult:
         if not isinstance(credentials, V2C):
             raise TypeError("SNMPv2c MPM should be used with V2C credentials!")
-        # TODO we should delegate to the security model here to encode the
-        #      community.
-        packet = Sequence([Integer(1), OctetString(credentials.community), pdu])
+
+        security_model_id = 2
+        if self.security_model is None:
+            self.security_model = create_sm(security_model_id)
+
+        packet = self.security_model.generate_request_message(
+            pdu, b"", credentials
+        )
+
         return EncodingResult(bytes(packet), None)
 
     def decode(
@@ -44,15 +51,14 @@ class V2CMPM(MessageProcessingModel):
         The Message Processing Subsystem provides this service primitive for
         preparing the abstract data elements from an incoming SNMP message:
         """
+
+        security_model_id = 2
+        if self.security_model is None:
+            self.security_model = create_sm(security_model_id)
+
         decoded, _ = decode(whole_msg, enforce_type=Sequence)
-        # TODO we should delegate to the security model here to check the
-        #      community
-        if isinstance(decoded, Null):
-            raise SnmpError(
-                "Unable to construct a PDU from packet "
-                f"with length {len(whole_msg)}"
-            )
-        return cast(PDU, decoded[2])
+        msg = self.security_model.process_incoming_message(decoded, credentials)
+        return msg
 
 
 def create(
