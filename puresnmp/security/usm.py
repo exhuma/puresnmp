@@ -479,7 +479,7 @@ class UserSecurityModel(
         # Which they currently are not. So this should do.
         response_msg = PlainMessage.from_sequence(response)
 
-        response_id = response_msg.scoped_pdu.data.value.request_id
+        response_id = response_msg.global_data.message_id
         validate_response_id(request_id, response_id)
 
         # The engine-id is available in two places: The response directly, and
