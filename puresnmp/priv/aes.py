@@ -91,10 +91,6 @@ def encrypt_data(
     """
     See https://tools.ietf.org/html/rfc3826#section-3.1.3
     """
-
-    if len(localised_key) != 16:
-        raise SnmpError("Encryption keys in AES mode must be 16 octets long!")
-
     salt = next(SALTPOT).to_bytes(8, "big")
     iv = get_iv(engine_boots, engine_time, salt)
     aes_key = localised_key[:16]
@@ -115,13 +111,9 @@ def decrypt_data(
     """
     See https://tools.ietf.org/html/rfc3826#section-3.1.4
     """
-
-    if len(localised_key) != 16:
-        raise SnmpError("Encryption keys in AES mode must be at least 128bit!")
-
     iv = get_iv(engine_boots, engine_time, salt)
-    cipher = AES.new(localised_key, AES.MODE_CFB, iv, segment_size=128)
-
+    aes_key = localised_key[:16]
+    cipher = AES.new(aes_key, AES.MODE_CFB, iv, segment_size=128)
     padded = pad_packet(data, 16)
     output = cipher.decrypt(padded)
     return output

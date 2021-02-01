@@ -316,7 +316,6 @@ class Client:
         request_id = get_request_id()
         pdu = GetRequest(PDUContent(request_id, parsed_oids))
         response = await self._send(pdu, request_id)
-
         output = [value for _, value in response.value.varbinds]
         if len(output) != len(oids):
             raise SnmpError(
