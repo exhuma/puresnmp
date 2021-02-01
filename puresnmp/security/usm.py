@@ -6,7 +6,7 @@ from textwrap import indent
 from typing import Awaitable, Callable, Union, cast
 
 from x690 import decode
-from x690.types import Integer, Null, OctetString, Sequence
+from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 from x690.util import INDENT_STRING
 
 import puresnmp.auth as auth
@@ -417,6 +417,7 @@ class UserSecurityModel(
 
         verify_authentication(message, credentials, security_params)
         message = decrypt_message(message, credentials)
+        validate_usm_message(message)
         return message
 
     async def send_discovery_message(
@@ -504,6 +505,24 @@ class UserSecurityModel(
             unknown_engine_ids=unknown_engine_ids,
         )
         return out
+
+
+def validate_usm_message(message: PlainMessage) -> None:
+    pdu = message.scoped_pdu.data.value
+    errors = {
+        ObjectIdentifier(
+            "1.3.6.1.6.3.15.1.1.1.0"
+        ): "Unsupported security level",
+        ObjectIdentifier("1.3.6.1.6.3.15.1.1.2.0"): "Not in time window",
+        ObjectIdentifier("1.3.6.1.6.3.15.1.1.3.0"): "Unknown user-name",
+        ObjectIdentifier("1.3.6.1.6.3.15.1.1.4.0"): "Unknown engine-id",
+        ObjectIdentifier("1.3.6.1.6.3.15.1.1.5.0"): "Wrong message digest",
+        ObjectIdentifier("1.3.6.1.6.3.15.1.1.6.0"): "Unable to decrypt",
+    }
+    for varbind in pdu.varbinds:
+        if varbind.oid in errors:
+            msg = errors[varbind.oid]
+            raise SnmpError(f"Error response from remote device: {msg}")
 
 
 def create() -> UserSecurityModel:
