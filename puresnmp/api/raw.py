@@ -2,12 +2,11 @@
 This module contains a high-level API to SNMP functions.
 
 The arguments and return values of these functions have types which are
-internal to ``puresnmp`` (subclasses of :py:class:`x690.Type`).
+internal to ``puresnmp`` (subclasses of :py:class:`x690.types.Type`).
 
 Alternatively, there is :py:mod:`puresnmp.api.pythonic` which converts
 these values into pure Python types. This makes day-to-day programming a bit
-easier but loses type information which may be useful in some edge-cases. In
-such a case it's recommended to use :py:mod:`puresnmp.api.raw`.
+easier but loses type information which may be useful in some edge-cases.
 """
 
 import asyncio
@@ -163,6 +162,18 @@ class Client:
     >>> client = Client("192.0.2.1", V2C("public"))
     >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
     <coroutine ...>
+
+    :param ip: The IP-address of the remote SNMP device
+    :param credentials: User credentials for the request. These define the
+        underlying protocol in use. See :py:mod:`puresnmp.credentials` for
+        possible types.
+    :param port: The UDP port for the remote device
+    :param sender: A callable responsible to send out data to the remove
+        device. The default implementation will use UDP using the IP and port
+        given in the other arguments.
+    :param context_name: An optional context for SNMPv3 requests
+    :param engine_id: An optional Engine ID for SNMPv3 requests. Helper
+        functions are provided in :py:mod:`puresnmp.util` to generate valid IDs.
     """
 
     def __init__(
