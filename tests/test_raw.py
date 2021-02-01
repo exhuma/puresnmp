@@ -312,13 +312,13 @@ async def test_multiset(mocked_raw):
         gri.return_value = 1403406017
         result = await mocked_raw.multiset(
             {
-                "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
-                "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
+                OID("1.3.6.1.2.1.1.4.0"): OctetString(b"hello@world.com"),
+                OID("1.3.6.1.2.1.1.5.0"): OctetString(b"hello@world.com"),
             },
         )
     expected = {
-        "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
-        "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
+        OID("1.3.6.1.2.1.1.4.0"): OctetString(b"hello@world.com"),
+        OID("1.3.6.1.2.1.1.5.0"): OctetString(b"hello@world.com"),
     }
     assert result == expected
 

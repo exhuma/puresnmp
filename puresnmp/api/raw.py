@@ -572,18 +572,18 @@ class Client:
                 '"set" request must be an instance of "Type"!'
             )
 
-        binds = [VarBind(OID(k), v) for k, v in mappings.items()]  # type: ignore
+        binds = [VarBind(oid, value) for oid, value in mappings.items()]
 
         pdu = SetRequest(PDUContent(get_request_id(), binds))
         response = await self._send(pdu, get_request_id())
 
-        output = {str(oid): value for oid, value in response.value.varbinds}
+        output = {oid: value for oid, value in response.value.varbinds}
         if len(output) != len(mappings):
             raise SnmpError(
                 "Unexpected response. Expected %d varbinds, "
                 "but got %d!" % (len(mappings), len(output))
             )
-        return output  # type: ignore
+        return output
 
     async def bulkget(
         self,
