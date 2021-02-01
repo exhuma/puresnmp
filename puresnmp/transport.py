@@ -152,7 +152,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
             raise Timeout(f"{timeout} second timeout exceeded") from exc
 
 
-async def send(
+async def send_udp(
     endpoint: Endpoint,
     packet: bytes,
     timeout: int = 6,

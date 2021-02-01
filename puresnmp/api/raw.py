@@ -52,7 +52,7 @@ from ..pdu import (
     SetRequest,
     Trap,
 )
-from ..transport import Endpoint, TSender, listen, send
+from ..transport import Endpoint, TSender, listen, send_udp
 from ..util import (
     BulkResult,
     get_request_id,
@@ -170,7 +170,7 @@ class Client:
         ip: str,
         credentials: Credentials,
         port: int = 161,
-        sender: TSender = send,
+        sender: TSender = send_udp,
         context_name: bytes = b"",
         engine_id: bytes = b"",
     ) -> None:
@@ -799,7 +799,7 @@ def register_trap_callback(
 
     def decode(packet: SocketResponse) -> None:
         async def handler(data: bytes) -> bytes:
-            return await send(
+            return await send_udp(
                 Endpoint(ip_address(packet.info.address), packet.info.port),
                 data,
             )
