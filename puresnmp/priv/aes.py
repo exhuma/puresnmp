@@ -122,5 +122,6 @@ def decrypt_data(
     iv = get_iv(engine_boots, engine_time, salt)
     cipher = AES.new(localised_key, AES.MODE_CFB, iv, segment_size=128)
 
-    output = cipher.decrypt(data)
+    padded = pad_packet(data, 16)
+    output = cipher.decrypt(padded)
     return output
