@@ -5,7 +5,7 @@ import fabric
 def doc(ctx):
     ctx.run("rm -rf docs/api", replace_env=False, pty=True)
     ctx.run(
-        "poetry run sphinx-apidoc -o docs/api puresnmp",
+        "poetry run sphinx-apidoc -o docs/api -f -M puresnmp",
         replace_env=False,
         pty=True,
     )

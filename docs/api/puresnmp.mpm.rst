@@ -1,6 +1,11 @@
 puresnmp.mpm package
 ====================
 
+.. automodule:: puresnmp.mpm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -32,14 +37,6 @@ puresnmp.mpm.v3 module
 ----------------------
 
 .. automodule:: puresnmp.mpm.v3
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: puresnmp.mpm
    :members:
    :undoc-members:
    :show-inheritance:

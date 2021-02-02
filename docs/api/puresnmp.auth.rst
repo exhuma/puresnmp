@@ -1,6 +1,11 @@
 puresnmp.auth package
 =====================
 
+.. automodule:: puresnmp.auth
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -24,14 +29,6 @@ puresnmp.auth.sha1 module
 -------------------------
 
 .. automodule:: puresnmp.auth.sha1
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: puresnmp.auth
    :members:
    :undoc-members:
    :show-inheritance:

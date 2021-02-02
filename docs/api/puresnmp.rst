@@ -1,6 +1,11 @@
 puresnmp package
 ================
 
+.. automodule:: puresnmp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -100,14 +105,6 @@ puresnmp.varbind module
 -----------------------
 
 .. automodule:: puresnmp.varbind
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: puresnmp
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,6 +1,11 @@
 puresnmp.api package
 ====================
 
+.. automodule:: puresnmp.api
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -16,14 +21,6 @@ puresnmp.api.raw module
 -----------------------
 
 .. automodule:: puresnmp.api.raw
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: puresnmp.api
    :members:
    :undoc-members:
    :show-inheritance:

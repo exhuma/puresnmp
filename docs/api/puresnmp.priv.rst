@@ -1,6 +1,11 @@
 puresnmp.priv package
 =====================
 
+.. automodule:: puresnmp.priv
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -16,14 +21,6 @@ puresnmp.priv.des module
 ------------------------
 
 .. automodule:: puresnmp.priv.des
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: puresnmp.priv
    :members:
    :undoc-members:
    :show-inheritance:

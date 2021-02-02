@@ -1,6 +1,11 @@
 puresnmp.security package
 =========================
 
+.. automodule:: puresnmp.security
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Submodules
 ----------
 
@@ -32,14 +37,6 @@ puresnmp.security.v2c module
 ----------------------------
 
 .. automodule:: puresnmp.security.v2c
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: puresnmp.security
    :members:
    :undoc-members:
    :show-inheritance:
