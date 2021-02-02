@@ -1,5 +1,6 @@
 """
-This module implements the "User Security Model" as defined in :rfc:`3414`
+This module implements the SNMPv3 "User Security Model" as defined in
+:rfc:`3414`
 """
 from dataclasses import dataclass, replace
 from textwrap import indent
@@ -95,9 +96,14 @@ class DiscoData:
     Helper class to wrap data received from a SNMPv3 discovery message.
     """
 
+    #: The engine-id of the remote device
     authoritative_engine_id: bytes
+    #: The number of boots of the remote device (encryption timeliness)
     authoritative_engine_boots: int
+    #: The time-ticks since last boot of the remote device (encryption
+    #: timeliness)
     authoritative_engine_time: int
+    #: The number of requests received with an unknown client-engine-id
     unknown_engine_ids: int
 
 
@@ -184,7 +190,21 @@ def apply_encryption(
     """
     Derive a new encrypted message from a plain message given
     user-credentials and target-engine information.
+
+    :param message: The unencrypted message
+    :param credentials: The SNMPv3 credentials to be applied to the message
+    :param security_name: The username used in the reques
+    :param security_engine_id: The engine-id of the remote device
+    :param engine_boots: Encryption timeliness data as received from the
+        discovery process
+    :param engine_time: Encryption timeliness data as received from the
+        discovery process
+    :returns: Either an encrypted message, or a plain-message (depending on
+        credential type)
     """
+
+    # TODO: the security_name arg is redundant. Same value (different type)
+    #       than credentials.username
 
     if credentials.priv is not None and not credentials.priv.method:
         raise UnsupportedSecurityLevel("Encryption method is missing")
@@ -241,8 +261,14 @@ def apply_authentication(
     security_engine_id: bytes,
 ) -> Union[PlainMessage, EncryptedMessage]:
     """
-    Calculate the digest of the message and return a new message including
-    that digest.
+    Add authentication-information to an SNMPv3 message
+
+    :param unauthed_message: Either an encrypted or plain message that we
+        want to update with authentication information.
+    :param credentials: The user-credentials
+    :param security_engine_id: The engine-id of the remote device
+    :return: A message (of the same type) with authentication information
+        added to and security_parameters of the message.
     """
     if credentials.auth is not None and not credentials.auth.method:
         raise UnsupportedSecurityLevel(
@@ -281,7 +307,7 @@ def verify_authentication(
     """
     Verify authenticity of the message using the credentials.
 
-    Raises :py:exc:`AuthenticationError` if it fails. Otherwise it's a no-op
+    :raises AuthenticationError: If the message is not authentic
     """
 
     if not message.global_data.flags.auth:
@@ -508,6 +534,12 @@ class UserSecurityModel(
 
 
 def validate_usm_message(message: PlainMessage) -> None:
+    """
+    If the message contains known error-indicators, raise an appropriate
+    exception.
+
+    :raises SnmpError: If an error was found
+    """
     pdu = message.scoped_pdu.data.value
     errors = {
         ObjectIdentifier(

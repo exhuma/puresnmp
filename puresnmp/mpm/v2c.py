@@ -55,8 +55,7 @@ class V2CMPM(MessageProcessingModel[V2CEncodingResult, TV2SecModel]):
         credentials: Credentials,
     ) -> PDU:
         """
-        The Message Processing Subsystem provides this service primitive for
-        preparing the abstract data elements from an incoming SNMP message:
+        Convert an SNMPv2c message into a PDU instance
         """
 
         security_model_id = 2

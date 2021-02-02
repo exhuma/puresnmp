@@ -1,12 +1,15 @@
 """
-This module provides a plugin architecture for message-processing models (mpm).
+This module provides a plugin architecture for SNMP message-processing models
+(mpm).
 
 Each mpm plugin can be distributed as separate package by providing
 modules inside the namespace-package "puresnmp.mpm". Note that in order
 to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
-Example folder-structure for a mpm plugin::
+Example folder-structure for a mpm plugin:
+
+.. code-block:: text
 
     my-security-plugin/
      +- setup.py (or pyproject.toml)
@@ -52,7 +55,15 @@ from puresnmp.util import iter_namespace
 
 
 class AbstractEncodingResult(NamedTuple):
+    """
+    Generic type for the output of the conversion from messages to bytes by
+    the message processing modules.
+    """
+
+    #: The bytes that are to be sent out to the network
     data: bytes
+
+    #: The security model that was applied by the message-processing module
     security_model: Optional[SecurityModel[Any, Any]] = None
 
 
@@ -110,8 +121,14 @@ class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
     See https://tools.ietf.org/html/rfc3411#section-6.2
     """
 
+    #: The IANA registered identifier for thie mosule
     IDENTIFIER: int
+
+    #: Discovery data (if required by the message-processing-module)
     disco: Optional[Any]
+
+    #: The security model applied by this MPM (if any)
+    security_model: Optional[TSecurityModel]
 
     def __init__(
         self,
@@ -121,7 +138,7 @@ class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
         self.transport_handler = transport_handler
         self.lcd = lcd
         self.disco = None
-        self.security_model: Optional[TSecurityModel] = None
+        self.security_model = None
 
     async def encode(
         self,
@@ -209,6 +226,18 @@ def create(
     :param lcd: A "local configuration directory" which is dynamically
         updated with "discovery" data if required.
     :returns: A new Message Processing Model instance
+
+
+    >>> async def packet_handler(data: bytes) -> bytes:
+    ...     loop = get_event_loop()
+    ...     _, protocol = await loop.create_datagram_endpoint(
+    ...         lambda: SNMPClientProtocol(packet, loop),
+    ...         remote_addr=("192.0.2.1", 161),
+    ...     )
+    ...     response = await protocol.get_data(timeout)
+    ...     return response
+    >>> create(3, packet_handler, {})  # doctest: +ELLIPSIS
+    <puresnmp.mpm.v3.V3MPM object ...>
     """
     # See https://tools.ietf.org/html/rfc3412#section-4.1.1
 

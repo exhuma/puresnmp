@@ -2,11 +2,13 @@
 This module provides a plugin architecture for authentication methods.
 
 Each authentication plugin can be distributed as separate package by providing
-modules inside the namespace-package "puresnmp.auth". Note that in order
+modules inside the namespace-package ``puresnmp.auth``. Note that in order
 to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
-Example folder-structure for a privacy plugin::
+Example folder-structure for a privacy plugin:
+
+.. code-block:: text
 
     my-auth-plugin/
      +- setup.py (or pyproject.toml)
@@ -25,7 +27,7 @@ rules:
 * Have a function ``authenticate_incoming_message`` implementing the
   :py:meth:`puresnmp.auth.TAuth.authenticate_incoming_message` protocol.
 * Contain a string-variable ``IDENTIFIER``. This variable should be
-  user-friends and is used to uniquely identify this authentication module.
+  user-friendly and is used to uniquely identify this authentication module.
 * Contain a int-variable ``IANA_ID``. This variable should have a value from
   IANA registered authentication protocols and is used to avoid duplicate plugin
   registrations. See
@@ -65,12 +67,12 @@ class TAuth(Protocol):
         engine_id: bytes,
     ) -> bool:
         """
-        Calculate a digest for an incoming message. Raise an exception on error.
+        Determine whether a message is authentic.
 
         This will take the raw bytes of an incoming message and derive a
         digest based on the authentication key and the receipient engine ID.
         The digest is compared to an expected digest. If they differ, this
-        function will raise an exception.
+        function will return False.
         """
         ...
 
@@ -84,7 +86,7 @@ DISCOVERY_LOCK = Lock()
 
 def discover_plugins() -> None:
     """
-    Load all privacy plugins into a global cache
+    Load all authentication plugins into a global cache
     """
     if DISCOVERED_PLUGINS:
         return

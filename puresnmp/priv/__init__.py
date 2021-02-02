@@ -6,7 +6,9 @@ modules inside the namespace-package "puresnmp.priv". Note that in order to
 be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
-Example folder-structure for a privacy plugin::
+Example folder-structure for a privacy plugin:
+
+.. code-block:: text
 
     my-privacy-plugin/
      +- setup.py (or pyproject.toml)
@@ -45,11 +47,14 @@ from puresnmp.util import iter_namespace
 class EncryptionResult(NamedTuple):
     """
     Wrapper for encrypted data.
-
-    Each encryption result has its own "salt" which is needed for decryption.
     """
 
+    #: The encrypted content (usually a PDU)
     encrypted_data: bytes
+
+    #: The value that will be inserted into the "privParams" field from the
+    #: SNMP spec. This should contain any "local" data that is needed to
+    #: decrypt the data (like a salt for example)
     priv_params: bytes
 
 
@@ -69,7 +74,7 @@ class TPriv(Protocol):
         """
         Encrypts data from an SNMP PDU following the SNMPv3 spec.
 
-        :param localisedkey: The encryption key localised to the given
+        :param localised_key: The encryption key localised to the given
             engine-id
         :param engine_id: The ID of the recipient SNMP-engine
         :param engine_boots: Number of times the recipient engine has been

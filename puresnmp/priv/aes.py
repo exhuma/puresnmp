@@ -30,7 +30,7 @@ def pad_packet(data: bytes, block_size: int = 8) -> bytes:
 
     In x.690 BER encoding, the data contains length-information so
     "over-sized" data can be decoded without issue. This function simply adds
-    zeroes at the end for as needed.
+    zeroes at the end as needed.
 
     Packets also don't need to be "unpadded" for the same reason
     See https://tools.ietf.org/html/rfc3414#section-8.1.1.3

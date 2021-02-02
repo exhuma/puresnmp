@@ -111,6 +111,8 @@ class ScopedPDU:
 
     context_engine_id: OctetString
     context_name: OctetString
+
+    #: A PDU-structure as defined in SNMPv2
     data: PDU
 
     def __bytes__(self) -> bytes:

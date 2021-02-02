@@ -6,7 +6,9 @@ modules inside the namespace-package "puresnmp.security". Note that in order
 to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
-Example folder-structure for a privacy plugin::
+Example folder-structure for a privacy plugin:
+
+.. code-block:: text
 
     my-security-plugin/
      +- setup.py (or pyproject.toml)
@@ -37,10 +39,10 @@ from puresnmp.credentials import Credentials
 from puresnmp.exc import InvalidSecurityModel
 from puresnmp.util import iter_namespace
 
-#: The type of an unsecured message inside of "puresnmp"
+#: The type of an *unsecured* message inside of "puresnmp"
 TPureSNMPType = TypeVar("TPureSNMPType", bound=Any)
 
-#: The type of a secured message outside of "puresnmp" (on the network)
+#: The type of a *secured* message outside of "puresnmp"
 TX690Type = TypeVar("TX690Type", bound=Any)
 
 #: A lock to ensure the global plugin dict is not accessed by multiple threads
@@ -70,7 +72,9 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
     Each Security Model defines the applied protecion on SNMP PDUs
     """
 
-    #: The "Local Configuration Datastor" (LCD)
+    #: The "Local Configuration Datastore" (LCD). This contains contextual
+    #: information which may be needed for some security models (as defined by
+    #: the SNMPv3 architecture.)
     local_config: Dict[bytes, Dict[str, Any]]
 
     def __init__(self) -> None:
@@ -86,8 +90,9 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         Take a plain unprocessed message and applies security to the message
         as defined by the concrete security model.
 
-        It returns the processed message including security modifications,
-        ready to be sent out the the net.
+        It returns the processed message including security modifications.
+        Further processing is provided by the "message-processing-model" to
+        prepare it for sending out to the network.
 
         The kind of processing applied to the message depends on the
         credential type.
@@ -105,9 +110,9 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         credentials: Credentials,
     ) -> TPureSNMPType:
         """
-        Takes a message which included potential security modifications and
-        "undoes" these modifications in order to make the message usable
-        again.
+        Takes a message which included potential security modifications (like
+        encryption) and "undoes" these modifications in order to make the
+        message usable again.
 
         Returns an unprocessed message.
 
