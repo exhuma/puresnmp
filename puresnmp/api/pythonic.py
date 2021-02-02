@@ -1,5 +1,6 @@
 """
-This module contains the high-level functions to access the library.
+This module provides the high-level wrapper :py:class:`.PyWrapper` around
+:py:class:`puresnmp.api.raw.Client`.
 
 Care is taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
@@ -44,7 +45,7 @@ class PyWrapper:
     """
     A wrapper around a :py:class:`puresnmp.api.raw.Client` instance.
 
-    The wrapper ensures converstion of internal API data-types to and from
+    The wrapper ensures conversion of internal API data-types to and from
     Python-native types.
 
     Using Python native types shields from internal changes internally in

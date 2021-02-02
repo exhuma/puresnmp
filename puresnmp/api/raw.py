@@ -75,7 +75,7 @@ class TFetcher(Protocol):
     from the remote device
     """
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, no-self-access
 
     async def __call__(
         self, oids: List[ObjectIdentifier]
@@ -91,6 +91,18 @@ def deduped_varbinds(
     """
     Generate grouped OIDs by ensuring they are contained in the original
     request and have no duplicates.
+
+    >>> OID = ObjectIdentifier
+    >>> list(deduped_varbinds(
+    ...     [OID("1.2"), OID("2.3")],
+    ...     {
+    ...         OID("1.2"): [VarBind(OID("1.2.3.4"), 1)],
+    ...         OID("1.2"): [VarBind(OID("1.2.3.4"), 1)],
+    ...         OID("5.6"): [VarBind(OID("5.6.7.8"), 1)],
+    ...     },
+    ...     set()
+    ... ))
+    [VarBind(oid=ObjectIdentifier('1.2.3.4'), value=1)]
 
     :param requested_oids: A list of OIDs which were originally requested. If
         any value from the grouped varbinds are not children of any of these
@@ -158,9 +170,11 @@ class Client:
     :py:mod:`puresnmp.credentials` which are used to determine the
     appropriate communication model for this client instance.
 
-    >>> from puresnmp.credentials import V2C
+    >>> from puresnmp import Client, ObjectIdentifier, V2C
+    >>> import warnings
+    >>> warnings.simplefilter("ignore")
     >>> client = Client("192.0.2.1", V2C("public"))
-    >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
+    >>> client.get(ObjectIdentifier("1.3.6.1.2.1.1.2.0"))  # doctest: +ELLIPSIS
     <coroutine ...>
 
     :param ip: The IP-address of the remote SNMP device
@@ -204,18 +218,30 @@ class Client:
 
     @property
     def credentials(self) -> Credentials:
+        """
+        Accessor to the client credentials
+        """
         return self.config.credentials
 
     @property
     def context(self) -> Context:
+        """
+        Accessor to the SNMPv3 context
+        """
         return self.config.context
 
     @property
     def ip(self) -> TAnyIp:
+        """
+        Accessor to the endpoint IP address
+        """
         return self.endpoint.ip
 
     @property
     def port(self) -> int:
+        """
+        Accessor to the endpoint port
+        """
         return self.endpoint.port
 
     @contextmanager
@@ -280,15 +306,16 @@ class Client:
 
     async def get(self, oid: ObjectIdentifier) -> Type[Any]:
         """
-        Executes a simple SNMP GET request and returns a pure Python data
-        structure.
+        Retrieve the value of a single OID
 
-        >>> from puresnmp import Client
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> # The line below needs to be "awaited" to get the result.
-        >>> # This is not shown here to make it work with doctest
-        >>> client.get("1.3.6.1.2.1.1.2.0")  # doctest: +ELLIPSIS
-        <coroutine object ...>
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> from puresnmp.util import sync
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
+        >>> client = Client("127.0.0.1", V2C("private"), port=50009)
+        >>> coro = client.get(OID("1.3.6.1.2.1.1.2.0"))
+        >>> sync(coro)  # doctest: +SKIP
+        ObjectIdentifier('1.3.6.1.4.1.8072.3.2.10')
         """
         result = await self.multiget([oid])
         if isinstance(result[0], NoSuchOIDPacket):
@@ -297,18 +324,18 @@ class Client:
 
     async def multiget(self, oids: List[ObjectIdentifier]) -> List[Type[Any]]:
         """
-        Executes an SNMP GET request with multiple OIDs and returns a list of
-        pure Python objects. The order of the output items is the same order
-        as the OIDs given as arguments.
+        Retrieve (scalar) values from multiple OIDs in one request.
 
-        >>> from puresnmp import Client
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> from puresnmp.util import sync
         >>> import warnings
         >>> warnings.simplefilter("ignore")
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> # The line below needs to be "awaited" to get the result.
-        >>> # This is not shown here to make it work with doctest
-        >>> client.multiget(['1.2.3.4', '1.2.3.5'])
-        <coroutine object ...>
+        >>> client = Client("127.0.0.1", V2C("private"), port=50009)
+        >>> coro = client.multiget(
+        ...     [OID('1.3.6.1.2.1.1.2.0'), OID('1.3.6.1.2.1.1.1.0')]
+        ... )
+        >>> sync(coro)  # doctest: +SKIP
+        [ObjectIdentifier('1.3.6.1.4.1.8072.3.2.10'), OctetString(b'Linux c8582f39c32b 4.15.0-115-generic #116-Ubuntu SMP Wed Aug 26 14:04:49 UTC 2020 x86_64')]
         """
 
         parsed_oids = [VarBind(oid, Null()) for oid in oids]
@@ -346,41 +373,9 @@ class Client:
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
-        Executes a sequence of SNMP GETNEXT requests and returns a generator
-        over :py:class:`~puresnmp.pdu.VarBind` instances.
-
-        The generator stops when hitting an OID which is *not* a sub-node of
-        the given start OID or at the end of the tree (whichever comes
-        first).
-
-        >>> from puresnmp import Client
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> client.walk('1.3.6.1.2.1.1')  # doctest: +ELLIPSIS
-        <async_generator object ...>
-
-        >>> async def example():
-        ...     result = client.walk('1.3.6.1.2.1.3')
-        ...     res = []
-        ...     async for x in gen:
-        ...         res.append(x)
-        ...     pprint(res)
-        >>> example()  # doctest: +SKIP
-        [
-            VarBind(
-                oid=ObjectIdentifier("1.3.6.1.2.1.3.1.1.1.24.1.172.17.0.1"),
-                value=24
-            ),
-            VarBind(
-                oid=ObjectIdentifier("1.3.6.1.2.1.3.1.1.2.24.1.172.17.0.1"),
-                value=b'\\x02B\\xef\\x14@\\xf5'
-            ),
-            VarBind(
-                oid=ObjectIdentifier("1.3.6.1.2.1.3.1.1.3.24.1.172.17.0.1"),
-                value=64, b'\\xac\\x11\\x00\\x01'
-            )
-        ]
+        A convenience method delegating to :py:meth:`~.multiwalk` with
+        exactly one OID
         """
-
         async for row in self.multiwalk([oid], errors=errors):
             yield row
 
@@ -391,21 +386,28 @@ class Client:
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
-        Executes a sequence of SNMP GETNEXT requests and returns a generator
-        over :py:class:`~puresnmp.pdu.VarBind` instances.
+        Retrieve all values "below" multiple OIDs with a single operation.
 
-        This is the same as :py:func:`~.walk` except that it is capable of
-        iterating over multiple OIDs at the same time.
+        Note: This will send out as many "GetNext" requests as needed.
 
-        >>> from puresnmp import Client
+        This is almost the same as :py:meth:`~.walk` except that it is
+        capable of iterating over multiple OIDs at the same time.
+
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> from puresnmp.util import sync
         >>> import warnings
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> with warnings.catch_warnings():
-        ...     warnings.simplefilter("ignore")
-        ...     client.multiwalk(  # doctest: +ELLIPSIS
-        ...         ['1.3.6.1.2.1.1', '1.3.6.1.4.1.1']
+        >>> warnings.simplefilter("ignore")
+        >>> async def example():
+        ...     client = Client("127.0.0.1", V2C("private"), port=50009)
+        ...     result = client.multiwalk(
+        ...         [OID('1.3.6.1.2.1.1'), OID('1.3.6.1.4.1.1')]
         ...     )
-        <async_generator object ...>
+        ...     output = []
+        ...     async for row in result:
+        ...         output.append(row)
+        ...     return output
+        >>> sync(example())  # doctest: +SKIP
+        [VarBind(oid=ObjectIdentifier('1.3.6.1.2.1.1.1.0'), value=Oct...]
         """
         if fetcher is None:
             fetcher = self.multigetnext
@@ -460,13 +462,18 @@ class Client:
         The request sends one packet to the remote host requesting the value
         of the OIDs following one or more given OIDs.
 
-        >>> from puresnmp import Client
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> client.multigetnext(['1.2.3', '1.2.4'])  # doctest: +SKIP
-        [
-            VarBind(ObjectIdentifier("1.2.3.0"), Integer(1)),
-            VarBind(ObjectIdentifier("1.2.4.0"), Integer(2))
-        ]
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> from puresnmp.util import sync
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
+        >>> client = Client("127.0.0.1", V2C("private"), port=50009)
+        >>> # The line below needs to be "awaited" to get the result.
+        >>> # This is not shown here to make it work with doctest
+        >>> coro = client.multigetnext(
+        ...     [OID('1.3.6.1.2.1.1.2.0'), OID('1.3.6.1.2.1.1.1.0')]
+        ... )
+        >>> sync(coro)  # doctest: +ELLIPSIS +SKIP
+        [VarBind(oid=ObjectIdentifier('1.3.6.1.2.1.1.3.0'), value=TimeTicks(...)), VarBind(oid=ObjectIdentifier('1.3.6.1.2.1.1.2.0'), value=ObjectIdentifier('1.3.6.1.4.1.8072.3.2.10'))]
         """
         varbinds = [VarBind(oid, Null()) for oid in oids]
         request_id = get_request_id()
@@ -504,20 +511,31 @@ class Client:
         The resulting output will be a list of dictionaries where each
         dictionary corresponds to a row of the table.
 
-        The index of the row will be contained in key ``'0'`` as a string
-        representing an OID. This key ``'0'`` is automatically injected by
-        ``puresnmp``. Table rows may or may not contain the row-index in other
-        columns. This depends on the requested table.
+        SNMP Tables are indexed as follows::
 
-        Each column ID is available as *string*.
+            <base-oid>.<column-id>.<row-id>
 
-        Example output (using fake data):
+        A "row-id" can be either a single numerical value, or a partial OID.
+        The row-id will be contained in key ``'0'`` of each row (as a string)
+        representing that partial OID (often a suffix which can be used in
+        other tables). This key ``'0'`` is automatically injected by
+        ``puresnmp``. This ensures that the row-index is available even for
+        tables that don't include that value themselves.
 
-        >>> from puresnmp import Client
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> client.table("1.3.6.1.2.1.2.2")  # doctest: +SKIP
-        [{'0': '1', '1': Integer(1), '2': Counter(30)},
-         {'0': '2', '1': Integer(2), '2': Counter(123)}]
+        SNMP-Tables are fetched first by column, then by row (by the nature
+        of the defined MIB structure). This means that this method has to
+        consume the complete table before being able to return anything.
+
+        Example output:
+
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> from puresnmp.util import sync
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
+        >>> client = Client("127.0.0.1", V2C("private"), port=50009)
+        >>> coro = client.table(OID("1.3.6.1.2.1.2.2.1"))
+        >>> sync(coro)  # doctest: +SKIP
+        [{'0': '1', '1': Integer(1), ... '22': ObjectIdentifier('0.0')}]
         """
         tmp = []
         if num_base_nodes == 0:
@@ -535,16 +553,22 @@ class Client:
         value: T,
     ) -> T:
         """
-        Executes a simple SNMP SET request. The result is returned as an x690
-        data structure. The value must be a subclass of
-        :py:class:`~x690.types.Type`.
+        Update a value on the remote host
 
-        >>> from puresnmp import Client
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> client.set(  # doctest: +SKIP
-        ...     "1.3.6.1.2.1.1.4.0", OctetString(b'I am contact')
+        Values must be a subclass of :py:class:`x690.types.Type`. See
+        :py:mod:`x690.types` for a predefined collection of types.
+
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> from puresnmp.util import sync
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
+        >>> from x690.types import OctetString
+        >>> client = Client("127.0.0.1", V2C("private"), port=50009)
+        >>> coro = client.set(
+        ...     OID("1.3.6.1.2.1.1.4.0"), OctetString(b'new contact value')
         ... )
-        OctetString(b'I am contact')
+        >>> sync(coro)  # doctest: +SKIP
+        OctetString(b'new contact value')
         """
         value_internal = cast(Type[Any], value)
         result = await self.multiset({oid: value_internal})
@@ -557,13 +581,18 @@ class Client:
         Executes an SNMP SET request on multiple OIDs. The result is returned as
         pure Python data structure.
 
-        >>> from puresnmp import Client
-        >>> client = Client("192.0.2.1", V2C("private"))
-        >>> client.multiset({  # doctest: +SKIP
-        ...     '1.2.3': OctetString(b'foo'),
-        ...     '2.3.4': OctetString(b'bar')
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> from puresnmp.util import sync
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
+        >>> from x690.types import OctetString
+        >>> client = Client("127.0.0.1", V2C("private"), port=50009)
+        >>> coro = client.multiset({
+        ...     OID('1.3.6.1.2.1.1.4.0'): OctetString(b'new-contact'),
+        ...     OID('1.3.6.1.2.1.1.6.0'): OctetString(b'new-location')
         ... })
-        {'1.2.3': b'foo', '2.3.4': b'bar'}
+        >>> sync(coro)  # doctest: +ELLIPSIS +SKIP
+        {ObjectIdentifier('1.3.6.1.2.1.1.4.0'): OctetString(b'new-c...cation')}
         """
 
         if any([not isinstance(v, Type) for v in mappings.values()]):
@@ -617,41 +646,63 @@ class Client:
         :param repeating_oids: contains the OIDs that should be fetched as list.
         :param max_list_size: defines the max length of each list.
 
-        >>> from puresnmp import Client
-        >>> client = Client("192.0.2.1", V2C("private"))
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
+        >>> import warnings
+        >>> warnings.simplefilter("ignore")
+        >>> client = Client("192.0.2.1", V2C("private"), port=50009)
         >>> result = client.bulkget(  # doctest: +SKIP
-        ...     scalar_oids=['1.3.6.1.2.1.1.1',
-        ...                  '1.3.6.1.2.1.1.2'],
-        ...     repeating_oids=['1.3.6.1.2.1.3.1',
-        ...                     '1.3.6.1.2.1.5.1'],
-        ...     max_list_size=10)
+        ...     scalar_oids=[
+        ...         OID('1.3.6.1.2.1.1.1'),
+        ...         OID('1.3.6.1.2.1.1.2'),
+        ...     ],
+        ...     repeating_oids=[
+        ...         OID('1.3.6.1.2.1.3.1'),
+        ...         OID('1.3.6.1.2.1.5.1'),
+        ...     ],
+        ...     max_list_size=10
+        ... )
         BulkResult(
             scalars={
-                '1.3.6.1.2.1.1.2.0': '1.3.6.1.4.1.8072.3.2.10',
-                '1.3.6.1.2.1.1.1.0': b'Linux aafa4dce0ad4 4.4.0-28-'
-                                     b'generic #47-Ubuntu SMP Fri Jun 24 '
-                                     b'10:09:13 UTC 2016 x86_64'},
+                ObjectIdentifier('1.3.6.1.2.1.1.1.0'): OctetString(
+                    b'Linux c8582f39c32b 4.15.0-115-generic #116-Ubuntu SMP '
+                    b'Wed Aug 26 14:04:49 UTC 2020 x86_64'
+                ),
+                ObjectIdentifier('1.3.6.1.2.1.1.2.0'): ObjectIdentifier(
+                    '1.3.6.1.4.1.8072.3.2.10'
+                )
+            },
             listing=OrderedDict([
-                ('1.3.6.1.2.1.3.1.1.1.10.1.172.17.0.1', 10),
-                ('1.3.6.1.2.1.5.1.0', b'\x01'),
-                ('1.3.6.1.2.1.3.1.1.2.10.1.172.17.0.1', b'\x02B\x8e>\x9ee'),
-                ('1.3.6.1.2.1.5.2.0', b'\x00'),
-                ('1.3.6.1.2.1.3.1.1.3.10.1.172.17.0.1', b'\xac\x11\x00\x01'),
-                ('1.3.6.1.2.1.5.3.0', b'\x00'),
-                ('1.3.6.1.2.1.4.1.0', 1),
-                ('1.3.6.1.2.1.5.4.0', b'\x01'),
-                ('1.3.6.1.2.1.4.3.0', b'\x00\xb1'),
-                ('1.3.6.1.2.1.5.5.0', b'\x00'),
-                ('1.3.6.1.2.1.4.4.0', b'\x00'),
-                ('1.3.6.1.2.1.5.6.0', b'\x00'),
-                ('1.3.6.1.2.1.4.5.0', b'\x00'),
-                ('1.3.6.1.2.1.5.7.0', b'\x00'),
-                ('1.3.6.1.2.1.4.6.0', b'\x00'),
-                ('1.3.6.1.2.1.5.8.0', b'\x00'),
-                ('1.3.6.1.2.1.4.7.0', b'\x00'),
-                ('1.3.6.1.2.1.5.9.0', b'\x00'),
-                ('1.3.6.1.2.1.4.8.0', b'\x00'),
-                ('1.3.6.1.2.1.5.10.0', b'\x00')]))
+                (
+                    ObjectIdentifier('1.3.6.1.2.1.3.1.1.1.8769.1.10.100.0.1'),
+                    Integer(8769),
+                ),
+                (ObjectIdentifier('1.3.6.1.2.1.5.1.0'), Counter(1)),
+                (
+                    ObjectIdentifier('1.3.6.1.2.1.3.1.1.2.8769.1.10.100.0.1'),
+                    OctetString(b'\x02B\x03\x96#>'),
+                ),
+                (ObjectIdentifier('1.3.6.1.2.1.5.2.0'), Counter(0)),
+                (
+                    ObjectIdentifier('1.3.6.1.2.1.3.1.1.3.8769.1.10.100.0.1'),
+                    IpAddress(IPv4Address('10.100.0.1')),
+                ),
+                (ObjectIdentifier('1.3.6.1.2.1.5.3.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.4.1.0'), Integer(1)),
+                (ObjectIdentifier('1.3.6.1.2.1.5.4.0'), Counter(1)),
+                (ObjectIdentifier('1.3.6.1.2.1.4.2.0'), Integer(64)),
+                (ObjectIdentifier('1.3.6.1.2.1.5.5.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.4.3.0'), Counter(4)),
+                (ObjectIdentifier('1.3.6.1.2.1.5.6.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.4.4.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.5.7.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.4.5.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.5.8.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.4.6.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.5.9.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.4.7.0'), Counter(0)),
+                (ObjectIdentifier('1.3.6.1.2.1.5.10.0'), Counter(0))
+            ])
+        )
         """
 
         scalar_oids = scalar_oids or []  # protect against empty values
@@ -716,38 +767,14 @@ class Client:
         bulk_size: int = 10,
     ) -> TWalkResponse:
         """
-        More efficient implementation of :py:func:`~.walk`. It uses
-        :py:func:`~.bulkget` under the hood instead of :py:func:`~.getnext`.
+        Identical to :py:meth:`~.walk` but uses "bulk" requests instead.
 
-        Just like :py:func:`~.multiwalk`, it returns a generator over
-        :py:class:`~puresnmp.pdu.VarBind` instances.
+        "Bulk" requests fetch more than one OID in one request, so they are
+        more efficient, but large return-values may overflow the transport
+        buffer.
 
-        :param oids: A list of base OIDs to use in the walk operation.
-        :param bulk_size: How many varbinds to request from the remote host with
-            one request.
-
-        Example::
-
-            >>> from puresnmp import Client, V2C
-            >>> def example():
-            ...     ip = '127.0.0.1'
-            ...     community = 'private'
-            ...     oids = [
-            ...         '1.3.6.1.2.1.2.2.1.2',   # name
-            ...         '1.3.6.1.2.1.2.2.1.6',   # MAC
-            ...         '1.3.6.1.2.1.2.2.1.22',  # ?
-            ...     ]
-            ...     client = Client(ip, V2C(community))
-            ...     result = client.bulkwalk(oids)
-            ...     for row in result:
-            ...         print(row)
-            >>> example()  # doctest: +SKIP
-            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.1"), value=b'lo')
-            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.6.1"), value=b'')
-            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.22.1"), value='0.0')
-            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.2.38"), value=b'eth0')
-            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.6.38"), value=b'\x02B\xac\x11\x00\x02')
-            VarBind(oid=ObjectIdentifier("1.3.6.1.2.1.2.2.1.22.38"), value='0.0')
+        :param oids: Delegated to :py:meth:`~.walk`
+        :param bulk_size: Number of values to fetch per request.
         """
 
         if not isinstance(oids, list):
@@ -767,11 +794,15 @@ class Client:
         bulk_size: int = 10,
     ) -> List[Dict[str, Any]]:
         """
-        Fetch an SNMP table using "bulk" requests.
+        Identical to :py:meth:`~.table` but uses "bulk" requests.
 
-        See :py:func:`.table` for more information of the returned structure.
+        "Bulk" requests fetch more than one OID in one request, so they are
+        more efficient, but large return-values may overflow the transport
+        buffer.
 
-        .. versionadded: 1.7.0
+        :param oid: Delegated to :py:meth:`~.table`
+        :param num_base_nodes: Delegated to :py:meth:`~.table`
+        :param bulk_size: Number of values to fetch per request.
         """
         tmp = []
         if num_base_nodes == 0:
