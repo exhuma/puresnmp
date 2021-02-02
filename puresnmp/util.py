@@ -1,6 +1,7 @@
 """
 Colleciton of utility functions for the puresnmp package.
 """
+import asyncio
 import hashlib
 import pkgutil
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ from time import time
 from types import ModuleType
 from typing import (
     Any,
+    Awaitable,
     Callable,
     Dict,
     Generator,
@@ -17,6 +19,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypeVar,
 )
 
 from typing_extensions import Protocol
@@ -26,6 +29,8 @@ from puresnmp.credentials import V3
 from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
+
+T = TypeVar("T", bound=Any)
 
 
 class TDigestable(Protocol):
@@ -490,3 +495,17 @@ def get_request_id() -> int:  # pragma: no cover
     matches with the given request.
     """
     return int(time())
+
+
+def sync(coro: Awaitable[T]) -> T:
+    """
+    Execute an asyncio corouting in the current event-loop and return the result
+
+    .. warning::
+
+        This is intended for debugging and testing. If possible you should
+        use your own async environment.
+    """
+    loop = asyncio.get_event_loop()
+    result = loop.run_until_complete(coro)
+    return result
