@@ -26,7 +26,6 @@ import logging
 from collections import OrderedDict
 from datetime import timedelta
 from typing import Any, AsyncGenerator, Dict, List
-from warnings import warn
 
 from x690.types import ObjectIdentifier, Type
 
@@ -37,7 +36,6 @@ from ..varbind import PyVarBind
 from . import raw
 
 LOG = logging.getLogger(__name__)
-OID = ObjectIdentifier
 TWalkResponse = AsyncGenerator[PyVarBind, None]
 
 

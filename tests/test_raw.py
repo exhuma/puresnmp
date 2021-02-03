@@ -17,7 +17,6 @@ import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.api.raw import Client, register_trap_callback
-from puresnmp.const import Version
 from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetResponse, PDUContent
@@ -339,7 +338,7 @@ async def test_get_call_args_getnext(mocked_raw):
     mocked_raw.sender.set_values([data])
     packet = Sequence(
         [
-            Integer(Version.V2C),
+            Integer(1),
             OctetString("public"),
             GetNextRequest(
                 PDUContent(
@@ -509,7 +508,7 @@ async def test_get_call_args_bulkget(mocked_raw):
     mocked_raw.sender.set_values([data])
     packet = Sequence(
         [
-            Integer(Version.V2C),
+            Integer(1),
             OctetString("public"),
             BulkGetRequest(
                 3262242864,
@@ -598,7 +597,7 @@ async def test_get_call_args_bulkwalk(mocked_raw):
     mocked_raw.sender.set_values([data])
     packet = Sequence(
         [
-            Integer(Version.V2C),
+            Integer(1),
             OctetString("public"),
             BulkGetRequest(3262242864, 0, 2, OID("1.2.3")),
         ]

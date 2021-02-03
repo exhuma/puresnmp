@@ -66,7 +66,6 @@ TWalkResponse = AsyncGenerator[VarBind, None]
 T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name
 
 LOG = logging.getLogger(__name__)
-OID = ObjectIdentifier
 
 
 class TFetcher(Protocol):

@@ -63,7 +63,7 @@ class TAuth(Protocol):
         self,
         auth_key: bytes,
         data: bytes,
-        received_digst: bytes,
+        received_digest: bytes,
         engine_id: bytes,
     ) -> bool:
         """

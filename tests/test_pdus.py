@@ -3,7 +3,6 @@
 from x690 import decode
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
-from puresnmp.const import Version
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import (
     PDU,
@@ -60,9 +59,7 @@ class TestGet(ByteTester):
                 [VarBind(ObjectIdentifier("1.3.6.1.2.1.1.2.0"), Null())],
             )
         )
-        packet = Sequence(
-            [Integer(Version.V2C), OctetString("public"), request]
-        )
+        packet = Sequence([Integer(1), OctetString("public"), request])
         result = bytes(packet)
 
         self.assertBytesEqual(result, expected)
@@ -81,7 +78,7 @@ class TestGet(ByteTester):
         result, _ = decode(data)
         expected = Sequence(
             [
-                Integer(Version.V2C),
+                Integer(1),
                 OctetString("public"),
                 GetResponse(
                     PDUContent(
@@ -148,9 +145,7 @@ class TestGet(ByteTester):
                 ],
             )
         )
-        packet = Sequence(
-            [Integer(Version.V2C), OctetString("public"), request]
-        )
+        packet = Sequence([Integer(1), OctetString("public"), request])
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
@@ -159,7 +154,7 @@ class TestGet(ByteTester):
         result, _ = decode(data)
         expected = Sequence(
             [
-                Integer(Version.V2C),
+                Integer(1),
                 OctetString("public"),
                 GetResponse(
                     PDUContent(
@@ -197,9 +192,7 @@ class TestWalk(ByteTester):
         request = GetNextRequest(
             PDUContent(499509692, [VarBind(ObjectIdentifier("1"), Null())])
         )
-        packet = Sequence(
-            [Integer(Version.V2C), OctetString("public"), request]
-        )
+        packet = Sequence([Integer(1), OctetString("public"), request])
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
@@ -219,9 +212,7 @@ class TestSet(ByteTester):
                 ],
             )
         )
-        packet = Sequence(
-            [Integer(Version.V2C), OctetString("private"), request]
-        )
+        packet = Sequence([Integer(1), OctetString("private"), request])
         result = bytes(packet)
         self.assertBytesEqual(result, expected)
 
@@ -242,9 +233,7 @@ class TestBulkGet(ByteTester):
             ObjectIdentifier("1.3.6.1.2.1.2.2.0"),
             ObjectIdentifier("1.3.6.1.2.1.2.3.0"),
         )
-        packet = Sequence(
-            [Integer(Version.V2C), OctetString("public"), request]
-        )
+        packet = Sequence([Integer(1), OctetString("public"), request])
 
         result = bytes(packet)
         self.assertBytesEqual(result, expected)

@@ -1,3 +1,7 @@
+"""
+Implementation of the AES encryption ("usmAesCfb128PrivProtocol") according
+to :rfc:`3826`
+"""
 from random import randint
 from typing import Generator
 
@@ -8,20 +12,6 @@ from puresnmp.priv import EncryptionResult
 
 IDENTIFIER = "aes"
 IANA_ID = 4
-RFC = "rfc3826"
-NAME = "usmAesCfb128PrivProtocol"
-AES_PARAMS = (
-    dict(
-        S=128,
-        key_size=128,
-        block_size=128,
-        rounds=10,
-    ),
-)
-
-localized_key = 128 * b"\x00"
-encryption_key = localized_key[:128]
-salt = randint(0, 10)  # 64-bit integer
 
 
 def pad_packet(data: bytes, block_size: int = 8) -> bytes:
