@@ -96,7 +96,7 @@ class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
             priv=credentials.priv is not None,
             reportable=is_confirmed(pdu),
         )
-        global_data = HeaderData(
+        header = HeaderData(
             request_id,
             MESSAGE_MAX_SIZE,
             flags,
@@ -111,7 +111,7 @@ class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
             )
 
         snmp_version = 3
-        msg = PlainMessage(Integer(snmp_version), global_data, b"", scoped_pdu)
+        msg = PlainMessage(Integer(snmp_version), header, b"", scoped_pdu)
         output = self.security_model.generate_request_message(
             msg,
             security_engine_id,

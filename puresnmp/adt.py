@@ -189,7 +189,7 @@ class Message:
     """
 
     version: Integer
-    global_data: HeaderData
+    header: HeaderData
     security_parameters: bytes
     scoped_pdu: Union[OctetString, ScopedPDU]
 
@@ -204,7 +204,7 @@ class Message:
             Sequence(
                 [
                     self.version,
-                    self.global_data.as_snmp_type(),
+                    self.header.as_snmp_type(),
                     OctetString(self.security_parameters),
                     spdu,
                 ]
@@ -218,13 +218,13 @@ class Message:
         Construct a Message instance from an X.690 Sequence
         """
         version = cast(Integer, seq[0])
-        global_data = cast(Sequence, seq[1])
+        header = cast(Sequence, seq[1])
         security_parameters = cast(OctetString, seq[2]).value
 
-        msg_id = cast(Integer, global_data[0])
-        msg_max_size = cast(Integer, global_data[1])
-        security_level = V3Flags.decode(cast(OctetString, global_data[2]))
-        security_model_id = cast(Integer, global_data[3]).pythonize()
+        msg_id = cast(Integer, header[0])
+        msg_max_size = cast(Integer, header[1])
+        security_level = V3Flags.decode(cast(OctetString, header[2]))
+        security_model_id = cast(Integer, header[3]).pythonize()
 
         if security_level.priv:
             payload: Union[OctetString, ScopedPDU] = cast(OctetString, seq[3])
@@ -275,7 +275,7 @@ class Message:
         lines = []
 
         lines.append(f"SNMP Message (version-identifier={self.version})")
-        lines.extend(self.global_data.pretty(depth + 1).splitlines())
+        lines.extend(self.header.pretty(depth + 1).splitlines())
         lines.append(indent("Security Parameters", INDENT_STRING * (depth + 1)))
         lines.extend(
             OctetString(self.security_parameters).pretty(depth + 2).splitlines()
@@ -298,7 +298,7 @@ class PlainMessage(Message):
     """
 
     version: Integer
-    global_data: HeaderData
+    header: HeaderData
     security_parameters: bytes
     scoped_pdu: ScopedPDU
 
@@ -308,7 +308,11 @@ class EncryptedMessage(Message):
     A message whose PDU is encrypted
     """
 
+    #: The SNMP version number
     version: Integer
-    global_data: HeaderData
+    #: The "header" of the message
+    header: HeaderData
+    #: Security options needed for authentication & en/decryption
     security_parameters: bytes
+    #: The "body" of the message as SNMPv2 PDU
     scoped_pdu: OctetString

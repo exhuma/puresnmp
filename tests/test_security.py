@@ -152,7 +152,7 @@ def test_request_message_nanp():
     )
     expected = PlainMessage(
         version=3,
-        global_data=HeaderData(
+        header=HeaderData(
             message_id=123,
             message_max_size=234,
             flags=V3Flags(auth=True, priv=True, reportable=True),
@@ -186,7 +186,7 @@ def test_request_message_anp():
     )
     expected = PlainMessage(
         version=3,
-        global_data=HeaderData(
+        header=HeaderData(
             message_id=123,
             message_max_size=234,
             flags=V3Flags(auth=True, priv=True, reportable=True),
@@ -222,7 +222,7 @@ def test_request_message_ap_des():
     )
     expected = PlainMessage(
         version=3,
-        global_data=HeaderData(
+        header=HeaderData(
             message_id=123,
             message_max_size=234,
             flags=V3Flags(auth=True, priv=True, reportable=True),
@@ -258,7 +258,7 @@ def test_request_message_ap_aes():
     )
     expected = PlainMessage(
         version=3,
-        global_data=HeaderData(
+        header=HeaderData(
             message_id=123,
             message_max_size=234,
             flags=V3Flags(auth=True, priv=True, reportable=True),
@@ -367,7 +367,7 @@ def test_auth_error():
 def test_incoming_message():
     message = Message(
         version=Integer(3),
-        global_data=HeaderData(
+        header=HeaderData(
             message_id=1610635889,
             message_max_size=65507,
             flags=V3Flags(auth=True, priv=True, reportable=False),
@@ -402,7 +402,7 @@ def test_incoming_message():
     )
     expected = Message(
         version=Integer(3),
-        global_data=HeaderData(
+        header=HeaderData(
             message_id=1610635889,
             message_max_size=65507,
             flags=V3Flags(auth=True, priv=True, reportable=False),
@@ -437,7 +437,7 @@ def test_incoming_message():
 
 
 def test_incoming_noauth():
-    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(), 1))
+    msg = replace(make_msg(), header=HeaderData(1, 1, V3Flags(), 1))
     usm.verify_authentication(
         msg,
         V3(b"", None, None),
@@ -446,7 +446,7 @@ def test_incoming_noauth():
 
 
 def test_missing_auth():
-    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(True), 1))
+    msg = replace(make_msg(), header=HeaderData(1, 1, V3Flags(True), 1))
     with pytest.raises(usm.UnsupportedSecurityLevel) as exc:
         usm.verify_authentication(
             msg,
@@ -457,7 +457,7 @@ def test_missing_auth():
 
 
 def test_incoming_auth_error():
-    msg = replace(make_msg(), global_data=HeaderData(1, 1, V3Flags(True), 1))
+    msg = replace(make_msg(), header=HeaderData(1, 1, V3Flags(True), 1))
     with pytest.raises(usm.AuthenticationError) as exc:
         with patch("puresnmp.security.usm.auth") as auth:
             mck = Mock()
@@ -475,7 +475,7 @@ def test_incoming_auth_error():
 def test_incoming_priv_error():
     msg = replace(
         make_msg(EncryptedMessage),
-        global_data=HeaderData(1, 1, V3Flags(True, True), 1),
+        header=HeaderData(1, 1, V3Flags(True, True), 1),
     )
     with pytest.raises(usm.DecryptionError) as exc:
         with patch("puresnmp.security.usm.priv") as priv:
@@ -495,9 +495,7 @@ def test_decrypt_noop():
     An incoming message which doesn't have the "privacy" flag does not need
     to be decrypted.
     """
-    msg = replace(
-        make_msg(PlainMessage), global_data=HeaderData(1, 1, V3Flags(), 1)
-    )
+    msg = replace(make_msg(PlainMessage), header=HeaderData(1, 1, V3Flags(), 1))
     result = usm.decrypt_message(msg, V3(b"", None, None))
     assert result is msg
 

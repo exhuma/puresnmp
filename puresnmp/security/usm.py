@@ -310,7 +310,7 @@ def verify_authentication(
     :raises AuthenticationError: If the message is not authentic
     """
 
-    if not message.global_data.flags.auth:
+    if not message.header.flags.auth:
         return
 
     if not credentials.auth:
@@ -505,7 +505,7 @@ class UserSecurityModel(
         # Which they currently are not. So this should do.
         response_msg = PlainMessage.from_sequence(response)
 
-        response_id = response_msg.global_data.message_id
+        response_id = response_msg.header.message_id
         validate_response_id(request_id, response_id)
 
         # The engine-id is available in two places: The response directly, and
