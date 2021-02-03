@@ -7,7 +7,8 @@ from enum import Enum
 
 class Version(int, Enum):
     """
-    The SNMP Version identifier. This is used in the SNMP :term:`PDU`.
+    The SNMP Version identifier. This is used in the SNMP
+    :py:class:`puresnmp.pdu.PDU`.
 
     This avoids ambiguity with "v2" having the IDs 1 and 2, while v1 has the
     ID 0

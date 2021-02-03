@@ -53,4 +53,7 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-intersphinx_mapping = {"x690": ("https://exhuma.github.io/x690/", None)}
+intersphinx_mapping = {
+    "": ("https://docs.python.org/3/", None),
+    "x690": ("https://exhuma.github.io/x690/", None),
+}

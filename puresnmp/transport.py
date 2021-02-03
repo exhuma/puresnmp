@@ -76,10 +76,10 @@ class SNMPTrapReceiverProtocol(asyncio.DatagramProtocol):
 
 class SNMPClientProtocol(asyncio.DatagramProtocol):
     """
-    An SNMP Client Protocol suitable for use with create_datagram_endpoint()
-    that provide a method to convert the callback based API into a coroutine
+    An SNMP Client Protocol suitable for use with
+    :py:meth:`asyncio.AbstractEventLoop.create_datagram_endpoint` that
+    provides a method to convert the callback based API into a coroutine
     based API.
-
     """
 
     def __init__(self, packet, loop):

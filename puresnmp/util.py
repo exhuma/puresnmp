@@ -1,5 +1,5 @@
 """
-Colleciton of utility functions for the puresnmp package.
+Collection of utility functions for the puresnmp package.
 """
 import asyncio
 import hashlib
@@ -71,7 +71,9 @@ class WalkRow:
     last row or not.
     """
 
+    #: The value of the "current" row in a walk operation
     value: Any
+    #: Whether there are still values following this row
     unfinished: bool
 
 
@@ -84,7 +86,10 @@ class BulkResult:
     values" (lists). This wrapper makes these terms a bit friendlier to use.
     """
 
+    #: A mapping from object-identifiers to scalar (single) values for those
+    #: OIDs
     scalars: Dict[ObjectIdentifier, Any]
+    #: A mapping from object-identifiers to "walk" results below those OIDs
     listing: Dict[ObjectIdentifier, Any]
 
 
@@ -160,6 +165,9 @@ def get_unfinished_walk_oids(
     grouped_oids: Dict[ObjectIdentifier, List[VarBind]]
 ) -> List[Tuple[ObjectIdentifier, WalkRow]]:
     """
+    Create a list of OIDs which still have subsequent values in a "walk"
+    operation
+
     :param grouped_oids: A dictionary containing VarBinds as values. The keys
         are the base OID of those VarBinds as requested by the user. We need to
         keep track of the base to be able to tell when a walk over OIDs is
@@ -270,7 +278,13 @@ def password_to_key(
     hash_implementation: Callable[[bytes], TDigestable], padding_length: int
 ) -> Callable[[bytes, bytes], bytes]:
     """
-    Create a helper function to convert passwords to SNMP compliant keys.
+    Create a helper function to convert passwords to SNMP compliant keys
+    according to :rfc:`3414`.
+
+    >>> hasher = password_to_key(hashlib.sha1, 20)
+    >>> key = hasher(b"mypasswd", b"target-engine-id")
+    >>> key.hex()
+    '999ec23ca66b9d3f187ab5208840c30b0450b452'
 
     :param hash_implementation: A callable that creates an object with a
         ".digest()" method from a bytes-object. Usable examples are
@@ -320,7 +334,7 @@ def generate_engine_id_ip(pen: int, ip: TAnyIp) -> bytes:
             ASN.1 definition for engine-id encoding
         `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
             List of valid engine-id variants
-        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
             List of publicly registered private enterprise numbers
     """
     buffer = bytearray(pen.to_bytes(4, "big"))
@@ -345,7 +359,7 @@ def generate_engine_id_mac(pen: int, mac_address: str) -> bytes:
             ASN.1 definition for engine-id encoding
         `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
             List of valid engine-id variants
-        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
             List of publicly registered private enterprise numbers
     """
     buffer = bytearray(pen.to_bytes(4, "big"))
@@ -376,7 +390,7 @@ def generate_engine_id_text(pen: int, text: str) -> bytes:
             ASN.1 definition for engine-id encoding
         `Engine ID types <https://tools.ietf.org/html/rfc5343#section-4>`_
             List of valid engine-id variants
-        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers`_
+        `PEN list <https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers>`_
             List of publicly registered private enterprise numbers
     """
     if len(text) > 27:
@@ -451,16 +465,17 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
     """
     Derive a localised key from the user-credentials.
 
-    This follows the logic as dicted by :rfc:`3414` melding the recipient
+    This follows the logic as dictated by :rfc:`3414` melding the recipient
     engine-id with the user-credentials into a kay used for de-/en-cryption
     of packets.
 
     .. seealso: https://tools.ietf.org/html/rfc3414#section-2.6
 
     >>> from puresnmp.credentials import V3, Auth, Priv
+    >>> engine_id = b"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02"
     >>> localised = localise_key(
     ...     V3(b"user", Auth(b"maplesyrup", "md5"), Priv(b"privkey", "des")),
-    ...     b"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02"
+    ...     engine_id
     ... )
     >>> localised.hex()
     '4924c679907476d038b258097995a15c'
@@ -500,6 +515,11 @@ def get_request_id() -> int:  # pragma: no cover
 def sync(coro: Awaitable[T]) -> T:
     """
     Execute an asyncio corouting in the current event-loop and return the result
+
+    >>> async def foo():
+    ...     return "hello"
+    >>> sync(foo())
+    'hello'
 
     .. warning::
 

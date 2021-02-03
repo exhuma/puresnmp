@@ -1,11 +1,13 @@
 """
-SMI Types / Structure types which are not defined in :term:`X.690`.
+SMI Types / Structure types which are not defined in the x690 protocol (see
+also :py:mod:`x690`).
 
 See `RFC 1155 section 3.2.3`_ for a description of the types and `RFC 3416`_
 for the definition of the new types.
 
 .. note::
-    The IPv6 Type is not yet implemented and will be returned as OctetString!
+    The IPv6 type is not defined in the default RFCs and needs to be
+    post-processed.
 
 .. _RFC 1155 section 3.2.3: https://tools.ietf.org/html/rfc1155#section-3.2.3
 .. _RFC 3416: https://tools.ietf.org/html/rfc3416
@@ -37,11 +39,23 @@ class IpAddress(Type[IPv4Address]):
     TAG = 0x00
 
     def encode_raw(self) -> bytes:
+        """
+        Converts ip-address instance into raw bytes
+
+        >>> IpAddress(ip_address('192.0.2.1')).encode_raw()
+        b'\\xc0\\x00\\x02\\x01'
+        """
         numeric = int(self.value)
         return numeric.to_bytes(4, "big")
 
     @staticmethod
     def decode_raw(data: bytes, slc: slice = slice(None)) -> IPv4Address:
+        """
+        Converts raw-bytes to an ip-address instance
+
+        >>> IpAddress.decode_raw(b"\\xc0\\x00\\x02\\x01")
+        IPv4Address('192.0.2.1')
+        """
         value = ip_address(int.from_bytes(data[slc], "big"))
         return value  # type: ignore
 
@@ -81,7 +95,7 @@ class Gauge(Integer):
 
 class TimeTicks(Integer):
     """
-    SNMP type for time ticks.
+    SNMP type for time ticks exposed as Python :py:class:`datetime.timedelta`
     """
 
     SIGNED = False
