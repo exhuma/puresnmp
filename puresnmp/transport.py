@@ -10,6 +10,7 @@ hard to test.
 
 import asyncio
 import logging
+import socket
 from asyncio.events import AbstractEventLoop
 from asyncio.transports import BaseTransport
 from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
@@ -146,7 +147,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         """
         try:
             return await asyncio.wait_for(self.future, timeout, loop=self.loop)
-        except asyncio.TimeoutError as exc:
+        except (asyncio.TimeoutError, socket.timeout) as exc:
             if self.transport:
                 self.transport.abort()
             raise Timeout(f"{timeout} second timeout exceeded") from exc

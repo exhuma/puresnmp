@@ -205,7 +205,7 @@ class TooManyVarbinds(SnmpError):
         self.num_oids = num_oids
 
 
-class Timeout(socket.timeout):
+class Timeout(SnmpError):
     """
     Wrapper for network timeouts.
 
@@ -213,7 +213,7 @@ class Timeout(socket.timeout):
     """
 
     def __init__(self, message: str) -> None:
-        super().__init__()
+        super().__init__(message)
         self.message = message
 
 
