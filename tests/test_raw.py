@@ -868,7 +868,7 @@ async def test_table_complex_row_id():
         VarBind(OID("1.2.2.2.1.1"), OctetString(b"row 2.1.1 col 2")),
     ]
     with patch("puresnmp.api.raw.Client.walk", return_value=AsyncIter(values)):
-        result = await client.table("1.2", num_base_nodes=2)
+        result = await client.table(OID("1.2"))
     expected = [
         {
             "0": "1.1.1",
@@ -924,7 +924,7 @@ async def test_table_base_oid():
         VarBind(OID("1.2.1.2.2.1.1"), OctetString(b"row 2.1.1 col 2")),
     ]
     with patch("puresnmp.api.raw.Client.walk", return_value=AsyncIter(values)):
-        result = await client.table("1.2")
+        result = await client.table(OID("1.2.1"))
 
     expected = [
         {

@@ -175,24 +175,12 @@ class PyWrapper:
         )
         return BulkResult(pythonized_scalars, pythonized_list)
 
-    async def table(
-        self, oid: str, num_base_nodes: int = 0
-    ) -> List[Dict[str, Any]]:
+    async def table(self, oid: str) -> List[Dict[str, Any]]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.table` but
         converts internal types to simple Python types.
         """
-        if num_base_nodes:
-            warn(
-                'Usage of "num_base_nodes" in table operations is no longer '
-                "required",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        tmp = await self.client.table(
-            ObjectIdentifier(oid),
-            num_base_nodes=num_base_nodes,
-        )
+        tmp = await self.client.table(ObjectIdentifier(oid))
         output = []
         for row in tmp:
             index = row.pop("0")
@@ -202,23 +190,14 @@ class PyWrapper:
         return output
 
     async def bulktable(
-        self, oid: str, num_base_nodes: int = 0, bulk_size: int = 10
+        self, oid: str, bulk_size: int = 10
     ) -> List[Dict[str, Any]]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.bulktable` but
         converts internal types to simple Python types.
         """
-        if num_base_nodes:
-            warn(
-                'Usage of "num_base_nodes" in table operations is no longer '
-                "required",
-                DeprecationWarning,
-                stacklevel=2,
-            )
         tmp = await self.client.bulktable(
-            ObjectIdentifier(oid),
-            num_base_nodes=num_base_nodes,
-            bulk_size=bulk_size,
+            ObjectIdentifier(oid), bulk_size=bulk_size
         )
         output = []
         for row in tmp:

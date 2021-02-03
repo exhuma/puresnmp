@@ -500,11 +500,7 @@ class Client:
                 )
         return output
 
-    async def table(
-        self,
-        oid: ObjectIdentifier,
-        num_base_nodes: int = 0,
-    ) -> List[Dict[str, Any]]:
+    async def table(self, oid: ObjectIdentifier) -> List[Dict[str, Any]]:
         """
         Fetch an SNMP table
 
@@ -538,13 +534,10 @@ class Client:
         [{'0': '1', '1': Integer(1), ... '22': ObjectIdentifier('0.0')}]
         """
         tmp = []
-        if num_base_nodes == 0:
-            num_base_nodes = len(oid)
-
         varbinds = self.walk(oid)
         async for varbind in varbinds:
             tmp.append(varbind)
-        as_table = tablify(tmp, num_base_nodes=num_base_nodes)
+        as_table = tablify(tmp, num_base_nodes=len(oid))
         return as_table
 
     async def set(
@@ -790,7 +783,6 @@ class Client:
     async def bulktable(
         self,
         oid: ObjectIdentifier,
-        num_base_nodes: int = 0,
         bulk_size: int = 10,
     ) -> List[Dict[str, Any]]:
         """
@@ -801,17 +793,13 @@ class Client:
         buffer.
 
         :param oid: Delegated to :py:meth:`~.table`
-        :param num_base_nodes: Delegated to :py:meth:`~.table`
         :param bulk_size: Number of values to fetch per request.
         """
         tmp = []
-        if num_base_nodes == 0:
-            num_base_nodes = len(oid) + 1
-
         varbinds = self.bulkwalk([oid], bulk_size=bulk_size)
         async for varbind in varbinds:
             tmp.append(varbind)
-        as_table = tablify(tmp, num_base_nodes=num_base_nodes)
+        as_table = tablify(tmp, num_base_nodes=len(oid) + 1)
         return as_table
 
 
