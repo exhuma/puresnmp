@@ -24,17 +24,19 @@ class ErrorResponse(SnmpError):
     """
     A superclass used when the SNMP agent responded with additional error
     information.
-
-    Instances of ``ErrorResponse`` have two attributes concerning the error:
-
-    * ``error_status`` the raw (int) value of the error-status as returned by
-      the SNMP agent.
-    * ``offending_oid`` the OID identified in the error message which caused
-      the error.
     """
 
-    DEFAULT_MESSAGE = "unknown error"
-    IDENTIFIER = 0
+    #: Default message to report for this error (if not overridden)
+    DEFAULT_MESSAGE: str = "unknown error"
+
+    #: The "error-status" value
+    IDENTIFIER: int = 0
+
+    #: the raw (int) value of the error-status as returned by the SNMP agent.
+    error_status: int
+
+    #: the OID identified in the error message which caused the error.
+    offending_oid: ObjectIdentifier
 
     @staticmethod
     def construct(

@@ -33,15 +33,24 @@ class V3Flags:
     standard.
     """
 
+    #: Whether the PDU exchange requires authentication
     auth: bool = False
+    #: Whether the PDU exchange requires privacy (encryption)
     priv: bool = False
+    #: Whether the exchanged PDU expects a response
     reportable: bool = False
 
     @staticmethod
     def decode(blob: OctetString) -> "V3Flags":
         """
         Converts an OctetString instance into a more pythonic instance
+
+        >>> V3Flags.decode(OctetString(b"\\x00"))
+        V3Flags(auth=False, priv=False, reportable=False)
+        >>> V3Flags.decode(OctetString(b"\\x07"))
+        V3Flags(auth=True, priv=True, reportable=True)
         """
+        # TODO: Other "decode" methods use "bytes" as input value -> consistency
         flags = int.from_bytes(blob.pythonize(), "big")
         reportable = bool(flags & 0b100)
         priv = bool(flags & 0b010)
@@ -62,10 +71,17 @@ class HeaderData:
     Header information for an SNMPv3 message
     """
 
+    #: ID to match responses with requests
     message_id: int
+    #: Maximum number of bytes accepted by the SNMP engine
     message_max_size: int
+    #: Additional boolean flags about the message
     flags: V3Flags
+    #: The security model required to process this message (identified by a
+    #: IANA registered ID). See :py:mod:`puresnmp.security`
     security_model: int
+
+    # TODO: explode "flags" into its components
 
     def as_snmp_type(self) -> Sequence:
         """
@@ -127,6 +143,17 @@ class ScopedPDU:
         :param slc: The slice at which the object is located. If left to the
             default, it will assume that the object is located in the beginning
             of the bytes object.
+
+        >>> from puresnmp.pdu import GetRequest, PDUContent, VarBind
+        >>> from x690.types import ObjectIdentifier as OID
+        >>> pdu = ScopedPDU(
+        ...     OctetString(b"engine"),
+        ...     OctetString(b"context"),
+        ...     GetRequest(PDUContent(42, [])),
+        ... )
+        >>> result = ScopedPDU.decode(bytes(pdu))
+        >>> pdu == result
+        True
         """
         sequence, _ = decode(
             data,
@@ -179,18 +206,29 @@ class ScopedPDU:
 @dataclass(frozen=True)
 class Message:
     """
-    A message represents the complete binary packet sent to/from the network.
+    A complete SNMP message including all information needed by :rfc:`3411`
 
-    Aside from the PDU it also contains additional meta-data for message
-    processing.
+    Such a message contains an "old-style" PDU (as was defined in SNMPv2)
+    plus some meta-data. The meta-data consists of a version identifier to
+    identify the proper "message-processing-model" using a IANA registered
+    value.
 
-    See http://www.tcpipguide.com/free/t_SNMPVersion3SNMPv3MessageFormat.htm
-        https://tools.ietf.org/html/rfc3412#section-6
+    .. seealso::
+        `RFC definition <https://tools.ietf.org/html/rfc3412#section-6>`_
+            The MIB definition of an SNMPv3 message
+        `Example Message Format <http://www.tcpipguide.com/free/t_SNMPVersion3SNMPv3MessageFormat.htm>`_
+            A simple visual representation of the byte-structure of an SNMPv3 message
+        `IANA Message Processing Models <https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xml#snmp-number-spaces-2>`_
+            Oficially registered message "version" identifiers
     """
 
+    #: The IANA version identifier
     version: Integer
+    #: Additional information wrapping the old-style PDU
     header: HeaderData
+    #: Additional data needed to authenticate & en/decrypt the message
     security_parameters: bytes
+    #: The "old-style" PDU (either plain or encrypted)
     scoped_pdu: Union[OctetString, ScopedPDU]
 
     def __bytes__(self) -> bytes:
@@ -253,6 +291,23 @@ class Message:
     def decode(data: bytes) -> Union["PlainMessage", "EncryptedMessage"]:
         """
         Construct a new SNMPv3 message from a bytes object
+
+        >>> from puresnmp.pdu import GetRequest, PDUContent
+        >>> from x690.types import ObjectIdentifier as OID
+        >>> pdu = ScopedPDU(
+        ...     OctetString(b"engine"),
+        ...     OctetString(b"context"),
+        ...     GetRequest(PDUContent(42, [])),
+        ... )
+        >>> msg = PlainMessage(
+        ...     version=Integer(3),
+        ...     header=HeaderData(42, 65000, V3Flags(False, False, False), 3),
+        ...     security_parameters=b"",
+        ...     scoped_pdu=pdu
+        ... )
+        >>> result = Message.decode(bytes(msg))
+        >>> result == msg
+        True
         """
 
         message, _ = decode(data, enforce_type=Sequence)
@@ -308,11 +363,7 @@ class EncryptedMessage(Message):
     A message whose PDU is encrypted
     """
 
-    #: The SNMP version number
     version: Integer
-    #: The "header" of the message
     header: HeaderData
-    #: Security options needed for authentication & en/decryption
     security_parameters: bytes
-    #: The "body" of the message as SNMPv2 PDU
     scoped_pdu: OctetString

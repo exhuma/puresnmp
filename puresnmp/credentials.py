@@ -38,6 +38,9 @@ class Credentials:
 
     __slots__ = ["mpm"]
 
+    #: The message-processing model identifier
+    mpm: int
+
     def __init__(self, mpm: int) -> None:
         self.mpm = mpm
 
@@ -45,11 +48,12 @@ class Credentials:
 class V1(Credentials):
     """
     Credentials for SNMPv1 exchanges
-
-    :param community: The community-string
     """
 
     __slots__ = ["community"]
+
+    #: The community-string
+    community: str
 
     def __init__(self, community: str) -> None:
         super().__init__(0)
@@ -62,9 +66,10 @@ class V1(Credentials):
 class V2C(V1):
     """
     Credentials for community-based SNMPv2 exchanges
-
-    :param community: The community-string
     """
+
+    #: The community-string
+    community: str
 
     def __init__(self, community: str) -> None:
         super().__init__(community)
@@ -74,15 +79,19 @@ class V2C(V1):
 class V3(Credentials):
     """
     Credentials for SNMPv3 exchanges
-
-    :param username: The local username for SNMP exchanges
-    :param auth: Authentication details. If left at "None", authentication is disabled.
-    :param priv: Encryption details. If left at "None", encryption is
-        disabled. Note that for encryption to be enabled, authentication must
-        also be enabled.
     """
 
     __slots__ = ["username", "auth", "priv"]
+
+    #: The local username for SNMP exchanges
+    username: str
+
+    #: Authentication details. If left at "None", authentication is disabled.
+    auth: Optional[Auth]
+
+    #: Encryption details. If left at "None", encryption is disabled. Note
+    #: that for encryption to be enabled, authentication must also be enabled.
+    priv: Optional[Priv]
 
     def __init__(
         self,
