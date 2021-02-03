@@ -127,7 +127,7 @@ def deduped_varbinds(
             yield varbind
 
 
-@dataclass
+@dataclass(frozen=True)
 class Context:
     """
     Information about the current SNMP context

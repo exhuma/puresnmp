@@ -12,7 +12,7 @@ TWrappedPyType = TypeVar("TWrappedPyType")
 TAnyIp = Union[IPv4Address, IPv6Address]
 
 
-@dataclass
+@dataclass(frozen=True)
 class SocketInfo:
     """
     A simple tuple containing an IP address and port number
@@ -22,7 +22,7 @@ class SocketInfo:
     port: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class SocketResponse:
     """
     Metadata for socket responses

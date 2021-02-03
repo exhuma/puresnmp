@@ -29,7 +29,7 @@ from .typevars import SocketInfo
 from .varbind import VarBind
 
 
-@dataclass
+@dataclass(frozen=True)
 class PDUContent:
     """
     A helper class to wrap PDU data into a single "value" variable for x.690

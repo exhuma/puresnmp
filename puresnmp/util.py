@@ -62,7 +62,7 @@ class TDigestable(Protocol):
         ...
 
 
-@dataclass
+@dataclass(frozen=True)
 class WalkRow:
     """
     A wrapper around an SNMP Walk item.
@@ -75,7 +75,7 @@ class WalkRow:
     unfinished: bool
 
 
-@dataclass
+@dataclass(frozen=True)
 class BulkResult:
     """
     A representation for results of a "bulk" request.
