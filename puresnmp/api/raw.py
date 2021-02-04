@@ -41,13 +41,13 @@ from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
-    NoSuchInstance,
-    NoSuchObject,
     PDU,
     BulkGetRequest,
     EndOfMibView,
     GetNextRequest,
     GetRequest,
+    NoSuchInstance,
+    NoSuchObject,
     PDUContent,
     SetRequest,
     Trap,

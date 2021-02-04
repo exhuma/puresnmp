@@ -1,10 +1,28 @@
 """
-Model for SNMP PDUs (Request/Response messages).
+Models for SNMP PDUs (Request/Response messages).
 
 PDUs all have a common structure, which is handled in the
 :py:class:`~.PDU` class. The different (basic) PDU types only differ in
 their type identifier header (f.ex. ``b'\\xa0'`` for a
 :py:class:`~.GetRequest`).
+
+A SNMP PDU contains the following elements:
+
+request-id
+    A unique ID used to match requests with responses. Each reques/response
+    pair share this value.
+
+error-status
+    An integer defining an error-state. In :py:mod:`puresnmp` they are mapped
+    to exceptions of the class :py:exc:`puresnmp.exc.ErrorResponse`.
+
+error-index
+    If applicable, this identifies the Request OID that caused the error
+    (1-indexed.)
+
+varbinds
+    A key/value pair representing the payload of the PDU. For requests, the
+    value should be :py:class:`x690.types.Null`
 """
 
 from dataclasses import dataclass
@@ -47,7 +65,10 @@ class PDU(Type[PDUContent]):
     The superclass for SNMP Messages (GET, SET, GETNEXT, ...)
     """
 
+    #: The typeclass identifire for type-detection in :py:mod:`x690`
     TYPECLASS = TypeClass.CONTEXT
+
+    #: The tag for type-detection in :py:mod:`x690`
     TAG = 0
 
     @classmethod
@@ -193,7 +214,7 @@ class NoSuchInstance(Type[None]):
 
 class EndOfMibView(Type[None]):
     """
-    Sentinel value to detect endOfMibView
+    Sentinel value to detect the SNMP ``endOfMibView`` marker
     """
 
     # pylint: disable=too-few-public-methods
