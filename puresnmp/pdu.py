@@ -141,7 +141,7 @@ class PDU(Type[PDUContent]):
         return "\n".join(lines)
 
 
-class NoSuchObject(Type[bytes]):
+class NoSuchObject(Type[None]):
     """
     Sentinel value to detect noSuchObject
     """
@@ -161,12 +161,12 @@ class NoSuchObject(Type[bytes]):
         value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
     ) -> None:
         if value is UNINITIALISED:
-            super().__init__(value=b"")
+            super().__init__(value=None)
         else:
             super().__init__(value=value)
 
 
-class NoSuchInstance(Type[bytes]):
+class NoSuchInstance(Type[None]):
     """
     Sentinel value to detect noSuchInstance
     """
@@ -186,12 +186,12 @@ class NoSuchInstance(Type[bytes]):
         value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
     ) -> None:
         if value is UNINITIALISED:
-            super().__init__(value=b"")
+            super().__init__(value=None)
         else:
             super().__init__(value=value)
 
 
-class EndOfMibView(Type[bytes]):
+class EndOfMibView(Type[None]):
     """
     Sentinel value to detect endOfMibView
     """
@@ -205,6 +205,15 @@ class EndOfMibView(Type[bytes]):
     TYPECLASS = TypeClass.CONTEXT
     NATURE = [TypeNature.PRIMITIVE]
     TAG = 2
+
+    def __init__(
+        self,
+        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
+    ) -> None:
+        if value is UNINITIALISED:
+            super().__init__(value=None)
+        else:
+            super().__init__(value=value)
 
 
 class NoSuchOIDPacket(Type[bytes]):
