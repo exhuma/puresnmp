@@ -1,7 +1,21 @@
 {
     "files.watcherExclude": {
-        "**/.venv/**": true
+        "**/__pycache__": true,
+        "**/.venv": true
     },
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.mypy_cache": true,
+        "*.egg-info": true,
+        ".cache": true,
+        ".coverage": true,
+        ".pytest_cache": true,
+        "build": true
+    },
+    "search.exclude": {
+        "**/__pycache__": true
+    },
+    "python.linting.mypyEnabled": true,
     "python.formatting.provider": "black",
     "python.pythonPath": ".venv/bin/python",
     "editor.rulers": [
