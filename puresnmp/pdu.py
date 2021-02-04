@@ -216,31 +216,6 @@ class EndOfMibView(Type[None]):
             super().__init__(value=value)
 
 
-class NoSuchOIDPacket(Type[bytes]):
-    """
-    Sentinel value to detect no-such-oid error
-    """
-
-    # pylint: disable=too-few-public-methods
-    # |
-    # | This class make exclusive use of the parent-implementation, only
-    # | modifying class-level "type-detection" variables
-
-    # This subclassesPDU for type-consistency
-    TYPECLASS = TypeClass.CONTEXT
-    NATURE = [TypeNature.PRIMITIVE]
-    TAG = 1
-
-    def __init__(
-        self,
-        value: Union[TWrappedPyType, _SENTINEL_UNINITIALISED] = UNINITIALISED,
-    ) -> None:
-        if value is UNINITIALISED:
-            super().__init__(value=b"")
-        else:
-            super().__init__(value=value)
-
-
 class GetRequest(PDU):
     """
     Represents an SNMP Get Request.

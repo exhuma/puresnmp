@@ -41,12 +41,13 @@ from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
+    NoSuchInstance,
+    NoSuchObject,
     PDU,
     BulkGetRequest,
     EndOfMibView,
     GetNextRequest,
     GetRequest,
-    NoSuchOIDPacket,
     PDUContent,
     SetRequest,
     Trap,
@@ -317,7 +318,7 @@ class Client:
         ObjectIdentifier('1.3.6.1.4.1.8072.3.2.10')
         """
         result = await self.multiget([oid])
-        if isinstance(result[0], NoSuchOIDPacket):
+        if isinstance(result[0], (NoSuchObject, NoSuchInstance)):
             raise NoSuchOID(oid)
         return result[0]
 
@@ -364,6 +365,8 @@ class Client:
         <coroutine object ...>
         """
         result = await self.multigetnext([oid])
+        if isinstance(result[0], (NoSuchObject, NoSuchInstance)):
+            raise NoSuchOID(oid)
         return result[0]
 
     async def walk(
