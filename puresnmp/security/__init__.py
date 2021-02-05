@@ -192,6 +192,12 @@ def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
     with DISCOVERY_LOCK:
         discover_plugins()
     if identifier not in DISCOVERED_PLUGINS:
-        raise InvalidSecurityModel(identifier)
+        import puresnmp.security
+
+        raise InvalidSecurityModel(
+            str(puresnmp.security.__name__),
+            identifier,
+            sorted(DISCOVERED_PLUGINS.keys()),
+        )
 
     return DISCOVERED_PLUGINS[identifier].create()

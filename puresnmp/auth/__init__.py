@@ -41,6 +41,7 @@ from typing import Dict
 from typing_extensions import Protocol
 
 from puresnmp.util import iter_namespace
+from puresnmp.exc import MissingPlugin
 
 
 class TAuth(Protocol):
@@ -125,9 +126,17 @@ def create(name: str) -> TAuth:
 
     This looks up the module by "IDENTIFIER" as specified in the given plugin.
 
-    If no plugin with the given identifier is found, a *KeyError* is raised
+    :param name: The identifier of the module
+    :raises puresnmp.exc.MissingPlugin: If no module with the given name is
+        found
     """
 
     with DISCOVERY_LOCK:
         discover_plugins()
+    if name not in DISCOVERED_PLUGINS:
+        import puresnmp.auth
+
+        raise MissingPlugin(
+            str(puresnmp.auth), name, sorted(DISCOVERED_PLUGINS.keys())
+        )
     return DISCOVERED_PLUGINS[name]

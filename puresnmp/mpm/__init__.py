@@ -244,7 +244,13 @@ def create(
     with DISCOVERY_LOCK:
         discover_plugins()
     if identifier not in DISCOVERED_PLUGINS:
-        raise UnknownMessageProcessingModel(identifier)
+        import puresnmp.mpm
+
+        raise UnknownMessageProcessingModel(
+            str(puresnmp.mpm.__name__),
+            identifier,
+            sorted(DISCOVERED_PLUGINS.keys()),
+        )
 
     mod = DISCOVERED_PLUGINS[identifier]
     return mod.create(transport_handler, lcd)

@@ -4,8 +4,7 @@ Exceptions for the puresnmp package.
 Most exceptions in this module are based on :rfc:`3416`
 """
 
-import socket
-
+from typing import Any, List
 from x690.types import ObjectIdentifier
 
 from puresnmp.const import MAX_VARBINDS
@@ -223,12 +222,6 @@ class FaultySNMPImplementation(SnmpError):
     """
 
 
-class InvalidSecurityModel(SnmpError):
-    """
-    This exception is raised when something goes wrong with a security model
-    """
-
-
 class NotInTimeWindow(SnmpError):
     """
     This exception is raised when a message is outside the time window
@@ -245,14 +238,42 @@ class NotInTimeWindow(SnmpError):
         self.reporting = reporting
 
 
-class UnknownMessageProcessingModel(SnmpError):
+class InvalidResponseId(SnmpError):
+    """
+    Exception which is raised when a response is received that did not
+    correspond to the request-id
+    """
+
+
+class MissingPlugin(SnmpError):
+    """
+    Raised when a pluggable module could not be found
+
+    :param ns: The plugin namespace
+    :param needle: The identifier that was looked up
+    :param haystack: The known identifiers
+    """
+
+    def __init__(self, ns: str, needle: str, haystack: List[Any]) -> None:
+        msg = (
+            f"Namespace {ns!r} did not contain a plugin "
+            f"with identifier {needle!r}. "
+            f"Known identifiers: {', '.join(haystack)!r}. "
+            "See the 'puresnmp' documentation on plugins."
+        )
+        super().__init__(msg)
+        self.ns = ns
+        self.needle = needle
+        self.haystack = haystack
+
+
+class UnknownMessageProcessingModel(MissingPlugin):
     """
     Raised if a message was not formatted according to any known model
     """
 
 
-class InvalidResponseId(SnmpError):
+class InvalidSecurityModel(MissingPlugin):
     """
-    Exception which is raised when a response is received that did not
-    correspond to the request-id
+    This exception is raised when something goes wrong with a security model
     """

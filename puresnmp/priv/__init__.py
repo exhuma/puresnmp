@@ -163,4 +163,10 @@ def create(name: str) -> TPriv:
 
     with DISCOVERY_LOCK:
         discover_plugins()
+    if name not in DISCOVERED_PLUGINS:
+        import puresnmp.priv
+
+        raise MissingPlugin(
+            str(puresnmp.priv.__name__), name, sorted(DISCOVERED_PLUGINS.keys())
+        )
     return DISCOVERED_PLUGINS[name]
