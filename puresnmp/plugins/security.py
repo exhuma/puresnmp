@@ -2,8 +2,8 @@
 This module provides a plugin architecture for security methods.
 
 Each security plugin can be distributed as separate package by providing
-modules inside the namespace-package "puresnmp.security". Note that in order
-to be a valid namespace-package, such a package *must not* have a
+modules inside the namespace-package "puresnmp_plugins.security". Note that
+in order to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
 Example folder-structure for a privacy plugin:
@@ -36,7 +36,7 @@ from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
 from typing_extensions import Protocol
 
 from puresnmp.credentials import Credentials
-from puresnmp.exc import InvalidSecurityModel
+from puresnmp.exc import UnknownSecurityModel
 from puresnmp.util import iter_namespace
 
 #: The type of an *unsecured* message inside of "puresnmp"
@@ -161,10 +161,14 @@ def discover_plugins() -> None:
     if DISCOVERED_PLUGINS:
         return
 
-    import puresnmp.security
+    import puresnmp_plugins.security
 
-    for _, name, _ in iter_namespace(puresnmp.security):
-        mod = importlib.import_module(name)
+    for _, name, _ in iter_namespace(puresnmp_plugins.security):
+        try:
+            mod = importlib.import_module(name)
+        except ImportError:
+            # TODO: Logging
+            continue
         if not all(
             [
                 hasattr(mod, "create"),
@@ -192,10 +196,10 @@ def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
     with DISCOVERY_LOCK:
         discover_plugins()
     if identifier not in DISCOVERED_PLUGINS:
-        import puresnmp.security
+        import puresnmp_plugins.security
 
-        raise InvalidSecurityModel(
-            str(puresnmp.security.__name__),
+        raise UnknownSecurityModel(
+            str(puresnmp_plugins.security.__name__),
             identifier,
             sorted(DISCOVERED_PLUGINS.keys()),
         )

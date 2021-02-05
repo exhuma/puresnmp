@@ -34,7 +34,7 @@ from typing import TypeVar, cast
 from typing_extensions import Protocol
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 
-import puresnmp.mpm as mpm
+import puresnmp.plugins.mpm as mpm
 from puresnmp.typevars import SocketResponse, TAnyIp
 
 from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN

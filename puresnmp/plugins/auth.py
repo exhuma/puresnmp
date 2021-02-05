@@ -2,8 +2,8 @@
 This module provides a plugin architecture for authentication methods.
 
 Each authentication plugin can be distributed as separate package by providing
-modules inside the namespace-package ``puresnmp.auth``. Note that in order
-to be a valid namespace-package, such a package *must not* have a
+modules inside the namespace-package ``puresnmp_plugins.auth``. Note that in
+order to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
 Example folder-structure for a privacy plugin:
@@ -23,9 +23,11 @@ In order for modules to be detected as plugin, they must follow the following
 rules:
 
 * Have a function ``authenticate_outgoing_message`` implementing the
-  :py:meth:`puresnmp.auth.TAuth.authenticate_outgoing_message` protocol.
+  :py:meth:`puresnmp_plugins.auth.TAuth.authenticate_outgoing_message`
+  protocol.
 * Have a function ``authenticate_incoming_message`` implementing the
-  :py:meth:`puresnmp.auth.TAuth.authenticate_incoming_message` protocol.
+  :py:meth:`puresnmp_plugins.auth.TAuth.authenticate_incoming_message`
+  protocol.
 * Contain a string-variable ``IDENTIFIER``. This variable should be
   user-friendly and is used to uniquely identify this authentication module.
 * Contain a int-variable ``IANA_ID``. This variable should have a value from
@@ -40,8 +42,8 @@ from typing import Dict
 
 from typing_extensions import Protocol
 
+from puresnmp.exc import MissingPlugin, UnknownAuthModel
 from puresnmp.util import iter_namespace
-from puresnmp.exc import MissingPlugin
 
 
 class TAuth(Protocol):
@@ -91,10 +93,14 @@ def discover_plugins() -> None:
     """
     if DISCOVERED_PLUGINS:
         return
-    import puresnmp.auth
+    import puresnmp_plugins.auth
 
-    for _, name, _ in iter_namespace(puresnmp.auth):
-        mod = importlib.import_module(name)
+    for _, name, _ in iter_namespace(puresnmp_plugins.auth):
+        try:
+            mod = importlib.import_module(name)
+        except ImportError:
+            # TODO logging
+            continue
         if not all(
             [
                 hasattr(mod, "authenticate_incoming_message"),
@@ -134,9 +140,11 @@ def create(name: str) -> TAuth:
     with DISCOVERY_LOCK:
         discover_plugins()
     if name not in DISCOVERED_PLUGINS:
-        import puresnmp.auth
+        import puresnmp_plugins.auth
 
-        raise MissingPlugin(
-            str(puresnmp.auth), name, sorted(DISCOVERED_PLUGINS.keys())
+        raise UnknownAuthModel(
+            puresnmp_plugins.auth.__name__,
+            name,
+            sorted(DISCOVERED_PLUGINS.keys()),
         )
     return DISCOVERED_PLUGINS[name]

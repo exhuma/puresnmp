@@ -77,7 +77,7 @@ class Counter(Integer):
         self, value: Union[int, _SENTINEL_UNINITIALISED] = UNINITIALISED
     ) -> None:
         if not isinstance(value, _SENTINEL_UNINITIALISED):
-            value &= 0xFFFFFFFF if value >= 2 ** 32 else value
+            value &= 0xffffffff if value >= 2 ** 32 else value
             if value <= 0:
                 value = 0
         super().__init__(value)
@@ -154,7 +154,7 @@ class Counter64(Integer):
         self, value: Union[int, _SENTINEL_UNINITIALISED] = UNINITIALISED
     ) -> None:
         if not isinstance(value, _SENTINEL_UNINITIALISED):
-            value &= 0xFFFFFFFFFFFFFFFF if value >= 2 ** 64 else value
+            value &= 0xffffffffffffffff if value >= 2 ** 64 else value
             if value <= 0:
                 value = 0
         super().__init__(value)

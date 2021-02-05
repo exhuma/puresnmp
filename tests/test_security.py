@@ -6,11 +6,11 @@ from unittest.mock import Mock, patch
 import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
-import puresnmp.security as sec
-import puresnmp.security.null as null
-import puresnmp.security.usm as usm
-import puresnmp.security.v1 as v1
-import puresnmp.security.v2c as v2c
+import puresnmp.plugins.security as sec
+import puresnmp_plugins.security.null as null
+import puresnmp_plugins.security.usm as usm
+import puresnmp_plugins.security.v1 as v1
+import puresnmp_plugins.security.v2c as v2c
 from puresnmp.adt import (
     EncryptedMessage,
     HeaderData,
@@ -318,7 +318,9 @@ async def test_send_disco():
     async def fake_transport(data: bytes) -> bytes:
         return bytes(disco_response)
 
-    with patch("puresnmp.security.usm.get_request_id", return_value=123):
+    with patch(
+        "puresnmp_plugins.security.usm.get_request_id", return_value=123
+    ):
         result = await instance.send_discovery_message(fake_transport)
 
     expected = usm.DiscoData(b"engine-id", 1, 75101, 6)
@@ -459,7 +461,7 @@ def test_missing_auth():
 def test_incoming_auth_error():
     msg = replace(make_msg(), header=HeaderData(1, 1, V3Flags(True), 1))
     with pytest.raises(usm.AuthenticationError) as exc:
-        with patch("puresnmp.security.usm.auth") as auth:
+        with patch("puresnmp_plugins.security.usm.auth") as auth:
             mck = Mock()
             mck.authenticate_incoming_message.return_value = False
 
@@ -478,7 +480,7 @@ def test_incoming_priv_error():
         header=HeaderData(1, 1, V3Flags(True, True), 1),
     )
     with pytest.raises(usm.DecryptionError) as exc:
-        with patch("puresnmp.security.usm.priv") as priv:
+        with patch("puresnmp_plugins.security.usm.priv") as priv:
             mck = Mock()
             mck.decrypt_data.side_effect = Exception("yoinks")
 

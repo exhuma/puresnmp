@@ -6,7 +6,7 @@ from x690.types import Integer, OctetString, Sequence
 from puresnmp.credentials import V2C, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import PDU
-from puresnmp.security import SecurityModel
+from puresnmp.plugins.security import SecurityModel
 
 IDENTIFIER = 2
 

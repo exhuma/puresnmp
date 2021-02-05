@@ -1,7 +1,7 @@
 """
 This module contains the implementation for the SNMPv3 message-processing model
 """
-from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional, Union
+from typing import Any, Awaitable, Callable, Dict, Optional, Union
 
 from x690.types import Integer, OctetString
 
@@ -14,10 +14,10 @@ from puresnmp.adt import (
     V3Flags,
 )
 from puresnmp.credentials import V3, Credentials
-from puresnmp.mpm import AbstractEncodingResult, MessageProcessingModel
 from puresnmp.pdu import PDU, GetRequest
-from puresnmp.security import SecurityModel
-from puresnmp.security import create as create_sm
+from puresnmp.plugins.mpm import AbstractEncodingResult, MessageProcessingModel
+from puresnmp.plugins.security import SecurityModel
+from puresnmp.plugins.security import create as create_sm
 from puresnmp.transport import MESSAGE_MAX_SIZE
 
 IDENTIFIER = 3

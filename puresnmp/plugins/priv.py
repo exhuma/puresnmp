@@ -2,8 +2,8 @@
 This module provides a plugin architecture for privacy (enryption) methods.
 
 Each privacy plugin can be distributed as separate package by providing
-modules inside the namespace-package "puresnmp.priv". Note that in order to
-be a valid namespace-package, such a package *must not* have a
+modules inside the namespace-package "puresnmp_plugins.priv". Note that in
+order to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
 Example folder-structure for a privacy plugin:
@@ -23,9 +23,9 @@ In order for modules to be detected as plugin, they must follow the following
 rules:
 
 * Have a function ``encrypt_data`` implementing the
-  :py:meth:`puresnmp.priv.TPriv.encrypt_data` protocol.
+  :py:meth:`puresnmp_plugins.priv.TPriv.encrypt_data` protocol.
 * Have a function ``decrypt_data`` implementing the
-  :py:meth:`puresnmp.priv.TPriv.decrypt_data` protocol.
+  :py:meth:`puresnmp_plugins.priv.TPriv.decrypt_data` protocol.
 * Contain a string-variable ``IDENTIFIER``. This variable should be
   user-friends and is used to uniquely identify this privacy module.
 * Contain a int-variable ``IANA_ID``. This variable should have a value from
@@ -40,7 +40,7 @@ from typing import Dict, NamedTuple
 
 from typing_extensions import Protocol
 
-from puresnmp.adt import EncryptedMessage, PlainMessage
+from puresnmp.exc import UnknownPrivacyModel
 from puresnmp.util import iter_namespace
 
 
@@ -123,10 +123,14 @@ def discover_plugins() -> None:
     """
     if DISCOVERED_PLUGINS:
         return
-    import puresnmp.priv
+    import puresnmp_plugins.priv
 
-    for _, name, _ in iter_namespace(puresnmp.priv):
-        mod = importlib.import_module(name)
+    for _, name, _ in iter_namespace(puresnmp_plugins.priv):
+        try:
+            mod = importlib.import_module(name)
+        except ImportError:
+            # TODO: logging
+            continue
         if not all(
             [
                 hasattr(mod, "encrypt_data"),
@@ -164,9 +168,11 @@ def create(name: str) -> TPriv:
     with DISCOVERY_LOCK:
         discover_plugins()
     if name not in DISCOVERED_PLUGINS:
-        import puresnmp.priv
+        import puresnmp_plugins.priv
 
-        raise MissingPlugin(
-            str(puresnmp.priv.__name__), name, sorted(DISCOVERED_PLUGINS.keys())
+        raise UnknownPrivacyModel(
+            puresnmp_plugins.priv.__name__,
+            name,
+            sorted(DISCOVERED_PLUGINS.keys()),
         )
     return DISCOVERED_PLUGINS[name]
