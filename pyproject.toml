@@ -43,7 +43,7 @@ max-args = 8
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--doctest-modules"
+addopts = "--doctest-modules --cov=puresnmp --cov=puresnmp_plugins --cov-report=term-missing"
 testpaths = [
     "tests",
     "puresnmp",
