@@ -29,24 +29,20 @@ rules:
   https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
   and :rfc:`3411`
 """
-import importlib
-from threading import Lock
+from types import ModuleType
 from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
 
 from typing_extensions import Protocol
 
 from puresnmp.credentials import Credentials
 from puresnmp.exc import UnknownSecurityModel
-from puresnmp.util import iter_namespace
+from puresnmp.plugins.pluginbase import Loader
 
 #: The type of an *unsecured* message inside of "puresnmp"
 TPureSNMPType = TypeVar("TPureSNMPType", bound=Any)
 
 #: The type of a *secured* message outside of "puresnmp"
 TX690Type = TypeVar("TX690Type", bound=Any)
-
-#: A lock to ensure the global plugin dict is not accessed by multiple threads
-DISCOVERY_LOCK = Lock()
 
 
 class TSecurityPlugin(Protocol):
@@ -61,10 +57,6 @@ class TSecurityPlugin(Protocol):
         Create a new instance of a security model
         """
         ...
-
-
-#: Global registry of detected plugins
-DISCOVERED_PLUGINS: Dict[int, TSecurityPlugin] = {}
 
 
 class SecurityModel(Generic[TPureSNMPType, TX690Type]):
@@ -154,35 +146,13 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         raise NotImplementedError(f"Not yet implemented in {self.__class__}")
 
 
-def discover_plugins() -> None:
-    """
-    Load all privacy plugins into a global cache
-    """
-    if DISCOVERED_PLUGINS:
-        return
-
-    import puresnmp_plugins.security
-
-    for _, name, _ in iter_namespace(puresnmp_plugins.security):
-        try:
-            mod = importlib.import_module(name)
-        except ImportError:
-            # TODO: Logging
-            continue
-        if not all(
-            [
-                hasattr(mod, "create"),
-                hasattr(mod, "IDENTIFIER"),
-            ]
-        ):
-            continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
-            raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. "
-                "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
-            )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
+def is_valid_sec_plugin(mod: ModuleType) -> bool:
+    return all(
+        [
+            hasattr(mod, "create"),
+            hasattr(mod, "IDENTIFIER"),
+        ]
+    )
 
 
 def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
@@ -193,15 +163,13 @@ def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
 
     If no plugin with the given identifier is found, a *KeyError* is raised
     """
-    with DISCOVERY_LOCK:
-        discover_plugins()
-    if identifier not in DISCOVERED_PLUGINS:
-        import puresnmp_plugins.security
-
+    namespace = "puresnmp_plugins.security"
+    loader = Loader(namespace, is_valid_sec_plugin)
+    result = loader.create(identifier)
+    if not result:
         raise UnknownSecurityModel(
-            str(puresnmp_plugins.security.__name__),
+            namespace,
             identifier,
-            sorted(DISCOVERED_PLUGINS.keys()),
+            sorted(loader.discovered_plugins.keys()),
         )
-
-    return DISCOVERED_PLUGINS[identifier].create()
+    return result.create()  # type: ignore

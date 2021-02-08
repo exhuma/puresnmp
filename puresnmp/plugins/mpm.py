@@ -32,8 +32,7 @@ rules:
   https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
   and :rfc:`3411`
 """
-import importlib
-from threading import Lock
+from types import ModuleType
 from typing import (
     Any,
     Awaitable,
@@ -48,10 +47,10 @@ from typing import (
 from typing_extensions import Protocol
 
 from puresnmp.credentials import Credentials
-from puresnmp.exc import SnmpError, UnknownMessageProcessingModel
+from puresnmp.exc import UnknownMessageProcessingModel
 from puresnmp.pdu import PDU
+from puresnmp.plugins.pluginbase import Loader
 from puresnmp.plugins.security import SecurityModel
-from puresnmp.util import iter_namespace
 
 
 class AbstractEncodingResult(NamedTuple):
@@ -67,7 +66,6 @@ class AbstractEncodingResult(NamedTuple):
     security_model: Optional[SecurityModel[Any, Any]] = None
 
 
-DISCOVERY_LOCK = Lock()
 TEncodeResult = TypeVar("TEncodeResult", bound=AbstractEncodingResult)
 TSecurityModel = TypeVar("TSecurityModel", bound=SecurityModel[Any, Any])
 
@@ -165,35 +163,13 @@ class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
         )
 
 
-def discover_plugins() -> None:
-    """
-    Load all privacy plugins into a global cache
-    """
-
-    if DISCOVERED_PLUGINS:
-        return
-    import puresnmp_plugins.mpm
-
-    for _, name, _ in iter_namespace(puresnmp_plugins.mpm):
-        try:
-            mod = importlib.import_module(name)
-        except ImportError:
-            # TODO logging
-            continue
-        if not all(
-            [
-                hasattr(mod, "create"),
-                hasattr(mod, "IDENTIFIER"),
-            ]
-        ):
-            continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
-            raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. "
-                "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
-            )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
+def is_valid_mpm_plugin(mod: ModuleType) -> bool:
+    return all(
+        [
+            hasattr(mod, "create"),
+            hasattr(mod, "IDENTIFIER"),
+        ]
+    )
 
 
 def create(
@@ -226,17 +202,13 @@ def create(
     <puresnmp_plugins.mpm.v3.V3MPM object ...>
     """
     # See https://tools.ietf.org/html/rfc3412#section-4.1.1
-
-    with DISCOVERY_LOCK:
-        discover_plugins()
-    if identifier not in DISCOVERED_PLUGINS:
-        import puresnmp_plugins.mpm
-
+    namespace = "puresnmp_plugins.mpm"
+    loader = Loader(namespace, is_valid_mpm_plugin)
+    result = loader.create(identifier)
+    if not result:
         raise UnknownMessageProcessingModel(
-            str(puresnmp_plugins.mpm.__name__),
+            namespace,
             identifier,
-            sorted(DISCOVERED_PLUGINS.keys()),
+            sorted(loader.discovered_plugins.keys()),
         )
-
-    mod = DISCOVERED_PLUGINS[identifier]
-    return mod.create(transport_handler, lcd)
+    return result.create(transport_handler, lcd)  # type: ignore

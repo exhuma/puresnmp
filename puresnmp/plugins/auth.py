@@ -38,11 +38,13 @@ rules:
 """
 import importlib
 from threading import Lock
+from types import ModuleType
 from typing import Dict
 
 from typing_extensions import Protocol
 
-from puresnmp.exc import MissingPlugin, UnknownAuthModel
+from puresnmp.exc import MissingPlugin, UnknownAuthModel, UnknownPrivacyModel
+from puresnmp.plugins.pluginbase import Loader
 from puresnmp.util import iter_namespace
 
 
@@ -80,53 +82,18 @@ class TAuth(Protocol):
         ...
 
 
-#: Global registry of detected plugins
-DISCOVERED_PLUGINS: Dict[str, TAuth] = {}
-#: Global registry of detected plugins by IANA ID
-IANA_IDS: Dict[int, TAuth] = {}
-DISCOVERY_LOCK = Lock()
+def is_valid_auth_mod(mod: ModuleType) -> bool:
+    return all(
+        [
+            hasattr(mod, "authenticate_incoming_message"),
+            hasattr(mod, "authenticate_outgoing_message"),
+            hasattr(mod, "IDENTIFIER"),
+            hasattr(mod, "IANA_ID"),
+        ]
+    )
 
 
-def discover_plugins() -> None:
-    """
-    Load all authentication plugins into a global cache
-    """
-    if DISCOVERED_PLUGINS:
-        return
-    import puresnmp_plugins.auth
-
-    for _, name, _ in iter_namespace(puresnmp_plugins.auth):
-        try:
-            mod = importlib.import_module(name)
-        except ImportError:
-            # TODO logging
-            continue
-        if not all(
-            [
-                hasattr(mod, "authenticate_incoming_message"),
-                hasattr(mod, "authenticate_outgoing_message"),
-                hasattr(mod, "IDENTIFIER"),
-                hasattr(mod, "IANA_ID"),
-            ]
-        ):
-            continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
-            raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. "
-                "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
-            )
-        if mod.IANA_ID in IANA_IDS:  # type: ignore
-            raise ImportError(
-                "Plugin %r uses a IANA ID (%d) which "
-                "is already registered by %r"
-                % (mod, mod.IANA_ID, IANA_IDS[mod.IANA_ID])  # type: ignore
-            )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
-        IANA_IDS[mod.IANA_ID] = mod  # type: ignore
-
-
-def create(name: str) -> TAuth:
+def create(identifier: str) -> TAuth:
     """
     Return an instance of the given authentication module by identifier.
 
@@ -136,15 +103,13 @@ def create(name: str) -> TAuth:
     :raises puresnmp.exc.MissingPlugin: If no module with the given name is
         found
     """
-
-    with DISCOVERY_LOCK:
-        discover_plugins()
-    if name not in DISCOVERED_PLUGINS:
-        import puresnmp_plugins.auth
-
+    namespace = "puresnmp_plugins.auth"
+    loader = Loader(namespace, is_valid_auth_mod)
+    result = loader.create(identifier)
+    if not result:
         raise UnknownAuthModel(
-            puresnmp_plugins.auth.__name__,
-            name,
-            sorted(DISCOVERED_PLUGINS.keys()),
+            namespace,
+            identifier,
+            sorted(loader.discovered_plugins.keys()),
         )
-    return DISCOVERED_PLUGINS[name]
+    return result  # type: ignore

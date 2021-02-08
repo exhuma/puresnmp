@@ -28,20 +28,14 @@ rules:
   :py:meth:`puresnmp_plugins.priv.TPriv.decrypt_data` protocol.
 * Contain a string-variable ``IDENTIFIER``. This variable should be
   user-friends and is used to uniquely identify this privacy module.
-* Contain a int-variable ``IANA_ID``. This variable should have a value from
-  IANA registered privacy protocols and is used to avoid duplicate plugin
-  registrations. See
-  https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
-  and :rfc:`3411`
 """
-import importlib
-from threading import Lock
-from typing import Dict, NamedTuple
+from types import ModuleType
+from typing import NamedTuple
 
 from typing_extensions import Protocol
 
 from puresnmp.exc import UnknownPrivacyModel
-from puresnmp.util import iter_namespace
+from puresnmp.plugins.pluginbase import Loader
 
 
 class EncryptionResult(NamedTuple):
@@ -108,71 +102,25 @@ class TPriv(Protocol):
         ...
 
 
-#: Global registry of detected plugins
-DISCOVERED_PLUGINS: Dict[str, TPriv] = {}
-
-#: Global registry of detected plugins by IANA ID
-IANA_IDS: Dict[int, TPriv] = {}
-
-DISCOVERY_LOCK = Lock()
-
-
-def discover_plugins() -> None:
-    """
-    Load all privacy plugins into a global cache
-    """
-    if DISCOVERED_PLUGINS:
-        return
-    import puresnmp_plugins.priv
-
-    for _, name, _ in iter_namespace(puresnmp_plugins.priv):
-        try:
-            mod = importlib.import_module(name)
-        except ImportError:
-            # TODO: logging
-            continue
-        if not all(
-            [
-                hasattr(mod, "encrypt_data"),
-                hasattr(mod, "decrypt_data"),
-                hasattr(mod, "IDENTIFIER"),
-                hasattr(mod, "IANA_ID"),
-            ]
-        ):
-            continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
-            raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. "
-                "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
-            )
-        if mod.IANA_ID in IANA_IDS:  # type: ignore
-            raise ImportError(
-                "Plugin %r uses a IANA ID (%d) which "
-                "is already registered by %r"
-                % (mod, mod.IANA_ID, IANA_IDS[mod.IANA_ID])  # type: ignore
-            )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
-        IANA_IDS[mod.IANA_ID] = mod  # type: ignore
+def is_valid_priv_mod(mod: ModuleType) -> bool:
+    return all(
+        [
+            hasattr(mod, "encrypt_data"),
+            hasattr(mod, "decrypt_data"),
+            hasattr(mod, "IDENTIFIER"),
+            hasattr(mod, "IANA_ID"),
+        ]
+    )
 
 
-def create(name: str) -> TPriv:
-    """
-    Return an instance of the given privacy module by identifier.
-
-    This looks up the module by "IDENTIFIER" as specified in the given plugin.
-
-    If no plugin with the given identifier is found, a *KeyError* is raised
-    """
-
-    with DISCOVERY_LOCK:
-        discover_plugins()
-    if name not in DISCOVERED_PLUGINS:
-        import puresnmp_plugins.priv
-
+def create(identifier: str) -> TPriv:
+    namespace = "puresnmp_plugins.priv"
+    loader = Loader(namespace, is_valid_priv_mod)
+    result = loader.create(identifier)
+    if not result:
         raise UnknownPrivacyModel(
-            puresnmp_plugins.priv.__name__,
-            name,
-            sorted(DISCOVERED_PLUGINS.keys()),
+            namespace,
+            identifier,
+            sorted(loader.discovered_plugins.keys()),
         )
-    return DISCOVERED_PLUGINS[name]
+    return result  # type: ignore
