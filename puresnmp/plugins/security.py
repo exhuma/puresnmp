@@ -52,7 +52,9 @@ class TSecurityPlugin(Protocol):
 
     # pylint: disable=too-few-public-methods
 
-    def create(self) -> "SecurityModel[TPureSNMPType, TX690Type]":
+    def create(
+        self,
+    ) -> "SecurityModel[TPureSNMPType, TX690Type]":  # pragma: no cover
         """
         Create a new instance of a security model
         """
@@ -77,7 +79,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         message: TPureSNMPType,
         security_engine_id: bytes,
         credentials: Credentials,
-    ) -> TX690Type:
+    ) -> TX690Type:  # pragma: no cover
         """
         Take a plain unprocessed message and applies security to the message
         as defined by the concrete security model.
@@ -100,7 +102,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         self,
         message: TX690Type,
         credentials: Credentials,
-    ) -> TPureSNMPType:
+    ) -> TPureSNMPType:  # pragma: no cover
         """
         Takes a message which included potential security modifications (like
         encryption) and "undoes" these modifications in order to make the
@@ -122,7 +124,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         engine_id: bytes,
         engine_boots: int,
         engine_time: int,
-    ) -> None:
+    ) -> None:  # pragma: no cover
         """
         Update the security model with timing information of the remote-engine.
 
@@ -134,7 +136,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
     async def send_discovery_message(
         self,
         transport_handler: Callable[[bytes], Awaitable[bytes]],
-    ) -> Any:
+    ) -> Any:  # pragma: no cover
         """
         Send a discovery message to the remote engine.
 

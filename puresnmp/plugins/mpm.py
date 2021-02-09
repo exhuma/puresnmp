@@ -81,7 +81,7 @@ class TMPMPlugin(Protocol):
         self,
         transport_handler: Callable[[bytes], Awaitable[bytes]],
         lcd: Dict[str, Any],
-    ) -> "MessageProcessingModel[TEncodeResult, TSecurityModel]":
+    ) -> "MessageProcessingModel[TEncodeResult, TSecurityModel]":  # pragma: no cover
         """
         See :py:func:`~.create`
         """
@@ -127,7 +127,7 @@ class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
         engine_id: bytes,
         context_name: bytes,
         pdu: PDU,
-    ) -> TEncodeResult:
+    ) -> TEncodeResult:  # pragma: no cover
         """
         Convert an SNMP PDU into raw bytes for the network.
 
@@ -149,7 +149,7 @@ class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
         self,
         whole_msg: bytes,
         credentials: Credentials,
-    ) -> PDU:
+    ) -> PDU:  # pragma: no cover
         """
         Convert bytes (as received raw from the network) into an SNMP PDU
 

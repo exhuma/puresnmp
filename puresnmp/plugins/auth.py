@@ -55,7 +55,7 @@ class TAuth(Protocol):
 
     def authenticate_outgoing_message(
         self, auth_key: bytes, data: bytes, engine_id: bytes
-    ) -> bytes:
+    ) -> bytes:  # pragma: no cover
         """
         Calculate a digest for an outgoing message
 
@@ -70,7 +70,7 @@ class TAuth(Protocol):
         data: bytes,
         received_digest: bytes,
         engine_id: bytes,
-    ) -> bool:
+    ) -> bool:  # pragma: no cover
         """
         Determine whether a message is authentic.
 

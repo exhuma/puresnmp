@@ -64,7 +64,7 @@ class TPriv(Protocol):
         engine_boots: int,
         engine_time: int,
         data: bytes,
-    ) -> EncryptionResult:
+    ) -> EncryptionResult:  # pragma: no cover
         """
         Encrypts data from an SNMP PDU following the SNMPv3 spec.
 
@@ -86,7 +86,7 @@ class TPriv(Protocol):
         engine_time: int,
         salt: bytes,
         data: bytes,
-    ) -> bytes:
+    ) -> bytes:  # pragma: no cover
         """
         Decrypts a message
 
