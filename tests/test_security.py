@@ -205,81 +205,6 @@ def test_request_message_anp():
     assert result == expected
 
 
-@pytest.mark.dependency(depends=["test_request_message_anp"])
-def test_request_message_ap_des():
-    # Apply static random seed for testing
-    random.seed(123)
-    message = make_msg()
-    instance = usm.UserSecurityModel()
-    instance.local_config[b"engine-id"] = {
-        "authoritative_engine_boots": 1,
-        "authoritative_engine_time": 12,
-    }
-    result = instance.generate_request_message(
-        message,
-        b"engine-id",
-        V3("username", Auth(b"authkey", "md5"), Priv(b"pkey", "des")),
-    )
-    expected = PlainMessage(
-        version=3,
-        header=HeaderData(
-            message_id=123,
-            message_max_size=234,
-            flags=V3Flags(auth=True, priv=True, reportable=True),
-            security_model=3,
-        ),
-        security_parameters=(
-            b"03\x04\tengine-id"
-            b"\x02\x01\x01"
-            b"\x02\x01\x0c"
-            b"\x04\x08username"
-            b"\x04\x0c/\xa6\xe1 \x93\xca}\xe5e<U/"
-            b"\x04\x08\x00\x00\x00\x01\x00\x00\x00g"
-        ),
-        scoped_pdu=OctetString(b"\xde\xe24\x01b\xbdk\x9b#\x01\xe4|\x8a\xe6\r7"),
-    )
-    assert result == expected
-
-
-@pytest.mark.dependency(depends=["test_request_message_anp"])
-def test_request_message_ap_aes():
-    # Apply static random seed for testing
-    random.seed(123)
-    message = make_msg()
-    instance = usm.UserSecurityModel()
-    instance.local_config[b"engine-id"] = {
-        "authoritative_engine_boots": 1,
-        "authoritative_engine_time": 12,
-    }
-    result = instance.generate_request_message(
-        message,
-        b"engine-id",
-        V3("username", Auth(b"authkey", "md5"), Priv(b"pkey", "aes")),
-    )
-    expected = PlainMessage(
-        version=3,
-        header=HeaderData(
-            message_id=123,
-            message_max_size=234,
-            flags=V3Flags(auth=True, priv=True, reportable=True),
-            security_model=3,
-        ),
-        security_parameters=(
-            b"03\x04\tengine-id"
-            b"\x02\x01\x01"
-            b"\x02\x01\x0c"
-            b"\x04\x08username"
-            b"\x04\x0co\xc3\x03\xde\xbe\x1c\xed\xb3\x18\xe8\x1b\x8a"
-            b"\x04\x08D\x86}\xb3\rg\xb3g"
-        ),
-        scoped_pdu=OctetString(unhexlify("437eec8e6e128dfd4b9923b679d6a24c")),
-    )
-    assert result.security_parameters == expected.security_parameters
-    assert (
-        result.scoped_pdu.value == expected.scoped_pdu.value
-    ), "Invalid cipher text"
-
-
 @pytest.mark.asyncio
 async def test_send_disco():
     instance = usm.UserSecurityModel()
@@ -340,19 +265,6 @@ def test_missing_enc_method():
         )
 
 
-def test_encrypt_error():
-    with pytest.raises(usm.EncryptionError) as exc:
-        usm.apply_encryption(
-            None,
-            V3(b"", Auth(b"a", "md5"), Priv(b"foo", "des")),
-            b"",
-            b"",
-            0,
-            0,
-        )
-    exc.match(r"NoneType.*has no attribute")
-
-
 def test_missing_auth_method():
     with pytest.raises(usm.UnsupportedSecurityLevel):
         usm.apply_authentication(
@@ -364,78 +276,6 @@ def test_auth_error():
     with pytest.raises(usm.AuthenticationError) as exc:
         usm.apply_authentication(None, V3(b"", Auth(b"foo", "md5"), None), b"")
     exc.match(r"NoneType.*has no attribute")
-
-
-def test_incoming_message():
-    message = Message(
-        version=Integer(3),
-        header=HeaderData(
-            message_id=1610635889,
-            message_max_size=65507,
-            flags=V3Flags(auth=True, priv=True, reportable=False),
-            security_model=3,
-        ),
-        security_parameters=(
-            b"0:"
-            b"\x04\x11\x80\x00\x1f\x88\x80\xf5\xb92\x087\x13\xff_\x00\x00\x00\x00"
-            b"\x02\x01\x01"
-            b"\x02\x03\x01G:"
-            b"\x04\x05ninja"
-            b"\x04\x0c(\x85t\xdbN\xad\xc7\x9c\xa6\xf5\x92\xdc"
-            b"\x04\x08\x00\x00\x00\x01m\xfc\x986"
-        ),
-        scoped_pdu=OctetString(
-            (
-                b"\xe0\xc5\xfc\xa6m@\xaf\xc3\xd5<\t\xa9\x9e\x81\xa0\xa2\xb9"
-                b"\x13\xd7\x14\xe8J\xa84C,\xbb \xd9\xbc\x06]\x08he\xe6/\x06"
-                b"y'\xf4x\xc7#=\x07^n\x8d\xbf\xcem\x82\xfa\xc67w/?\xcd\xec"
-                b"\x89\xe9{"
-            )
-        ),
-    )
-    instance = usm.UserSecurityModel()
-    result = instance.process_incoming_message(
-        message,
-        V3(
-            "ninja",
-            Auth(b"theauthpass", "md5"),
-            Priv(b"privpass", "des"),
-        ),
-    )
-    expected = Message(
-        version=Integer(3),
-        header=HeaderData(
-            message_id=1610635889,
-            message_max_size=65507,
-            flags=V3Flags(auth=True, priv=True, reportable=False),
-            security_model=3,
-        ),
-        security_parameters=(
-            b"0:"
-            b"\x04\x11\x80\x00\x1f\x88\x80\xf5\xb92\x087\x13\xff_\x00\x00\x00\x00"
-            b"\x02\x01\x01"
-            b"\x02\x03\x01G:"
-            b"\x04\x05ninja"
-            b"\x04\x0c(\x85t\xdbN\xad\xc7\x9c\xa6\xf5\x92\xdc"
-            b"\x04\x08\x00\x00\x00\x01m\xfc\x986"
-        ),
-        scoped_pdu=ScopedPDU(
-            context_engine_id=OctetString(b"\x01\x00&4\x04puresnmp-26938"),
-            context_name=OctetString(b""),
-            data=GetResponse(
-                PDUContent(
-                    1610635889,
-                    [
-                        VarBind(
-                            ObjectIdentifier("1.3.6.1.6.3.16.1.1.1.1.0"),
-                            OctetString(b""),
-                        )
-                    ],
-                )
-            ),
-        ),
-    )
-    assert result == expected
 
 
 def test_incoming_noauth():
