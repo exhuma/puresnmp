@@ -51,7 +51,7 @@ testpaths = [
 
 [tool.poetry]
 name = "puresnmp"
-version = "2.0.0-alpha.9"
+version = "2.0.0-alpha.10"
 description = "Pure Python SNMP implementation"
 authors = ["Michel Albert <michel@albert.lu>"]
 license = "MIT"
