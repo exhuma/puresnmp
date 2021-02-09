@@ -82,6 +82,10 @@ python = "^3.6"
 t61codec = "^1.0.1"
 dataclasses = {version = "^0.7", python = "<3.7"}
 x690 = "0.5.0a4"
+puresnmp-crypto = {version = "^1.0.0", optional = true}
+
+[tool.poetry.extras]
+crypto = ["puresnmp-crypto"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.1"
@@ -94,7 +98,6 @@ pytest-cov = "^2.10.1"
 pytest-dependency = "^0.5.1"
 mypy = "^0.790"
 fabric = "^2.6.0"
-puresnmp-priv-crypto = {path = "../puresnmp-crypto"}
 
 [build-system]
 requires = ["poetry>=0.12"]
