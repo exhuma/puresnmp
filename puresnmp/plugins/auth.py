@@ -2,8 +2,8 @@
 This module provides a plugin architecture for authentication methods.
 
 Each authentication plugin can be distributed as separate package by providing
-modules inside the namespace-package ``puresnmp.auth``. Note that in order
-to be a valid namespace-package, such a package *must not* have a
+modules inside the namespace-package ``puresnmp_plugins.auth``. Note that in
+order to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
 Example folder-structure for a privacy plugin:
@@ -23,9 +23,11 @@ In order for modules to be detected as plugin, they must follow the following
 rules:
 
 * Have a function ``authenticate_outgoing_message`` implementing the
-  :py:meth:`puresnmp.auth.TAuth.authenticate_outgoing_message` protocol.
+  :py:meth:`puresnmp_plugins.auth.TAuth.authenticate_outgoing_message`
+  protocol.
 * Have a function ``authenticate_incoming_message`` implementing the
-  :py:meth:`puresnmp.auth.TAuth.authenticate_incoming_message` protocol.
+  :py:meth:`puresnmp_plugins.auth.TAuth.authenticate_incoming_message`
+  protocol.
 * Contain a string-variable ``IDENTIFIER``. This variable should be
   user-friendly and is used to uniquely identify this authentication module.
 * Contain a int-variable ``IANA_ID``. This variable should have a value from
@@ -36,12 +38,14 @@ rules:
 """
 import importlib
 from threading import Lock
+from types import ModuleType
 from typing import Dict
 
 from typing_extensions import Protocol
 
+from puresnmp.exc import MissingPlugin, UnknownAuthModel, UnknownPrivacyModel
+from puresnmp.plugins.pluginbase import Loader
 from puresnmp.util import iter_namespace
-from puresnmp.exc import MissingPlugin
 
 
 class TAuth(Protocol):
@@ -51,7 +55,7 @@ class TAuth(Protocol):
 
     def authenticate_outgoing_message(
         self, auth_key: bytes, data: bytes, engine_id: bytes
-    ) -> bytes:
+    ) -> bytes:  # pragma: no cover
         """
         Calculate a digest for an outgoing message
 
@@ -66,7 +70,7 @@ class TAuth(Protocol):
         data: bytes,
         received_digest: bytes,
         engine_id: bytes,
-    ) -> bool:
+    ) -> bool:  # pragma: no cover
         """
         Determine whether a message is authentic.
 
@@ -78,49 +82,18 @@ class TAuth(Protocol):
         ...
 
 
-#: Global registry of detected plugins
-DISCOVERED_PLUGINS: Dict[str, TAuth] = {}
-#: Global registry of detected plugins by IANA ID
-IANA_IDS: Dict[int, TAuth] = {}
-DISCOVERY_LOCK = Lock()
+def is_valid_auth_mod(mod: ModuleType) -> bool:
+    return all(
+        [
+            hasattr(mod, "authenticate_incoming_message"),
+            hasattr(mod, "authenticate_outgoing_message"),
+            hasattr(mod, "IDENTIFIER"),
+            hasattr(mod, "IANA_ID"),
+        ]
+    )
 
 
-def discover_plugins() -> None:
-    """
-    Load all authentication plugins into a global cache
-    """
-    if DISCOVERED_PLUGINS:
-        return
-    import puresnmp.auth
-
-    for _, name, _ in iter_namespace(puresnmp.auth):
-        mod = importlib.import_module(name)
-        if not all(
-            [
-                hasattr(mod, "authenticate_incoming_message"),
-                hasattr(mod, "authenticate_outgoing_message"),
-                hasattr(mod, "IDENTIFIER"),
-                hasattr(mod, "IANA_ID"),
-            ]
-        ):
-            continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
-            raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. "
-                "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
-            )
-        if mod.IANA_ID in IANA_IDS:  # type: ignore
-            raise ImportError(
-                "Plugin %r uses a IANA ID (%d) which "
-                "is already registered by %r"
-                % (mod, mod.IANA_ID, IANA_IDS[mod.IANA_ID])  # type: ignore
-            )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
-        IANA_IDS[mod.IANA_ID] = mod  # type: ignore
-
-
-def create(name: str) -> TAuth:
+def create(identifier: str) -> TAuth:
     """
     Return an instance of the given authentication module by identifier.
 
@@ -130,13 +103,13 @@ def create(name: str) -> TAuth:
     :raises puresnmp.exc.MissingPlugin: If no module with the given name is
         found
     """
-
-    with DISCOVERY_LOCK:
-        discover_plugins()
-    if name not in DISCOVERED_PLUGINS:
-        import puresnmp.auth
-
-        raise MissingPlugin(
-            str(puresnmp.auth), name, sorted(DISCOVERED_PLUGINS.keys())
+    namespace = "puresnmp_plugins.auth"
+    loader = Loader(namespace, is_valid_auth_mod)
+    result = loader.create(identifier)
+    if not result:
+        raise UnknownAuthModel(
+            namespace,
+            identifier,
+            sorted(loader.discovered_plugins.keys()),
         )
-    return DISCOVERED_PLUGINS[name]
+    return result  # type: ignore

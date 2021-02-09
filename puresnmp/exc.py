@@ -5,6 +5,7 @@ Most exceptions in this module are based on :rfc:`3416`
 """
 
 from typing import Any, List
+
 from x690.types import ObjectIdentifier
 
 from puresnmp.const import MAX_VARBINDS
@@ -254,16 +255,16 @@ class MissingPlugin(SnmpError):
     :param haystack: The known identifiers
     """
 
-    def __init__(self, ns: str, needle: str, haystack: List[Any]) -> None:
+    def __init__(self, ns: str, needle: Any, haystack: List[Any]) -> None:
         msg = (
             f"Namespace {ns!r} did not contain a plugin "
             f"with identifier {needle!r}. "
-            f"Known identifiers: {', '.join(haystack)!r}. "
+            f"Known identifiers: {sorted(haystack)!r}. "
             "See the 'puresnmp' documentation on plugins."
         )
         super().__init__(msg)
         self.ns = ns
-        self.needle = needle
+        self.needle = repr(needle)
         self.haystack = haystack
 
 
@@ -273,7 +274,20 @@ class UnknownMessageProcessingModel(MissingPlugin):
     """
 
 
-class InvalidSecurityModel(MissingPlugin):
+class UnknownSecurityModel(MissingPlugin):
     """
     This exception is raised when something goes wrong with a security model
+    """
+
+
+class UnknownAuthModel(MissingPlugin):
+    """
+    Exception which is raised when working with an unsupported/unknown
+    authentication
+    """
+
+
+class UnknownPrivacyModel(MissingPlugin):
+    """
+    Exception which is raised when the security model in use is unknown.
     """

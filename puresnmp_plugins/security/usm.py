@@ -10,8 +10,8 @@ from x690 import decode
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 from x690.util import INDENT_STRING
 
-import puresnmp.auth as auth
-import puresnmp.priv as priv
+import puresnmp.plugins.auth as auth
+import puresnmp.plugins.priv as priv
 from puresnmp.adt import (
     EncryptedMessage,
     HeaderData,
@@ -23,7 +23,7 @@ from puresnmp.adt import (
 from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import SnmpError
 from puresnmp.pdu import GetRequest, PDUContent
-from puresnmp.security import SecurityModel
+from puresnmp.plugins.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE
 from puresnmp.util import get_request_id, localise_key, validate_response_id
 

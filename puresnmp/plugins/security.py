@@ -2,8 +2,8 @@
 This module provides a plugin architecture for security methods.
 
 Each security plugin can be distributed as separate package by providing
-modules inside the namespace-package "puresnmp.security". Note that in order
-to be a valid namespace-package, such a package *must not* have a
+modules inside the namespace-package "puresnmp_plugins.security". Note that
+in order to be a valid namespace-package, such a package *must not* have a
 ``__init__.py`` file!
 
 Example folder-structure for a privacy plugin:
@@ -29,24 +29,20 @@ rules:
   https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
   and :rfc:`3411`
 """
-import importlib
-from threading import Lock
+from types import ModuleType
 from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
 
 from typing_extensions import Protocol
 
 from puresnmp.credentials import Credentials
-from puresnmp.exc import InvalidSecurityModel
-from puresnmp.util import iter_namespace
+from puresnmp.exc import UnknownSecurityModel
+from puresnmp.plugins.pluginbase import Loader
 
 #: The type of an *unsecured* message inside of "puresnmp"
 TPureSNMPType = TypeVar("TPureSNMPType", bound=Any)
 
 #: The type of a *secured* message outside of "puresnmp"
 TX690Type = TypeVar("TX690Type", bound=Any)
-
-#: A lock to ensure the global plugin dict is not accessed by multiple threads
-DISCOVERY_LOCK = Lock()
 
 
 class TSecurityPlugin(Protocol):
@@ -56,15 +52,13 @@ class TSecurityPlugin(Protocol):
 
     # pylint: disable=too-few-public-methods
 
-    def create(self) -> "SecurityModel[TPureSNMPType, TX690Type]":
+    def create(
+        self,
+    ) -> "SecurityModel[TPureSNMPType, TX690Type]":  # pragma: no cover
         """
         Create a new instance of a security model
         """
         ...
-
-
-#: Global registry of detected plugins
-DISCOVERED_PLUGINS: Dict[int, TSecurityPlugin] = {}
 
 
 class SecurityModel(Generic[TPureSNMPType, TX690Type]):
@@ -85,7 +79,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         message: TPureSNMPType,
         security_engine_id: bytes,
         credentials: Credentials,
-    ) -> TX690Type:
+    ) -> TX690Type:  # pragma: no cover
         """
         Take a plain unprocessed message and applies security to the message
         as defined by the concrete security model.
@@ -108,7 +102,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         self,
         message: TX690Type,
         credentials: Credentials,
-    ) -> TPureSNMPType:
+    ) -> TPureSNMPType:  # pragma: no cover
         """
         Takes a message which included potential security modifications (like
         encryption) and "undoes" these modifications in order to make the
@@ -130,7 +124,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         engine_id: bytes,
         engine_boots: int,
         engine_time: int,
-    ) -> None:
+    ) -> None:  # pragma: no cover
         """
         Update the security model with timing information of the remote-engine.
 
@@ -142,7 +136,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
     async def send_discovery_message(
         self,
         transport_handler: Callable[[bytes], Awaitable[bytes]],
-    ) -> Any:
+    ) -> Any:  # pragma: no cover
         """
         Send a discovery message to the remote engine.
 
@@ -154,31 +148,13 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         raise NotImplementedError(f"Not yet implemented in {self.__class__}")
 
 
-def discover_plugins() -> None:
-    """
-    Load all privacy plugins into a global cache
-    """
-    if DISCOVERED_PLUGINS:
-        return
-
-    import puresnmp.security
-
-    for _, name, _ in iter_namespace(puresnmp.security):
-        mod = importlib.import_module(name)
-        if not all(
-            [
-                hasattr(mod, "create"),
-                hasattr(mod, "IDENTIFIER"),
-            ]
-        ):
-            continue
-        if mod.IDENTIFIER in DISCOVERED_PLUGINS:  # type: ignore
-            raise ImportError(
-                "Plugin %r causes a name-clash with the identifier %r. "
-                "This is already used by %r"
-                % (mod, mod.IDENTIFIER, DISCOVERED_PLUGINS[mod.IDENTIFIER])  # type: ignore
-            )
-        DISCOVERED_PLUGINS[mod.IDENTIFIER] = mod  # type: ignore
+def is_valid_sec_plugin(mod: ModuleType) -> bool:
+    return all(
+        [
+            hasattr(mod, "create"),
+            hasattr(mod, "IDENTIFIER"),
+        ]
+    )
 
 
 def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
@@ -189,15 +165,13 @@ def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
 
     If no plugin with the given identifier is found, a *KeyError* is raised
     """
-    with DISCOVERY_LOCK:
-        discover_plugins()
-    if identifier not in DISCOVERED_PLUGINS:
-        import puresnmp.security
-
-        raise InvalidSecurityModel(
-            str(puresnmp.security.__name__),
+    namespace = "puresnmp_plugins.security"
+    loader = Loader(namespace, is_valid_sec_plugin)
+    result = loader.create(identifier)
+    if not result:
+        raise UnknownSecurityModel(
+            namespace,
             identifier,
-            sorted(DISCOVERED_PLUGINS.keys()),
+            sorted(loader.discovered_plugins.keys()),
         )
-
-    return DISCOVERED_PLUGINS[identifier].create()
+    return result.create()  # type: ignore

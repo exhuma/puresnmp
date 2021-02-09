@@ -3,7 +3,7 @@ This defines a no-op security model which can be used as fallback
 """
 from typing import Any
 
-from puresnmp.security import SecurityModel
+from puresnmp.plugins.security import SecurityModel
 
 IDENTIFIER = 0
 

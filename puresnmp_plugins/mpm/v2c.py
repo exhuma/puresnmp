@@ -8,10 +8,10 @@ from x690 import decode
 from x690.types import Sequence
 
 from puresnmp.credentials import V2C, Credentials
-from puresnmp.mpm import AbstractEncodingResult, MessageProcessingModel
-from puresnmp.pdu import PDU, BulkGetRequest
-from puresnmp.security import SecurityModel
-from puresnmp.security import create as create_sm
+from puresnmp.pdu import PDU
+from puresnmp.plugins.mpm import AbstractEncodingResult, MessageProcessingModel
+from puresnmp.plugins.security import SecurityModel
+from puresnmp.plugins.security import create as create_sm
 
 IDENTIFIER = 1
 
