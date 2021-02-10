@@ -45,7 +45,7 @@ class TSender(Protocol):
         self,
         endpoint: Endpoint,
         packet: bytes,
-        timeout: int = 6,
+        timeout: int = 1,
         loop: Optional[AbstractEventLoop] = None,
     ) -> bytes:
         ...
@@ -156,7 +156,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
 async def send_udp(
     endpoint: Endpoint,
     packet: bytes,
-    timeout: int = 6,
+    timeout: int = 1,
     loop: Optional[AbstractEventLoop] = None,
 ) -> bytes:  # pragma: no cover
     # pylint: disable=arguments-differ
@@ -177,7 +177,7 @@ async def send_udp(
             remote_addr=(str(endpoint.ip), endpoint.port),
         )
         try:
-            response = await protocol.get_data(0.1)  # type: ignore
+            response = await protocol.get_data(timeout)  # type: ignore
             break
         except Exception:
             if retries == 0:
