@@ -56,4 +56,5 @@ html_static_path = ["_static"]
 intersphinx_mapping = {
     "": ("https://docs.python.org/3/", None),
     "x690": ("https://exhuma.github.io/x690/", None),
+    "puresnmp-crypto": ("https://exhuma.github.io/puresnmp-crypto/", None),
 }

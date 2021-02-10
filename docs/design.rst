@@ -28,6 +28,27 @@ Finally, all modules have a strong focus on MIBs, which can be problematic at
 times. Especially for heterogenuous networks. :py:mod:`puresnmp` makes it
 easy to work without MIBs.
 
+Extensive Documentation
+-----------------------
+
+Simple and useful documentation is an additional focus of this library. The
+documentation provides a lot of example-code which should make usage of the
+library a lot easier. The examples in the documetnation are covered by
+doctests wherever possible. This forces the examples in the docstrings to be
+*complete* and should be fairly copy/pasteable.
+
+Most of these examples are located in :py:class:`puresnmp.api.raw.Client`
+(aliased for convenience as :py:class:`puresnmp.Client`)
+
+.. note::
+
+    When using the documentation examples from
+    :py:class:`puresnmp.api.raw.Client` also consider using
+    :py:class:`puresnmp.api.pythonic.PyWrapper` (aliased as
+    :py:class:`puresnmp.PyWrapper`) to decouple internal data-types from your
+    application.
+
+
 Simple Data-Types
 -----------------
 

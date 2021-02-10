@@ -68,8 +68,8 @@ Finally, let's execute an SNMP-Get request on the given OID and get the value.
    :maxdepth: 2
    :caption: Contents
 
-   plugins
    design
+   plugins
    API Docs <api/modules>
 
 

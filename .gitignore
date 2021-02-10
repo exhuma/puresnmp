@@ -94,3 +94,4 @@ ENV/
 
 # MyPy
 .mypy_cache
+docs/plugins_api
