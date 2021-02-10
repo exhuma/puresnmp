@@ -15,4 +15,20 @@ from puresnmp.api.pythonic import PyWrapper
 from puresnmp.api.raw import Client
 from puresnmp.credentials import V1, V2C, V3
 
-__all__ = ["PyWrapper", "Client", "V1", "V2C", "V3", "ObjectIdentifier"]
+try:
+    import importlib.metadata as importlib_metadata
+except ModuleNotFoundError:
+    import importlib_metadata  # type: ignore
+
+
+__version__ = importlib_metadata.version("puresnmp")
+
+__all__ = [
+    "Client",
+    "ObjectIdentifier",
+    "PyWrapper",
+    "V1",
+    "V2C",
+    "V3",
+    "__version__",
+]
