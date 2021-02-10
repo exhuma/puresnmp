@@ -170,12 +170,19 @@ async def send_udp(
     if loop is None:
         loop = asyncio.get_event_loop()
 
-    _, protocol = await loop.create_datagram_endpoint(
-        lambda: SNMPClientProtocol(packet, loop),  # type: ignore
-        remote_addr=(str(endpoint.ip), endpoint.port),
-    )
-
-    response = await protocol.get_data(timeout)  # type: ignore
+    retries = 10
+    while retries > 0:
+        _, protocol = await loop.create_datagram_endpoint(
+            lambda: SNMPClientProtocol(packet, loop),  # type: ignore
+            remote_addr=(str(endpoint.ip), endpoint.port),
+        )
+        try:
+            response = await protocol.get_data(0.1)  # type: ignore
+            break
+        except Exception:
+            if retries == 0:
+                raise
+            retries -= 1
 
     return response  # type: ignore
 
