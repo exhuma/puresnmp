@@ -21,6 +21,9 @@ class SocketInfo:
     address: str
     port: int
 
+    def __str__(self) -> str:
+        return f"{self.address}:{self.port}"
+
 
 @dataclass(frozen=True)
 class SocketResponse:

@@ -47,7 +47,7 @@ class TSender(Protocol):
         packet: bytes,
         timeout: int = 1,
         loop: Optional[AbstractEventLoop] = None,
-    ) -> bytes:
+    ) -> bytes:  # pragma: no cover
         ...
 
 
@@ -124,7 +124,9 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         """
         if LOG.isEnabledFor(logging.DEBUG) and isinstance(data, bytes):
             hexdump = visible_octets(data)
-            LOG.debug("Received packet:\n%s", hexdump)
+            LOG.debug(
+                "Received packet from %s:%d:\n%s", addr[0], addr[1], hexdump
+            )
 
         self.future.set_result(data)
         if self.transport:
@@ -136,7 +138,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         Pass the exception along if there is an error.
         """
         if LOG.isEnabledFor(logging.DEBUG):
-            LOG.debug("Error received: %s", exc)
+            LOG.debug("Error received!", exc_info=exc)
 
         self.future.set_exception(exc)
 
@@ -187,11 +189,11 @@ async def send_udp(
     return response  # type: ignore
 
 
-def default_trap_handler(info: SocketResponse) -> None:
+def default_trap_handler(response: SocketResponse) -> None:
     """
     A no-op implementation for trap handlers which only logs traps.
     """
-    LOG.debug("Trap Received: %r", info)
+    LOG.debug("Trap Received from %s: %r", response.info, response)
 
 
 async def listen(
