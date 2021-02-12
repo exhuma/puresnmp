@@ -125,7 +125,7 @@ data-types.
 Reasons for Change
 ~~~~~~~~~~~~~~~~~~
 
-``puresnmp`` v1.x had a leaky abstracion through inconsistent internal
+``puresnmp`` v1.x had a leaky abstraction through inconsistent internal
 handling of SNMP "VarBinds". They sometimes contained instances of
 ``ObjectIdentifier`` and :py:class:`x690.types.Type` classes and sometimes
 pure-Python data-types. It also caused an overall inconsistency between the
