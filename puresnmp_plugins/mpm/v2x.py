@@ -1,6 +1,6 @@
 from typing import Any, Awaitable, Callable, Dict
 
-from puresnmp.mpm import AbstractEncodingResult, MessageProcessingModel
+from puresnmp.plugins.mpm import AbstractEncodingResult, MessageProcessingModel
 
 IDENTIFIER = 2
 

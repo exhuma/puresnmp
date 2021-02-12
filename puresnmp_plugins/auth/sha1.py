@@ -3,7 +3,7 @@ This module provides the plugin for SHA-based authentication
 """
 import hashlib
 
-import puresnmp.auth.hashbase as hashbase
+import puresnmp_plugins.auth.hashbase as hashbase
 from puresnmp.util import password_to_key
 
 IDENTIFIER = "sha1"
