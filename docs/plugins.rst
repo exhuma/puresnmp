@@ -1,3 +1,5 @@
+.. _plugins:
+
 Plugins
 =======
 
@@ -85,7 +87,6 @@ Builtin Plugins
 ===============
 
 .. toctree::
-
    :maxdepth: 2
    :caption: Builtin Plugins
    :glob:

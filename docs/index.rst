@@ -1,6 +1,14 @@
 puresnmp
 ========
 
+.. note::
+
+   *puresnmp v2.x* is a major update from *puresnmp v1.x*. See
+   :ref:`upgrading` for information of the key changes.
+
+   The v1.x branch is now in "maintenance only" mode and will only receive
+   critical fixes.
+
 Let's start with a simple quickstart and go into design-decisions,
 class-descriptions and details a bit later.
 
@@ -70,6 +78,8 @@ Finally, let's execute an SNMP-Get request on the given OID and get the value.
 
    design
    plugins
+   upgrading
+   changelog
    API Docs <api/modules>
 
 
