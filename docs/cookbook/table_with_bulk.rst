@@ -18,7 +18,7 @@ Python Code
     OID = '1.3.6.1.2.1.2.2'
 
     result = bulktable(IP, COMMUNITY, OID)
-    pprint(table)
+    pprint(result)
 
 Output
 ~~~~~~
