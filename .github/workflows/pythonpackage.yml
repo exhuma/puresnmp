@@ -1,6 +1,8 @@
+---
 name: Python package
 
-on: [push]
+# yamllint disable-line rule:truthy
+on: [push, pull_request]
 
 jobs:
   test:
@@ -9,7 +11,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v1
@@ -20,18 +22,38 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[test]
-    - name: Lint with pylint
-      run: |
-        pip install pylint
-        pylint --reports=y --exit-zero puresnmp
+        python -m pip install poetry
+        poetry install --no-ansi
     - name: Test with pytest
       run: |
-        pip install pytest
-        pytest puresnmp
+        poetry run pytest
+
+  quality-control:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check black formatting
+        run: |
+          pip install black
+          black --check puresnmp
+      - name: Lint with pylint
+        run: |
+          pip install pylint
+          pylint --reports=y --exit-zero puresnmp
+
 
   publish:
 
+    needs: test
     runs-on: ubuntu-latest
     needs: test
     strategy:
@@ -40,16 +62,20 @@ jobs:
         python-version: [3.8]
 
     steps:
-    - uses: actions/checkout@v1
-    - name: Build distribution
-      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      - uses: actions/checkout@v1
+      - name: Build distribution
+        if: >
+          github.event_name == 'push' &&
+          startsWith(github.event.ref, 'refs/tags')
       run: |
         pip install wheel
-        python setup.py sdist
-        python setup.py bdist_wheel
+        pip install poetry
+        ~/.local/bin/poetry build
     - name: Publish package
-      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@e777b333
-      with:
-        user: __token__
-        password: ${{ secrets.pypi_token }}
+      if: >
+          github.event_name == 'push' &&
+          startsWith(github.event.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@e777b333
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_token }}

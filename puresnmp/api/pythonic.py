@@ -8,7 +8,7 @@ This module provides "syntactic sugar" around the lower-level, but almost
 identical, module :py:mod:`puresnmp.api.raw`.
 
 The "raw" module returns the variable types unmodified which are all subclasses
-of :py:class:`puresnmp.x690.types.Type`.
+of :py:class:`x690.types.Type`.
 """
 
 # TODO (advanced): This module should not make use of it's own functions. The
@@ -18,38 +18,32 @@ of :py:class:`puresnmp.x690.types.Type`.
 #     "siblng" function, valuable information is lost. In general, this module
 
 
-from __future__ import unicode_literals
-
 import logging
 from collections import OrderedDict
 from datetime import timedelta
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Generator, List, TypeVar
 from warnings import warn
 
+from x690.types import ObjectIdentifier, Type  # type: ignore
+
 from ..const import DEFAULT_TIMEOUT, Version
-from ..pdu import Trap, VarBind
+from ..pdu import Trap
+from ..snmp import VarBind
 from ..util import BulkResult
-from ..x690.types import ObjectIdentifier, Type
 from . import raw
 
 if TYPE_CHECKING:  # pragma: no cover
-    # pylint: disable=unused-import, invalid-name
-    from typing import Any, Callable, Dict, Generator, List, Tuple, Union
-    from puresnmp.typevars import PyType
-    TWalkResponse = Generator[VarBind, None, None]
-    TFetcher = Callable[[str, str, List[str], int, int],
-                        List[VarBind]]
-    T = TypeVar('T', bound=PyType)
+    # pylint: disable=unused-import, invalid-name, ungrouped-imports
+    from typing import Any, Callable, Dict, Tuple, Union
 
-try:
-    unicode = unicode  # type: Callable[[Any], str]
-except NameError:
-    # pylint: disable=invalid-name
-    unicode = str  # type: Callable[[Any], str]
+    from puresnmp.typevars import PyType
+
+    T = TypeVar("T", bound=PyType)
 
 _set = set
 LOG = logging.getLogger(__name__)
 OID = ObjectIdentifier.from_string
+TWalkResponse = Generator[VarBind, None, None]
 
 
 class TrapInfo:
@@ -67,10 +61,9 @@ class TrapInfo:
     #:     expose values which can be helpful in debugging.  If something is
     #:     missing from the properties, please open a corresponding support
     #:     ticket!
-    raw_trap = None
+    raw_trap: Trap
 
-    def __init__(self, raw_trap):
-        # type: (Trap) -> None
+    def __init__(self, raw_trap: Trap) -> None:
         self.raw_trap = raw_trap
 
     def __repr__(self):
@@ -82,28 +75,25 @@ class TrapInfo:
         )
 
     @property
-    def origin(self):
-        # type: () -> str
+    def origin(self) -> str:
         """
         Accesses the IP-Address from which the trap was sent
 
         May be the empty string if the source is unknown
         """
         if self.raw_trap is None or self.raw_trap.source is None:
-            return ''
+            return ""
         return self.raw_trap.source.address
 
     @property
-    def uptime(self):
-        # type: () -> timedelta
+    def uptime(self) -> timedelta:
         """
         Returns the uptime of the device.
         """
         return self.raw_trap.varbinds[0].value.pythonize()  # type: ignore
 
     @property
-    def oid(self):
-        # type: () -> str
+    def oid(self) -> str:
         """
         Returns the Trap-OID
         """
@@ -117,26 +107,30 @@ class TrapInfo:
         OIDs to values.
         """
         output = {}
-        for oid_raw, value_raw in self.raw_trap.varbinds[2:]:  # type: ignore
+        for oid_raw, value_raw in self.raw_trap.varbinds[2:]:
             oid = oid_raw.pythonize()  # type: ignore
             value = value_raw.pythonize()  # type: ignore
             output[oid] = value
         return output
 
 
-def get(ip, community, oid, port=161, timeout=2):
-    # type: (str, str, str, int, int) -> PyType
+def get(ip, community, oid, port=161, timeout=2, version=Version.V2C):
+    # type: (str, str, str, int, int, int) -> PyType
     """
     Delegates to :py:func:`~puresnmp.api.raw.get` but returns simple Python
     types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_value = raw.get(ip, community, oid, port, timeout=timeout)
+    raw_value = raw.get(
+        ip, community, oid, port, timeout=timeout, version=version
+    )
     return raw_value.pythonize()  # type: ignore
 
 
-def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+def multiget(
+    ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+):
     # type: (str, str, List[str], int, int, int) -> List[PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiget` but returns simple
@@ -144,24 +138,32 @@ def multiget(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Ver
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multiget(ip, community, oids, port, timeout, version=version)
+    raw_output = raw.multiget(
+        ip, community, oids, port, timeout, version=version
+    )
     pythonized = [value.pythonize() for value in raw_output]
     return pythonized
 
 
-def getnext(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, str, int, int) -> VarBind
+def getnext(
+    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+):
+    # type: (str, str, str, int, int, int) -> VarBind
     """
     Delegates to :py:func:`~puresnmp.api.raw.getnext` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    result = multigetnext(ip, community, [oid], port, timeout=timeout)
+    result = multigetnext(
+        ip, community, [oid], port, timeout=timeout, version=version
+    )
     return result[0]
 
 
-def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+def multigetnext(
+    ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+):
     # type: (str, str, List[str], int, int, int) -> List[VarBind]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multigetnext` but returns simple
@@ -169,14 +171,19 @@ def multigetnext(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multigetnext(ip, community, oids, port, timeout, version=version)
-    pythonized = [VarBind(oid, value.pythonize())  # type: ignore
-                  for oid, value in raw_output]
+    raw_output = raw.multigetnext(
+        ip, community, oids, port, timeout, version=version
+    )
+    pythonized = [
+        VarBind(oid, value.pythonize()) for oid, value in raw_output  # type: ignore
+    ]
     return pythonized
 
 
-def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, str, int, int) -> TWalkResponse
+def walk(
+    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+):
+    # type: (str, str, str, int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.walk` but returns simple Python
     types.
@@ -184,29 +191,45 @@ def walk(ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    raw_result = raw.walk(ip, community, oid, port, timeout)
+    raw_result = raw.walk(ip, community, oid, port, timeout, version=version)
     for raw_oid, raw_value in raw_result:
         yield VarBind(raw_oid, raw_value.pythonize())  # type: ignore
 
 
-def multiwalk(ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT,
-              fetcher=multigetnext, version=Version.V2C):
-    # type: (str, str, List[str], int, int, TFetcher, int) -> TWalkResponse
+def multiwalk(
+    ip: str,
+    community: str,
+    oids: List[str],
+    port: int = 161,
+    timeout: int = DEFAULT_TIMEOUT,
+    fetcher: raw.TFetcher = multigetnext,
+    version: int = Version.V2C,
+) -> TWalkResponse:
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiwalk` but returns simple
     Python types.
 
     See the "raw" equivalent for detailed documentation & examples.
     """
-    raw_output = raw.multiwalk(ip, community, oids, port, timeout, fetcher, version=version)
+    raw_output = raw.multiwalk(
+        ip, community, oids, port, timeout, fetcher, version=version
+    )
     for oid, value in raw_output:
         if isinstance(value, Type):
             value = value.pythonize()
-        yield VarBind(oid, value)  # type: ignore
+        yield VarBind(oid, value)
 
 
-def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, Type[T], int, int) -> T
+def set(
+    ip,
+    community,
+    oid,
+    value,
+    port=161,
+    timeout=DEFAULT_TIMEOUT,
+    version=Version.V2C,
+):  # pylint: disable=redefined-builtin
+    # type: (str, str, str, Type[T], int, int, int) -> T
     """
     Delegates to :py:func:`~puresnmp.api.raw.set` but returns simple Python
     types.
@@ -214,13 +237,21 @@ def set(ip, community, oid, value, port=161, timeout=DEFAULT_TIMEOUT):  # pylint
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    result = multiset(ip, community, [(oid, value)],  # type: ignore
-                      port, timeout=timeout)
-    return result[oid.lstrip('.')]  # type: ignore
+    result = multiset(
+        ip, community, [(oid, value)], port, timeout=timeout, version=version
+    )
+    return result[oid.lstrip(".")]  # type: ignore
 
 
-def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[Tuple[str, raw.T]], int, int) -> Dict[str, PyType]
+def multiset(
+    ip,
+    community,
+    mappings,
+    port=161,
+    timeout=DEFAULT_TIMEOUT,
+    version=Version.V2C,
+):
+    # type: (str, str, List[Tuple[str, raw.T]], int, int, int) -> Dict[str, PyType]
     """
     Delegates to :py:func:`~puresnmp.api.raw.multiset` but returns simple
     Python types.
@@ -228,15 +259,27 @@ def multiset(ip, community, mappings, port=161, timeout=DEFAULT_TIMEOUT):
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    raw_output = raw.multiset(ip, community, mappings, port, timeout)
-    pythonized = {unicode(oid): value.pythonize()
-                  for oid, value in raw_output.items()}
+    raw_output = raw.multiset(
+        ip, community, mappings, port, timeout, version=version
+    )
+    pythonized = {
+        str(oid): value.pythonize() for oid, value in raw_output.items()
+    }
     return pythonized
 
 
-def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
-            port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C):
+def bulkget(
+    ip,
+    community,
+    scalar_oids,
+    repeating_oids,
+    max_list_size=1,
+    port=161,
+    timeout=DEFAULT_TIMEOUT,
+    version=Version.V2C,
+):
     # type: (str, str, List[str], List[str], int, int, int, int) -> BulkResult
+    # pylint: disable=unused-argument
     """
     Delegates to :py:func:`~puresnmp.api.raw.mulkget` but returns simple
     Python types.
@@ -244,21 +287,35 @@ def bulkget(ip, community, scalar_oids, repeating_oids, max_list_size=1,
     See the "raw" equivalent for detailed documentation & examples.
     """
 
-    raw_output = raw.bulkget(ip, community, scalar_oids, repeating_oids,
-                             max_list_size=max_list_size,
-                             port=port,
-                             timeout=timeout)
-    pythonized_scalars = {oid: value.pythonize()
-                          for oid, value in raw_output.scalars.items()}
+    raw_output = raw.bulkget(
+        ip,
+        community,
+        scalar_oids,
+        repeating_oids,
+        max_list_size=max_list_size,
+        port=port,
+        timeout=timeout,
+        version=version,
+    )
+    pythonized_scalars = {
+        oid: value.pythonize() for oid, value in raw_output.scalars.items()
+    }
     pythonized_list = OrderedDict(
-        [(oid, value.pythonize())
-         for oid, value in raw_output.listing.items()])
+        [(oid, value.pythonize()) for oid, value in raw_output.listing.items()]
+    )
     return BulkResult(pythonized_scalars, pythonized_list)
 
 
-def bulkwalk(ip, community, oids, bulk_size=10, port=161,
-             timeout=DEFAULT_TIMEOUT):
-    # type: (str, str, List[str], int, int, int) -> TWalkResponse
+def bulkwalk(
+    ip,
+    community,
+    oids,
+    bulk_size=10,
+    port=161,
+    timeout=DEFAULT_TIMEOUT,
+    version=Version.V2C,
+):
+    # type: (str, str, List[str], int, int, int, int) -> TWalkResponse
     """
     Delegates to :py:func:`~puresnmp.api.raw.bulkwalk` but returns simple
     Python types.
@@ -267,12 +324,18 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161,
     """
 
     result = multiwalk(
-        ip, community, oids, port=port,
+        ip,
+        community,
+        oids,
+        port=port,
         fetcher=raw._bulkwalk_fetcher(  # pylint: disable=protected-access
-            bulk_size),
-        timeout=timeout)
+            bulk_size
+        ),
+        timeout=timeout,
+        version=version,
+    )
     for oid, value in result:
-        yield VarBind(oid, value)  # type: ignore
+        yield VarBind(oid, value)
 
 
 def table(ip, community, oid, port=161, num_base_nodes=0):
@@ -285,18 +348,18 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     structure.
     """
     if num_base_nodes:
-        warn('Usage of "num_base_nodes" in table operations is no longer '
-             'required', DeprecationWarning)
-    else:
-        parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
-    tmp = raw.table(ip, community, oid, port=port,
-                    num_base_nodes=num_base_nodes)
+        warn(
+            'Usage of "num_base_nodes" in table operations is no longer '
+            "required",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    tmp = raw.table(ip, community, oid, port=port)
     output = []
     for row in tmp:
-        index = row.pop('0')
+        index = row.pop("0")
         pythonized = {key: value.pythonize() for key, value in row.items()}
-        pythonized['0'] = index
+        pythonized["0"] = index
         output.append(pythonized)
     return output
 
@@ -313,22 +376,23 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
     .. versionadded: 1.7.0
     """
     if num_base_nodes:
-        warn('Usage of "num_base_nodes" in table operations is no longer '
-             'required', DeprecationWarning)
-    else:
-        parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
+        warn(
+            'Usage of "num_base_nodes" in table operations is no longer '
+            "required",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     tmp = raw.bulktable(ip, community, oid, port=port, bulk_size=bulk_size)
     output = []
     for row in tmp:
-        index = row.pop('0')
+        index = row.pop("0")
         pythonized = {key: value.pythonize() for key, value in row.items()}
-        pythonized['0'] = index
+        pythonized["0"] = index
         output.append(pythonized)
     return output
 
 
-def traps(listen_address='0.0.0.0', port=162, buffer_size=1024):
+def traps(listen_address="0.0.0.0", port=162, buffer_size=1024):
     # type: (str, int, int) -> Generator[TrapInfo, None, None]
     """
     A "pythonic" wrapper around :py:func:`puresnmp.api.raw.traps` output.

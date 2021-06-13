@@ -1,11 +1,11 @@
 # pylint: skip-file
 
-from ..x690 import types as t
-from ..x690.util import TypeInfo
-from .. import types as apptype
+from x690 import types as t
+from x690.util import TypeInfo
+
+from puresnmp import types as apptype
 
 from . import ByteTester
-
 
 UNIVERSAL = TypeInfo.UNIVERSAL
 APPLICATION = TypeInfo.APPLICATION
@@ -20,6 +20,7 @@ def make_identifier_test(octet, expected_class, expected_pc, expected_value):
         result = TypeInfo.from_bytes(octet)
         expected = TypeInfo(expected_class, expected_pc, expected_value)
         self.assertEqual(result, expected)
+
     return fun
 
 
@@ -27,39 +28,50 @@ def add_class_detector(cls, expected_class, typeclass, tag):
     def fun(inst):
         result = t.Registry.get(typeclass, tag)
         inst.assertEqual(result, expected_class)
-    fun.__name__ = 'test_%s' % expected_class.__name__
-    setattr(cls, 'test_%s' % expected_class.__name__, fun)
+
+    fun.__name__ = "test_%s" % expected_class.__name__
+    setattr(cls, "test_%s" % expected_class.__name__, fun)
 
 
 class TestBasics(ByteTester):
 
     test_identifier_univ_prim = make_identifier_test(
-        0b00000010, UNIVERSAL, PRIMITIVE, 0b00010)
+        0b00000010, UNIVERSAL, PRIMITIVE, 0b00010
+    )
 
     test_identifier_univ_const = make_identifier_test(
-        0b00100010, UNIVERSAL, CONSTRUCTED, 0b00010)
+        0b00100010, UNIVERSAL, CONSTRUCTED, 0b00010
+    )
 
     test_identifier_app_prim = make_identifier_test(
-        0b01000010, APPLICATION, PRIMITIVE, 0b00010)
+        0b01000010, APPLICATION, PRIMITIVE, 0b00010
+    )
 
     test_identifier_app_const = make_identifier_test(
-        0b01100010, APPLICATION, CONSTRUCTED, 0b00010)
+        0b01100010, APPLICATION, CONSTRUCTED, 0b00010
+    )
 
     test_identifier_ctx_prim = make_identifier_test(
-        0b10000010, CONTEXT, PRIMITIVE, 0b00010)
+        0b10000010, CONTEXT, PRIMITIVE, 0b00010
+    )
 
     test_identifier_ctx_const = make_identifier_test(
-        0b10100010, CONTEXT, CONSTRUCTED, 0b00010)
+        0b10100010, CONTEXT, CONSTRUCTED, 0b00010
+    )
 
     test_identifier_prv_prim = make_identifier_test(
-        0b11000010, PRIVATE, PRIMITIVE, 0b00010)
+        0b11000010, PRIVATE, PRIMITIVE, 0b00010
+    )
 
     test_identifier_prv_const = make_identifier_test(
-        0b11100010, PRIVATE, CONSTRUCTED, 0b00010)
+        0b11100010, PRIVATE, CONSTRUCTED, 0b00010
+    )
 
     def test_identifier_long(self):
-        self.skipTest('This is not yet implemented. I have not understood the '
-                      'spec to confidently write a test')  # TODO
+        self.skipTest(
+            "This is not yet implemented. I have not understood the "
+            "spec to confidently write a test"
+        )  # TODO
 
 
 class TestClassDetector(ByteTester):
@@ -91,11 +103,11 @@ add_class_detector(TestClassDetector, t.IA5String, UNIVERSAL, 0x16)
 add_class_detector(TestClassDetector, t.UtcTime, UNIVERSAL, 0x17)
 add_class_detector(TestClassDetector, t.GeneralizedTime, UNIVERSAL, 0x18)
 add_class_detector(TestClassDetector, t.GraphicString, UNIVERSAL, 0x19)
-add_class_detector(TestClassDetector, t.VisibleString, UNIVERSAL, 0x1a)
-add_class_detector(TestClassDetector, t.GeneralString, UNIVERSAL, 0x1b)
-add_class_detector(TestClassDetector, t.UniversalString, UNIVERSAL, 0x1c)
-add_class_detector(TestClassDetector, t.CharacterString, UNIVERSAL, 0x1d)
-add_class_detector(TestClassDetector, t.BmpString, UNIVERSAL, 0x1e)
+add_class_detector(TestClassDetector, t.VisibleString, UNIVERSAL, 0x1A)
+add_class_detector(TestClassDetector, t.GeneralString, UNIVERSAL, 0x1B)
+add_class_detector(TestClassDetector, t.UniversalString, UNIVERSAL, 0x1C)
+add_class_detector(TestClassDetector, t.CharacterString, UNIVERSAL, 0x1D)
+add_class_detector(TestClassDetector, t.BmpString, UNIVERSAL, 0x1E)
 
 
 # Application (SNMP-specific) Types

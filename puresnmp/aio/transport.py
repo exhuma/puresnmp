@@ -16,9 +16,10 @@ import logging
 from asyncio.events import AbstractEventLoop
 from typing import Optional, Tuple, Union
 
+from x690.util import visible_octets  # type: ignore
+
 from ..exc import Timeout
 from ..transport import Transport as SyncTransport
-from ..x690.util import visible_octets
 
 LOG = logging.getLogger(__name__)
 
@@ -47,8 +48,8 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
 
         if LOG.isEnabledFor(logging.DEBUG):
             hexdump = visible_octets(self.packet)
-            ip, port = self.transport.get_extra_info('peername', ('', ''))
-            LOG.debug('Sending packet to %s:%s\n%s', ip, port, hexdump)
+            ip, port = self.transport.get_extra_info("peername", ("", ""))
+            LOG.debug("Sending packet to %s:%s\n%s", ip, port, hexdump)
 
         self.transport.sendto(self.packet)
 
@@ -59,9 +60,9 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         """
         if LOG.isEnabledFor(logging.DEBUG):
             if exc is None:
-                LOG.debug('Socket closed')
+                LOG.debug("Socket closed")
             else:
-                LOG.debug('Connection lost: %s', exc)
+                LOG.debug("Connection lost: %s", exc)
 
         if exc is not None:
             self.future.set_exception(exc)
@@ -73,7 +74,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         """
         if LOG.isEnabledFor(logging.DEBUG) and isinstance(data, bytes):
             hexdump = visible_octets(data)
-            LOG.debug('Received packet:\n%s', hexdump)
+            LOG.debug("Received packet:\n%s", hexdump)
 
         self.future.set_result(data)
         if self.transport:
@@ -85,7 +86,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         Pass the exception along if there is an error.
         """
         if LOG.isEnabledFor(logging.DEBUG):
-            LOG.debug('Error received: %s', exc)
+            LOG.debug("Error received: %s", exc)
 
         self.future.set_exception(exc)
 
@@ -96,17 +97,24 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         """
         try:
             return await asyncio.wait_for(self.future, timeout, loop=self.loop)
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as exc:
             if self.transport:
                 self.transport.abort()
-            raise Timeout("{} second timeout exceeded".format(timeout))
+            raise Timeout(f"{timeout} second timeout exceeded") from exc
 
 
 class Transport(SyncTransport):
+    """
+    An async variant of the synchronous TCP transport
+    """
+
+    # pylint: disable=invalid-overridden-method
 
     async def send(  # type: ignore
-            self, ip, port, packet, timeout=6, loop=None):  # pragma: no cover
+        self, ip, port, packet, timeout=6, loop=None
+    ):  # pragma: no cover
         # type: ( str, int, bytes, int, Optional[AbstractEventLoop] ) -> bytes
+        # pylint: disable=arguments-differ
         """
         A coroutine that opens a UDP socket to *ip:port*, sends a packet with
         *bytes* and returns the raw bytes as returned from the remote host.
@@ -119,9 +127,9 @@ class Transport(SyncTransport):
 
         # family could be specified here (and is in the sync implementation),
         # is it needed? are retries necessary for async implementation?
-        transport, protocol = await loop.create_datagram_endpoint(
+        _, protocol = await loop.create_datagram_endpoint(
             lambda: SNMPClientProtocol(packet, loop),  # type: ignore
-            remote_addr=(ip, port)
+            remote_addr=(ip, port),
         )
 
         response = await protocol.get_data(timeout)  # type: ignore

@@ -12,23 +12,23 @@ for the definition of the new types.
 """
 # TODO: Implement IPv6 via https://tools.ietf.org/html/rfc2465
 
-import sys
 from datetime import timedelta
 from ipaddress import IPv4Address
 from struct import pack
 from typing import TYPE_CHECKING, Union
 
-from .x690.types import Integer, OctetString
-from .x690.util import TypeInfo
+from x690.types import Integer, OctetString, Type  # type: ignore
+from x690.util import TypeInfo  # type: ignore
 
 if TYPE_CHECKING:
     from typing import Optional
 
 
-class IpAddress(OctetString):
+class IpAddress(OctetString):  # type: ignore
     """
     SNMP Type for IPv4 Addresses
     """
+
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x00
 
@@ -36,16 +36,16 @@ class IpAddress(OctetString):
         # type: (bytes) -> None
         if isinstance(value, IPv4Address):
             remainder = int(value)
-            octet_4, remainder = remainder & 0xff, remainder >> 8
-            octet_3, remainder = remainder & 0xff, remainder >> 8
-            octet_2, remainder = remainder & 0xff, remainder >> 8
-            octet_1, remainder = remainder & 0xff, remainder >> 8
-            value = pack('BBBB', octet_1, octet_2, octet_3, octet_4)
-        super(IpAddress, self).__init__(value)
+            octet_4, remainder = remainder & 0xFF, remainder >> 8
+            octet_3, remainder = remainder & 0xFF, remainder >> 8
+            octet_2, remainder = remainder & 0xFF, remainder >> 8
+            octet_1, remainder = remainder & 0xFF, remainder >> 8
+            value = pack("BBBB", octet_1, octet_2, octet_3, octet_4)
+        super().__init__(value)
 
     def pythonize(self):
         # type: () -> Optional[bytes]
-        return self.value
+        return self.value  # type: ignore
 
         # TODO The following code breaks backwards compatbility and should be
         # released in the next mator verion
@@ -59,36 +59,38 @@ class IpAddress(OctetString):
         # TODO v2.0.0 return ip_address(intvalue)
 
 
-class Counter(Integer):
+class Counter(Integer):  # type: ignore
     """
     SNMP type for counters.
     """
+
     SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x01
 
     def __init__(self, value):
         # type: (int) -> None
-        while value >= 2**32:
-            value = value - (2**32)
+        value &= 0xFFFFFFFF if value >= 2 ** 32 else value
         if value <= 0:
             value = 0
-        super(Counter, self).__init__(value)
+        super().__init__(value)
 
 
-class Gauge(Integer):
+class Gauge(Integer):  # type: ignore
     """
     SNMP type for gauges.
     """
+
     SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x02
 
 
-class TimeTicks(Integer):
+class TimeTicks(Integer):  # type: ignore
     """
     SNMP type for time ticks.
     """
+
     SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x03
@@ -99,7 +101,7 @@ class TimeTicks(Integer):
             value_int = int(value.total_seconds() * 100)
         else:
             value_int = value
-        super(TimeTicks, self).__init__(value_int)
+        super().__init__(value_int)
 
     def pythonize(self):
         # type: () -> Optional[timedelta]
@@ -109,50 +111,62 @@ class TimeTicks(Integer):
         return timedelta(seconds=seconds)
 
 
-class Opaque(OctetString):
+class Opaque(OctetString):  # type: ignore
+    """
+    The Opaque type is to be considered to carry "any" binary data.
+
+    It is up to the application to know how to interpret this data and is
+    passed through transparently by the SNMP protocol.
+    """
+
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x04
 
 
-class NsapAddress(Integer):
+class NsapAddress(Integer):  # type: ignore
+    """
+    Wrapped type for an NSAP Address
+    """
+
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x05
 
 
-class Counter64(Integer):
+class Counter64(Integer):  # type: ignore
     """
     As defined in RFC 2578
     """
+
     SIGNED = False
     TYPECLASS = TypeInfo.APPLICATION
     TAG = 0x06
 
     def __init__(self, value):
         # type: (int) -> None
-        while value >= 2**64:
-            value = value - (2**64)
+        value &= 0xFFFFFFFFFFFFFFFF if value >= 2 ** 64 else value
         if value <= 0:
             value = 0
-        super(Counter64, self).__init__(value)
+        super().__init__(value)
 
 
 def _walk_subclasses(cls, indent=0):  # pragma: no cover
     # type: (type, int) -> None
-    '''
+    """
     Recursively walk over the :py:class:`Type` hierarchy and print out ReST
     formatted text on stdout.
-    '''
-    if cls.__module__ == '__main__':
-        modname = 'puresnmp.types'
+    """
+    if cls.__module__ == "__main__":
+        modname = "puresnmp.types"
     else:
         modname = cls.__module__
 
-    cname = '.'.join([modname, cls.__qualname__])
-    ref = ':py:class:`%s`' % cname
+    cname = ".".join([modname, cls.__qualname__])
+    ref = ":py:class:`%s`" % cname
 
-    print('\n', '   ' * indent, '* ', ref)
-    for subclass in sorted(cls.__subclasses__(),
-                           key=lambda x: x.__module__ + x.__name__):
+    print("\n", "   " * indent, "* ", ref)
+    for subclass in sorted(
+        cls.__subclasses__(), key=lambda x: x.__module__ + x.__name__
+    ):
         _walk_subclasses(subclass, indent + 1)
 
 
@@ -167,14 +181,15 @@ def main():  # pragma: no cover
     This function was written to generate a documentation page with the
     available types.
     """
-    from .x690.types import Type
-    print('.. _type_tree:\n')
-    print('Type Tree')
-    print('=========\n')
+
+    print(".. _type_tree:\n")
+    print("Type Tree")
+    print("=========\n")
     _walk_subclasses(Type)
     return 0
 
 
-if __name__ == '__main__':  # pragma: no cover
-    import sys
+if __name__ == "__main__":  # pragma: no cover
+    import sys  # pylint: disable=ungrouped-imports
+
     sys.exit(main())

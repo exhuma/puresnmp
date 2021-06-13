@@ -1,6 +1,45 @@
 Changelog
 =========
 
+Release 1.10.2.post1
+~~~~~~~~~~~~~~~~~~~~
+
+This is a "house-keeping" commit. No new features or fixes are introduced.
+
+* **[changed]** Packaging and publishing switched over to poetry
+
+Release 1.10.2
+~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** Speed improvements for overflowing counters (See #88 by Alexey
+  Minevich)
+
+
+Release 1.10.1
+~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** Don't crash with an ``IndexError`` when an error-status is
+  returned from a device without specifying an offending OID (See #89 by
+  Lopolio)
+
+
+Release 1.10.0
+~~~~~~~~~~~~~~~~~~~
+
+* **[support]** Expose SNMP "version" argument to more API endpoints for
+  extended SNMPv1 support (See #87 by Nikolaj Rahbek). Impacted functions are:
+
+  * ``puresnmp.api.pythonic.get()``
+  * ``puresnmp.api.pythonic.getnext()``
+  * ``puresnmp.api.pythonic.walk()``
+  * ``puresnmp.api.pythonic.set()``
+  * ``puresnmp.api.pythonic.multiset()``
+  * ``puresnmp.api.raw.get()``
+  * ``puresnmp.api.raw.getnext()``
+  * ``puresnmp.api.raw.set()``
+  * ``puresnmp.api.raw.multiset()``
+
+
 Release 1.9.1
 ~~~~~~~~~~~~~~~~~~~
 

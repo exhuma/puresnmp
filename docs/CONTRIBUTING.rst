@@ -7,6 +7,21 @@ The package is managed on github_ and all feature-requests, bug-reports and
 pull-request should come through there.
 
 
+Pull Requests
+-------------
+
+When opening a pull request for **bug-fixes or minor improvments**, make sure
+to use ``master`` as reference branch. This will always reflect the currently
+published version of ``puresnmp``. Alternatively you can use a version-tag as
+base.
+
+For new features you should consider using the branch ``develop`` as base.
+Anything opened against ``develop`` will usually take a longer time to release.
+
+If unsure whether to use ``develop`` or ``master``, pick anyone of the two and
+drop a comment in the PR and I will have a look which one makes more sense.
+
+
 Who can contribute and what?
 ----------------------------
 
