@@ -1,7 +1,7 @@
 Changelog
 =========
 
-Release 2.0.0a0 to 2.0.0a13
+Release 2.0.0a0 to 2.0.0a15
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
@@ -10,6 +10,8 @@ Release 2.0.0a0 to 2.0.0a13
 
     Refer to :py:ref:`upgrading` for details
 
+* **[changed]** Changed back from ``poetry`` to ``setuptools`` due to too many
+  stumbling blocks during development with ``poetry``.
 * **[changed]** Main API functions moved into "client" classes
   :py:class:`~puresnmp.api.raw.Client` and
   :py:class:`~puresnmp.api.pythonic.PyWrapper`. See :ref:`upgrading`.
