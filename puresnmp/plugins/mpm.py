@@ -164,6 +164,9 @@ class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
 
 
 def is_valid_mpm_plugin(mod: ModuleType) -> bool:
+    """
+    Return True if the module in *mod* is usable as MPM plugin
+    """
     return all(
         [
             hasattr(mod, "create"),
