@@ -3,21 +3,21 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/PyCQA/isort
-    rev: master
+    rev: 5.9.2
     hooks:
       - id: isort
   - repo: https://github.com/psf/black
-    rev: master
+    rev: 21.6b0
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.0.1
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: debug-statements
   - repo: https://github.com/exhuma/pre-commit-hooks
-    rev: main
+    rev: b31e7670811fd7ac12ef10bea59c5ac0e3b1a212
     hooks:
       - id: prevent-debug-markers
