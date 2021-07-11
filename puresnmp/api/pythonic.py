@@ -354,7 +354,17 @@ def table(ip, community, oid, port=161, num_base_nodes=0, version=Version.V2C):
             DeprecationWarning,
             stacklevel=2,
         )
-    tmp = raw.table(ip, community, oid, port=port, version=version)
+    else:
+        parsed_oid = OID(oid)
+        num_base_nodes = len(parsed_oid) + 1  # type: ignore
+    tmp = raw.table(
+        ip,
+        community,
+        oid,
+        port=port,
+        num_base_nodes=num_base_nodes,
+        version=version,
+    )
     output = []
     for row in tmp:
         index = row.pop("0")
