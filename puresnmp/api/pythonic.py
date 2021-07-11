@@ -280,7 +280,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161,
         yield VarBind(oid, value)  # type: ignore
 
 
-def table(ip, community, oid, port=161, num_base_nodes=0):
+def table(ip, community, oid, port=161, num_base_nodes=0, version=Version.V2C):
     # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     Fetches a table from the SNMP agent. Each value will be converted to a
@@ -290,13 +290,16 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
     structure.
     """
     if num_base_nodes:
-        warn('Usage of "num_base_nodes" in table operations is no longer '
-             'required', DeprecationWarning)
+        warn(
+            'Usage of "num_base_nodes" in table operations is no longer '
+            "required",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     else:
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1  # type: ignore
-    tmp = raw.table(ip, community, oid, port=port,
-                    num_base_nodes=num_base_nodes)
+    tmp = raw.table(ip, community, oid, port=port, num_base_nodes=num_base_nodes, version=version)
     output = []
     for row in tmp:
         index = row.pop('0')

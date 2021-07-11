@@ -543,7 +543,7 @@ def bulkwalk(ip, community, oids, bulk_size=10, port=161,
         yield VarBind(oid, value)  # type: ignore
 
 
-def table(ip, community, oid, port=161, num_base_nodes=0):
+def table(ip, community, oid, port=161, num_base_nodes=0, version=Version.V2C):
     # type: (str, str, str, int, int) -> List[Dict[str, Any]]
     """
     Fetch an SNMP table
@@ -570,8 +570,9 @@ def table(ip, community, oid, port=161, num_base_nodes=0):
              'required', DeprecationWarning)
     else:
         parsed_oid = OID(oid)
-        num_base_nodes = len(parsed_oid) + 1  # type: ignore
-    varbinds = walk(ip, community, oid, port=port)
+        num_base_nodes = len(parsed_oid) + 1
+
+    varbinds = walk(ip, community, oid, port=port, version=version)
     for varbind in varbinds:
         tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)  # type: ignore
