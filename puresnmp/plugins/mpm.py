@@ -187,7 +187,10 @@ def create(
     :param transport_handler: A callable that is responsible to send data to
         the network. It will be called with bytes to be sent, and should
         return bytes. It should by itself already be aware of *where* to send
-        them.
+        them (the only input it gets is the payload). This is used in situations
+        where the message-processing model needs to communicate with the device
+        *outside* of normal data-exchange message, like the initial discovery
+        message in the SNMPv3 protocol.
     :param lcd: A "local configuration directory" which is dynamically
         updated with "discovery" data if required.
     :returns: A new Message Processing Model instance
