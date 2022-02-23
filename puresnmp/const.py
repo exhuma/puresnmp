@@ -13,3 +13,6 @@ ERRORS_WARN = "warn"
 
 #: TCP timeout which is used if not manually overridden
 DEFAULT_TIMEOUT = 6
+
+#: Number of retries we attempt when sending out packets before giving up
+DEFAULT_RETRIES = 10

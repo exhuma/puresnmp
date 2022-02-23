@@ -37,7 +37,7 @@ from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 import puresnmp.plugins.mpm as mpm
 from puresnmp.typevars import SocketResponse, TAnyIp
 
-from ..const import DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
+from ..const import DEFAULT_RETRIES, DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
 from ..credentials import V2C, Credentials
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
@@ -155,6 +155,11 @@ class ClientConfig:
     #: The socket timeout for network requests. This value is passed through
     #: to the client's "sender" callable
     timeout: int = DEFAULT_TIMEOUT
+    #: The number of retries we attempt when sending packets to the remote
+    #: device before giving up. Note that some devices may refuse connections
+    #: attempts if too many requests were made with incorrect credentials.
+    #: Defaults to 10 retries
+    retries: int = DEFAULT_RETRIES
 
 
 class Client:
@@ -199,22 +204,37 @@ class Client:
         context_name: bytes = b"",
         engine_id: bytes = b"",
     ) -> None:
-        endpoint = Endpoint(ip_address(ip), port)
+
         lcd: Dict[str, Any] = {}
-
-        async def handler(data: bytes) -> bytes:  # pragma: no cover
-            return await sender(endpoint, data)
-
-        self.sender = sender
-        self.transport_handler = handler
-        self.endpoint = endpoint
-        self.mpm = mpm.create(credentials.mpm, handler, lcd)
-
         self.config = ClientConfig(
             credentials=credentials,
             context=Context(engine_id, context_name),
             lcd=lcd,
         )
+
+        endpoint = Endpoint(ip_address(ip), port)
+
+        async def handler(data: bytes) -> bytes:  # pragma: no cover
+            """
+            A callable that is bound to a given IP/Port combination, capable of
+            sending raw bytes to that endpoint. This is passed to
+            message-processing models in case they need to communicate with the
+            device.
+
+            At the time of this writing, this is only required vor SNMPv3
+            discovery messages.
+            """
+            return await sender(
+                endpoint,
+                data,
+                timeout=self.config.timeout,
+                retries=self.config.retries,
+            )
+
+        self.sender = sender
+        self.transport_handler = handler
+        self.endpoint = endpoint
+        self.mpm = mpm.create(credentials.mpm, handler, lcd)
 
     @property
     def credentials(self) -> Credentials:
@@ -298,7 +318,10 @@ class Client:
             pdu,
         )
         raw_response = await self.sender(
-            self.endpoint, bytes(packet), timeout=self.config.timeout
+            self.endpoint,
+            bytes(packet),
+            timeout=self.config.timeout,
+            retries=self.config.retries,
         )
         response = self.mpm.decode(raw_response, self.credentials)
         validate_response_id(request_id, response.value.request_id)

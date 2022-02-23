@@ -47,6 +47,7 @@ class TSender(Protocol):
         packet: bytes,
         timeout: int = 1,
         loop: Optional[AbstractEventLoop] = None,
+        retries: int = 10,
     ) -> bytes:  # pragma: no cover
         ...
 
@@ -160,6 +161,7 @@ async def send_udp(
     packet: bytes,
     timeout: int = 1,
     loop: Optional[AbstractEventLoop] = None,
+    retries: int = 10,
 ) -> bytes:  # pragma: no cover
     # pylint: disable=arguments-differ
     """
@@ -172,7 +174,6 @@ async def send_udp(
     if loop is None:
         loop = asyncio.get_event_loop()
 
-    retries = 10
     while retries > 0:
         _, protocol = await loop.create_datagram_endpoint(
             lambda: SNMPClientProtocol(packet, loop),  # type: ignore

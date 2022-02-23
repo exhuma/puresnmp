@@ -355,7 +355,10 @@ async def test_get_call_args_getnext(mocked_raw):
         await mocked_raw.getnext(OID("1.2.3"))
         assert mocked_raw.sender.mock_calls == [
             call(
-                Endpoint(ip_address("192.0.2.1"), 161), bytes(packet), timeout=6
+                Endpoint(ip_address("192.0.2.1"), 161),
+                bytes(packet),
+                retries=10,
+                timeout=6,
             )
         ]
 
@@ -527,7 +530,12 @@ async def test_get_call_args_bulkget(mocked_raw):
             [OID("1.2.3")], [OID("1.2.4")], max_list_size=2
         )
     assert mocked_raw.sender.mock_calls == [
-        call(Endpoint(ip_address("192.0.2.1"), 161), bytes(packet), timeout=6)
+        call(
+            Endpoint(ip_address("192.0.2.1"), 161),
+            bytes(packet),
+            retries=10,
+            timeout=6,
+        )
     ]
 
 
@@ -611,7 +619,10 @@ async def test_get_call_args_bulkwalk(mocked_raw):
             pass
         assert mocked_raw.sender.mock_calls == [
             call(
-                Endpoint(ip_address("192.0.2.1"), 161), bytes(packet), timeout=6
+                Endpoint(ip_address("192.0.2.1"), 161),
+                bytes(packet),
+                retries=10,
+                timeout=6,
             )
         ]
 
@@ -654,9 +665,15 @@ async def test_bulkwalk(mocked_raw):
             result.append(row)
 
     assert mocked_raw.sender.mock_calls == [
-        call(Endpoint(ip_address("192.0.2.1"), 161), req1, timeout=6),
-        call(Endpoint(ip_address("192.0.2.1"), 161), req2, timeout=6),
-        call(Endpoint(ip_address("192.0.2.1"), 161), req3, timeout=6),
+        call(
+            Endpoint(ip_address("192.0.2.1"), 161), req1, retries=10, timeout=6
+        ),
+        call(
+            Endpoint(ip_address("192.0.2.1"), 161), req2, retries=10, timeout=6
+        ),
+        call(
+            Endpoint(ip_address("192.0.2.1"), 161), req3, retries=10, timeout=6
+        ),
     ]
 
     expected = [
