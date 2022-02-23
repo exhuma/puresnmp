@@ -187,7 +187,7 @@ class Client:
         underlying protocol in use. See :py:mod:`puresnmp.credentials` for
         possible types.
     :param port: The UDP port for the remote device
-    :param sender: A callable responsible to send out data to the remove
+    :param sender: A callable responsible to send out data to the remote
         device. The default implementation will use UDP using the IP and port
         given in the other arguments.
     :param context_name: An optional context for SNMPv3 requests
