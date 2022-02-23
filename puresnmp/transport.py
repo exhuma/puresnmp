@@ -185,7 +185,7 @@ async def send_udp(
         try:
             response = await protocol.get_data(timeout)  # type: ignore
             break
-        except Exception:
+        except Timeout:
             if retries == 1:
                 raise
             retries -= 1
