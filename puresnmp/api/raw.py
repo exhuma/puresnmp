@@ -264,6 +264,34 @@ class Client:
         """
         return self.endpoint.port
 
+    def configure(self, **kwargs: Any) -> None:
+        """
+        Update the configuration of the client.
+
+        For temporary configuration changes see :py:meth:`~.reconfigure`.
+
+        The values that can be overridden delegate to
+        :py:class:`~.ClientConfig`. Any fields in that class can be overridden
+
+        >>> client = Client("192.0.2.1", V2C("public"))
+        >>> client.config.retries
+        10
+        >>> client.configure(retries=3)
+        >>> client.config.retries
+        3
+        """
+        new_config = replace(self.config, **kwargs)
+        if "credentials" in kwargs and type(self.config.credentials) != type(
+            kwargs["credentials"]
+        ):
+            # New credentials may switch from one SNMP version to another
+            # so we need to create a new message-processing-model
+            lcd: Dict[str, Any] = {}
+            self.mpm = mpm.create(
+                kwargs["credentials"].mpm, self.transport_handler, lcd
+            )
+        self.config = new_config
+
     @contextmanager
     def reconfigure(self, **kwargs: Any) -> Generator[None, None, None]:
         """
@@ -291,19 +319,8 @@ class Client:
         """
         old_config = self.config
         old_mpm = self.mpm
-        new_config = replace(old_config, **kwargs)
-
         try:
-            if "credentials" in kwargs and type(
-                self.config.credentials
-            ) != type(kwargs["credentials"]):
-                # New credentials may switch from one SNMP version to another
-                # so we need to create a new message-processing-model
-                lcd: Dict[str, Any] = {}
-                self.mpm = mpm.create(
-                    kwargs["credentials"].mpm, self.transport_handler, lcd
-                )
-            self.config = new_config
+            self.configure(**kwargs)
             yield
         finally:
             self.config = old_config
