@@ -153,7 +153,10 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         except (asyncio.TimeoutError, socket.timeout) as exc:
             if self.transport:
                 self.transport.abort()
-            raise Timeout(f"{timeout} second timeout exceeded") from exc
+            raise Timeout(
+                f"{timeout} second timeout exceeded. This may point to network "
+                "issues, or incorrect SNMP credentials"
+            ) from exc
 
 
 async def send_udp(
