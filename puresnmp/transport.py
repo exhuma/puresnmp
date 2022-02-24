@@ -154,8 +154,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
             if self.transport:
                 self.transport.abort()
             raise Timeout(
-                f"{timeout} second timeout exceeded. This may point to network "
-                "issues, or incorrect SNMP credentials"
+                f"{timeout} second timeout exceeded on UDP transport."
             ) from exc
 
 

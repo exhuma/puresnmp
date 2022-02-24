@@ -23,7 +23,10 @@ class SNMPv2cSecurityModel(SecurityModel[PDU, Sequence]):
         credentials: Credentials,
     ) -> Sequence:
         if not isinstance(credentials, V2C):
-            raise TypeError("Credentials must be V2C instances!")
+            raise SnmpError(
+                "Credentials for the SNMPv2c security model must be "
+                "V2C instances!"
+            )
         packet = Sequence(
             [Integer(1), OctetString(credentials.community), message]
         )
@@ -36,11 +39,18 @@ class SNMPv2cSecurityModel(SecurityModel[PDU, Sequence]):
     ) -> PDU:
         proto_version, community, pdu = message
         if not isinstance(credentials, V2C):
-            raise TypeError("Credentials must be V2C instances!")
+            raise SnmpError(
+                "Credentials for the SNMPv2c security model must be "
+                "V2C instances!"
+            )
         if proto_version.pythonize() != 1:
-            raise SnmpError("Incorrect SNMP version on response message")
+            raise SnmpError(
+                "Incoming SNMP message is not supported by the SNMPv2c "
+                "security model. Most likely the device is not talking "
+                "SNMPv2c but rather a different SNMP version."
+            )
         if community.pythonize() != credentials.community.encode("ascii"):
-            raise SnmpError("Incorrect community in response mesasge!")
+            raise SnmpError("Mismatching community in response mesasge!")
 
         return pdu  # type: ignore
 
