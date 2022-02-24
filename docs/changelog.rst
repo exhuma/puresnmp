@@ -1,7 +1,7 @@
 Changelog
 =========
 
-Release 2.0.0a0 to 2.0.0a16
+Release 2.0.0a0 to 2.0.0a17
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
