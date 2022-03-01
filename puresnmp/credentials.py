@@ -44,6 +44,9 @@ class Credentials:
     def __init__(self, mpm: int) -> None:
         self.mpm = mpm
 
+    def __repr__(self) -> str:
+        return f"<{__name__}.{self.__class__.__name__}>"
+
 
 class V1(Credentials):
     """
