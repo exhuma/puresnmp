@@ -34,7 +34,7 @@ from typing import TypeVar, cast
 from typing_extensions import Protocol
 from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 
-import puresnmp.plugins.mpm as mpm
+from puresnmp.plugins import mpm
 from puresnmp.typevars import SocketResponse, TAnyIp
 
 from ..const import DEFAULT_RETRIES, DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
@@ -75,7 +75,7 @@ class TFetcher(Protocol):
     from the remote device
     """
 
-    # pylint: disable=too-few-public-methods, no-self-access
+    # pylint: disable=too-few-public-methods
 
     async def __call__(
         self, oids: List[ObjectIdentifier]
@@ -630,7 +630,7 @@ class Client:
         {ObjectIdentifier('1.3.6.1.2.1.1.4.0'): OctetString(b'new-c...cation')}
         """
 
-        if any([not isinstance(v, Type) for v in mappings.values()]):
+        if any(not isinstance(v, Type) for v in mappings.values()):
             raise TypeError(
                 "SNMP requires typing information. The value for a "
                 '"set" request must be an instance of "Type"!'
@@ -641,7 +641,7 @@ class Client:
         pdu = SetRequest(PDUContent(get_request_id(), binds))
         response = await self._send(pdu, get_request_id())
 
-        output = {oid: value for oid, value in response.value.varbinds}
+        output = dict(response.value.varbinds)
         if len(output) != len(mappings):
             raise SnmpError(
                 "Unexpected response. Expected %d varbinds, "
@@ -770,7 +770,7 @@ class Client:
         repeating_tmp = get_response.value.varbinds[len(scalar_oids) :]
 
         # prepare output for scalar OIDs
-        scalar_out = {oid: value for oid, value in scalar_tmp}
+        scalar_out = dict(scalar_tmp)
 
         # prepare output for listing
         repeating_out = OrderedDict()  # type: Dict[ObjectIdentifier, Type[Any]]

@@ -55,6 +55,8 @@ class PyWrapper:
     with internally used data-types.
     """
 
+    client: raw.Client
+
     def __init__(self, client: raw.Client) -> None:
         self.client = client
 
