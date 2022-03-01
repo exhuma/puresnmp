@@ -25,6 +25,7 @@ varbinds
     value should be :py:class:`x690.types.Null`
 """
 
+import logging
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union, cast
 
@@ -45,6 +46,8 @@ from .const import MAX_VARBINDS
 from .exc import EmptyMessage, ErrorResponse, TooManyVarbinds
 from .typevars import SocketInfo
 from .varbind import VarBind
+
+LOG = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -131,11 +134,17 @@ class PDU(Type[PDUContent]):
         return payload
 
     def __repr__(self) -> str:
-        return "%s(%r, %r)" % (
-            self.__class__.__name__,
-            self.value.request_id,
-            self.value.varbinds,
-        )
+        try:
+            return "%s(%r, %r)" % (
+                self.__class__.__name__,
+                self.value.request_id,
+                self.value.varbinds,
+            )
+        except:  # pylint: disable=bare-except
+            LOG.exception(
+                "Exception caught in __repr__ of %s", self.__class__.__name__
+            )
+            return f"<{self.__class__.__name__} (error-in repr)>"
 
     def __eq__(self, other: Any) -> bool:
         # pylint: disable=unidiomatic-typecheck
@@ -308,14 +317,20 @@ class BulkGetRequest(PDU):
         return bytes(tinfo) + length + payload
 
     def __repr__(self) -> str:
-        oids = [repr(oid) for oid, _ in self.varbinds]
-        return "%s(%r, %r, %r, %s)" % (
-            self.__class__.__name__,
-            self.request_id,
-            self.non_repeaters,
-            self.max_repeaters,
-            ", ".join(oids),
-        )
+        try:
+            oids = [repr(oid) for oid, _ in self.varbinds]
+            return "%s(%r, %r, %r, %s)" % (
+                self.__class__.__name__,
+                self.request_id,
+                self.non_repeaters,
+                self.max_repeaters,
+                ", ".join(oids),
+            )
+        except:  # pylint: disable=bare-except
+            LOG.exception(
+                "Exception caught in __repr__ of %s", self.__class__.__name__
+            )
+            return f"<{self.__class__.__name__} (error-in repr)>"
 
     def __eq__(self, other):
         # type: (Any) -> bool

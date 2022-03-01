@@ -110,7 +110,7 @@ class TestGet(ByteTester):
             result, _ = decode(data)
             # We need to "consume" result.value to trigger the error because
             # it's lazy
-            str(result.value)
+            _ = result.value[2].value
 
     def test_get_repr(self):
         oid = ObjectIdentifier("1.3.6.1.2.1.1.2.0")
