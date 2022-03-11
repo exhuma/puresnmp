@@ -1,7 +1,7 @@
 Changelog
 =========
 
-Release 2.0.0a0 to 2.0.0a20
+Release 2.0.0a0 to 2.0.0a21
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
@@ -29,6 +29,11 @@ Release 2.0.0a0 to 2.0.0a20
   * NoSuchObject
   * NoSuchInstance
   * EndOfMibView
+
+* **[added]** Type-Hints for table and bulktable calls
+
+  It is now possible to attach a "TypedDict" reference to [bulk]table calls via
+  the ``_rowtype`` argument.
 
 * **[added]** Support for SNMPv3
 
