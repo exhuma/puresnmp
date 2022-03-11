@@ -55,6 +55,7 @@ from ..pdu import (
 from ..transport import Endpoint, TSender, listen, send_udp
 from ..util import (
     BulkResult,
+    TTableRow,
     get_request_id,
     get_unfinished_walk_oids,
     group_varbinds,
@@ -542,7 +543,11 @@ class Client:
                 )
         return output
 
-    async def table(self, oid: ObjectIdentifier) -> List[Dict[str, Any]]:
+    async def table(
+        self,
+        oid: ObjectIdentifier,
+        _rowtype: TType[TTableRow] = Dict[str, Any],  # type: ignore
+    ) -> List[TTableRow]:
         """
         Fetch an SNMP table
 
@@ -579,7 +584,9 @@ class Client:
         varbinds = self.walk(oid)
         async for varbind in varbinds:
             tmp.append(varbind)
-        as_table = tablify(tmp, num_base_nodes=len(oid))
+        as_table: List[TTableRow] = tablify(
+            tmp, num_base_nodes=len(oid), _rowtype=_rowtype
+        )
         return as_table
 
     async def set(
@@ -826,7 +833,8 @@ class Client:
         self,
         oid: ObjectIdentifier,
         bulk_size: int = 10,
-    ) -> List[Dict[str, Any]]:
+        _rowtype: TType[TTableRow] = Dict[str, Any],  # type: ignore
+    ) -> List[TTableRow]:
         """
         Identical to :py:meth:`~.table` but uses "bulk" requests.
 
@@ -841,7 +849,7 @@ class Client:
         varbinds = self.bulkwalk([oid], bulk_size=bulk_size)
         async for varbind in varbinds:
             tmp.append(varbind)
-        as_table = tablify(tmp, num_base_nodes=len(oid) + 1)
+        as_table = tablify(tmp, num_base_nodes=len(oid) + 1, _rowtype=_rowtype)
         return as_table
 
 

@@ -31,6 +31,7 @@ from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
 
 T = TypeVar("T", bound=Any)
+TTableRow = TypeVar("TTableRow", bound=Any)
 
 
 class TDigestable(Protocol):
@@ -203,7 +204,8 @@ def tablify(
     varbinds: Iterable[VarBind],
     num_base_nodes: int = 0,
     base_oid: str = "",
-) -> List[Dict[str, Any]]:
+    _rowtype: Type[TTableRow] = Dict[str, Any],  # type: ignore
+) -> List[TTableRow]:
     # pylint: disable=line-too-long
     """
     Converts a list of varbinds into a table-like structure. *num_base_nodes*
@@ -256,7 +258,7 @@ def tablify(
         # base-nodes needs to be incremented by 1
         num_base_nodes = len(base_oid_parsed)
 
-    rows = {}  # type: Dict[str, Dict[str, Type[Any]]]
+    rows: Dict[str, TTableRow] = {}
     for oid, value in varbinds:
         if num_base_nodes:
             tail = oid.nodes[num_base_nodes:]
@@ -266,11 +268,11 @@ def tablify(
         else:
             col_id = str(oid.nodes[-2])
             row_id = str(oid.nodes[-1])
-        tmp = {
+        tmp: TTableRow = {  # type: ignore
             "0": row_id,
         }
-        row = rows.setdefault(row_id, tmp)  # type: ignore
-        row[str(col_id)] = value  # type: ignore
+        row = rows.setdefault(row_id, tmp)
+        row[str(col_id)] = value
     return list(rows.values())
 
 

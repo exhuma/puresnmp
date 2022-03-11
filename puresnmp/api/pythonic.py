@@ -31,7 +31,7 @@ from x690.types import ObjectIdentifier, Type
 
 from ..const import ERRORS_STRICT
 from ..pdu import Trap
-from ..util import BulkResult
+from ..util import BulkResult, TTableRow
 from ..varbind import PyVarBind
 from . import raw
 
@@ -175,12 +175,18 @@ class PyWrapper:
         )
         return BulkResult(pythonized_scalars, pythonized_list)
 
-    async def table(self, oid: str) -> List[Dict[str, Any]]:
+    async def table(
+        self,
+        oid: str,
+        _rowtype: TTableRow = Dict[str, Any],  # type: ignore
+    ) -> List[Dict[str, Any]]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.table` but
         converts internal types to simple Python types.
         """
-        tmp = await self.client.table(ObjectIdentifier(oid))
+        tmp: List[TTableRow] = await self.client.table(
+            ObjectIdentifier(oid), _rowtype=_rowtype
+        )
         output = []
         for row in tmp:
             index = row.pop("0")
@@ -190,21 +196,24 @@ class PyWrapper:
         return output
 
     async def bulktable(
-        self, oid: str, bulk_size: int = 10
-    ) -> List[Dict[str, Any]]:
+        self,
+        oid: str,
+        bulk_size: int = 10,
+        _rowtype: TTableRow = Dict[str, Any],  # type: ignore
+    ) -> List[TTableRow]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.bulktable` but
         converts internal types to simple Python types.
         """
-        tmp = await self.client.bulktable(
-            ObjectIdentifier(oid), bulk_size=bulk_size
+        tmp: List[TTableRow] = await self.client.bulktable(
+            ObjectIdentifier(oid), bulk_size=bulk_size, _rowtype=_rowtype
         )
-        output = []
+        output: List[TTableRow] = []
         for row in tmp:
             index = row.pop("0")
             pythonized = {key: value.pythonize() for key, value in row.items()}
             pythonized["0"] = index
-            output.append(pythonized)
+            output.append(pythonized)  # type: ignore
         return output
 
 
