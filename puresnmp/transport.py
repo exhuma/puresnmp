@@ -60,7 +60,7 @@ class Transport:
         self.retries = retries or RETRIES
         self.buffer_size = buffer_size or BUFFER_SIZE
 
-    def send(self, ip, port, packet, timeout=2):  # pragma: no cover
+    def send(self, ip, port, packet, timeout=None):  # pragma: no cover
         # type: ( str, int, bytes, int ) -> bytes
         """
         Opens a TCP connection to *ip:port*, sends a packet with *bytes* and

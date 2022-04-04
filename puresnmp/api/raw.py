@@ -59,9 +59,10 @@ TFetcher = Callable[[str, str, List[str], int, int, int], List[VarBind]]
 
 
 def get(
-    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C,
+    retries=None
 ):
-    # type: ( str, str, str, int, int, int ) -> Type[PyType]
+    # type: ( str, str, str, int, int, int, int ) -> Type[PyType]
     """
     Executes a simple SNMP GET request and returns a pure Python data
     structure.
@@ -72,15 +73,17 @@ def get(
         'non-functional example'
     """
     result = multiget(
-        ip, community, [oid], port, timeout=timeout, version=version
+        ip, community, [oid], port, timeout=timeout, version=version,
+        retries=retries
     )
     return result[0]
 
 
 def multiget(
-    ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+    ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C,
+    retries=None
 ):
-    # type: ( str, str, List[str], int, int, int) -> List[Type[PyType]]
+    # type: ( str, str, List[str], int, int, int, int ) -> List[Type[PyType]]
     """
     Executes an SNMP GET request with multiple OIDs and returns a list of pure
     Python objects. The order of the output items is the same order as the OIDs
@@ -91,7 +94,7 @@ def multiget(
         >>> multiget('192.168.1.1', 'private', ['1.2.3.4', '1.2.3.5'])
         ['non-functional example', 'second value']
     """
-    transport = Transport(timeout=timeout)
+    transport = Transport(timeout=timeout, retries=retries)
 
     parsed_oids = [OID(oid) for oid in oids]
 
@@ -116,9 +119,10 @@ def multiget(
 
 
 def getnext(
-    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+    ip, community, oid, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C,
+    retries=None
 ):
-    # type: (str, str, str, int, int, int) -> VarBind
+    # type: (str, str, str, int, int, int, int) -> VarBind
     """
     Executes a single SNMP GETNEXT request (used inside *walk*).
 
@@ -128,15 +132,17 @@ def getnext(
         VarBind(ObjectIdentifier(1, 2, 3, 0), 'non-functional example')
     """
     result = multigetnext(
-        ip, community, [oid], port, timeout=timeout, version=version
+        ip, community, [oid], port, timeout=timeout, version=version,
+        retries=retries
     )
     return result[0]
 
 
 def multigetnext(
-    ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C
+    ip, community, oids, port=161, timeout=DEFAULT_TIMEOUT, version=Version.V2C,
+    retries=None
 ):
-    # type: (str, str, List[str], int, int, int) -> List[VarBind]
+    # type: (str, str, List[str], int, int, int, int) -> List[VarBind]
     """
     Executes a single multi-oid GETNEXT request.
 
@@ -151,7 +157,7 @@ def multigetnext(
             VarBind(ObjectIdentifier(1, 2, 4, 0), 'second value')
         ]
     """
-    transport = Transport(timeout=timeout)
+    transport = Transport(timeout=timeout, retries=retries)
     request = GetNextRequest(transport.get_request_id(), *oids)
     packet = Sequence(Integer(version), OctetString(community), request)
     response = transport.send(ip, port, to_bytes(packet))
@@ -191,8 +197,9 @@ def walk(
     timeout=DEFAULT_TIMEOUT,
     errors=ERRORS_STRICT,
     version=Version.V2C,
+    retries=None
 ):
-    # type: (str, str, str, int, int, str, int) -> TWalkResponse
+    # type: (str, str, str, int, int, str, int, int) -> TWalkResponse
     """
     Executes a sequence of SNMP GETNEXT requests and returns a generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -225,6 +232,7 @@ def walk(
         timeout=timeout,
         errors=errors,
         version=version,
+        retries=retries,
     )
     return gen
 
@@ -238,8 +246,9 @@ def multiwalk(
     fetcher=multigetnext,
     errors=ERRORS_STRICT,
     version=Version.V2C,
+    retries=None,
 ):
-    # type: (str, str, List[str], int, int, TFetcher, str, int) -> TWalkResponse
+    # type: (str, str, List[str], int, int, TFetcher, str, int, int) -> TWalkResponse
     """
     Executes a sequence of SNMP GETNEXT requests and returns a generator over
     :py:class:`~puresnmp.pdu.VarBind` instances.
@@ -255,7 +264,7 @@ def multiwalk(
     """
     LOG.debug("Walking on %d OIDs using %s", len(oids), fetcher.__name__)
 
-    varbinds = fetcher(ip, community, oids, port, timeout, version)
+    varbinds = fetcher(ip, community, oids, port, timeout, version, retries=retries)
     requested_oids = [OID(oid) for oid in oids]
     grouped_oids = group_varbinds(varbinds, requested_oids)
     unfinished_oids = get_unfinished_walk_oids(grouped_oids)
@@ -288,7 +297,8 @@ def multiwalk(
         next_fetches_str = [str(_) for _ in next_fetches]
         try:
             varbinds = fetcher(
-                ip, community, next_fetches_str, port, timeout, version
+                ip, community, next_fetches_str, port, timeout, version, 
+                retries=retries,
             )
         except NoSuchOID:
             # Reached end of OID tree, finish iteration
@@ -333,8 +343,9 @@ def set(
     port=161,
     timeout=DEFAULT_TIMEOUT,
     version=Version.V2C,
+    retries=None,
 ):  # pylint: disable=redefined-builtin
-    # type: (str, str, str, T, int, int, int) -> T
+    # type: (str, str, str, T, int, int, int, int) -> T
     """
     Executes a simple SNMP SET request. The result is returned as pure Python
     data structure. The value must be a subclass of
@@ -348,7 +359,8 @@ def set(
     """
 
     result = multiset(
-        ip, community, [(oid, value)], port, timeout=timeout, version=version
+        ip, community, [(oid, value)], port, timeout=timeout, version=version,
+        retries=retries,
     )
     return result[oid.lstrip(".")]
 
@@ -360,8 +372,9 @@ def multiset(
     port=161,
     timeout=DEFAULT_TIMEOUT,
     version=Version.V2C,
+    retries=None,
 ):
-    # type: (str, str, List[Tuple[str, T]], int, int, int) -> Dict[str, T]
+    # type: (str, str, List[Tuple[str, T]], int, int, int, int) -> Dict[str, T]
     """
     Executes an SNMP SET request on multiple OIDs. The result is returned as
     pure Python data structure.
@@ -374,7 +387,7 @@ def multiset(
         ...     ('2.3.4', OctetString(b'bar'))])
         {'1.2.3': b'foo', '2.3.4': b'bar'}
     """
-    transport = Transport(timeout=timeout)
+    transport = Transport(timeout=timeout, retries=retries)
 
     if any([not isinstance(v, Type) for k, v in mappings]):
         raise TypeError(
@@ -408,8 +421,9 @@ def bulkget(
     port=161,
     timeout=DEFAULT_TIMEOUT,
     version=Version.V2C,
+    retries=None,
 ):
-    # type: (str, str, List[str], List[str], int, int, int, int) -> BulkResult
+    # type: (str, str, List[str], List[str], int, int, int, int, int) -> BulkResult
     # pylint: disable=unused-argument, too-many-locals
     """
     Runs a "bulk" get operation and returns a :py:class:`~.BulkResult`
@@ -474,7 +488,7 @@ def bulkget(
                 ('1.3.6.1.2.1.4.8.0', b'\x00'),
                 ('1.3.6.1.2.1.5.10.0', b'\x00')]))
     """
-    transport = Transport(timeout=timeout)
+    transport = Transport(timeout=timeout, retries=retries)
 
     scalar_oids = scalar_oids or []  # protect against empty values
     repeating_oids = repeating_oids or []  # protect against empty values
@@ -542,8 +556,9 @@ def _bulkwalk_fetcher(bulk_size: int = 10) -> TFetcher:
         port=161,
         timeout=DEFAULT_TIMEOUT,
         version=Version.V2C,
+        retries=None,
     ):
-        # type: (str, str, List[str], int, int, int) -> List[VarBind]
+        # type: (str, str, List[str], int, int, int, int) -> List[VarBind]
         """
         Executes a SNMP BulkGet request.
         """
@@ -556,6 +571,7 @@ def _bulkwalk_fetcher(bulk_size: int = 10) -> TFetcher:
             port=port,
             timeout=timeout,
             version=version,
+            retries=retries,
         )
         return [VarBind(OID(k), v) for k, v in result.listing.items()]
 
@@ -571,8 +587,9 @@ def bulkwalk(
     port=161,
     timeout=DEFAULT_TIMEOUT,
     version=Version.V2C,
+    retries=None,
 ):
-    # type: (str, str, List[str], int, int, int, int) -> TWalkResponse
+    # type: (str, str, List[str], int, int, int, int, int) -> TWalkResponse
     """
     More efficient implementation of :py:func:`~.walk`. It uses
     :py:func:`~.bulkget` under the hood instead of :py:func:`~.getnext`.
@@ -620,13 +637,15 @@ def bulkwalk(
         fetcher=_bulkwalk_fetcher(bulk_size),
         timeout=timeout,
         version=version,
+        retries=retries,
     )
     for oid, value in result:
         yield VarBind(oid, value)
 
 
-def table(ip, community, oid, port=161, num_base_nodes=0, version=Version.V2C):
-    # type: (str, str, str, int, int) -> List[Dict[str, Any]]
+def table(ip, community, oid, port=161, num_base_nodes=0, version=Version.V2C,
+    timeout=DEFAULT_TIMEOUT, retries=None):
+    # type: (str, str, str, int, int, int, int, int) -> List[Dict[str, Any]]
     """
     Fetch an SNMP table
 
@@ -651,15 +670,17 @@ def table(ip, community, oid, port=161, num_base_nodes=0, version=Version.V2C):
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1
 
-    varbinds = walk(ip, community, oid, port=port, version=version)
+    varbinds = walk(ip, community, oid, port=port, version=version,
+        timeout=timeout, retries=retries)
     for varbind in varbinds:
         tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)  # type: ignore
     return as_table
 
 
-def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
-    # type: (str, str, str, int, int, int) -> List[Dict[str, Any]]
+def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10,
+    timeout=DEFAULT_TIMEOUT, retries=None):
+    # type: (str, str, str, int, int, int, int, int) -> List[Dict[str, Any]]
     """
     Fetch an SNMP table using "bulk" requests.
 
@@ -672,7 +693,8 @@ def bulktable(ip, community, oid, port=161, num_base_nodes=0, bulk_size=10):
         parsed_oid = OID(oid)
         num_base_nodes = len(parsed_oid) + 1
 
-    varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size)
+    varbinds = bulkwalk(ip, community, [oid], port=port, bulk_size=bulk_size,
+        timeout=timeout, retries=retries)
     for varbind in varbinds:
         tmp.append(varbind)
     as_table = tablify(tmp, num_base_nodes=num_base_nodes)  # type: ignore
