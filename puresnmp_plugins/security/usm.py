@@ -193,7 +193,7 @@ def apply_encryption(
 
     :param message: The unencrypted message
     :param credentials: The SNMPv3 credentials to be applied to the message
-    :param security_name: The username used in the reques
+    :param security_name: The username used in the request
     :param security_engine_id: The engine-id of the remote device
     :param engine_boots: Encryption timeliness data as received from the
         discovery process

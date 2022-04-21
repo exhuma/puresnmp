@@ -65,7 +65,7 @@ class SNMPv1SecurityModel(SecurityModel[PDU, Sequence]):
             )
 
         if community.pythonize() != credentials.community.encode("ascii"):
-            raise SnmpError("Mismatching community in response mesasge!")
+            raise SnmpError("Mismatching community in response message!")
 
         return pdu  # type: ignore
 
