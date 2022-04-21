@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "puresnmp"
-copyright = "2021, Michel Albert"
+copyright = "2022, Post Luxembourg"
 author = "Michel Albert"
 
 # The full version, including alpha/beta/rc tags
