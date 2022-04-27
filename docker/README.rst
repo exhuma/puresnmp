@@ -60,3 +60,28 @@ When using a random port you need to specify it in the ``libsnmp`` commands as
 follows (assuming it's ``33213`` in this example)::
 
     snmpwalk [...] 127.0.0.1:33213 [...]
+
+
+Making an SNMPv3 Request
+========================
+
+.. code-block::
+
+    snmpget \
+        -v3 \
+        -l authNoPriv \
+        -A theauthpass \
+        -u helloworld \
+        127.0.0.1:32768 \
+        1.3.6.1.2.1.1.2.0
+
+.. code-block::
+
+    snmpget \
+        -v3 \
+        -l authPriv \
+        -A theauthpass \
+        -X privpass \
+        -u ninja \
+        127.0.0.1:32768 \
+        1.3.6.1.2.1.1.1.0

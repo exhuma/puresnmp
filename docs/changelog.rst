@@ -1,6 +1,57 @@
 Changelog
 =========
 
+Release 2.0.0a0 to 2.0.0a21
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. warning::
+    This is a major upgrade! It is *not* compatible with client-code based on
+    puresnmp v1.x
+
+    Refer to :py:ref:`upgrading` for details
+
+* **[changed]** Changed back from ``poetry`` to ``setuptools`` due to too many
+  stumbling blocks during development with ``poetry``.
+* **[changed]** Main API functions moved into "client" classes
+  :py:class:`~puresnmp.api.raw.Client` and
+  :py:class:`~puresnmp.api.pythonic.PyWrapper`. See :ref:`upgrading`.
+* **[changed]** Extracted ``x690`` processing into separate package
+  :py:mod:`x690`. This changed the behaviour of
+  :py:class:`x690.types.ObjectIdentifier`
+* **[changed]** "continuing" OIDs of bulk-walks removed from logging. This
+  caused too much noise in general and was only useful during development of
+  puresnmp itself.
+* **[changed]** The old inconsistent "VarBind" class has been split into
+  :py:class:`puresnmp.varbind.VarBind` and
+  :py:class:`puresnmp.varbind.PyVarBind`
+* **[changed]** Some data-types no correctly wrap ``None`` instead of ``b""``:
+
+  * NoSuchObject
+  * NoSuchInstance
+  * EndOfMibView
+
+* **[added]** Type-Hints for table and bulktable calls
+
+  It is now possible to attach a "TypedDict" reference to [bulk]table calls via
+  the ``_rowtype`` argument.
+
+* **[added]** Support for SNMPv3
+
+  * Builting support for auth-protocols "md5" and "sha1".
+  * Encryption provided by the plugin package :py:mod:`puresnmp-crypto`.
+    Installable by activating the ``[crypto]`` "extra" in your dependencies.
+
+* **[added]** Plugin based architecure to support multiple protocols (see
+  :py:ref:`plugins`)
+* **[added]** Builtin support for the SNMP IPv4 data-type. IPv6 has no defined
+  data-type in the context of SNMP. Instead it is defined in a separate RFC/MIB
+  which is why it is not inclued.
+* **[added]** New exception types based on :rfc:`3416`
+* **[added]** Allow temporarily overriding client defaults via
+  :py:meth:`puresnmp.api.raw.client.Client.reconfigure`
+
+
+
 Release 1.10.2.post1
 ~~~~~~~~~~~~~~~~~~~~
 

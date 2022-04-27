@@ -1,18 +1,18 @@
 # pylint: skip-file
 
 from x690 import types as t
-from x690.util import TypeInfo
+from x690.util import TypeClass, TypeInfo, TypeNature
 
 from puresnmp import types as apptype
 
 from . import ByteTester
 
-UNIVERSAL = TypeInfo.UNIVERSAL
-APPLICATION = TypeInfo.APPLICATION
-PRIMITIVE = TypeInfo.PRIMITIVE
-PRIVATE = TypeInfo.PRIVATE
-CONSTRUCTED = TypeInfo.CONSTRUCTED
-CONTEXT = TypeInfo.CONTEXT
+UNIVERSAL = TypeClass.UNIVERSAL
+APPLICATION = TypeClass.APPLICATION
+PRIVATE = TypeClass.PRIVATE
+CONTEXT = TypeClass.CONTEXT
+PRIMITIVE = TypeNature.PRIMITIVE
+CONSTRUCTED = TypeNature.CONSTRUCTED
 
 
 def make_identifier_test(octet, expected_class, expected_pc, expected_value):
@@ -24,9 +24,9 @@ def make_identifier_test(octet, expected_class, expected_pc, expected_value):
     return fun
 
 
-def add_class_detector(cls, expected_class, typeclass, tag):
+def add_class_detector(cls, expected_class, typeclass, tag, pc=PRIMITIVE):
     def fun(inst):
-        result = t.Registry.get(typeclass, tag)
+        result = t.Type.get(typeclass, tag, pc)
         inst.assertEqual(result, expected_class)
 
     fun.__name__ = "test_%s" % expected_class.__name__
@@ -67,47 +67,9 @@ class TestBasics(ByteTester):
         0b11100010, PRIVATE, CONSTRUCTED, 0b00010
     )
 
-    def test_identifier_long(self):
-        self.skipTest(
-            "This is not yet implemented. I have not understood the "
-            "spec to confidently write a test"
-        )  # TODO
-
 
 class TestClassDetector(ByteTester):
     pass
-
-
-# "Standard" x690 types
-add_class_detector(TestClassDetector, t.EOC, UNIVERSAL, 0x00)
-add_class_detector(TestClassDetector, t.Boolean, UNIVERSAL, 0x01)
-add_class_detector(TestClassDetector, t.Integer, UNIVERSAL, 0x02)
-add_class_detector(TestClassDetector, t.BitString, UNIVERSAL, 0x03)
-add_class_detector(TestClassDetector, t.OctetString, UNIVERSAL, 0x04)
-add_class_detector(TestClassDetector, t.Null, UNIVERSAL, 0x05)
-add_class_detector(TestClassDetector, t.ObjectIdentifier, UNIVERSAL, 0x06)
-add_class_detector(TestClassDetector, t.ObjectDescriptor, UNIVERSAL, 0x07)
-add_class_detector(TestClassDetector, t.External, UNIVERSAL, 0x08)
-add_class_detector(TestClassDetector, t.Real, UNIVERSAL, 0x09)
-add_class_detector(TestClassDetector, t.Enumerated, UNIVERSAL, 0x0A)
-add_class_detector(TestClassDetector, t.EmbeddedPdv, UNIVERSAL, 0x0B)
-add_class_detector(TestClassDetector, t.Utf8String, UNIVERSAL, 0x0C)
-add_class_detector(TestClassDetector, t.RelativeOid, UNIVERSAL, 0x0D)
-add_class_detector(TestClassDetector, t.Sequence, UNIVERSAL, 0x10)
-add_class_detector(TestClassDetector, t.Set, UNIVERSAL, 0x11)
-add_class_detector(TestClassDetector, t.NumericString, UNIVERSAL, 0x12)
-add_class_detector(TestClassDetector, t.PrintableString, UNIVERSAL, 0x13)
-add_class_detector(TestClassDetector, t.T61String, UNIVERSAL, 0x14)
-add_class_detector(TestClassDetector, t.VideotexString, UNIVERSAL, 0x15)
-add_class_detector(TestClassDetector, t.IA5String, UNIVERSAL, 0x16)
-add_class_detector(TestClassDetector, t.UtcTime, UNIVERSAL, 0x17)
-add_class_detector(TestClassDetector, t.GeneralizedTime, UNIVERSAL, 0x18)
-add_class_detector(TestClassDetector, t.GraphicString, UNIVERSAL, 0x19)
-add_class_detector(TestClassDetector, t.VisibleString, UNIVERSAL, 0x1A)
-add_class_detector(TestClassDetector, t.GeneralString, UNIVERSAL, 0x1B)
-add_class_detector(TestClassDetector, t.UniversalString, UNIVERSAL, 0x1C)
-add_class_detector(TestClassDetector, t.CharacterString, UNIVERSAL, 0x1D)
-add_class_detector(TestClassDetector, t.BmpString, UNIVERSAL, 0x1E)
 
 
 # Application (SNMP-specific) Types

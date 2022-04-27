@@ -3,8 +3,6 @@
 from datetime import timedelta
 from ipaddress import ip_address
 
-from x690.util import to_bytes
-
 from puresnmp import types as t
 
 from . import ByteTester
@@ -12,44 +10,31 @@ from . import ByteTester
 
 class TestIpAddress(ByteTester):
     def test_decoding(self):
-        result = t.IpAddress.from_bytes(b"\x40\x04\x80\x96\xa1\x09")
-        expected = t.IpAddress(b"\x80\x96\xa1\x09")
+        result = t.IpAddress.decode_raw(b"\xc0\x00\x02\x01")
+        expected = ip_address("192.0.2.1")
         self.assertEqual(result, expected)
 
     def test_encoding(self):
-        value = t.IpAddress(b"\x80\x96\xa1\x09")
-        result = to_bytes(value)
-        expected = b"\x40\x04\x80\x96\xa1\x09"
+        value = t.IpAddress(ip_address("192.0.2.1"))
+        result = bytes(value)
+        expected = b"\x40\x04\xc0\x00\x02\x01"
         self.assertBytesEqual(result, expected)
 
-    def test_conversion_to_python(self):
-        result = t.IpAddress(b"\x80\x96\xa1\x09").pythonize()
-        expected = b"\x80\x96\xa1\x09"
-        # TODO 2.0.0 expected = ip_address('128.150.161.9')
-        self.assertEqual(result, expected)
-
-    def test_conversion_from_python(self):
-        input = ip_address("128.150.161.9")
-        result = t.IpAddress(input)
-        expected = t.IpAddress(b"\x80\x96\xa1\x09")
-        self.assertEqual(result, expected)
-
     def test_conversion_symmetry(self):
-        input = b"\x80\x96\xa1\t"
-        # TODO 2.0.0 input = ip_address('128.150.161.9')
+        input = ip_address("192.0.2.1")
         result = t.IpAddress(input).pythonize()
         self.assertEqual(result, input)
 
 
 class TestTimeTicks(ByteTester):
     def test_decoding(self):
-        result = t.TimeTicks.from_bytes(b"\x43\x01\x0a")
-        expected = t.TimeTicks(10)
+        result = t.TimeTicks.decode_raw(b"\x0a")
+        expected = 10
         self.assertEqual(result, expected)
 
     def test_encoding(self):
         value = t.TimeTicks(100)
-        result = to_bytes(value)
+        result = bytes(value)
         expected = b"\x43\x01\x64"
         self.assertBytesEqual(result, expected)
 
