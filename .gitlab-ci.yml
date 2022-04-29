@@ -1,0 +1,54 @@
+---
+cache:
+  paths:
+    - .cache/pip
+    - env
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+stages:
+  - build
+  - validate
+  - publish
+
+build:
+  image: harbor.ptech.lu/gitlab-actions/pyproject-build:release-2022.04.20.01
+  stage: build
+  script:
+    - /run.sh
+  artifacts:
+    reports:
+      dotenv: "${CI_PROJECT_DIR}/job-${CI_JOB_ID}.env"
+    paths:
+      - dist
+
+bandit:
+  image: harbor.ptech.lu/gitlab-actions/bandit:release-1.7.1
+  stage: validate
+  variables:
+    BANDIT_PATH: puresnmp
+  script:
+    - /run.sh
+
+pre-commit:
+  image: harbor.ptech.lu/gitlab-actions/pre-commit:release-2.18.1-ptech-2
+  stage: validate
+  script:
+    - /run.sh
+
+safety:
+  image: harbor.ptech.lu/gitlab-actions/safety:release-1.10.3
+  stage: validate
+  script:
+    - /run.sh
+
+docs:
+  image:
+    name: harbor.ptech.lu/gitlab-actions/sphinx:release-4.5.0-ptech-2
+  stage: build
+  artifacts:
+    paths:
+      - artifacts
+  script:
+    - /run.sh
