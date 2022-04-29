@@ -18,6 +18,7 @@ from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
 from typing_extensions import Protocol
 from x690.util import visible_octets
 
+from .const import DEFAULT_LISTEN_ADDRESS
 from .exc import Timeout
 from .typevars import SocketInfo, SocketResponse, TAnyIp
 
@@ -201,7 +202,7 @@ def default_trap_handler(response: SocketResponse) -> None:
 
 
 async def listen(
-    bind_address: str = "0.0.0.0",
+    bind_address: str = DEFAULT_LISTEN_ADDRESS,
     port: int = 162,
     callback: Callable[[SocketResponse], Any] = default_trap_handler,
     loop: Optional[AbstractEventLoop] = None,

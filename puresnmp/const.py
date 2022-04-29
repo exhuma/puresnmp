@@ -16,3 +16,7 @@ DEFAULT_TIMEOUT = 6
 
 #: Number of retries we attempt when sending out packets before giving up
 DEFAULT_RETRIES = 10
+
+#: The default interface to use when listening to traps. This is flagged with
+#: "nosec" as "secure" as this is very much intentional.
+DEFAULT_LISTEN_ADDRESS = "0.0.0.0"  # nosec

@@ -37,7 +37,13 @@ from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
 from puresnmp.plugins import mpm
 from puresnmp.typevars import SocketResponse, TAnyIp
 
-from ..const import DEFAULT_RETRIES, DEFAULT_TIMEOUT, ERRORS_STRICT, ERRORS_WARN
+from ..const import (
+    DEFAULT_LISTEN_ADDRESS,
+    DEFAULT_RETRIES,
+    DEFAULT_TIMEOUT,
+    ERRORS_STRICT,
+    ERRORS_WARN,
+)
 from ..credentials import V2C, Credentials
 from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from ..pdu import (
@@ -855,7 +861,7 @@ class Client:
 
 def register_trap_callback(
     callback: Callable[[PDU], Any],
-    listen_address: str = "0.0.0.0",
+    listen_address: str = DEFAULT_LISTEN_ADDRESS,
     port: int = 162,
     credentials: Credentials = V2C("public"),
     loop: Optional[AbstractEventLoop] = None,
