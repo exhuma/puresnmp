@@ -47,7 +47,7 @@ def get_byte_diff(a: bytes, b: bytes) -> List[str]:
     b = bytearray(b)
 
     def char_repr(c: int) -> str:
-        if 0x1f < c < 0x80:
+        if 0x1F < c < 0x80:
             # bytearray to prevent accidental pre-mature str conv
             # str to prevent b'' suffix in repr's output
             return repr(str(bytearray([c]).decode("ascii")))
