@@ -18,5 +18,8 @@
   "python.formatting.provider": "black",
   "editor.rulers": [80],
   "python.analysis.typeCheckingMode": "off",
-  "python.linting.mypyEnabled": true
+  "python.linting.mypyEnabled": true,
+  "python.testing.pytestArgs": [],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }
