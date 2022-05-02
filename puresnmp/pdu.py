@@ -38,8 +38,8 @@ from x690.types import (
     ObjectIdentifier,
     Sequence,
     TWrappedPyType,
-    Type,
 )
+from x690.types import X690Type as Type
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
 
 from .const import MAX_VARBINDS

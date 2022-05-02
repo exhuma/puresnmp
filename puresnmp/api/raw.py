@@ -32,7 +32,8 @@ from typing import Type as TType
 from typing import TypeVar, cast
 
 from typing_extensions import Protocol
-from x690.types import Integer, Null, ObjectIdentifier, Sequence, Type
+from x690.types import Integer, Null, ObjectIdentifier, Sequence
+from x690.types import X690Type as Type
 
 from puresnmp.plugins import mpm
 from puresnmp.typevars import SocketResponse, TAnyIp

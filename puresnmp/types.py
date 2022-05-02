@@ -24,8 +24,8 @@ from x690.types import (
     UNINITIALISED,
     Integer,
     OctetString,
-    Type,
 )
+from x690.types import X690Type as Type
 from x690.util import TypeClass
 
 
