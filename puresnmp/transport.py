@@ -189,7 +189,7 @@ async def send_udp(
             if retries == 1:
                 raise
             retries -= 1
-            LOG.debug("Resending UPD packet. %d retries left", retries)
+            LOG.debug("Resending UDP packet. %d retries left", retries)
 
     return response  # type: ignore
 
