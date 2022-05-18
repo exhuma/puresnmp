@@ -95,7 +95,12 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         Retrieve the response data back into the calling coroutine.
         """
         try:
-            return await asyncio.wait_for(self.future, timeout, loop=self.loop)
+            try:
+                return await asyncio.wait_for(self.future, timeout, loop=self.loop)
+
+            except TypeError:  # TypeError: wait_for() got an unexpected keyword argument 'loop'
+                return await asyncio.wait_for(self.future, timeout)
+
         except asyncio.TimeoutError:
             if self.transport:
                 self.transport.abort()
