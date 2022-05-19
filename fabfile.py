@@ -1,5 +1,6 @@
 from os.path import abspath
 from typing import Any
+from os import environ
 
 import fabric
 
@@ -7,8 +8,14 @@ import fabric
 def regen_apidoc(ctx: Any, src: str, dest: str, is_nspkg: bool = False) -> None:
     ctx.run(f"rm -rf {dest}", replace_env=False, pty=True)
     nsopt = " --implicit-namespaces" if is_nspkg else ""
+
+    if "READTHEDOCS" in environ:
+        cmd = "sphinx-apidoc"
+    else:
+        cmd = "./env/bin/sphinx-apidoc"
+
     ctx.run(
-        f"./env/bin/sphinx-apidoc -o {dest} -f{nsopt} -e -M {src}",
+        f"{cmd} -o {dest} -f{nsopt} -e -M {src}",
         replace_env=False,
         pty=True,
     )
