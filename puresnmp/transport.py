@@ -84,8 +84,9 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
     based API.
     """
 
-    def __init__(self, packet, loop):
+    def __init__(self, packet):
         # type: (bytes, AbstractEventLoop) -> None
+        loop = asyncio.get_running_loop()
         self.packet = packet
         self.transport = None  # type: Optional[asyncio.DatagramTransport]
         self.loop = loop
@@ -150,7 +151,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         Retrieve the response data back into the calling coroutine.
         """
         try:
-            return await asyncio.wait_for(self.future, timeout, loop=self.loop)
+            return await asyncio.wait_for(self.future, timeout)
         except (asyncio.TimeoutError, socket.timeout) as exc:
             if self.transport:
                 self.transport.abort()

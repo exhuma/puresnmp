@@ -9,7 +9,7 @@ to use.
 import asyncio
 from ipaddress import ip_address
 from typing import Any
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 
 import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString
@@ -41,8 +41,8 @@ async def test_get_string():
         b"Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP "
         b"Fri Jun 24 10:09:13 UTC 2016 x86_64"
     )
-    raw_client.get.return_value = async_result(
-        OctetString(
+    raw_client.get = AsyncMock(
+        return_value=OctetString(
             b"Linux d24cf7f36138 4.4.0-28-generic #47-Ubuntu SMP "
             b"Fri Jun 24 10:09:13 UTC 2016 x86_64"
         )
@@ -56,8 +56,8 @@ async def test_get_oid():
     raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = "1.3.6.1.4.1.8072.3.2.10"
-    raw_client.get.return_value = async_result(
-        ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10")
+    raw_client.get = AsyncMock(
+        return_value=ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10")
     )
     result = await client.get("1.2.3")
     assert result == expected
@@ -68,8 +68,8 @@ async def test_set_string():
     raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = b"foo"
-    raw_client.multiset.return_value = async_result(
-        {ObjectIdentifier("1.2.3"): OctetString(b"foo")}
+    raw_client.multiset = AsyncMock(
+        return_value={ObjectIdentifier("1.2.3"): OctetString(b"foo")}
     )
     result = await client.set("1.2.3", OctetString(b"foo"))
     assert result == expected
@@ -80,8 +80,8 @@ async def test_set_string_absolute():
     raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
     expected = b"foo"
-    raw_client.multiset.return_value = async_result(
-        {ObjectIdentifier("1.2.3"): OctetString(b"foo")}
+    raw_client.multiset = AsyncMock(
+        return_value={ObjectIdentifier("1.2.3"): OctetString(b"foo")}
     )
     result = await client.set(".1.2.3", OctetString(b"foo"))
     assert result == expected
@@ -124,8 +124,8 @@ async def test_multiget():
         b"Linux 7fbf2f0c363d 4.4.0-28-generic #47-Ubuntu SMP Fri "
         b"Jun 24 10:09:13 UTC 2016 x86_64",
     ]
-    raw_client.multiget.return_value = async_result(
-        [
+    raw_client.multiget = AsyncMock(
+        return_value=[
             ObjectIdentifier("1.3.6.1.4.1.8072.3.2.10"),
             OctetString(
                 b"Linux 7fbf2f0c363d 4.4.0-28-generic "
@@ -192,8 +192,8 @@ async def test_multiset():
     """
     raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
-    raw_client.multiset.return_value = async_result(
-        {
+    raw_client.multiset = AsyncMock(
+        return_value={
             "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
             "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
         }
@@ -216,8 +216,8 @@ async def test_multiset():
 async def test_multiset_absolute():
     raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
-    raw_client.multiset.return_value = async_result(
-        {
+    raw_client.multiset = AsyncMock(
+        return_value={
             "1.3.6.1.2.1.1.4.0": OctetString(b"hello@world.com"),
             "1.3.6.1.2.1.1.5.0": OctetString(b"hello@world.com"),
         }
@@ -242,8 +242,8 @@ async def test_getnext():
 
     expected = VarBind("1.3.6.1.6.3.1.1.6.1.0", 354522558)
 
-    raw_client.getnext.return_value = async_result(
-        VarBind(
+    raw_client.getnext = AsyncMock(
+        return_value=VarBind(
             ObjectIdentifier("1.3.6.1.6.3.1.1.6.1.0"),
             Integer(354522558),
         )
@@ -271,8 +271,8 @@ async def test_bulkget():
         },
     )
 
-    raw_client.bulkget.return_value = async_result(
-        BulkResult(
+    raw_client.bulkget = AsyncMock(
+        return_value=BulkResult(
             {
                 "1.3.6.1.2.1.1.1.0": OctetString(
                     b"Linux 7e68e60fe303 4.4.0-28-generic "
@@ -331,8 +331,8 @@ async def test_bulkwalk():
 async def test_table():
     raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
-    raw_client.table.return_value = async_result(
-        [
+    raw_client.table = AsyncMock(
+        return_value=[
             {"0": "1", "1": Integer(1)},
             {"0": "2", "1": Integer(2)},
         ]
@@ -351,8 +351,8 @@ async def test_table():
 async def test_bulktable():
     raw_client = Mock(spec=Client)
     client = PyWrapper(client=raw_client)
-    raw_client.bulktable.return_value = async_result(
-        [
+    raw_client.bulktable = AsyncMock(
+        return_value=[
             {"0": "1", "1": Integer(1)},
             {"0": "2", "1": Integer(2)},
         ]

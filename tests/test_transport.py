@@ -56,123 +56,123 @@ def test_trap_connection_handle() -> None:
     assert proto.transport == "fake-transport"
 
 
-def test_client_proto_connection_made() -> None:
+@pytest.mark.asyncio
+async def test_client_proto_connection_made() -> None:
     """
     Ensure the queud UDP packet is sent on connection
     """
-    mock_loop = Mock()
     mock_transport = Mock()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", mock_loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     proto.connection_made(mock_transport)
     mock_transport.sendto.assert_called_with(b"SNMP-packet")
 
 
-def test_client_proto_connection_made_logging(caplog: Any) -> None:
+@pytest.mark.asyncio
+async def test_client_proto_connection_made_logging(caplog: Any) -> None:
     """
     Ensure we log established connections
     """
-    mock_loop = Mock()
     mock_transport = Mock()
     mock_transport.get_extra_info.return_value = ("192.0.2.1", 42)
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", mock_loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     with caplog.at_level(logging.DEBUG):
         proto.connection_made(mock_transport)
     assert "192.0.2.1:42" in caplog.text
     assert "53 4e 4d" in caplog.text, "hex-dump of packet not found in logs"
 
 
-def test_client_proto_connection_lost() -> None:
+@pytest.mark.asyncio
+async def test_client_proto_connection_lost() -> None:
     """
     Ensure we propagate exceptions when losing a connection
     """
-    loop = asyncio.new_event_loop()
     mock_transport = Mock()
     mock_transport.get_extra_info.return_value = ("192.0.2.1", 42)
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     proto.connection_lost(ValueError("Hello World"))
     with pytest.raises(ValueError) as exc:
         proto.future.result()
     assert exc.match("Hello World")
 
 
-def test_client_proto_connection_lost_log(caplog: Any) -> None:
+@pytest.mark.asyncio
+async def test_client_proto_connection_lost_log(caplog: Any) -> None:
     """
     Ensure we log exceptions on lost connections
     """
-    loop = asyncio.new_event_loop()
     mock_transport = Mock()
     mock_transport.get_extra_info.return_value = ("192.0.2.1", 42)
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     with caplog.at_level(logging.DEBUG):
         proto.connection_lost(ValueError("Hello World"))
     assert "connection lost" in caplog.text.lower()
     assert "Hello World" in caplog.text
 
 
-def test_client_proto_connection_close_log(caplog: Any) -> None:
+@pytest.mark.asyncio
+async def test_client_proto_connection_close_log(caplog: Any) -> None:
     """
     Ensure we log "normal" connection closures
     """
-    loop = asyncio.new_event_loop()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     with caplog.at_level(logging.DEBUG):
         proto.connection_lost(None)
     assert "closed" in caplog.text.lower()
 
 
-def test_client_proto_packet_received() -> None:
+@pytest.mark.asyncio
+async def test_client_proto_packet_received() -> None:
     """
     Ensure we properly process received packets
     """
-    loop = asyncio.new_event_loop()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     proto.datagram_received(b"fake-packet", ("192.0.2.1", 42))
     result = proto.future.result()
     assert result == b"fake-packet"
 
 
-def test_client_proto_packet_received_log(caplog: Any) -> None:
+@pytest.mark.asyncio
+async def test_client_proto_packet_received_log(caplog: Any) -> None:
     """
     Ensure we properly process received packets
     """
-    loop = asyncio.new_event_loop()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     with caplog.at_level(logging.DEBUG):
         proto.datagram_received(b"fake-packet", ("192.0.2.1", 42))
     assert "66 61 6b" in caplog.text, "hexdump not found in logs"
     assert "192.0.2.1:42" in caplog.text, "remote endpoint not in logs"
 
 
-def test_client_proto_packet_received_closing() -> None:
+@pytest.mark.asyncio
+async def test_client_proto_packet_received_closing() -> None:
     """
     Ensure we properly close the transport if a packet is received
     """
-    loop = asyncio.new_event_loop()
     mock_transport = Mock()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     proto.connection_made(mock_transport)
     proto.datagram_received(b"fake-packet", ("192.0.2.1", 42))
     mock_transport.close.assert_called()
 
 
-def test_client_proto_error_propagation() -> None:
+@pytest.mark.asyncio
+async def test_client_proto_error_propagation() -> None:
     """
     Ensure we properly propagate unexpected exceptions
     """
-    loop = asyncio.new_event_loop()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     proto.error_received(ValueError("Whoops"))
     with pytest.raises(ValueError) as exc:
         proto.future.result()
     assert exc.match("Whoops")
 
 
-def test_client_proto_error_logging(caplog: Any) -> None:
+@pytest.mark.asyncio
+async def test_client_proto_error_logging(caplog: Any) -> None:
     """
     Ensure we properly logs unexpected exceptions
     """
-    loop = asyncio.new_event_loop()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     with caplog.at_level(logging.DEBUG):
         proto.error_received(ValueError("Whoops"))
     assert "Whoops" in caplog.text
@@ -184,9 +184,8 @@ async def test_client_proto_get_data() -> None:
     """
     Ensure we can fetch the data asynchronously
     """
-    loop = asyncio.get_event_loop()
     mock_transport = Mock()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     proto.connection_made(mock_transport)
     proto.datagram_received(b"fake-packet", ("192.0.2.1", 42))
     data = await proto.get_data(3)
@@ -198,9 +197,8 @@ async def test_client_proto_get_data_timeout() -> None:
     """
     Ensure we handle timeouts properly
     """
-    loop = asyncio.get_event_loop()
     mock_transport = Mock()
-    proto = tpt.SNMPClientProtocol(b"SNMP-packet", loop)
+    proto = tpt.SNMPClientProtocol(b"SNMP-packet")
     proto.connection_made(mock_transport)
     proto.error_received(socket.timeout(10))
     with pytest.raises(Timeout) as exc:
