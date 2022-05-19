@@ -16,8 +16,8 @@ def regen_apidoc(ctx: Any, src: str, dest: str, is_nspkg: bool = False) -> None:
 
 @fabric.task
 def doc(ctx):
-    regen_apidoc(ctx, "puresnmp", "docs/api")
-    regen_apidoc(ctx, "puresnmp_plugins", "docs/plugins_api", True)
+    regen_apidoc(ctx, "puresnmp", "doc/api")
+    regen_apidoc(ctx, "puresnmp_plugins", "doc/plugins_api", True)
     opts = {
         "builddir": "_build",
         "sphinx": abspath("env/bin/sphinx-build"),
@@ -26,7 +26,7 @@ def doc(ctx):
 
     cmd = "{sphinx} -b html -d {builddir}/doctrees . {builddir}/html"
 
-    with ctx.cd("docs"):
+    with ctx.cd("doc"):
         ctx.run(cmd.format(**opts), replace_env=False, pty=False)
 
 
