@@ -2,9 +2,13 @@
 Unit tests for types specified in RFC-2578
 """
 
+from typing import Any, Type
+
 import pytest
+import x690
 
 from puresnmp import types as t
+from puresnmp.pdu import EndOfMibView, NoSuchInstance, NoSuchObject
 
 
 @pytest.mark.parametrize(
@@ -35,7 +39,7 @@ def test_counter_issue_75():
     This test covers this issue.
     """
     data = b"\x41\x04\x84\x43\x20\xf8"
-    result = t.Counter.from_bytes(data)
+    result = t.Counter.decode(data)
     expected = t.Counter(2218991864)
     assert result == expected
 
@@ -58,3 +62,13 @@ def test_counter64(value, expected):
     """
     instance = t.Counter64(value)
     assert instance.value == expected
+
+
+@pytest.mark.parametrize("cls", [NoSuchObject, NoSuchInstance, EndOfMibView])
+def test_nullish_types(cls: Type[x690.types.Type[Any]]) -> None:
+    """
+    SNMP types which indicate the non-existance of values should be None in
+    the python-world
+    """
+    instance = cls()
+    assert instance.pythonize() is None

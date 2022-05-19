@@ -1,0 +1,25 @@
+{
+  "files.watcherExclude": {
+    "**/__pycache__": true,
+    "**/env": true
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.mypy_cache": true,
+    "*.egg-info": true,
+    ".cache": true,
+    ".coverage": true,
+    ".pytest_cache": true,
+    "build": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true
+  },
+  "python.formatting.provider": "black",
+  "editor.rulers": [80],
+  "python.analysis.typeCheckingMode": "off",
+  "python.linting.mypyEnabled": true,
+  "python.testing.pytestArgs": [],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
+}

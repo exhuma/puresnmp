@@ -1,5 +1,5 @@
 """
-Low-Level network transport.
+Low-Level network transport for asyncio.
 
 This module mainly exist to enable a "seam" for mocking/patching out during
 testing.
@@ -8,141 +8,225 @@ The module is excluded from coverage. It contains all the "dirty" stuff that's
 hard to test.
 """
 
-# TODO (beginner, no-dev): Ignore this file from coverage without adding
-#                          "pragma: no cover" to each function.
-
+import asyncio
 import logging
 import socket
-from ipaddress import ip_address
-from time import time
-from typing import TYPE_CHECKING, Generator
+from asyncio.events import AbstractEventLoop
+from asyncio.transports import BaseTransport
+from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
 
-from x690.util import visible_octets  # type: ignore
+from typing_extensions import Protocol
+from x690.util import visible_octets
 
+from .const import DEFAULT_LISTEN_ADDRESS
 from .exc import Timeout
-from .typevars import SocketInfo, SocketResponse
-
-if TYPE_CHECKING:
-    from typing import Optional
-
+from .typevars import SocketInfo, SocketResponse, TAnyIp
 
 LOG = logging.getLogger(__name__)
-
-#: The default number of retries for UDP packets
-RETRIES = 3
-
-#: Low-level socket buffer-size. If you run into timeouts you may want to
-#: increase this
-BUFFER_SIZE = 4096  # 4 KiB
+MESSAGE_MAX_SIZE = 65507
 
 
-class Transport:
+class Endpoint(NamedTuple):
     """
-    A simple UDP transport.
-
-    Calling ``send`` will attempt to send a packet as many times as specified
-    in *retries* (default=3). If it fails after those attemps, a
-    py:exc:`puresnmp.Timeout` exception is raised.
-
-    :param timeout: How long to wait on the socket before retrying
-    :param retries: The number of retries attempted if a low-level
-        socket-timeout occurs. If set to ``None`` it will use
-        :py:data:`puresnmp.transport.RETRIES` as default.
-    :param buffer_size: How much data to read from the socket. If this is too
-        small, it may result in incomplete (corrupt) packages. This should be
-        kept as low as possible (see ``man(2) recv``). If set to ``None`` it
-        will use :py:data:`puresnmp.transport.BUFFER_SIZE` as default.
+    A tuple representing an UDP endpoint where a connection should be made to.
     """
 
-    def __init__(self, timeout=2, retries=None, buffer_size=None):
-        # type: (int, Optional[int], Optional[int]) -> None
-        self.timeout = timeout
-        self.retries = retries or RETRIES
-        self.buffer_size = buffer_size or BUFFER_SIZE
+    ip: TAnyIp
+    port: int
 
-    def send(self, ip, port, packet, timeout=2):  # pragma: no cover
-        # type: ( str, int, bytes, int ) -> bytes
+
+class TSender(Protocol):
+    """
+    A typing-protocol for callables which send data out to the network
+    """
+
+    # pylint: disable=too-few-public-methods
+
+    async def __call__(
+        self,
+        endpoint: Endpoint,
+        packet: bytes,
+        timeout: int = 1,
+        loop: Optional[AbstractEventLoop] = None,
+        retries: int = 10,
+    ) -> bytes:  # pragma: no cover
+        ...
+
+
+class SNMPTrapReceiverProtocol(asyncio.DatagramProtocol):
+    """
+    A protocol to handle incoming SNMP traps.
+
+    The protocol requires a callable which is called with a
+    :py:class:`~.SocketResponse` instance whenever a trap is received.
+    """
+
+    def __init__(self, callback: Callable[[SocketResponse], Any]) -> None:
+        super().__init__()
+        self.callback = callback
+        self.transport: Optional[BaseTransport] = None
+
+    def connection_made(self, transport: BaseTransport) -> None:
+        self.transport = transport
+
+    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
+        if LOG.isEnabledFor(logging.DEBUG):
+            hexdump = visible_octets(data)
+            LOG.debug("Received packet:\n%s", hexdump)
+        self.callback(SocketResponse(data, SocketInfo(addr[0], addr[1])))
+
+
+class SNMPClientProtocol(asyncio.DatagramProtocol):
+    """
+    An SNMP Client Protocol suitable for use with
+    :py:meth:`asyncio.AbstractEventLoop.create_datagram_endpoint` that
+    provides a method to convert the callback based API into a coroutine
+    based API.
+    """
+
+    def __init__(self, packet):
+        # type: (bytes, AbstractEventLoop) -> None
+        loop = asyncio.get_running_loop()
+        self.packet = packet
+        self.transport = None  # type: Optional[asyncio.DatagramTransport]
+        self.loop = loop
+        self.future = loop.create_future()
+
+    def connection_made(self, transport):  # type: ignore
+        # type: (asyncio.DatagramTransport) -> None
         """
-        Opens a TCP connection to *ip:port*, sends a packet with *bytes* and
-        returns the raw bytes as returned from the remote host.
+        Sends the SNMP request packet when a connection is made.
         """
-        checked_ip = ip_address(ip)
-        if checked_ip.version == 4:
-            address_family = socket.AF_INET
-        else:
-            address_family = socket.AF_INET6
-
-        sock = socket.socket(address_family, socket.SOCK_DGRAM)
-        sock.settimeout(timeout or self.timeout)
-
-        for num_retry in range(self.retries):
-            try:
-                if LOG.isEnabledFor(logging.DEBUG):
-                    hexdump = visible_octets(packet)
-                    LOG.debug(
-                        "Sending packet to %s:%s (attempt %d/%d)\n%s",
-                        ip,
-                        port,
-                        (num_retry + 1),
-                        self.retries,
-                        hexdump,
-                    )
-                sock.sendto(packet, (ip, port))
-                response = sock.recv(self.buffer_size)
-                break
-            except socket.timeout:
-                LOG.debug(
-                    "Timeout during attempt #%d", (num_retry + 1)
-                )  # TODO add detail
-                continue
-        else:
-            sock.close()
-            raise Timeout("Max of %d retries reached" % self.retries)
-        sock.close()
+        self.transport = transport
 
         if LOG.isEnabledFor(logging.DEBUG):
-            hexdump = visible_octets(response)
-            LOG.debug("Received packet:\n%s", hexdump)
+            hexdump = visible_octets(self.packet)
+            ip, port = self.transport.get_extra_info("peername", ("", ""))
+            LOG.debug("Sending packet to %s:%s\n%s", ip, port, hexdump)
 
-        return response
+        self.transport.sendto(self.packet)
 
-    def listen(self, bind_address="0.0.0.0", port=162):  # pragma: no cover
-        # type: (str, int) -> Generator[SocketResponse, None, None]
+    def connection_lost(self, exc):
+        # type: (Optional[Exception]) -> None
         """
-        Sets up a listening UDP socket and returns a generator over recevied
-        packets::
-
-            >>> transport = Transport()
-            >>> for seq, packet in enumerate(transport.listen()):
-            ...     print(seq, repr(packet))
-            0, b'...'
-            1, b'...'
-            2, b'...'
-
-        .. note::
-
-            This defaults to the standard SNMP Trap port 162. This is a
-            privileged port so processes using this port must run as root!
+        Handles the socket being closed optionally passing on an exception.
         """
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-            sock.bind((bind_address, port))
-            while True:
-                request, addr = sock.recvfrom(self.buffer_size)
-                if LOG.isEnabledFor(logging.DEBUG):
-                    hexdump = visible_octets(request)
-                    LOG.debug("Received packet:\n%s", hexdump)
+        if LOG.isEnabledFor(logging.DEBUG):
+            if exc is None:
+                LOG.debug("Socket closed")
+            else:
+                LOG.debug("Connection lost: %s", exc)
 
-                yield SocketResponse(request, SocketInfo(addr[0], addr[1]))
+        if exc is not None:
+            self.future.set_exception(exc)
 
-    def get_request_id(self):  # pragma: no cover
-        # type: () -> int
-        # pylint: disable=no-self-use
+    def datagram_received(self, data, addr):
+        # type: (Union[bytes, str], Tuple[str, int]) -> None
         """
-        Generates a SNMP request ID. This value should be unique for each
-        request.
+        Receive the data and close the connection.
         """
-        # TODO check if this is good enough. My gut tells me "no"! Depends if
-        # it has to be unique across all clients, or just one client. If it's
-        # just one client it *may* be enough.
+        if LOG.isEnabledFor(logging.DEBUG) and isinstance(data, bytes):
+            hexdump = visible_octets(data)
+            LOG.debug(
+                "Received packet from %s:%d:\n%s", addr[0], addr[1], hexdump
+            )
 
-        return int(time())
+        self.future.set_result(data)
+        if self.transport:
+            self.transport.close()
+
+    def error_received(self, exc):
+        # type: (Exception) -> None
+        """
+        Pass the exception along if there is an error.
+        """
+        if LOG.isEnabledFor(logging.DEBUG):
+            LOG.debug("Error received!", exc_info=exc)
+
+        self.future.set_exception(exc)
+
+    async def get_data(self, timeout):
+        # type: (int) -> bytes
+        """
+        Retrieve the response data back into the calling coroutine.
+        """
+        try:
+            return await asyncio.wait_for(self.future, timeout)
+        except (asyncio.TimeoutError, socket.timeout) as exc:
+            if self.transport:
+                self.transport.abort()
+            raise Timeout(
+                f"{timeout} second timeout exceeded on UDP transport."
+            ) from exc
+
+
+async def send_udp(
+    endpoint: Endpoint,
+    packet: bytes,
+    timeout: int = 1,
+    loop: Optional[AbstractEventLoop] = None,
+    retries: int = 10,
+) -> bytes:  # pragma: no cover
+    # pylint: disable=arguments-differ
+    """
+    A coroutine that opens a UDP socket to *ip:port*, sends a packet with
+    *bytes* and returns the raw bytes as returned from the remote host.
+
+    If the connection fails due to a timeout, a Timeout exception is
+    raised.
+    """
+    if loop is None:
+        loop = asyncio.get_event_loop()
+
+    while retries > 0:
+        _, protocol = await loop.create_datagram_endpoint(
+            lambda: SNMPClientProtocol(packet, loop),  # type: ignore
+            remote_addr=(str(endpoint.ip), endpoint.port),
+        )
+        try:
+            response = await protocol.get_data(timeout)  # type: ignore
+            break
+        except Timeout:
+            if retries == 1:
+                raise
+            retries -= 1
+            LOG.debug("Resending UDP packet. %d retries left", retries)
+
+    return response  # type: ignore
+
+
+def default_trap_handler(response: SocketResponse) -> None:
+    """
+    A no-op implementation for trap handlers which only logs traps.
+    """
+    LOG.debug("Trap Received from %s: %r", response.info, response)
+
+
+async def listen(
+    bind_address: str = DEFAULT_LISTEN_ADDRESS,
+    port: int = 162,
+    callback: Callable[[SocketResponse], Any] = default_trap_handler,
+    loop: Optional[AbstractEventLoop] = None,
+) -> None:  # pragma: no cover
+    """
+    Sets up a listening UDP socket and returns a generator over recevied
+    packets::
+
+        >>> transport = Transport()  # doctest: +SKIP
+        >>> for seq, packet in enumerate(transport.listen()):  # doctest: +SKIP
+        ...     print(seq, repr(packet))
+        0, b'...'
+        1, b'...'
+        2, b'...'
+
+    .. note::
+
+        This defaults to the standard SNMP Trap port 162. This is a
+        privileged port so processes using this port must run as root!
+    """
+    if loop is None:
+        loop = asyncio.get_event_loop()
+    await loop.create_datagram_endpoint(
+        lambda: SNMPTrapReceiverProtocol(callback),
+        local_addr=(bind_address, port),
+    )
