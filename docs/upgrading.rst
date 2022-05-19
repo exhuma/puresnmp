@@ -21,8 +21,8 @@ Providing a single code-base made the maintenance easier at the cost of
 losing the "sync" implementation.
 
 Mitigation: calling a "sync" corouting can be done fairly easily by wrapping
-the call in either :py:func:`asyncio.run` (Python 3.8+) or
-:py:func:`asyncio.loop.run_until_complete` (Python <3.8).
+the call in either :py:func:`asyncio.run` (Python 3.7+) or
+:py:func:`asyncio.loop.run_until_complete` (Python <3.7).
 
 .. note::
 
@@ -49,7 +49,7 @@ Example
         return result
 
 .. code-block:: python
-    :caption: Running in "sync" context, Python 3.8+
+    :caption: Running in "sync" context, Python 3.7+
 
     import asyncio
     import puresnmp
@@ -61,7 +61,7 @@ Example
     asyncio.run(coro)
 
 .. code-block:: python
-    :caption: Running in "sync" context, Python <3.8
+    :caption: Running in "sync" context, Python <3.7
 
     import asyncio
     import puresnmp

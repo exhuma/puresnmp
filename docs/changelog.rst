@@ -24,7 +24,7 @@ Release 2.0.0a0 to 2.0.0a21
 * **[changed]** The old inconsistent "VarBind" class has been split into
   :py:class:`puresnmp.varbind.VarBind` and
   :py:class:`puresnmp.varbind.PyVarBind`
-* **[changed]** Some data-types no correctly wrap ``None`` instead of ``b""``:
+* **[changed]** Some data-types now correctly wrap ``None`` instead of ``b""``:
 
   * NoSuchObject
   * NoSuchInstance
@@ -48,7 +48,7 @@ Release 2.0.0a0 to 2.0.0a21
   which is why it is not inclued.
 * **[added]** New exception types based on :rfc:`3416`
 * **[added]** Allow temporarily overriding client defaults via
-  :py:meth:`puresnmp.api.raw.client.Client.reconfigure`
+  :py:meth:`puresnmp.api.raw.Client.reconfigure`
 
 
 

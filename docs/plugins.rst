@@ -17,10 +17,10 @@ requested/required.
 Message Processing Models
 -------------------------
 
-Messages processing models (or MPM for short) define how an SNMP message is
-structured. It is the responsibility of an MPM to transform a user request to
+Messages processing models (or MPM for short) defines the bytes-structure of an
+SNMP message. It is the responsibility of an MPM to transform a user request to
 bytes that can be sent to the remote SNMP device. An MPM also has the
-responsibility to make use of any authentication//privacy/security module if
+responsibility to make use of any authentication/privacy/security module if
 needed.
 
 Security
@@ -33,7 +33,7 @@ modules.
 
 The security model is defined by an identifier in the SNMPv3 message header.
 Additional arguments for the security model are encoded in the
-``security_parameters`` fiels of the message header.
+``security_parameters`` field of the message header.
 
 Authentication
 --------------
@@ -59,8 +59,9 @@ the message.
     make it work. The package meta-data provide the ``crypto`` extra-flag to
     make installation easier.
 
-    They are provided separately in case the library does not need DES/AES
-    support, making the dependencies a bit lighter.
+    They are provided separately in case the application *using* ``puresnmp``
+    does not need DES/AES support, making the dependencies a bit lighter (no
+    compilation of a C-based cryptography library for example).
 
 
 Providing new Plugins

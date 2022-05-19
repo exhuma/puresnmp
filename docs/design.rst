@@ -24,9 +24,9 @@ design decisions.
 While usage simplicity is one thing, maintainability is another. For that,
 see the point about RFC-divergence below.
 
-Finally, all modules have a strong focus on MIBs, which can be problematic at
-times. Especially for heterogenuous networks. :py:mod:`puresnmp` makes it
-easy to work without MIBs.
+Finally, all *existing* modules have a strong focus on MIBs, which can be
+problematic at times. Especially for heterogenuous networks. :py:mod:`puresnmp`
+makes it easy to work *without* MIBs.
 
 Extensive Documentation
 -----------------------
@@ -59,9 +59,15 @@ converted at the seam between the internal Python world and the SNMP worls
 Applications using the :py:class:`~puresnmp.api.pythonic.PyWrapper` will be
 strongly decoupled from any internal changes inside :py:mod:`puresnmp`.
 
+All *internal* datatypes inherit from :py:class:`x690.types.X690Type` and
+provide the :py:attr:`~x690.types.X690Type.value` property to retrieve the
+pure-Python value.
+
 This may hide details from the exchanged data-types with the remote SNMP
-device. If needed, they can always be accessed by using the ``.client``
-attribute inside the ``PyWrapper`` instance.
+device. For example, both :py:class:`~x690.types.Counter` and
+:py:class:`~x690.types.Integer` are converted to pure-Python integers. For most
+use-cases this is useful and convenient. But if needed, they can always be
+accessed by using :py:attr:`puresnmp.api.pythonic.PyWrapper.client`.
 
 
 No MIB Support?
@@ -94,8 +100,8 @@ defined in MIBs. Some more esoteric data-types may be reported as
 the real value.
 
 Low-level table support is provided by
-:py:meth:`~puresnmp.api.pythonic.PyWrapper.table` and
-:py:meth:`~puresnmp.api.raw.Client.table` but row-indeces may need to be
+:py:meth:`puresnmp.api.pythonic.PyWrapper.table` and
+:py:meth:`puresnmp.api.raw.Client.table` but row-indeces may need to be
 post-processed.
 
 Converting OIDs to/from human-readable text should primarily be done on the
@@ -114,7 +120,8 @@ The RFC has one clear aim: Being future-proof by "pluggability".
 
 This pluggability is provided in :py:mod:`puresnmp` by the use of "namespace
 modules". This allows us to provide new functionality in the future without
-sacrificing "pythonic" code.
+sacrificing "pythonic" code. It does therefore slightly diverge from the
+RFC-3411 process of how "plugins" are looked up.
 
 Finally, the library has a primary focus on being an SNMP *client*. Not an
 SNMP *server*. For this reason, a lot of implementations from the RFC have
@@ -135,6 +142,9 @@ Async first
 -----------
 
 The library *only* provides async functions. This allows us to have one
-common code-base for exevrything. The previous version (v1.x) of puresnmp
+common code-base for everything. The previous version (v1.x) of puresnmp
 contained both a "sync" and "async" implementation, making maintainance
 cumbersome and error-prone.
+
+``puresnmp`` can be easily integrated into a non-async application by using
+:py:func:`asyncio.run`.

@@ -278,7 +278,7 @@ class Client:
 
         For temporary configuration changes see :py:meth:`~.reconfigure`.
 
-        The values that can be overridden delegate to
+        The values that can be overridden are defined in
         :py:class:`~.ClientConfig`. Any fields in that class can be overridden
 
         >>> client = Client("192.0.2.1", V2C("public"))
@@ -313,7 +313,7 @@ class Client:
         This is provided via this context-manager. When the context-manager
         exits, the previous config is restored
 
-        The values that can be overridden delegate to
+        The values that can be overridden are defined in
         :py:class:`~.ClientConfig`. Any fields in that class can be overridden
 
         >>> client = Client("192.0.2.1", V2C("public"))
@@ -356,13 +356,13 @@ class Client:
         """
         Retrieve the value of a single OID
 
-        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
-        >>> from puresnmp.util import sync
+        >>> from asyncio import run
         >>> import warnings
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
         >>> warnings.simplefilter("ignore")
         >>> client = Client("127.0.0.1", V2C("private"), port=50009)
         >>> coro = client.get(OID("1.3.6.1.2.1.1.2.0"))
-        >>> sync(coro)  # doctest: +SKIP
+        >>> run(coro)  # doctest: +SKIP
         ObjectIdentifier('1.3.6.1.4.1.8072.3.2.10')
         """
         result = await self.multiget([oid])
@@ -374,15 +374,15 @@ class Client:
         """
         Retrieve (scalar) values from multiple OIDs in one request.
 
-        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
-        >>> from puresnmp.util import sync
+        >>> from asyncio import run
         >>> import warnings
+        >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
         >>> warnings.simplefilter("ignore")
         >>> client = Client("127.0.0.1", V2C("private"), port=50009)
         >>> coro = client.multiget(
         ...     [OID('1.3.6.1.2.1.1.2.0'), OID('1.3.6.1.2.1.1.1.0')]
         ... )
-        >>> sync(coro)  # doctest: +SKIP
+        >>> run(coro)  # doctest: +SKIP
         [ObjectIdentifier('1.3.6.1.4.1.8072.3.2.10'), OctetString(b'Linux c8582f39c32b 4.15.0-115-generic #116-Ubuntu SMP Wed Aug 26 14:04:49 UTC 2020 x86_64')]
         """
 
@@ -443,8 +443,8 @@ class Client:
         This is almost the same as :py:meth:`~.walk` except that it is
         capable of iterating over multiple OIDs at the same time.
 
+        >>> from asyncio import run
         >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
-        >>> from puresnmp.util import sync
         >>> import warnings
         >>> warnings.simplefilter("ignore")
         >>> async def example():
@@ -456,7 +456,7 @@ class Client:
         ...     async for row in result:
         ...         output.append(row)
         ...     return output
-        >>> sync(example())  # doctest: +SKIP
+        >>> run(example())  # doctest: +SKIP
         [VarBind(oid=ObjectIdentifier('1.3.6.1.2.1.1.1.0'), value=Oct...]
         """
         if fetcher is None:
@@ -512,8 +512,8 @@ class Client:
         The request sends one packet to the remote host requesting the value
         of the OIDs following one or more given OIDs.
 
+        >>> from asyncio import run
         >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
-        >>> from puresnmp.util import sync
         >>> import warnings
         >>> warnings.simplefilter("ignore")
         >>> client = Client("127.0.0.1", V2C("private"), port=50009)
@@ -522,7 +522,7 @@ class Client:
         >>> coro = client.multigetnext(
         ...     [OID('1.3.6.1.2.1.1.2.0'), OID('1.3.6.1.2.1.1.1.0')]
         ... )
-        >>> sync(coro)  # doctest: +ELLIPSIS +SKIP
+        >>> run(coro)  # doctest: +ELLIPSIS +SKIP
         [VarBind(oid=ObjectIdentifier('1.3.6.1.2.1.1.3.0'), value=TimeTicks(...)), VarBind(oid=ObjectIdentifier('1.3.6.1.2.1.1.2.0'), value=ObjectIdentifier('1.3.6.1.4.1.8072.3.2.10'))]
         """
         varbinds = [VarBind(oid, Null()) for oid in oids]
@@ -578,13 +578,13 @@ class Client:
 
         Example output:
 
+        >>> from asyncio import run
         >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
-        >>> from puresnmp.util import sync
         >>> import warnings
         >>> warnings.simplefilter("ignore")
         >>> client = Client("127.0.0.1", V2C("private"), port=50009)
         >>> coro = client.table(OID("1.3.6.1.2.1.2.2.1"))
-        >>> sync(coro)  # doctest: +SKIP
+        >>> run(coro)  # doctest: +SKIP
         [{'0': '1', '1': Integer(1), ... '22': ObjectIdentifier('0.0')}]
         """
         tmp = []
@@ -607,8 +607,8 @@ class Client:
         Values must be a subclass of :py:class:`x690.types.Type`. See
         :py:mod:`x690.types` for a predefined collection of types.
 
+        >>> from asyncio import run
         >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
-        >>> from puresnmp.util import sync
         >>> import warnings
         >>> warnings.simplefilter("ignore")
         >>> from x690.types import OctetString
@@ -616,7 +616,7 @@ class Client:
         >>> coro = client.set(
         ...     OID("1.3.6.1.2.1.1.4.0"), OctetString(b'new contact value')
         ... )
-        >>> sync(coro)  # doctest: +SKIP
+        >>> run(coro)  # doctest: +SKIP
         OctetString(b'new contact value')
         """
         value_internal = cast(Type[Any], value)
@@ -630,8 +630,8 @@ class Client:
         Executes an SNMP SET request on multiple OIDs. The result is returned as
         pure Python data structure.
 
+        >>> from asyncio import run
         >>> from puresnmp import Client, ObjectIdentifier as OID, V2C
-        >>> from puresnmp.util import sync
         >>> import warnings
         >>> warnings.simplefilter("ignore")
         >>> from x690.types import OctetString
@@ -640,7 +640,7 @@ class Client:
         ...     OID('1.3.6.1.2.1.1.4.0'): OctetString(b'new-contact'),
         ...     OID('1.3.6.1.2.1.1.6.0'): OctetString(b'new-location')
         ... })
-        >>> sync(coro)  # doctest: +ELLIPSIS +SKIP
+        >>> run(coro)  # doctest: +ELLIPSIS +SKIP
         {ObjectIdentifier('1.3.6.1.2.1.1.4.0'): OctetString(b'new-c...cation')}
         """
 

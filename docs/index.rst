@@ -9,8 +9,11 @@ puresnmp
    The v1.x branch is now in "maintenance only" mode and will only receive
    critical fixes.
 
-Let's start with a simple quickstart and go into design-decisions,
-class-descriptions and details a bit later.
+Basic Example
+-------------
+
+This basic example executes an SNMP GET request. The details are explained
+below.
 
 .. code-block:: python
 
@@ -22,8 +25,7 @@ class-descriptions and details a bit later.
       output = await client.get("1.3.6.1.2.1.1.1.0")
       return output
 
-   loop = asyncio.get_event_loop()
-   print(loop.run_until_complete(example()))
+   print(asyncio.run(example()))
 
 The above will execute a community-based SNMPv2 GET request on the device
 with IP ``192.0.2.1`` and read the value on OID ``1.3.6.1.2.1.1.1.0``. The
@@ -44,20 +46,22 @@ Dissection
 
    Client("192.0.2.1", V2C("public"))
 
-This creates a new "leaky" client to the device at IP "192.0.2.1". This
-client is "leaky" in the sense that it leaks internal data-types as method
-arguments and return-values. It is already usable as-is and
-:py:class:`~puresnmp.api.pythonic.PyWrapper` is not strictly needed, but read
-on.
+This creates a new "leaky" client to the device at IP "192.0.2.1". Is is
+"leaky" because method arguments and return-values use SNMP-specific like
+:py:class:`puresnmp.types.Counter` or :py:class:`x690.types.OctetString`.
+
+It is already usable as-is but can be improved by wrapping it with
+:py:class:`~puresnmp.api.pythonic.PyWrapper`.
 
 .. code-block:: python
 
     client = PyWrapper(...)
 
-This wraps the "leaky" client by converting all function arguments from
-native Python data-types to internal data types. Return values are also
-converted from internal to "native-python". This decouples client-code from
-internal changes and should make client code more robust and independent.
+This wrapper exposes the same methods as the internal client but converts
+input- and output-values from/to native (pure) Python types. This abstracts
+SNMP internals and makes client code much more pythonic. It also decouples
+client-code from internal changes and should make client code more robust and
+independent.
 
 .. note::
 
@@ -65,12 +69,6 @@ internal changes and should make client code more robust and independent.
 
    When executing "SNMP SET" requests, the SNMP specific data-types need to
    be known. So "SET" commands will inherently always be leaky.
-
-Finally, let's execute an SNMP-Get request on the given OID and get the value.
-
-.. code-block:: python
-
-   output = await client.get(...)
 
 .. toctree::
    :maxdepth: 2
