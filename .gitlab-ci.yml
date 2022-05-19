@@ -46,9 +46,11 @@ safety:
 docs:
   image:
     name: harbor.ptech.lu/gitlab-actions/sphinx:release-4.5.0-ptech-2
+    entrypoint: []
   stage: build
   artifacts:
     paths:
       - artifacts
   script:
+    - pip install -e .[dev]
     - /run.sh
