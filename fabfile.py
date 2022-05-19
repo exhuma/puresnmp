@@ -13,11 +13,15 @@ def regen_apidoc(ctx: Any, src: str, dest: str, is_nspkg: bool = False) -> None:
         pty=True,
     )
 
+@fabric.task
+def regen_all_api(ctx):
+    regen_apidoc(ctx, "puresnmp", "doc/api")
+    regen_apidoc(ctx, "puresnmp_plugins", "doc/plugins_api", True)
+
 
 @fabric.task
 def doc(ctx):
-    regen_apidoc(ctx, "puresnmp", "doc/api")
-    regen_apidoc(ctx, "puresnmp_plugins", "doc/plugins_api", True)
+    regen_all_api(ctx)
     opts = {
         "builddir": "_build",
         "sphinx": abspath("env/bin/sphinx-build"),

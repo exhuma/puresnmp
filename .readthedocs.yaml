@@ -9,6 +9,9 @@ build:
   os: ubuntu-20.04
   tools:
     python: "3.9"
+  jobs:
+    pre_build:
+      - fab regen-all-api
 
 sphinx:
    configuration: doc/conf.py
@@ -19,4 +22,4 @@ python:
       path: .
       extra_requirements:
         - dev
-
+        - readthedocs
