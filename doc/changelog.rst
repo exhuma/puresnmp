@@ -1,7 +1,7 @@
 Changelog
 =========
 
-Release 2.0.0a0 to 2.0.0rc4
+Release 2.0.0a0 to 2.0.0rc5
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
