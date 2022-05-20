@@ -36,7 +36,7 @@ class SNMPv1SecurityModel(SecurityModel[PDU, Sequence]):
         warn("Experimental SNMPv1 support", UserWarning)
 
         packet = Sequence(
-            [Integer(1), OctetString(credentials.community), message]
+            [Integer(0), OctetString(credentials.community), message]
         )
         return packet
 
