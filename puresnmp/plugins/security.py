@@ -32,11 +32,14 @@ rules:
 from types import ModuleType
 from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
 
-from typing_extensions import Protocol
-
 from puresnmp.credentials import Credentials
 from puresnmp.exc import UnknownSecurityModel
 from puresnmp.plugins.pluginbase import Loader
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
 
 #: The type of an *unsecured* message inside of "puresnmp"
 TPureSNMPType = TypeVar("TPureSNMPType", bound=Any)

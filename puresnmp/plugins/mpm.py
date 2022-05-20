@@ -44,13 +44,17 @@ from typing import (
     TypeVar,
 )
 
-from typing_extensions import Protocol
 
 from puresnmp.credentials import Credentials
 from puresnmp.exc import UnknownMessageProcessingModel
 from puresnmp.pdu import PDU
 from puresnmp.plugins.pluginbase import Loader
 from puresnmp.plugins.security import SecurityModel
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
 
 
 class AbstractEncodingResult(NamedTuple):

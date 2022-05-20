@@ -31,7 +31,6 @@ from typing import (
 from typing import Type as TType
 from typing import TypeVar, cast
 
-from typing_extensions import Protocol
 from x690.types import Integer, Null, ObjectIdentifier, Sequence
 from x690.types import X690Type as Type
 
@@ -70,6 +69,11 @@ from ..util import (
     validate_response_id,
 )
 from ..varbind import VarBind
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
 
 TWalkResponse = AsyncGenerator[VarBind, None]
 T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name

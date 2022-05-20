@@ -15,12 +15,16 @@ from asyncio.events import AbstractEventLoop
 from asyncio.transports import BaseTransport
 from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
 
-from typing_extensions import Protocol
 from x690.util import visible_octets
 
 from .const import DEFAULT_LISTEN_ADDRESS
 from .exc import Timeout
 from .typevars import SocketInfo, SocketResponse, TAnyIp
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
 
 LOG = logging.getLogger(__name__)
 MESSAGE_MAX_SIZE = 65507

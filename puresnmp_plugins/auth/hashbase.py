@@ -4,10 +4,13 @@ This module provides common code for hashing based authentication.
 import hmac
 from typing import Callable
 
-from typing_extensions import Protocol
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
+
 
 THasher = Callable[[bytes, bytes], bytes]
-
 
 class TOutgoing(Protocol):
     """

@@ -22,13 +22,17 @@ from typing import (
     TypeVar,
 )
 
-from typing_extensions import Protocol
 from x690.types import ObjectIdentifier
 
 from puresnmp.credentials import V3
 from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol
 
 T = TypeVar("T", bound=Any)
 TTableRow = TypeVar("TTableRow", bound=Any)
