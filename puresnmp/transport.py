@@ -88,8 +88,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
     based API.
     """
 
-    def __init__(self, packet):
-        # type: (bytes, AbstractEventLoop) -> None
+    def __init__(self, packet: bytes) -> None:
         loop = asyncio.get_running_loop()
         self.packet = packet
         self.transport = None  # type: Optional[asyncio.DatagramTransport]
@@ -184,7 +183,7 @@ async def send_udp(
 
     while retries > 0:
         _, protocol = await loop.create_datagram_endpoint(
-            lambda: SNMPClientProtocol(packet, loop),  # type: ignore
+            lambda: SNMPClientProtocol(packet),
             remote_addr=(str(endpoint.ip), endpoint.port),
         )
         try:
