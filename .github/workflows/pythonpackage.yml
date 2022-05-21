@@ -3,9 +3,9 @@ name: Python package
 
 # yamllint disable-line rule:truthy
 on:
-  - push
-  - pull_request
-  - schedule:
+  push:
+  pull_request:
+  schedule:
     # Weekly run ensuring no external dependencies cause surprises
     - cron: '0 0 * * 0'
 
