@@ -41,6 +41,8 @@ max-locals = 25
 max-args = 8
 
 [tool.pytest.ini_options]
+asyncio_mode = "strict"
+filterwarnings = ["error"]
 minversion = "6.0"
 # addopts = "--doctest-modules --cov=puresnmp --cov=puresnmp_plugins --cov-report=term-missing"
 testpaths = [
