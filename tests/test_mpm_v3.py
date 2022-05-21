@@ -12,40 +12,43 @@ from puresnmp.pdu import GetRequest, GetResponse, PDUContent
 from puresnmp.varbind import VarBind
 from puresnmp_plugins.security.usm import USMSecurityParameters
 
+try:
+    from unittest.mock import AsyncMock
+except ImportError:
+    from asyncmock import AsyncMock
+
 
 @pytest.fixture
 def mock_handler():
-    future = asyncio.Future()
-    future.set_result(
-        bytes(
-            Message(
-                Integer(3),
-                HeaderData(123, 65000, V3Flags(False, False, False), 3),
-                bytes(
-                    USMSecurityParameters(
-                        b"engine-id", 1, 2, b"username", b"auth", b"priv"
-                    )
-                ),
-                ScopedPDU(
-                    OctetString(b"engine-id"),
-                    OctetString(b"context"),
-                    GetResponse(
-                        PDUContent(
-                            123,
-                            [
-                                VarBind(
-                                    ObjectIdentifier(),
-                                    Integer(10),
-                                )
-                            ],
-                        ),
+    data = bytes(
+        Message(
+            Integer(3),
+            HeaderData(123, 65000, V3Flags(False, False, False), 3),
+            bytes(
+                USMSecurityParameters(
+                    b"engine-id", 1, 2, b"username", b"auth", b"priv"
+                )
+            ),
+            ScopedPDU(
+                OctetString(b"engine-id"),
+                OctetString(b"context"),
+                GetResponse(
+                    PDUContent(
+                        123,
+                        [
+                            VarBind(
+                                ObjectIdentifier(),
+                                Integer(10),
+                            )
+                        ],
                     ),
                 ),
-            )
+            ),
         )
     )
-    handler = Mock(return_value=future)
-    yield handler
+
+    mock = AsyncMock(return_value=data)
+    yield mock
 
 
 @pytest.mark.asyncio
