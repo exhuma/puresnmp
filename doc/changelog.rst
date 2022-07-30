@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Release 2.0.0a0 to 2.0.0rc6
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Release 2.0 (starting from and including 2.0.0a0)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. warning::
     This is a major upgrade! It is *not* compatible with client-code based on
