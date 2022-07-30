@@ -1,7 +1,7 @@
 .. >>> Shields >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-.. image:: https://travis-ci.org/exhuma/puresnmp.svg?branch=develop
-    :target: https://travis-ci.org/exhuma/puresnmp
+.. image:: https://github.com/exhuma/puresnmp/workflows/Python%20package/badge.svg?branch=master
+    :target: https://github.com/exhuma/puresnmp/actions?query=workflow%3A%22Python+package%22
 
 .. image:: https://readthedocs.org/projects/puresnmp/badge/?version=latest
     :target: http://puresnmp.readthedocs.io/en/latest/?badge=latest
@@ -32,7 +32,7 @@ Quick Info
 ----------
 
 What
-    A pure Python implementation for Python 3.3+ of SNMP without any external
+    A pure Python implementation for Python 3.6+ of SNMP without any external
     dependencies (neither MIBs or libsnmp).
 
 Why
@@ -44,8 +44,8 @@ Why
 
     The aim of this project is to focus on SNMP in itself and provide a very
     simple API. Instead of implementing ASN.1 parsing, the SNMP related ASN.1
-    and X.690 information is hard-coded (keeping in mind that all that's
-    hard-coded is well defined).
+    and information is hard-coded (keeping in mind that all that's hard-coded is
+    well defined).
 
     It is of course possible to *wrap* this package in another package adding
     MIB parsing and processing. This is, and will be however **out of the scope
@@ -80,3 +80,23 @@ See the `cookbook`_.
 
 .. _cookbook: http://puresnmp.readthedocs.io/en/latest/cookbook/index.html
 .. _Semantic Versioning: http://semver.org/spec/v2.0.0.html
+
+
+Development & Maintenance
+-------------------------
+
+The easiest way to get started it to use the provided "development container" in
+the ``.devcontainer`` folder. When using VS-Code with the `Remote Development
+extension`_ it will be picked up automatically when opening the project. If not,
+open the command-console and select ``Remote-Containers: Rebuild Container`` to
+get started.
+
+Type ``./env/bin/pytest`` to ensure that everything is set up properly. It
+should run and pass all unit-tests.
+
+This will provide a container with all required dependencies for development.
+**Including** a tiny SNMP daemon on hostname ``snmpd`` which can be used to play
+around with.
+
+
+.. _Remote Development extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack

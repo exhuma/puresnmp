@@ -1,15 +1,14 @@
 """
 Exceptions for the puresnmp package.
+
+Most exceptions in this module are based on :rfc:`3416`
 """
-from __future__ import unicode_literals
 
-import socket
-from typing import Optional
+from typing import Any, List
+
+from x690.types import ObjectIdentifier
+
 from puresnmp.const import MAX_VARBINDS
-
-from .x690.types import ObjectIdentifier
-
-# pylint: disable=too-few-public-methods
 
 
 class SnmpError(Exception):
@@ -18,49 +17,59 @@ class SnmpError(Exception):
     error inherits from this class.
     """
 
+    # pylint: disable=too-few-public-methods
+
 
 class ErrorResponse(SnmpError):
     """
     A superclass used when the SNMP agent responded with additional error
     information.
-
-    Instances of ``ErrorResponse`` have two attributes concerning the error:
-
-    * ``error_status`` the raw (int) value of the error-status as returned by
-      the SNMP agent.
-    * ``offending_oid`` the OID identified in the error message which caused
-      the error.
     """
 
-    DEFAULT_MESSAGE = 'unknown error'
+    #: Default message to report for this error (if not overridden)
+    DEFAULT_MESSAGE: str = "unknown error"
+
+    #: The "error-status" value
+    IDENTIFIER: int = 0
+
+    #: the raw (int) value of the error-status as returned by the SNMP agent.
+    error_status: int
+
+    #: the OID identified in the error message which caused the error.
+    offending_oid: ObjectIdentifier
 
     @staticmethod
-    def construct(error_status, offending_oid, message=''):
-        # type: (int, Optional[ObjectIdentifier], str) -> ErrorResponse
+    def construct(
+        error_status: int, offending_oid: ObjectIdentifier, message: str = ""
+    ) -> "ErrorResponse":
         """
         Creates a new instance of an ErrorResponse class, using the proper
         subclass for the given *error_status* value. The message is optional,
         and if not specified, will use the default message for the given class.
         """
-        if error_status == 1:
-            return TooBig(offending_oid, message)
-        if error_status == 2:
-            return NoSuchOID(offending_oid, message)
-        if error_status == 3:
-            return BadValue(offending_oid, message)
-        if error_status == 4:
-            return ReadOnly(offending_oid, message)
-        if error_status == 5:
-            return GenErr(offending_oid, message)
-        if error_status == 6:
-            return NoAccess(offending_oid, message)
-        return ErrorResponse(error_status, offending_oid, message)
+        classes = {
+            cls.IDENTIFIER: cls for cls in ErrorResponse.__subclasses__()
+        }
+        if error_status in classes:
+            cls = classes[error_status]
+            return cls(offending_oid, message)
+        return ErrorResponse(offending_oid, message, error_status=error_status)
 
-    def __init__(self, error_status, offending_oid, message=''):
-        # type: (int, Optional[ObjectIdentifier], str) -> None
-        super(ErrorResponse, self).__init__(
-            '%s (status-code: %r) on OID %s' % (
-                message or self.DEFAULT_MESSAGE, error_status, offending_oid if offending_oid != None else "unknown"))
+    def __init__(
+        self,
+        offending_oid: ObjectIdentifier,
+        message: str = "",
+        error_status: int = 0,
+    ) -> None:
+        error_status = error_status or self.IDENTIFIER
+        super().__init__(
+            "%s (status-code: %r) on OID %s"
+            % (
+                message or self.DEFAULT_MESSAGE,
+                error_status,
+                offending_oid or "unknown",
+            )
+        )
         self.error_status = error_status
         self.offending_oid = offending_oid
 
@@ -70,10 +79,9 @@ class TooBig(ErrorResponse):
     This error is returned whenever the size of the generatred response exceeds
     a size-limit defined by the queried device.
     """
-    DEFAULT_MESSAGE = 'SNMP response was too big!'
-    def __init__(self, offending_oid, message=''):
-        # type: (Optional[ObjectIdentifier], str) -> None
-        super(TooBig, self).__init__(1, offending_oid)
+
+    DEFAULT_MESSAGE = "SNMP response was too big!"
+    IDENTIFIER = 1
 
 
 class NoSuchOID(ErrorResponse):
@@ -86,11 +94,8 @@ class NoSuchOID(ErrorResponse):
     * the targeted OID does not precede a known name in the MIB view.
     """
 
-    DEFAULT_MESSAGE = 'No such name/oid'
-
-    def __init__(self, offending_oid, message=''):
-        # type: (Optional[ObjectIdentifier], str) -> None
-        super(NoSuchOID, self).__init__(2, offending_oid, message)
+    DEFAULT_MESSAGE = "No such name/oid"
+    IDENTIFIER = 2
 
 
 class BadValue(ErrorResponse):
@@ -99,11 +104,8 @@ class BadValue(ErrorResponse):
     type.
     """
 
-    DEFAULT_MESSAGE = 'Bad value'
-
-    def __init__(self, offending_oid, message=''):
-        # type: (Optional[ObjectIdentifier], str) -> None
-        super(BadValue, self).__init__(3, offending_oid, message)
+    DEFAULT_MESSAGE = "Bad value"
+    IDENTIFIER = 3
 
 
 class ReadOnly(ErrorResponse):
@@ -111,23 +113,8 @@ class ReadOnly(ErrorResponse):
     This error is returned whenever a variable is set which is not writable.
     """
 
-    DEFAULT_MESSAGE = 'Value is read-only!'
-
-    def __init__(self, offending_oid, message=''):
-        # type: (Optional[ObjectIdentifier], str) -> None
-        super(ReadOnly, self).__init__(4, offending_oid, message)
-
-
-class NoAccess(ErrorResponse):
-    """
-    This error is returned whenever .
-    """
-
-    DEFAULT_MESSAGE = 'No Access!'
-
-    def __init__(self, offending_oid, message=''):
-        # type: (Optional[ObjectIdentifier], str) -> None
-        super(NoAccess, self).__init__(6, offending_oid, message)
+    DEFAULT_MESSAGE = "Value is read-only!"
+    IDENTIFIER = 4
 
 
 class GenErr(ErrorResponse):
@@ -136,11 +123,65 @@ class GenErr(ErrorResponse):
     error classes.
     """
 
-    DEFAULT_MESSAGE = 'General Error (genErr)'
+    DEFAULT_MESSAGE = "General Error (genErr)"
+    IDENTIFIER = 5
 
-    def __init__(self, offending_oid, message=''):
-        # type: (Optional[ObjectIdentifier], str) -> None
-        super(GenErr, self).__init__(5, offending_oid, message)
+
+class NoAccess(ErrorResponse):
+    """
+    This error is returned whenever .
+    """
+
+    DEFAULT_MESSAGE = "No Access!"
+    IDENTIFIER = 6
+
+
+class WrongType(ErrorResponse):
+    IDENTIFIER = 7
+
+
+class WrongLength(ErrorResponse):
+    IDENTIFIER = 8
+
+
+class WrongEncoding(ErrorResponse):
+    IDENTIFIER = 9
+
+
+class WrongValue(ErrorResponse):
+    IDENTIFIER = 10
+
+
+class NoCreation(ErrorResponse):
+    IDENTIFIER = 11
+
+
+class InconsistentValue(ErrorResponse):
+    IDENTIFIER = 12
+
+
+class ResourceUnavailable(ErrorResponse):
+    IDENTIFIER = 13
+
+
+class CommitFailed(ErrorResponse):
+    IDENTIFIER = 14
+
+
+class UndoFailed(ErrorResponse):
+    IDENTIFIER = 15
+
+
+class AuthorizationError(ErrorResponse):
+    IDENTIFIER = 16
+
+
+class NotWritable(ErrorResponse):
+    IDENTIFIER = 17
+
+
+class InconsistentName(ErrorResponse):
+    IDENTIFIER = 18
 
 
 class EmptyMessage(SnmpError):
@@ -150,35 +191,103 @@ class EmptyMessage(SnmpError):
 
 
 class TooManyVarbinds(SnmpError):
-    '''
+    """
     Exception which is raised when the number of VarBinds exceeds the limit
-    defined in RFC3416.
-    device.
-    '''
+    defined in :rfc:`3416`.
+    """
 
     def __init__(self, num_oids):
         # type: (int) -> None
-        super(TooManyVarbinds, self).__init__(
-            'Too many VarBinds (%d) in one request!'
-            ' RFC3416 limits requests to %d!' % (
-                num_oids, MAX_VARBINDS))
+        super().__init__(
+            "Too many VarBinds (%d) in one request!"
+            " RFC3416 limits requests to %d!" % (num_oids, MAX_VARBINDS)
+        )
         self.num_oids = num_oids
 
 
-class Timeout(socket.timeout):
+class Timeout(SnmpError):
     """
     Wrapper for network timeouts.
 
     This wraps both "socket.timeout" and "asyncio.TimeoutError"
     """
 
-    def __init__(self, message):
-        # type: (str) -> None
-        super(Timeout, self).__init__(message)
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
         self.message = message
 
 
 class FaultySNMPImplementation(SnmpError):
-    '''
+    """
     Exception which indicates an unexpected response from an SNMP agent.
-    '''
+    """
+
+
+class NotInTimeWindow(SnmpError):
+    """
+    This exception is raised when a message is outside the time window
+
+    .. seealso::
+        `RFC-3414 - Section 3.2 - Processing an Incoming SNMP Message <https://tools.ietf.org/html/rfc3414#section-3.2>`_
+            Reference description on how to handle incoming messages.
+    """
+
+    def __init__(self, oid: str, value: int, reporting: str) -> None:
+        super().__init__()
+        self.oid = oid
+        self.value = value
+        self.reporting = reporting
+
+
+class InvalidResponseId(SnmpError):
+    """
+    Exception which is raised when a response is received that did not
+    correspond to the request-id
+    """
+
+
+class MissingPlugin(SnmpError):
+    """
+    Raised when a pluggable module could not be found
+
+    :param ns: The plugin namespace
+    :param needle: The identifier that was looked up
+    :param haystack: The known identifiers
+    """
+
+    def __init__(self, ns: str, needle: Any, haystack: List[Any]) -> None:
+        msg = (
+            f"Namespace {ns!r} did not contain a plugin "
+            f"with identifier {needle!r}. "
+            f"Known identifiers: {sorted(haystack)!r}. "
+            "See the 'puresnmp' documentation on plugins."
+        )
+        super().__init__(msg)
+        self.ns = ns
+        self.needle = repr(needle)
+        self.haystack = haystack
+
+
+class UnknownMessageProcessingModel(MissingPlugin):
+    """
+    Raised if a message was not formatted according to any known model
+    """
+
+
+class UnknownSecurityModel(MissingPlugin):
+    """
+    This exception is raised when something goes wrong with a security model
+    """
+
+
+class UnknownAuthModel(MissingPlugin):
+    """
+    Exception which is raised when working with an unsupported/unknown
+    authentication
+    """
+
+
+class UnknownPrivacyModel(MissingPlugin):
+    """
+    Exception which is raised when the security model in use is unknown.
+    """
