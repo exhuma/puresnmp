@@ -32,7 +32,7 @@ Quick Info
 ----------
 
 What
-    A pure Python implementation for Python 3.3+ of SNMP without any external
+    A pure Python implementation for Python 3.6+ of SNMP without any external
     dependencies (neither MIBs or libsnmp).
 
 Why
@@ -44,8 +44,8 @@ Why
 
     The aim of this project is to focus on SNMP in itself and provide a very
     simple API. Instead of implementing ASN.1 parsing, the SNMP related ASN.1
-    and X.690 information is hard-coded (keeping in mind that all that's
-    hard-coded is well defined).
+    and information is hard-coded (keeping in mind that all that's hard-coded is
+    well defined).
 
     It is of course possible to *wrap* this package in another package adding
     MIB parsing and processing. This is, and will be however **out of the scope
