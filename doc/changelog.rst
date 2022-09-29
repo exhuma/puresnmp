@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Release 2.0.0post1 - Maintenance release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* This fixes the incorrectly provided extra ``rest`` in the dependency
+  metadata. This extra has become obsolete and removing it fixed
+  versioning errors when installing ``puresnmp``.
+
+
 Release 2.0 (starting from and including 2.0.0a0)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
