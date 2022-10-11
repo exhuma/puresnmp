@@ -61,6 +61,9 @@ class Loader:
         self.validator = validator
         self.discovered_plugins: Dict[Any, ModuleType] = {}
 
+    def __repr__(self) -> str:
+        return f"<Loader {self.namespace!r}>"
+
     def create(self, name: Any) -> Any:
         """
         Return an instance of the given privacy module by identifier.
