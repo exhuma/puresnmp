@@ -69,10 +69,12 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
     Each Security Model defines the applied protecion on SNMP PDUs
     """
 
-    #: The "Local Configuration Datastore" (LCD). This contains contextual
-    #: information which may be needed for some security models (as defined by
-    #: the SNMPv3 architecture.)
     local_config: Dict[bytes, Dict[str, Any]]
+    """
+    The "Local Configuration Datastore" (LCD). This contains contextual
+    information which may be needed for some security models (as defined by
+    the SNMPv3 architecture.)
+    """
 
     def __init__(self) -> None:
         self.local_config = {}
