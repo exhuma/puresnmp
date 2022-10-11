@@ -56,7 +56,7 @@ class TSecurityPlugin(Protocol):
     # pylint: disable=too-few-public-methods
 
     def create(
-        self,
+        self, local_config: Dict[bytes, Dict[str, Any]]
     ) -> "SecurityModel[TPureSNMPType, TX690Type]":  # pragma: no cover
         """
         Create a new instance of a security model
@@ -74,8 +74,8 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
     #: the SNMPv3 architecture.)
     local_config: Dict[bytes, Dict[str, Any]]
 
-    def __init__(self) -> None:
-        self.local_config = {}
+    def __init__(self, local_config: Dict[bytes, Dict[str, Any]]) -> None:
+        self.local_config = local_config
 
     def generate_request_message(
         self,
@@ -160,7 +160,9 @@ def is_valid_sec_plugin(mod: ModuleType) -> bool:
     )
 
 
-def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
+def create(
+    identifier: int, local_config: Dict[bytes, Dict[str, Any]]
+) -> SecurityModel[TPureSNMPType, TX690Type]:
     """
     Return an instance of the given security module by identifier.
 
@@ -177,4 +179,4 @@ def create(identifier: int) -> SecurityModel[TPureSNMPType, TX690Type]:
             identifier,
             sorted(loader.discovered_plugins.keys()),
         )
-    return result.create()  # type: ignore
+    return result.create(local_config)  # type: ignore

@@ -17,7 +17,7 @@ def test_validity_check() -> None:
 
 
 def test_create_known() -> None:
-    result = security.create(2)
+    result = security.create(2, {})
     import puresnmp_plugins.security.v2c
 
     assert isinstance(
@@ -27,4 +27,4 @@ def test_create_known() -> None:
 
 def test_create_unknown() -> None:
     with pytest.raises(UnknownSecurityModel):
-        security.create(42)
+        security.create(42, {})

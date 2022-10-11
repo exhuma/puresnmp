@@ -114,7 +114,12 @@ def test_decode():
         b"\x04\x07context"
         b"\xa0\x0b\x02\x01{\x02\x01\x00\x02\x01\x000\x00"
     )
-    lcd = {}
+    lcd = {
+        b"engine-id": {
+            "authoritative_engine_time": 2,
+            "authoritative_engine_boots": 1,
+        }
+    }
     instance = mpm.create(3, mock_handler, lcd)
     result = instance.decode(raw_response, V3("username", None, None))
     assert result == GetRequest(PDUContent(123, []))

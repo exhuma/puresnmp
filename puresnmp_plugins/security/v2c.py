@@ -1,6 +1,8 @@
 """
 This module implements community based security model for SNMP
 """
+from typing import Any, Dict
+
 from x690.types import Integer, OctetString, Sequence
 
 from puresnmp.credentials import V2C, Credentials
@@ -55,8 +57,8 @@ class SNMPv2cSecurityModel(SecurityModel[PDU, Sequence]):
         return pdu  # type: ignore
 
 
-def create() -> SNMPv2cSecurityModel:
+def create(local_config: Dict[bytes, Dict[str, Any]]) -> SNMPv2cSecurityModel:
     """
     Creates a new instance of the SNMPv2 community-based security model
     """
-    return SNMPv2cSecurityModel()
+    return SNMPv2cSecurityModel(local_config)

@@ -41,7 +41,7 @@ class V2CMPM(MessageProcessingModel[V2CEncodingResult, TV2SecModel]):
 
         security_model_id = 2
         if self.security_model is None:
-            self.security_model = create_sm(security_model_id)
+            self.security_model = create_sm(security_model_id, self.lcd)
 
         packet = self.security_model.generate_request_message(
             pdu, b"", credentials

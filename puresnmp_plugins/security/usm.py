@@ -4,7 +4,7 @@ This module implements the SNMPv3 "User Security Model" as defined in
 """
 from dataclasses import dataclass, replace
 from textwrap import indent
-from typing import Awaitable, Callable, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Union, cast
 
 from x690 import decode
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
@@ -557,8 +557,8 @@ def validate_usm_message(message: PlainMessage) -> None:
             raise SnmpError(f"Error response from remote device: {msg}")
 
 
-def create() -> UserSecurityModel:
+def create(local_config: Dict[bytes, Dict[str, Any]]) -> UserSecurityModel:
     """
     Creates a new instance of the USM
     """
-    return UserSecurityModel()
+    return UserSecurityModel(local_config)

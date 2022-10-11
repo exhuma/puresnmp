@@ -55,7 +55,7 @@ def make_msg(cls=PlainMessage):
     ],
 )
 def test_create(identifier, cls):
-    model = sec.create(identifier)
+    model = sec.create(identifier, {})
     assert isinstance(model, cls)
 
 
@@ -113,7 +113,7 @@ def test_usm_pretty_sec():
 
 
 def test_set_timing():
-    instance = usm.UserSecurityModel()
+    instance = usm.UserSecurityModel({})
     instance.set_engine_timing(123, 234, 345)
     expected = {
         123: {
@@ -128,7 +128,7 @@ def test_request_message_invalid_creds():
     """
     We expect an error if we call an USM function with unsupported creds.
     """
-    instance = usm.UserSecurityModel()
+    instance = usm.UserSecurityModel({})
     with pytest.raises(TypeError):
         instance.generate_request_message(
             make_msg(),
@@ -140,11 +140,14 @@ def test_request_message_invalid_creds():
 @pytest.mark.dependency()
 def test_request_message_nanp():
     message = make_msg()
-    instance = usm.UserSecurityModel()
-    instance.local_config[b"engine-id"] = {
-        "authoritative_engine_boots": 1,
-        "authoritative_engine_time": 12,
-    }
+    instance = usm.UserSecurityModel(
+        {
+            b"engine-id": {
+                "authoritative_engine_boots": 1,
+                "authoritative_engine_time": 12,
+            }
+        }
+    )
     result = instance.generate_request_message(
         message,
         b"engine-id",
@@ -174,11 +177,14 @@ def test_request_message_nanp():
 @pytest.mark.dependency(depends=["test_request_message_nanp"])
 def test_request_message_anp():
     message = make_msg()
-    instance = usm.UserSecurityModel()
-    instance.local_config[b"engine-id"] = {
-        "authoritative_engine_boots": 1,
-        "authoritative_engine_time": 12,
-    }
+    instance = usm.UserSecurityModel(
+        {
+            b"engine-id": {
+                "authoritative_engine_boots": 1,
+                "authoritative_engine_time": 12,
+            }
+        }
+    )
     result = instance.generate_request_message(
         message,
         b"engine-id",
@@ -207,7 +213,7 @@ def test_request_message_anp():
 
 @pytest.mark.asyncio
 async def test_send_disco():
-    instance = usm.UserSecurityModel()
+    instance = usm.UserSecurityModel({})
     disco_response = Message(
         Integer(3),
         HeaderData(123, 65507, V3Flags(False, False, False), 3),
@@ -346,7 +352,7 @@ def test_incoming_cred_version():
     """
     processing incoming messages with invalid credentials should raise an error
     """
-    instance = usm.UserSecurityModel()
+    instance = usm.UserSecurityModel({})
     with pytest.raises(SnmpError) as exc:
         instance.process_incoming_message(make_msg(), V2C("community"))
     exc.match(r"credentials.*V3")
@@ -356,7 +362,14 @@ def test_incoming_user_match():
     """
     An incoming message should match with the username in the credentials
     """
-    instance = usm.UserSecurityModel()
+    instance = usm.UserSecurityModel(
+        {
+            b"engine-id": {
+                "authoritative_engine_boots": 1,
+                "authoritative_engine_time": 2,
+            }
+        }
+    )
     with pytest.raises(SnmpError) as exc:
         instance.process_incoming_message(
             make_msg(), V3("the-user", None, None)

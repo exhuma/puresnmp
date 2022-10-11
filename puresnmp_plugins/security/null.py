@@ -1,7 +1,7 @@
 """
 This defines a no-op security model which can be used as fallback
 """
-from typing import Any
+from typing import Any, Dict
 
 from puresnmp.plugins.security import SecurityModel
 
@@ -18,8 +18,8 @@ class NullSecurityModel(SecurityModel[Any, Any]):
     """
 
 
-def create() -> NullSecurityModel:
+def create(local_config: Dict[bytes, Dict[str, Any]]) -> NullSecurityModel:
     """
     Create a new instance of the security model
     """
-    return NullSecurityModel()
+    return NullSecurityModel(local_config)

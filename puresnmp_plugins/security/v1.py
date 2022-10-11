@@ -1,6 +1,7 @@
 """
 This module provides the SNMP security model for community based v1 exchanges
 """
+from typing import Any, Dict
 from warnings import warn
 
 from x690.types import Integer, OctetString, Sequence
@@ -70,8 +71,8 @@ class SNMPv1SecurityModel(SecurityModel[PDU, Sequence]):
         return pdu  # type: ignore
 
 
-def create() -> SNMPv1SecurityModel:
+def create(local_config: Dict[bytes, Dict[str, Any]]) -> SNMPv1SecurityModel:
     """
     Create a new instance of the security model
     """
-    return SNMPv1SecurityModel()
+    return SNMPv1SecurityModel(local_config)

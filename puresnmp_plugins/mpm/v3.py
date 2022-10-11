@@ -56,7 +56,7 @@ class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
     ) -> PDU:
         security_model_id = 3
         if self.security_model is None:
-            self.security_model = create_sm(security_model_id)
+            self.security_model = create_sm(security_model_id, self.lcd)
         message = Message.decode(whole_msg)
         msg = self.security_model.process_incoming_message(message, credentials)
         return msg.scoped_pdu.data
@@ -75,7 +75,7 @@ class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
 
         security_model_id = 3
         if self.security_model is None:
-            self.security_model = create_sm(security_model_id)
+            self.security_model = create_sm(security_model_id, self.lcd)
 
         # We need to determine some values from the remote host for security.
         # These can be retrieved by sending a so called discovery message.
