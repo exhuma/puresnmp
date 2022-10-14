@@ -8,8 +8,7 @@ from textwrap import indent
 from typing import Any, Type, TypeVar, Union, cast
 
 from x690 import decode
-from x690.types import Integer, OctetString, Sequence
-from x690.types import Type as XType
+from x690.types import Integer, OctetString, Sequence, X690Type
 
 from puresnmp.pdu import PDU
 
@@ -232,7 +231,7 @@ class Message:
     scoped_pdu: Union[OctetString, ScopedPDU]
 
     def __bytes__(self) -> bytes:
-        spdu: XType[Any]
+        spdu: X690Type[Any]
         if isinstance(self.scoped_pdu, ScopedPDU):
             spdu = self.scoped_pdu.as_snmp_type()
         else:

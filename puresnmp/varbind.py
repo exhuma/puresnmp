@@ -1,6 +1,6 @@
 from typing import Any, NamedTuple, Optional
 
-from x690.types import Null, ObjectIdentifier, Type
+from x690.types import Null, ObjectIdentifier, X690Type
 
 
 class VarBind(NamedTuple):
@@ -10,7 +10,7 @@ class VarBind(NamedTuple):
     """
 
     oid: ObjectIdentifier = ObjectIdentifier()
-    value: Type[Any] = Null()
+    value: X690Type[Any] = Null()
 
 
 class PyVarBind(NamedTuple):

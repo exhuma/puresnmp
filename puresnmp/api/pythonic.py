@@ -10,7 +10,7 @@ identical, module :py:mod:`puresnmp.api.raw`.
 
 While this "pythonic" API returns native Python types, the "raw" module
 returns the variable types unmodified which are all subclasses of
-:py:class:`x690.types.Type`.
+:py:class:`x690.types.X690Type`.
 
 
 >>> import asyncio
@@ -27,7 +27,7 @@ from collections import OrderedDict
 from datetime import timedelta
 from typing import Any, AsyncGenerator, Dict, List
 
-from x690.types import ObjectIdentifier, Type
+from x690.types import ObjectIdentifier, X690Type
 
 from ..const import ERRORS_STRICT
 from ..pdu import Trap
@@ -77,7 +77,7 @@ class PyWrapper:
         varbind = await self.client.getnext(ObjectIdentifier(oid))
         return PyVarBind.from_raw(varbind)
 
-    async def set(self, oid: str, value: Type[Any]) -> Dict[str, Any]:
+    async def set(self, oid: str, value: X690Type[Any]) -> Dict[str, Any]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.set` but
         converts internal types to simple Python types.
@@ -85,7 +85,9 @@ class PyWrapper:
         result = await self.multiset({oid: value})
         return result[oid.lstrip(".")]  # type: ignore
 
-    async def multiset(self, mappings: Dict[str, Type[Any]]) -> Dict[str, Any]:
+    async def multiset(
+        self, mappings: Dict[str, X690Type[Any]]
+    ) -> Dict[str, Any]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.multiset` but
         converts internal types to simple Python types.
