@@ -21,7 +21,7 @@ except ModuleNotFoundError:
     import importlib_metadata  # type: ignore
 
 
-__version__ = importlib_metadata.version("puresnmp")  # type: ignore
+__version__ = importlib_metadata.version("puresnmp")
 
 __all__ = [
     "Client",

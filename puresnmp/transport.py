@@ -187,7 +187,7 @@ async def send_udp(
             remote_addr=(str(endpoint.ip), endpoint.port),
         )
         try:
-            response = await protocol.get_data(timeout)  # type: ignore
+            response = await protocol.get_data(timeout)
             break
         except Timeout:
             if retries == 1:
@@ -195,7 +195,7 @@ async def send_udp(
             retries -= 1
             LOG.debug("Resending UDP packet. %d retries left", retries)
 
-    return response  # type: ignore
+    return response
 
 
 def default_trap_handler(response: SocketResponse) -> None:
