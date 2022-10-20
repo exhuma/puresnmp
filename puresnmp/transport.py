@@ -24,7 +24,7 @@ from .typevars import SocketInfo, SocketResponse, TAnyIp
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol  # type: ignore
 
 LOG = logging.getLogger(__name__)
 MESSAGE_MAX_SIZE = 65507

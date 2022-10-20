@@ -13,15 +13,10 @@ from x690.types import ObjectIdentifier
 import puresnmp.types
 from puresnmp.api.pythonic import PyWrapper
 from puresnmp.api.raw import Client
+from puresnmp.compatibility import package_version
 from puresnmp.credentials import V1, V2C, V3
 
-try:
-    import importlib.metadata as importlib_metadata
-except ModuleNotFoundError:
-    import importlib_metadata  # type: ignore
-
-
-__version__ = importlib_metadata.version("puresnmp")  # type: ignore
+__version__ = package_version("puresnmp")
 
 __all__ = [
     "Client",

@@ -39,7 +39,7 @@ from puresnmp.plugins.pluginbase import Loader
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol  # type: ignore
 
 #: The type of an *unsecured* message inside of "puresnmp"
 TPureSNMPType = TypeVar("TPureSNMPType", bound=Any)
