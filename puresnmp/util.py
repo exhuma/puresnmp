@@ -20,6 +20,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    cast,
 )
 
 from x690.types import ObjectIdentifier
@@ -32,7 +33,7 @@ from puresnmp.varbind import VarBind
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol  # type: ignore
 
 T = TypeVar("T", bound=Any)
 TTableRow = TypeVar("TTableRow", bound=Any)
@@ -496,9 +497,13 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
             "Attempting to derive a localised key from an empty " "auth object!"
         )
     if credentials.auth.method == "md5":
-        hasher = password_to_key(hashlib.md5, 16)
+        hasher = password_to_key(
+            cast(Callable[[bytes], TDigestable], hashlib.md5), 16
+        )
     elif credentials.auth.method == "sha1":
-        hasher = password_to_key(hashlib.sha1, 20)
+        hasher = password_to_key(
+            cast(Callable[[bytes], TDigestable], hashlib.sha1), 20
+        )
     else:
         raise SnmpError(
             "Unknown authentication method: %r" % credentials.auth.method
