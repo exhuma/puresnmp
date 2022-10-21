@@ -232,12 +232,6 @@ class NotInTimeWindow(SnmpError):
             Reference description on how to handle incoming messages.
     """
 
-    def __init__(self, oid: str, value: int, reporting: str) -> None:
-        super().__init__()
-        self.oid = oid
-        self.value = value
-        self.reporting = reporting
-
 
 class InvalidResponseId(SnmpError):
     """

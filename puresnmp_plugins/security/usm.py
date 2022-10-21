@@ -21,7 +21,7 @@ from puresnmp.adt import (
     V3Flags,
 )
 from puresnmp.credentials import V3, Credentials
-from puresnmp.exc import SnmpError
+from puresnmp.exc import NotInTimeWindow, SnmpError
 from puresnmp.pdu import GetRequest, PDUContent
 from puresnmp.plugins.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE
@@ -395,8 +395,7 @@ class UserSecurityModel(
         engine_config["authoritative_engine_boots"] = engine_boots
         engine_config["authoritative_engine_time"] = engine_time
         if engine_time < engine_config.get("latest_received_engine_time", 0):
-            # TODO: Use better exception type
-            raise Exception("engine time is moving backwards (replay attack?)")
+            raise NotInTimeWindow("packet timestamp predates the recorded state")
         engine_config["latest_received_engine_time"] = engine_time
 
     def generate_request_message(
@@ -446,7 +445,7 @@ class UserSecurityModel(
             abs(local_data["authoritative_engine_time"] - security_params.authoritative_engine_time) > 150
         ):
         # fmt: on
-            raise NotInTimeWindow()
+            raise NotInTimeWindow("packet timestamp does not match the recorded local state")
 
     def process_incoming_message(
         self,
