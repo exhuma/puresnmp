@@ -63,7 +63,6 @@ exc.TooManyVarbinds
 exc.Timeout
 exc.FaultySNMPImplementation
 exc.InvalidSecurityModel
-exc.NotInTimeWindow
 exc.UnknownMessageProcessingModel
 exc.InvalidResponseId
 
