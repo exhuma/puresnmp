@@ -28,3 +28,12 @@ def test_create_known() -> None:
 def test_create_unknown() -> None:
     with pytest.raises(UnknownSecurityModel):
         security.create(42, {})
+
+
+def test_deprecation_warning() -> None:
+    """
+    When called without local-config we want a deprecation warning. This was
+    added to keep any old code (outside of this package) from breaking.
+    """
+    with pytest.warns(DeprecationWarning, match="create.*local-config") as wrn:
+        security.create(1)

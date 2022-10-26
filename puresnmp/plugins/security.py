@@ -30,7 +30,8 @@ rules:
   and :rfc:`3411`
 """
 from types import ModuleType
-from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
+from typing import Any, Awaitable, Callable, Dict, Generic, Optional, TypeVar
+from warnings import warn
 
 from puresnmp.credentials import Credentials
 from puresnmp.exc import UnknownSecurityModel
@@ -161,7 +162,7 @@ def is_valid_sec_plugin(mod: ModuleType) -> bool:
 
 
 def create(
-    identifier: int, local_config: Dict[bytes, Dict[str, Any]]
+    identifier: int, local_config: Optional[Dict[bytes, Dict[str, Any]]] = None
 ) -> SecurityModel[TPureSNMPType, TX690Type]:
     """
     Return an instance of the given security module by identifier.
@@ -170,6 +171,13 @@ def create(
 
     If no plugin with the given identifier is found, a *KeyError* is raised
     """
+    if local_config is None:
+        warn(
+            f"Calling {__name__}.create() without local-config is deprecated!",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        local_config = {}
     namespace = "puresnmp_plugins.security"
     loader = Loader(namespace, is_valid_sec_plugin)
     result = loader.create(identifier)
