@@ -42,13 +42,13 @@ def discover_plugins(
                 continue
             if not is_valid_module(mod):
                 continue
-            if mod.IDENTIFIER in output:  # type: ignore
+            if mod.IDENTIFIER in output:
                 raise ImportError(
                     "Plugin %r causes a name-clash with the identifier %r. "
                     "This is already used by %r"
-                    % (mod, mod.IDENTIFIER, output[mod.IDENTIFIER])  # type: ignore
+                    % (mod, mod.IDENTIFIER, output[mod.IDENTIFIER])
                 )
-            output[mod.IDENTIFIER] = mod  # type: ignore
+            output[mod.IDENTIFIER] = mod
 
         return output
 

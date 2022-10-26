@@ -20,6 +20,7 @@ from ipaddress import ip_address
 from typing import (
     Any,
     AsyncGenerator,
+    Awaitable,
     Callable,
     Dict,
     Generator,
@@ -73,26 +74,18 @@ from ..varbind import VarBind
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol  # type: ignore
 
 TWalkResponse = AsyncGenerator[VarBind, None]
 T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name
 
 LOG = logging.getLogger(__name__)
 
-
-class TFetcher(Protocol):
-    """
-    Protocol for a callable that is responsible to fetch a collection of OIDs
-    from the remote device
-    """
-
-    # pylint: disable=too-few-public-methods
-
-    async def __call__(
-        self, oids: List[ObjectIdentifier]
-    ) -> List["VarBind"]:  # pragma: no cover
-        ...
+TFetcher = Callable[[List[ObjectIdentifier]], Awaitable[List[VarBind]]]
+"""
+Type alias for a callable that is responsible to fetch a collection of OIDs
+from the remote device
+"""
 
 
 def deduped_varbinds(
