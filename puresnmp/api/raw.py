@@ -17,6 +17,7 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from ipaddress import ip_address
+from socket import gethostbyname
 from typing import (
     Any,
     AsyncGenerator,
@@ -217,7 +218,12 @@ class Client:
             lcd=lcd,
         )
 
-        endpoint = Endpoint(ip_address(ip), port)
+        try:
+            address = ip_address(ip)
+        except ValueError:
+            address = ip_address(gethostbyname(ip))
+
+        endpoint = Endpoint(address, port)
 
         async def handler(data: bytes) -> bytes:  # pragma: no cover
             """
