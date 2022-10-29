@@ -14,13 +14,15 @@ import puresnmp.types
 from puresnmp.api.pythonic import PyWrapper
 from puresnmp.api.raw import Client
 from puresnmp.compatibility import package_version
-from puresnmp.credentials import V1, V2C, V3
+from puresnmp.credentials import V1, V2C, V3, Auth, Priv
 
 __version__ = package_version("puresnmp")
 
 __all__ = [
+    "Auth",
     "Client",
     "ObjectIdentifier",
+    "Priv",
     "PyWrapper",
     "V1",
     "V2C",
