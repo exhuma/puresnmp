@@ -134,7 +134,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         Update the security model with timing information of the remote-engine.
 
         The timing information is required by SNMPv3 to authenticat/encrypt
-        messages.
+        messages.boots
         """
         raise NotImplementedError(f"Not yet implemented in {self.__class__}")
 
