@@ -1,6 +1,17 @@
 Changelog
 =========
 
+Release 2.0.0a1 - Prerelease Bugfix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This fix corrects handling of time-syncronisation between SNMP "client and
+sever" for SNMPv3.
+
+This is currently released as pre-release becuase it touches important
+behaviour and needs to be tested properly in the real world before it can be
+marked as a full release.
+
+
 Release 2.0.0post1 - Maintenance release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
