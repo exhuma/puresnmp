@@ -29,6 +29,9 @@ from puresnmp.util import get_request_id, localise_key, validate_response_id
 
 IDENTIFIER = 3
 
+MAX_ENGINE_TIME = 2147483647
+"The value 2147483647 is a sentinel value defined in RFC-3414"
+
 
 def reset_digest(message: Message) -> Message:
     """
@@ -391,6 +394,10 @@ class UserSecurityModel(
         engine_config = self.local_config.setdefault(engine_id, {})
         engine_config["authoritative_engine_boots"] = engine_boots
         engine_config["authoritative_engine_time"] = engine_time
+        if engine_time < engine_config.get("latest_received_engine_time", 0):
+            # TODO: Use better exception type
+            raise Exception("engine time is moving backwards (replay attack?)")
+        engine_config["latest_received_engine_time"] = engine_time
 
     def generate_request_message(
         self,
@@ -423,6 +430,24 @@ class UserSecurityModel(
 
         return authed_message
 
+    def _verify_timesync(self, security_params: USMSecurityParameters) -> None:
+        local_data = self.local_config.get(
+            security_params.authoritative_engine_id
+        )
+        if local_data is None:
+            raise SnmpError(
+                "No local information for engine-id "
+                f"{security_params.authoritative_engine_id.hex()} found!"
+            )
+        # fmt: off
+        if (
+            local_data["authoritative_engine_time"] == MAX_ENGINE_TIME or
+            local_data["authoritative_engine_boots"] != security_params.authoritative_engine_boots or
+            abs(local_data["authoritative_engine_time"] - security_params.authoritative_engine_time) > 150
+        ):
+        # fmt: on
+            raise NotInTimeWindow()
+
     def process_incoming_message(
         self,
         message: Union[PlainMessage, EncryptedMessage],
@@ -436,6 +461,7 @@ class UserSecurityModel(
             message.security_parameters
         )
 
+        self._verify_timesync(security_params)
         security_name = security_params.user_name
         if security_name != credentials.username.encode("ascii"):
             # See https://tools.ietf.org/html/rfc3414#section-3.1
@@ -446,32 +472,21 @@ class UserSecurityModel(
         validate_usm_message(message)
         return message
 
-    async def send_discovery_message(
+    async def _send_disco_message(
         self,
+        user_name: bytes,
+        engine_id: bytes,
         transport_handler: Callable[[bytes], Awaitable[bytes]],
-    ) -> DiscoData:
-        # Via https://tools.ietf.org/html/rfc3414#section-4
-        #
-        # The User-based Security Model requires that a discovery process
-        # obtains sufficient information about other SNMP engines in order to
-        # communicate with them. Discovery requires an non-authoritative SNMP
-        # engine to learn the authoritative SNMP engine's snmpEngineID value
-        # before communication may proceed. This may be accomplished by
-        # generating a Request message with a securityLevel of noAuthNoPriv, a
-        # msgUserName of zero-length, a msgAuthoritativeEngineID value of zero
-        # length, and the varBindList left empty. The response to this message
-        # will be a Report message containing the snmpEngineID of the
-        # authoritative SNMP engine as the value of the
-        # msgAuthoritativeEngineID field within the msgSecurityParameters
-        # field. It contains a Report PDU with the usmStatsUnknownEngineIDs
-        # counter in the varBindList.
-
+    ) -> PlainMessage:
+        """
+        Build a discovery message, send it to the device and parse the response
+        """
         request_id = get_request_id()
         security_params = USMSecurityParameters(
-            authoritative_engine_id=b"",
+            authoritative_engine_id=engine_id,
             authoritative_engine_boots=0,
             authoritative_engine_time=0,
-            user_name=b"",
+            user_name=user_name,
             auth_params=b"",
             priv_params=b"",
         )
@@ -480,7 +495,7 @@ class UserSecurityModel(
             HeaderData(
                 request_id,
                 MESSAGE_MAX_SIZE,
-                V3Flags(False, False, True),
+                V3Flags(user_name != b"", False, True),
                 3,
             ),
             bytes(security_params),
@@ -504,9 +519,36 @@ class UserSecurityModel(
         # instead. This means that discovery-messages cannot be encrypted.
         # Which they currently are not. So this should do.
         response_msg = PlainMessage.from_sequence(response)
-
         response_id = response_msg.header.message_id
         validate_response_id(request_id, response_id)
+        return response_msg
+
+
+    async def send_discovery_message(
+        self,
+        credentials: V3,
+        transport_handler: Callable[[bytes], Awaitable[bytes]],
+    ) -> DiscoData:
+        # Via https://tools.ietf.org/html/rfc3414#section-4
+        #
+        # The User-based Security Model requires that a discovery process
+        # obtains sufficient information about other SNMP engines in order to
+        # communicate with them. Discovery requires an non-authoritative SNMP
+        # engine to learn the authoritative SNMP engine's snmpEngineID value
+        # before communication may proceed. This may be accomplished by
+        # generating a Request message with a securityLevel of noAuthNoPriv, a
+        # msgUserName of zero-length, a msgAuthoritativeEngineID value of zero
+        # length, and the varBindList left empty. The response to this message
+        # will be a Report message containing the snmpEngineID of the
+        # authoritative SNMP engine as the value of the
+        # msgAuthoritativeEngineID field within the msgSecurityParameters
+        # field. It contains a Report PDU with the usmStatsUnknownEngineIDs
+        # counter in the varBindList.
+        response_msg = await self._send_disco_message(
+            b"",
+            b"",
+            transport_handler
+        )
 
         # The engine-id is available in two places: The response directly, and
         # also the Report PDU. In initial tests these values were identical,
@@ -530,7 +572,54 @@ class UserSecurityModel(
             authoritative_engine_time=security.authoritative_engine_time,
             unknown_engine_ids=unknown_engine_ids,
         )
+
+        if credentials.username and (out.authoritative_engine_boots == 0 or out.authoritative_engine_time == 0):
+            # According to RFC-3414, time must be synchronised for
+            # authenticated requests. This is accomplished by sending an
+            # additional discovery message which is both authenticated and has
+            # the engine-id of the earlier discovery.
+            # Most devices return the timing values in the initial discovery
+            # response so we only send the second request if necessary (when
+            # both values are 0)
+            out = await self.initial_timesync(
+                out,
+                credentials.username,
+                transport_handler
+            )
+
         return out
+
+    async def initial_timesync(
+        self,
+        disco: DiscoData,
+        user_name: bytes,
+        transport_handler: Callable[[bytes], Awaitable[bytes]]
+    ) -> DiscoData:
+        """
+        Establish timing values from the authoritative engine.
+
+        This step is required during the discovery process for authenticated
+        requests.
+
+        :param disco: An object containing discovery data of a remote device.
+        :param user_name: The usernmae used during the information exchange
+        :param transport_handler: A callable which is responsible to send data
+            to the remote device.
+        :return: A new copy of discovery data including the new timing
+            information.
+        """
+        request_id = get_request_id()
+        response = await self._send_disco_message(
+            user_name,
+            disco.authoritative_engine_id,
+            transport_handler=transport_handler
+        )
+        output = replace(
+            disco,
+            authoritative_engine_boots=response.authoritative_engine_boots,
+            authoritative_engine_time=response.authoritative_engine_time,
+        )
+        return output
 
 
 def validate_usm_message(message: PlainMessage) -> None:

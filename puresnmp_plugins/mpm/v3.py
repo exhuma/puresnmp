@@ -81,8 +81,14 @@ class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
         # These can be retrieved by sending a so called discovery message.
         if not self.disco:
             self.disco = await self.security_model.send_discovery_message(
-                self.transport_handler
+                credentials, self.transport_handler
             )
+            self.security_model.set_engine_timing(
+                self.disco.authoritative_engine_id,
+                self.disco.authoritative_engine_boots,
+                self.disco.authoritative_engine_time,
+            )
+
         security_engine_id = self.disco.authoritative_engine_id
 
         if engine_id == b"":
@@ -102,13 +108,6 @@ class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
             flags,
             security_model_id,
         )
-
-        if self.disco is not None:
-            self.security_model.set_engine_timing(
-                self.disco.authoritative_engine_id,
-                self.disco.authoritative_engine_boots,
-                self.disco.authoritative_engine_time,
-            )
 
         snmp_version = 3
         msg = PlainMessage(Integer(snmp_version), header, b"", scoped_pdu)

@@ -252,7 +252,8 @@ async def test_send_disco():
     with patch(
         "puresnmp_plugins.security.usm.get_request_id", return_value=123
     ):
-        result = await instance.send_discovery_message(fake_transport)
+        creds = V3(b"the-username", Auth(b"key", "md5"), Priv(b"key", "des"))
+        result = await instance.send_discovery_message(creds, fake_transport)
 
     expected = usm.DiscoData(b"engine-id", 1, 75101, 6)
     assert result == expected
