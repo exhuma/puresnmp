@@ -33,7 +33,7 @@ from typing import (
 from typing import Type as TType
 from typing import TypeVar, cast
 
-from x690.types import Integer, Null, ObjectIdentifier, Sequence
+from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 from x690.types import X690Type as Type
 
 from puresnmp.plugins import mpm
@@ -897,7 +897,7 @@ def register_trap_callback(
 
         as_sequence = Sequence.decode(packet.data)
 
-        obj = cast(Tuple[Integer, Integer, Trap], as_sequence[0])
+        obj = cast(Tuple[Integer, OctetString, Trap], as_sequence)
 
         mproc = mpm.create(obj[0].value, handler, lcd)
         trap = mproc.decode(packet.data, credentials)
