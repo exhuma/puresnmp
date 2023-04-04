@@ -279,6 +279,12 @@ class SetRequest(PDU):
     TAG = 3
 
 
+# TAG 4 is a SNMPv1 Trap Message - and specific to SNMPv1, pretty much does not
+# relate at all to the typical PDU format here, including no use of 3 of the 4
+# base fields (request-id, error-status, error-index).
+# As such, this format is instead handled by v1_trap.TrapV1.
+
+
 class BulkGetRequest(PDU):
     """
     Represents a SNMP GetBulk request
