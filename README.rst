@@ -19,13 +19,7 @@
 
 ----
 
-
-TL;DR
------
-
-Jump right in with the `cookbook`_
-
-----
+For detailed information, see the documentation_
 
 
 Quick Info
@@ -73,12 +67,8 @@ Package Version Numbers
 As an important side-note, you might want to know that this project follows
 `Semantic Versioning`_.
 
-Examples
---------
 
-See the `cookbook`_.
-
-.. _cookbook: http://puresnmp.readthedocs.io/en/latest/cookbook/index.html
+.. _documentation: http://puresnmp.readthedocs.io/en/latest
 .. _Semantic Versioning: http://semver.org/spec/v2.0.0.html
 
 
