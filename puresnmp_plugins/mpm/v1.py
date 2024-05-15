@@ -12,11 +12,16 @@ from puresnmp.pdu import PDU
 from puresnmp.plugins.mpm import AbstractEncodingResult, MessageProcessingModel
 from puresnmp.plugins.security import SecurityModel
 from puresnmp.plugins.security import create as create_sm
+from puresnmp.v1_trap import TrapV1
 
 IDENTIFIER = 0
 
 
 TV1SecModel = SecurityModel[PDU, Sequence]
+
+# Ensure initialization of TrapV1 into the X690Type type registry,
+#   and to prevent a potential "unused import" warning or removal of the import.
+TrapV1
 
 
 class V1EncodingResult(AbstractEncodingResult):
