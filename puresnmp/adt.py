@@ -12,7 +12,7 @@ from x690.types import Integer, OctetString, Sequence, X690Type
 
 from puresnmp.pdu import PDU
 
-if sys.stdout.isatty():
+if sys.stdout is not None and sys.stdout.istty():
     # Add some colour for TTYs
     INDENT_STRING = " \u001b[38;5;22m│\u001b[0m "
 else:
