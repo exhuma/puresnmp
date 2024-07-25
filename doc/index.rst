@@ -79,6 +79,7 @@ independent.
    upgrading
    changelog
    API Docs <api/modules>
+   Plugins API <plugins_api/modules>
 
 
 
