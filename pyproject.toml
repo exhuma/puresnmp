@@ -40,6 +40,7 @@ dev = [
     'asyncmock; python_version < "3.8"',
     "black >= 20.8b1",
     "fabric >= 2.6.0",
+    "furo",
     "mypy",
     "pylint",
     "pytest",
@@ -47,7 +48,6 @@ dev = [
     "pytest-cov",
     "pytest-dependency",
     "sphinx",
-    "sphinx-rtd-theme",
     "types-dataclasses",
 ]
 
