@@ -32,6 +32,7 @@ rules:
   https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
   and :rfc:`3411`
 """
+
 from types import ModuleType
 from typing import (
     Any,
@@ -84,7 +85,9 @@ class TMPMPlugin(Protocol):
         self,
         transport_handler: Callable[[bytes], Awaitable[bytes]],
         lcd: Dict[str, Any],
-    ) -> "MessageProcessingModel[TEncodeResult, TSecurityModel]":  # pragma: no cover
+    ) -> (
+        "MessageProcessingModel[TEncodeResult, TSecurityModel]"
+    ):  # pragma: no cover
         """
         See :py:func:`~.create`
         """

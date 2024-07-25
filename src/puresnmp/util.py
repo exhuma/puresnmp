@@ -1,6 +1,7 @@
 """
 Collection of utility functions for the puresnmp package.
 """
+
 import asyncio
 import hashlib
 import pkgutil
@@ -52,20 +53,15 @@ class TDigestable(Protocol):
     # formally specified, so may not exist on some platforms
     name: str
 
-    def __init__(self, data: bytes = ...) -> None:
-        ...
+    def __init__(self, data: bytes = ...) -> None: ...
 
-    def copy(self) -> "TDigestable":
-        ...
+    def copy(self) -> "TDigestable": ...
 
-    def digest(self) -> bytes:
-        ...
+    def digest(self) -> bytes: ...
 
-    def hexdigest(self) -> str:
-        ...
+    def hexdigest(self) -> str: ...
 
-    def update(self, __data: bytes) -> None:
-        ...
+    def update(self, __data: bytes) -> None: ...
 
 
 @dataclass(frozen=True)

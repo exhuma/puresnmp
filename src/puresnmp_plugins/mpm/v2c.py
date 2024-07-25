@@ -2,6 +2,7 @@
 This module contains the definition for the community-based
 message-processing model for SNMPv2
 """
+
 from typing import Any, Awaitable, Callable, Dict, Optional, Union
 
 from x690 import decode

@@ -12,6 +12,7 @@ for the definition of the new types.
 .. _RFC 1155 section 3.2.3: https://tools.ietf.org/html/rfc1155#section-3.2.3
 .. _RFC 3416: https://tools.ietf.org/html/rfc3416
 """
+
 # TODO: Implement IPv6 via https://tools.ietf.org/html/rfc2465
 # pylint: disable=too-few-public-methods
 

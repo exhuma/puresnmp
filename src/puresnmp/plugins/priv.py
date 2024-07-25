@@ -29,6 +29,7 @@ rules:
 * Contain a string-variable ``IDENTIFIER``. This variable should be
   user-friends and is used to uniquely identify this privacy module.
 """
+
 from types import ModuleType
 from typing import NamedTuple
 

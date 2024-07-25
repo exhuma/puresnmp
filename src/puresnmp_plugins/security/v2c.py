@@ -1,6 +1,7 @@
 """
 This module implements community based security model for SNMP
 """
+
 from x690.types import Integer, OctetString, Sequence
 
 from puresnmp.credentials import V2C, Credentials

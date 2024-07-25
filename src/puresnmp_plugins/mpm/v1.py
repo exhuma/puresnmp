@@ -1,6 +1,7 @@
 """
 This module provides the plugin for SNMPv1 message processing
 """
+
 from typing import Any, Awaitable, Callable, Dict, Optional
 from warnings import warn
 

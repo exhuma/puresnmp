@@ -2,6 +2,7 @@
 Example plugin for :py:mod:`puresnmp`. This does no encryption, it's only an
 example.
 """
+
 from typing import NamedTuple
 
 IDENTIFIER = "example"

@@ -2,6 +2,7 @@
 This file contains various values used to avoid magic numbers and strings in
 the application.
 """
+
 #: Maximum number of usable varbinds as defined in :rfc:`3416`
 MAX_VARBINDS = 2147483647
 

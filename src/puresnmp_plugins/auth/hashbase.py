@@ -1,6 +1,7 @@
 """
 This module provides common code for hashing based authentication.
 """
+
 import hmac
 from typing import Callable
 
@@ -11,6 +12,7 @@ except ImportError:
 
 
 THasher = Callable[[bytes, bytes], bytes]
+
 
 class TOutgoing(Protocol):
     """

@@ -2,6 +2,7 @@
 This module contains simple "abstract data types" which are used for both
 type-hinting and to keep the code more expressive & readable.
 """
+
 import sys
 from dataclasses import dataclass
 from textwrap import indent

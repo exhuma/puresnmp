@@ -1,6 +1,7 @@
 """
 This module provides the SNMP security model for community based v1 exchanges
 """
+
 from warnings import warn
 
 from x690.types import Integer, OctetString, Sequence

@@ -4,7 +4,6 @@ taken to make this as pythonic as possible and hide as many of the gory
 implementations as possible.
 """
 
-
 from x690.types import ObjectIdentifier
 
 # !!! DO NOT REMOVE !!! The following import triggers the processing of SNMP

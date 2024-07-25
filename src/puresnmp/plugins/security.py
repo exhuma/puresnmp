@@ -29,6 +29,7 @@ rules:
   https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
   and :rfc:`3411`
 """
+
 from types import ModuleType
 from typing import Any, Awaitable, Callable, Dict, Generic, TypeVar
 

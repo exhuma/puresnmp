@@ -5,6 +5,7 @@ These credentials also define the underlying message-processing model by
 their very nature. V1 credentials will use the V1 message processing model,
 V2C uses the community-based V2 message-processing model and so on.
 """
+
 from typing import NamedTuple, Optional
 
 

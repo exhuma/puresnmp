@@ -1,6 +1,7 @@
 """
 This module contains variour type aliases for type checking
 """
+
 from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address
 from typing import TypeVar, Union

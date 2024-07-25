@@ -36,6 +36,7 @@ rules:
   https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
   and :rfc:`3411`
 """
+
 import importlib
 from threading import Lock
 from types import ModuleType

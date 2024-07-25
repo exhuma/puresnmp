@@ -2,6 +2,7 @@
 This module implements the SNMPv3 "User Security Model" as defined in
 :rfc:`3414`
 """
+
 from dataclasses import dataclass, replace
 from textwrap import indent
 from typing import Awaitable, Callable, Union, cast
