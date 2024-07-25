@@ -46,11 +46,11 @@ jobs:
       - name: Check black formatting
         run: |
           pip install black
-          black --check puresnmp
+          black --check src
       - name: Lint with pylint
         run: |
           pip install pylint
-          pylint --reports=y --exit-zero puresnmp
+          pylint --reports=y --exit-zero src
 
 
   publish:
