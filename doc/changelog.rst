@@ -1,6 +1,23 @@
 Changelog
 =========
 
+Release 2.0.1
+~~~~~~~~~~~~~
+
+* **[added]** Add support for hostnames (instead of only IP-addresses)
+* **[fixed]** Do not crash if ``sys.stdout`` is empty (f.ex. when running as
+  Windows service). Patch provided by M. Lehn.
+* **[docs]** Minor fixes to the project documentation.
+* **[support]** Add forwards-compatibility to Sphinx 8.0. Patch provided by J.
+  Addison.
+  Windows service). Patch provided by M. Lehn.
+* **[support]** Add new import alias ``puresnmp.Auth`` and ``puresnmp.Priv``
+  for easier imports
+* **[support]** Switch to "src" layout for the project source code.
+* **[support]** Display more readable name for plugin-loaders
+* **[support]** Minor type-check fixes
+
+
 Release 2.0.0post1 - Maintenance release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
