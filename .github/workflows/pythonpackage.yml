@@ -5,9 +5,6 @@ name: Python package
 on:
   push:
   pull_request:
-  schedule:
-    # Weekly run ensuring no external dependencies cause surprises
-    - cron: '0 0 * * 0'
 
 jobs:
   test:
@@ -26,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -39,20 +36,21 @@ jobs:
 
   quality-control:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - uses: actions/checkout@v1
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Check black formatting
         run: |
           pip install black
-          black --check puresnmp
+          black --check src
       - name: Lint with pylint
         run: |
           pip install pylint
-          pylint --reports=y --exit-zero puresnmp
+          pylint --reports=y --exit-zero src
 
 
   publish:

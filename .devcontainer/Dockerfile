@@ -10,8 +10,7 @@ RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/
 
 RUN apt update && \
     apt install -y entr snmp && \
-    pip install -U pip && \
-    pip install fabric pre-commit docutils
+    pip install -U pip
 
 # [Optional] If your requirements rarely change, uncomment this section to add them to the image.
 # COPY requirements.txt /tmp/pip-tmp/

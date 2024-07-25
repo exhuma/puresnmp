@@ -1,6 +1,6 @@
+from os import environ
 from os.path import abspath
 from typing import Any
-from os import environ
 
 import fabric
 
@@ -20,10 +20,11 @@ def regen_apidoc(ctx: Any, src: str, dest: str, is_nspkg: bool = False) -> None:
         pty=True,
     )
 
+
 @fabric.task
 def regen_all_api(ctx):
-    regen_apidoc(ctx, "puresnmp", "doc/api")
-    regen_apidoc(ctx, "puresnmp_plugins", "doc/plugins_api", True)
+    regen_apidoc(ctx, "src/puresnmp", "doc/api")
+    regen_apidoc(ctx, "src/puresnmp_plugins", "doc/plugins_api", True)
 
 
 @fabric.task
@@ -38,7 +39,7 @@ def doc(ctx):
     cmd = "{sphinx} -b html -d {builddir}/doctrees . {builddir}/html"
 
     with ctx.cd("doc"):
-        ctx.run(cmd.format(**opts), replace_env=False, pty=False)
+        ctx.run(cmd.format(**opts), replace_env=False, pty=True)
 
 
 @fabric.task

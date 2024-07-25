@@ -46,7 +46,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -54,7 +54,10 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 intersphinx_mapping = {
-    "": ("https://docs.python.org/3/", None),
+    "python": ("https://docs.python.org/3/", None),
     "x690": ("https://exhuma.github.io/x690/", None),
-    "puresnmp-crypto": ("https://exhuma.github.io/puresnmp-crypto/", None),
+    "puresnmp-crypto": (
+        "https://puresnmp-crypto.readthedocs.io/en/latest/",
+        None,
+    ),
 }
