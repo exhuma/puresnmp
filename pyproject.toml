@@ -10,6 +10,7 @@ authors = [
     { name = "POST Luxembourg", email = "opensource@post.lu" },
 ]
 description = "Pure Python SNMP implementation"
+readme = "README.rst"
 keywords = ["networking", "snmp"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
