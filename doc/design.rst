@@ -33,7 +33,7 @@ Extensive Documentation
 
 Simple and useful documentation is an additional focus of this library. The
 documentation provides a lot of example-code which should make usage of the
-library a lot easier. The examples in the documetnation are covered by
+library a lot easier. The examples in the documentation are covered by
 doctests wherever possible. This forces the examples in the docstrings to be
 *complete* and should be fairly copy/pasteable.
 
@@ -78,7 +78,7 @@ heterogenuous networks. Raw OIDs are much more stable and reliable, at the
 expense of "human-readility".
 
 ``puresnmp`` skips the processing of MIBs for this reason. Adding MIB support
-is still possible as "wrapper" aruond the lower level primitives, but at the
+is still possible as "wrapper" around the lower level primitives, but at the
 moment there are no plans for development of this. Note that the library is
 currently actively used on a large network with over 6k devices of various
 manufacturers. All without MIBs, all without problems.
