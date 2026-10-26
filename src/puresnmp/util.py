@@ -164,7 +164,7 @@ def group_varbinds(
 
 
 def get_unfinished_walk_oids(
-    grouped_oids: Dict[ObjectIdentifier, List[VarBind]]
+    grouped_oids: Dict[ObjectIdentifier, List[VarBind]],
 ) -> List[Tuple[ObjectIdentifier, WalkRow]]:
     """
     Create a list of OIDs which still have subsequent values in a "walk"

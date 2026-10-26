@@ -11,7 +11,8 @@ build:
     python: "3.9"
   jobs:
     pre_build:
-      - pip install -e .
+      - pip install -U pip
+      - pip install -e . --group docs
       - fab regen-all-api
 
 sphinx:
@@ -22,5 +23,4 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - dev
         - readthedocs

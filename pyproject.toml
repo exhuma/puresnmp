@@ -37,25 +37,40 @@ dependencies = [
 [project.optional-dependencies]
 readthedocs = ["fabric"]
 crypto = ["puresnmp-crypto >= 1.0.1"]
-dev = [
-    'asyncmock; python_version < "3.8"',
-    "black >= 20.8b1",
-    "fabric >= 2.6.0",
-    "furo",
-    "mypy",
-    "pylint",
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "pytest-dependency",
-    "sphinx",
-    "types-dataclasses",
-]
 
 [project.urls]
 Homepage = "https://github.com/exhuma/puresnmp"
 "Bug Tracker" = "https://github.com/exhuma/puresnmp/issues"
 Repository = "https://github.com/exhuma/puresnmp"
+
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-dependency",
+]
+lint = [
+    "black >= 20.8b1",
+    "mypy",
+    "pylint",
+]
+docs = [
+    "fabric >= 2.6.0",
+    "furo",
+    "sphinx",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "docs" },
+]
+
+[tool.uv]
+default-groups = ["dev"]
+# Dev tooling needs a modern Python; this only limits the lock, not the
+# published package metadata (requires-python stays untouched).
+environments = ["python_version >= '3.10'"]
 
 [tool.black]
 line-length = 80

@@ -52,5 +52,6 @@ docs:
     paths:
       - artifacts
   script:
-    - pip install -e .[dev]
+    - pip install -U pip
+    - pip install -e . --group docs
     - /run.sh
