@@ -328,6 +328,28 @@ async def test_multiset(mocked_raw):
 
 
 @pytest.mark.asyncio
+async def test_multiset_single_request_id(mocked_raw):
+    """
+    The request-id sent in the PDU must be the one used to validate the
+    response.
+    """
+    data = readbytes("multiset_response.hex")
+    mocked_raw.sender.set_values([data])
+    with patch("puresnmp.api.raw.get_request_id") as gri:
+        gri.side_effect = [1403406017, 1403406018]
+        await mocked_raw.multiset(
+            {
+                OID("1.3.6.1.2.1.1.4.0"): OctetString(b"hello@world.com"),
+                OID("1.3.6.1.2.1.1.5.0"): OctetString(b"hello@world.com"),
+            },
+        )
+    sent_packet = mocked_raw.sender.mock_calls[0].args[1]
+    sent_pdu = Sequence.decode(sent_packet)[2]
+    assert sent_pdu.value.request_id == 1403406017
+    assert gri.call_count == 1
+
+
+@pytest.mark.asyncio
 async def test_set(mocked_raw):
     with patch(
         "puresnmp.api.raw.Client.multiset",

@@ -655,8 +655,9 @@ class Client:
 
         binds = [VarBind(oid, value) for oid, value in mappings.items()]
 
-        pdu = SetRequest(PDUContent(get_request_id(), binds))
-        response = await self._send(pdu, get_request_id())
+        request_id = get_request_id()
+        pdu = SetRequest(PDUContent(request_id, binds))
+        response = await self._send(pdu, request_id)
 
         output = dict(response.value.varbinds)
         if len(output) != len(mappings):

@@ -6,6 +6,7 @@ import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString
 
 import puresnmp.plugins.mpm as mpm
+import puresnmp_plugins.security.usm as usm
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V2C, V3
 from puresnmp.pdu import GetRequest, GetResponse, PDUContent
@@ -116,5 +117,8 @@ def test_decode():
     )
     lcd = {}
     instance = mpm.create(3, mock_handler, lcd)
+    # Responses are only accepted from the engine the request was sent to
+    instance.security_model = usm.create()
+    instance.security_model.set_engine_timing(b"engine-id", 1, 2)
     result = instance.decode(raw_response, V3("username", None, None))
     assert result == GetRequest(PDUContent(123, []))
