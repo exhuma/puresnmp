@@ -137,50 +137,62 @@ class NoAccess(ErrorResponse):
 
 
 class WrongType(ErrorResponse):
+    DEFAULT_MESSAGE = "Wrong type"
     IDENTIFIER = 7
 
 
 class WrongLength(ErrorResponse):
+    DEFAULT_MESSAGE = "Wrong length"
     IDENTIFIER = 8
 
 
 class WrongEncoding(ErrorResponse):
+    DEFAULT_MESSAGE = "Wrong encoding"
     IDENTIFIER = 9
 
 
 class WrongValue(ErrorResponse):
+    DEFAULT_MESSAGE = "Wrong value"
     IDENTIFIER = 10
 
 
 class NoCreation(ErrorResponse):
+    DEFAULT_MESSAGE = "No creation"
     IDENTIFIER = 11
 
 
 class InconsistentValue(ErrorResponse):
+    DEFAULT_MESSAGE = "Inconsistent value"
     IDENTIFIER = 12
 
 
 class ResourceUnavailable(ErrorResponse):
+    DEFAULT_MESSAGE = "Resource unavailable"
     IDENTIFIER = 13
 
 
 class CommitFailed(ErrorResponse):
+    DEFAULT_MESSAGE = "Commit failed"
     IDENTIFIER = 14
 
 
 class UndoFailed(ErrorResponse):
+    DEFAULT_MESSAGE = "Undo failed"
     IDENTIFIER = 15
 
 
 class AuthorizationError(ErrorResponse):
+    DEFAULT_MESSAGE = "Authorization error"
     IDENTIFIER = 16
 
 
 class NotWritable(ErrorResponse):
+    DEFAULT_MESSAGE = "Not writable"
     IDENTIFIER = 17
 
 
 class InconsistentName(ErrorResponse):
+    DEFAULT_MESSAGE = "Inconsistent name"
     IDENTIFIER = 18
 
 
@@ -232,8 +244,10 @@ class NotInTimeWindow(SnmpError):
             Reference description on how to handle incoming messages.
     """
 
+    DEFAULT_MESSAGE = "Message is outside the remote engine time window"
+
     def __init__(self, oid: str, value: int, reporting: str) -> None:
-        super().__init__()
+        super().__init__(self.DEFAULT_MESSAGE)
         self.oid = oid
         self.value = value
         self.reporting = reporting

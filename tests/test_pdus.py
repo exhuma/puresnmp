@@ -1,9 +1,16 @@
 # pylint: skip-file
 
+import pytest
 from x690 import decode
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
-from puresnmp.exc import FaultySNMPImplementation, GenErr, SnmpError
+from puresnmp.exc import (
+    ErrorResponse,
+    FaultySNMPImplementation,
+    GenErr,
+    NotInTimeWindow,
+    SnmpError,
+)
 from puresnmp.pdu import (
     PDU,
     BulkGetRequest,
@@ -272,13 +279,13 @@ class TestError(ByteTester):
             PDUContent(
                 123,
                 [VarBind(ObjectIdentifier("1.2.3"), Integer(1))],
-                error_status=7,
+                error_status=99,
                 error_index=1,
             )
         )
         with self.assertRaisesRegex(SnmpError, "unknown.*error.*1.2.3") as exc:
             PDU.decode(bytes(pdu))
-        self.assertEqual(exc.exception.error_status, 7)
+        self.assertEqual(exc.exception.error_status, 99)
         self.assertEqual(exc.exception.offending_oid, ObjectIdentifier("1.2.3"))
 
     def test_error_index_beyond_varbinds(self):
@@ -412,3 +419,23 @@ class TestVarBindValueType(ByteTester):
 
         self.assertIn("1.3.6.1.2.1.1.2.0", str(exc.exception))
         self.assertIn("Sequence", str(exc.exception))
+
+
+@pytest.mark.parametrize("status", range(1, 19))
+def test_error_status_has_specific_message(status):
+    """
+    Ensure every error-status from 1 to 18 maps to a specific message rather
+    than the generic "unknown error".
+    """
+    exc = ErrorResponse.construct(status, ObjectIdentifier("1.2.3"))
+
+    assert "unknown error" not in str(exc)
+
+
+def test_not_in_time_window_default_message():
+    """
+    Ensure NotInTimeWindow reports a meaningful message when none is given.
+    """
+    exc = NotInTimeWindow("1.2.3", 5, "engine")
+
+    assert str(exc) == "Message is outside the remote engine time window"

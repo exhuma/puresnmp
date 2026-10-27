@@ -14,6 +14,9 @@ Release 2.1.0 (unreleased)
 * **[fixed]** An error response whose error index does not point to a
   varbind (for example an out-of-range index) now raises the matching
   ``ErrorResponse`` subclass instead of an ``IndexError``. (#98)
+* **[fixed]** Error responses for error-status 7 to 18 (for example
+  ``notWritable``) now carry a specific message instead of "unknown
+  error". (#62)
 
 
 Release 2.0.2
