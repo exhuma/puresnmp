@@ -8,6 +8,9 @@ Release 2.1.0 (unreleased)
   from the outside (for example by ``asyncio.wait_for`` or task
   cancellation), and late replies no longer raise ``InvalidStateError``
   in the event loop. (#130, #115)
+* **[fixed]** An error response whose error index does not point to a
+  varbind (for example an out-of-range index) now raises the matching
+  ``ErrorResponse`` subclass instead of an ``IndexError``. (#98)
 
 
 Release 2.0.2

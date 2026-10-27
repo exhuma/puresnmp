@@ -91,7 +91,7 @@ class PDU(Type[PDUContent]):
             error_detail, nxt = decode(data, nxt, enforce_type=Sequence)
             varbinds = [VarBind(oid, value) for oid, value in error_detail]  # type: ignore
             offending_oid = None
-            if error_index.value != 0:
+            if 0 < error_index.value <= len(varbinds):
                 offending_oid = varbinds[error_index.value - 1].oid
             exception = ErrorResponse.construct(
                 error_status.value, offending_oid or ObjectIdentifier()

@@ -3,7 +3,7 @@
 from x690 import decode
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
-from puresnmp.exc import SnmpError
+from puresnmp.exc import GenErr, SnmpError
 from puresnmp.pdu import (
     PDU,
     BulkGetRequest,
@@ -280,6 +280,39 @@ class TestError(ByteTester):
             PDU.decode(bytes(pdu))
         self.assertEqual(exc.exception.error_status, 7)
         self.assertEqual(exc.exception.offending_oid, ObjectIdentifier("1.2.3"))
+
+    def test_error_index_beyond_varbinds(self):
+        """
+        Ensure an error-index past the end of the varbind list raises the
+        error response instead of an IndexError.
+        """
+        pdu = GetResponse(
+            PDUContent(
+                123,
+                [VarBind(ObjectIdentifier("1.2.3"), Integer(1))],
+                error_status=5,
+                error_index=3,
+            )
+        )
+
+        with self.assertRaises(GenErr) as exc:
+            PDU.decode(bytes(pdu))
+
+        self.assertEqual(exc.exception.error_status, 5)
+        self.assertEqual(exc.exception.offending_oid, ObjectIdentifier())
+
+    def test_error_index_without_varbinds(self):
+        """
+        Ensure a non-zero error-index with no varbinds raises the error
+        response instead of an IndexError.
+        """
+        pdu = GetResponse(PDUContent(123, [], error_status=5, error_index=1))
+
+        with self.assertRaises(GenErr) as exc:
+            PDU.decode(bytes(pdu))
+
+        self.assertEqual(exc.exception.error_status, 5)
+        self.assertEqual(exc.exception.offending_oid, ObjectIdentifier())
 
 
 class TestVarBind(ByteTester):
