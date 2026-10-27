@@ -4,6 +4,12 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** Long-lived SNMPv3 clients no longer fail with "Not in time
+  window": the engine time learned during discovery now advances with the
+  local clock and is updated from authenticated responses. Agents that
+  report their engine time only in reply to the first authenticated
+  request (such as some Alcatel devices) are now handled by resending that
+  request once with the reported time. (#104)
 * **[fixed]** ``import puresnmp`` no longer fails with
   ``PackageNotFoundError`` in frozen applications (such as PyInstaller
   builds) that do not bundle the package metadata. The version falls back

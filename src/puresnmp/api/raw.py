@@ -47,7 +47,12 @@ from ..const import (
     ERRORS_WARN,
 )
 from ..credentials import V2C, Credentials
-from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
+from ..exc import (
+    FaultySNMPImplementation,
+    NoSuchOID,
+    NotInTimeWindow,
+    SnmpError,
+)
 from ..pdu import (
     PDU,
     BulkGetRequest,
@@ -340,6 +345,15 @@ class Client:
             self.mpm = old_mpm
 
     async def _send(self, pdu: PDU, request_id: int) -> PDU:
+        try:
+            return await self._send_once(pdu, request_id)
+        except NotInTimeWindow:
+            # The security model resynchronised the engine time from the
+            # authenticated Report of the agent. The request needs to be
+            # encoded again with the new timing (RFC 3414 section 4).
+            return await self._send_once(pdu, request_id)
+
+    async def _send_once(self, pdu: PDU, request_id: int) -> PDU:
         packet, _ = await self.mpm.encode(
             request_id,
             self.credentials,
