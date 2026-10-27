@@ -3,7 +3,7 @@
 from x690 import decode
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
-from puresnmp.exc import GenErr, SnmpError
+from puresnmp.exc import FaultySNMPImplementation, GenErr, SnmpError
 from puresnmp.pdu import (
     PDU,
     BulkGetRequest,
@@ -343,3 +343,72 @@ class TestVarBind(ByteTester):
         """
         a, b = self.varbind.oid, self.varbind.value
         self.assertEqual((a, b), (ObjectIdentifier("1.2"), "world"))
+
+
+def _tlv(tag, body):
+    """
+    Encode a single BER tag-length-value triple with a definite length.
+    """
+    if len(body) < 128:
+        length = bytes([len(body)])
+    else:
+        raw = len(body).to_bytes((len(body).bit_length() + 7) // 8, "big")
+        length = bytes([0x80 | len(raw)]) + raw
+    return bytes([tag]) + length + body
+
+
+def _nested_sequence(depth):
+    """
+    Build raw BER for a SEQUENCE nested ``depth`` levels deep around an
+    empty SEQUENCE. Built as bytes so that very deep nesting does not hit
+    Python's recursion limit while constructing the test input.
+    """
+    encoded = _tlv(0x30, b"")
+    for _ in range(depth):
+        encoded = _tlv(0x30, encoded)
+    return encoded
+
+
+def _get_response_with_value(value):
+    """
+    Build raw BER for a GetResponse with one varbind for 1.3.6.1.2.1.1.2.0
+    whose value is the given raw BER bytes.
+    """
+    oid = _tlv(0x06, b"\x2b\x06\x01\x02\x01\x01\x02\x00")
+    varbind = _tlv(0x30, oid + value)
+    body = (
+        _tlv(0x02, b"\x01")  # request-id
+        + _tlv(0x02, b"\x00")  # error-status
+        + _tlv(0x02, b"\x00")  # error-index
+        + _tlv(0x30, varbind)
+    )
+    return _tlv(0xA2, body)
+
+
+class TestVarBindValueType(ByteTester):
+    """
+    Varbind values must be ObjectSyntax values, never constructed SEQUENCEs.
+    """
+
+    def test_deeply_nested_sequence_value(self):
+        """
+        Ensure a varbind value that is a deeply nested SEQUENCE raises
+        FaultySNMPImplementation instead of RecursionError.
+        """
+        data = _get_response_with_value(_nested_sequence(1500))
+
+        with self.assertRaises(FaultySNMPImplementation):
+            GetResponse.decode(data).value
+
+    def test_shallow_sequence_value(self):
+        """
+        Ensure a varbind value that is a two-level SEQUENCE is rejected with
+        an error naming the OID and the type, independent of nesting depth.
+        """
+        data = _get_response_with_value(_nested_sequence(1))
+
+        with self.assertRaises(FaultySNMPImplementation) as exc:
+            GetResponse.decode(data).value
+
+        self.assertIn("1.3.6.1.2.1.1.2.0", str(exc.exception))
+        self.assertIn("Sequence", str(exc.exception))

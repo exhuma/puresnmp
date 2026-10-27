@@ -4,6 +4,9 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** A response from a faulty agent whose varbind value is a
+  constructed SEQUENCE, possibly nested very deeply, now raises
+  ``FaultySNMPImplementation`` instead of ``RecursionError``. (#129)
 * **[fixed]** UDP sockets are now released when a request is cancelled
   from the outside (for example by ``asyncio.wait_for`` or task
   cancellation), and late replies no longer raise ``InvalidStateError``
