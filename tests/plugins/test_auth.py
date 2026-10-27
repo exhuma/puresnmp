@@ -32,3 +32,21 @@ def test_create_known():
 def test_create_unknown():
     with pytest.raises(UnknownAuthModel):
         auth.create("unknown")
+
+
+@pytest.mark.parametrize("method", ["md5", "sha1"])
+def test_incoming_digest(method):
+    """
+    Incoming messages are only authentic if the digest matches exactly
+    """
+    plugin = auth.create(method)
+    key, data, engine_id = b"authkey", b"message", b"engine-id"
+    digest = plugin.authenticate_outgoing_message(key, data, engine_id)
+    tampered = bytes([digest[0] ^ 1]) + digest[1:]
+    assert plugin.authenticate_incoming_message(key, data, digest, engine_id)
+    assert not plugin.authenticate_incoming_message(
+        key, data, tampered, engine_id
+    )
+    assert not plugin.authenticate_incoming_message(
+        key, data, digest[:-1], engine_id
+    )
