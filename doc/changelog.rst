@@ -4,6 +4,10 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** ``bulkwalk`` and ``bulktable`` no longer loop forever on
+  agents returning non-increasing OIDs. They now raise
+  ``FaultySNMPImplementation``, or stop with a warning when the new
+  ``errors`` argument is ``ERRORS_WARN``. (#94, #51)
 * **[fixed]** The SNMPv3 privacy key derivation is now cached across
   requests instead of hashing 1 MB of data for every encrypted request
   and decrypted response. (#137)

@@ -477,8 +477,22 @@ class Client:
         # those.
         while unfinished_oids:
             next_fetches = [_[1].value.oid for _ in unfinished_oids]
+            start_oids = {k: row.value.oid for k, row in unfinished_oids}
             try:
                 varbinds = await fetcher(next_fetches)
+                grouped_oids = group_varbinds(
+                    varbinds, next_fetches, user_roots=oids
+                )
+                unfinished_oids = get_unfinished_walk_oids(grouped_oids)
+                # Guard against agents which loop (cycle back or repeat an
+                # OID): the walk would otherwise never terminate.
+                for root, row in unfinished_oids:
+                    last = row.value.oid
+                    if root in start_oids and not start_oids[root] < last:
+                        raise FaultySNMPImplementation(
+                            "The OID %s is not a successor of %s!"
+                            % (last, start_oids[root])
+                        )
             except NoSuchOID:
                 # Reached end of OID tree, finish iteration
                 break
@@ -495,10 +509,6 @@ class Client:
                     )
                     break
                 raise
-            grouped_oids = group_varbinds(
-                varbinds, next_fetches, user_roots=oids
-            )
-            unfinished_oids = get_unfinished_walk_oids(grouped_oids)
             if LOG.isEnabledFor(logging.DEBUG) and len(oids) > 1:
                 LOG.debug(
                     "%d of %d OIDs need to be continued",
@@ -818,6 +828,7 @@ class Client:
         self,
         oids: List[ObjectIdentifier],
         bulk_size: int = 10,
+        errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
         Identical to :py:meth:`~.walk` but uses "bulk" requests instead.
@@ -828,6 +839,7 @@ class Client:
 
         :param oids: Delegated to :py:meth:`~.walk`
         :param bulk_size: Number of values to fetch per request.
+        :param errors: Delegated to :py:meth:`~.multiwalk`
         """
 
         if not isinstance(oids, list):
@@ -836,6 +848,7 @@ class Client:
         result = self.multiwalk(
             oids,
             fetcher=self._bulkwalk_fetcher(bulk_size),
+            errors=errors,
         )
         async for oid, value in result:
             yield VarBind(oid, value)
@@ -844,6 +857,7 @@ class Client:
         self,
         oid: ObjectIdentifier,
         bulk_size: int = 10,
+        errors: str = ERRORS_STRICT,
         _rowtype: TType[TTableRow] = Dict[str, Any],  # type: ignore
     ) -> List[TTableRow]:
         """
@@ -855,9 +869,10 @@ class Client:
 
         :param oid: Delegated to :py:meth:`~.table`
         :param bulk_size: Number of values to fetch per request.
+        :param errors: Delegated to :py:meth:`~.bulkwalk`
         """
         tmp = []
-        varbinds = self.bulkwalk([oid], bulk_size=bulk_size)
+        varbinds = self.bulkwalk([oid], bulk_size=bulk_size, errors=errors)
         async for varbind in varbinds:
             tmp.append(varbind)
         as_table = tablify(tmp, num_base_nodes=len(oid) + 1, _rowtype=_rowtype)

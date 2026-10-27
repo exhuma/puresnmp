@@ -150,13 +150,16 @@ class PyWrapper:
         self,
         oids: List[TOidArg],
         bulk_size: int = 10,
+        errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.bulkwalk` but
         converts internal types to simple Python types.
         """
         oids_internal = [_as_oid(oid) for oid in oids]
-        result = self.client.bulkwalk(oids_internal, bulk_size=bulk_size)
+        result = self.client.bulkwalk(
+            oids_internal, bulk_size=bulk_size, errors=errors
+        )
         async for varbind in result:
             yield PyVarBind.from_raw(varbind)
 
@@ -213,6 +216,7 @@ class PyWrapper:
         self,
         oid: TOidArg,
         bulk_size: int = 10,
+        errors: str = ERRORS_STRICT,
         _rowtype: TTableRow = Dict[str, Any],  # type: ignore
     ) -> List[TTableRow]:
         """
@@ -220,7 +224,7 @@ class PyWrapper:
         converts internal types to simple Python types.
         """
         tmp: List[TTableRow] = await self.client.bulktable(
-            _as_oid(oid), bulk_size=bulk_size, _rowtype=_rowtype
+            _as_oid(oid), bulk_size=bulk_size, errors=errors, _rowtype=_rowtype
         )
         output: List[TTableRow] = []
         for row in tmp:

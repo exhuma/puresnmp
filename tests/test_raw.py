@@ -6,7 +6,6 @@ Test the external "raw" interface.
 PureSNMP object instances.
 """
 
-
 import asyncio
 import unittest
 from ipaddress import ip_address
@@ -22,6 +21,7 @@ import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.api.raw import Client, register_trap_callback
+from puresnmp.const import ERRORS_WARN
 from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
 from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetResponse, PDUContent
@@ -717,7 +717,7 @@ async def test_bulkwalk(mocked_raw):
         VarBind(OID("1.3.6.1.2.1.2.2.1.6.1"), OctetString(b"")),
         VarBind(
             OID("1.3.6.1.2.1.2.2.1.6.10"),
-            OctetString(b"\x02\x42\xAC\x11\x00\x02"),
+            OctetString(b"\x02\x42\xac\x11\x00\x02"),
         ),
         VarBind(OID("1.3.6.1.2.1.2.2.1.7.1"), Integer(1)),
         VarBind(OID("1.3.6.1.2.1.2.2.1.7.10"), Integer(1)),
@@ -982,3 +982,84 @@ async def test_table_base_oid():
         },
     ]
     assert sorted(result, key=lambda x: x["0"]) == expected
+
+
+def _looping_bulkget(responses):
+    """
+    Create a fake ``bulkget`` which returns the given listings in order and
+    fails the test if it is called too often (endless loop).
+    """
+    calls = []
+
+    async def fake_bulkget(self, scalar_oids, repeating_oids, max_list_size=1):
+        calls.append(list(repeating_oids))
+        if len(calls) > 50:
+            pytest.fail("bulkwalk did not terminate")
+        index = min(len(calls) - 1, len(responses) - 1)
+        return BulkResult({}, dict(responses[index]))
+
+    return fake_bulkget, calls
+
+
+LOOPING_RESPONSES = {
+    "cycle": [
+        {
+            OID("1.2.3.1"): Integer(1),
+            OID("1.2.3.2"): Integer(2),
+            OID("1.2.3.3"): Integer(3),
+        },
+        # The agent cycles back to the start of the table
+        {OID("1.2.3.1"): Integer(1), OID("1.2.3.2"): Integer(2)},
+    ],
+    "repeat": [
+        {OID("1.2.3.1"): Integer(1), OID("1.2.3.2"): Integer(2)},
+        # The agent keeps returning the same OID
+        {OID("1.2.3.2"): Integer(2)},
+    ],
+}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", sorted(LOOPING_RESPONSES))
+async def test_bulkwalk_looping_agent_strict(mocked_raw, kind):
+    """
+    Ensure a bulkwalk on an agent returning non-increasing OIDs raises
+    instead of looping forever.
+    """
+    fake, _ = _looping_bulkget(LOOPING_RESPONSES[kind])
+    with patch("puresnmp.api.raw.Client.bulkget", fake):
+        with pytest.raises(FaultySNMPImplementation):
+            async for _ in mocked_raw.bulkwalk([OID("1.2.3")]):
+                pass
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", sorted(LOOPING_RESPONSES))
+async def test_bulkwalk_looping_agent_warn(mocked_raw, kind):
+    """
+    Ensure a bulkwalk with ``errors=ERRORS_WARN`` on a looping agent stops and
+    returns the values collected so far.
+    """
+    fake, _ = _looping_bulkget(LOOPING_RESPONSES[kind])
+    with patch("puresnmp.api.raw.Client.bulkget", fake):
+        result = [
+            row
+            async for row in mocked_raw.bulkwalk(
+                [OID("1.2.3")], errors=ERRORS_WARN
+            )
+        ]
+    first = LOOPING_RESPONSES[kind][0]
+    assert result == [VarBind(k, v) for k, v in first.items()]
+
+
+@pytest.mark.asyncio
+async def test_bulktable_looping_agent_strict(mocked_raw):
+    """
+    Ensure bulktable passes the error handling through to bulkwalk.
+    """
+    fake, _ = _looping_bulkget(LOOPING_RESPONSES["repeat"])
+    with patch("puresnmp.api.raw.Client.bulkget", fake):
+        with pytest.raises(FaultySNMPImplementation):
+            await mocked_raw.bulktable(OID("1.2.3"))
+        rows = await mocked_raw.bulktable(OID("1.2"), errors=ERRORS_WARN)
+    assert rows is not None
