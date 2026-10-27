@@ -1,6 +1,22 @@
 Changelog
 =========
 
+Release 2.0.2
+~~~~~~~~~~~~~
+
+* **[fixed]** SNMPv3 responses protected with a lower security level than the
+  configured credentials (for example unauthenticated or unencrypted
+  responses to ``authPriv`` requests) are now rejected with
+  ``InsufficientSecurityLevel``. Unauthenticated Report PDUs are still
+  surfaced as errors, but never return data.
+* **[fixed]** SNMPv3 responses from an engine other than the one the request
+  was sent to are now rejected with ``UnknownEngineId``.
+* **[changed]** Request IDs are no longer derived from the system clock. They
+  now come from a randomly seeded counter.
+* **[fixed]** ``Client.multiset`` no longer fails sporadically with
+  ``InvalidResponseId``.
+
+
 Release 2.0.1
 ~~~~~~~~~~~~~
 
