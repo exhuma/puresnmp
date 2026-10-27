@@ -20,6 +20,9 @@ Release 2.1.0 (unreleased)
 * **[fixed]** Error responses for error-status 7 to 18 (for example
   ``notWritable``) now carry a specific message instead of "unknown
   error". (#62)
+* **[fixed]** SNMPv3 SET and GETBULK requests now set the reportable flag
+  as RFC 3412 requires, so agents answer failures with an error instead of
+  dropping the request. (#136)
 
 
 Release 2.0.2

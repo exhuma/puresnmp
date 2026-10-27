@@ -15,7 +15,13 @@ from puresnmp.adt import (
     V3Flags,
 )
 from puresnmp.credentials import V3, Credentials
-from puresnmp.pdu import PDU, GetRequest
+from puresnmp.pdu import (
+    PDU,
+    BulkGetRequest,
+    GetRequest,
+    InformRequest,
+    SetRequest,
+)
 from puresnmp.plugins.mpm import AbstractEncodingResult, MessageProcessingModel
 from puresnmp.plugins.security import SecurityModel
 from puresnmp.plugins.security import create as create_sm
@@ -23,13 +29,19 @@ from puresnmp.transport import MESSAGE_MAX_SIZE
 
 IDENTIFIER = 3
 
+# Confirmed Class PDUs (RFC 3412 section 6.4). GetNextRequest is a subclass
+# of GetRequest and is covered by it.
+CONFIRMED_PDUS = (GetRequest, SetRequest, BulkGetRequest, InformRequest)
+
 
 def is_confirmed(pdu: PDU) -> bool:
     """
     Return True if the given PDU instance expects a response.
+
+    This decides the SNMPv3 reportableFlag, which tells the agent to answer
+    with a Report on failure instead of silently dropping the request.
     """
-    # XXX TODO This might be doable cleaner with subclassing in puresnmp.pdu
-    return isinstance(pdu, GetRequest)
+    return isinstance(pdu, CONFIRMED_PDUS)
 
 
 TV3SecModel = SecurityModel[PlainMessage, Union[PlainMessage, EncryptedMessage]]

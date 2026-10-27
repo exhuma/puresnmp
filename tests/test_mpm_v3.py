@@ -9,8 +9,19 @@ import puresnmp.plugins.mpm as mpm
 import puresnmp_plugins.security.usm as usm
 from puresnmp.adt import HeaderData, Message, ScopedPDU, V3Flags
 from puresnmp.credentials import V2C, V3
-from puresnmp.pdu import GetRequest, GetResponse, PDUContent
+from puresnmp.pdu import (
+    BulkGetRequest,
+    GetNextRequest,
+    GetRequest,
+    GetResponse,
+    InformRequest,
+    PDUContent,
+    Report,
+    SetRequest,
+    Trap,
+)
 from puresnmp.varbind import VarBind
+from puresnmp_plugins.mpm.v3 import is_confirmed
 from puresnmp_plugins.security.usm import USMSecurityParameters
 
 try:
@@ -83,6 +94,54 @@ async def test_encode_engine_id_default(mock_handler):
     # simple sanity check on length. We could decode it and look into the
     # innards, but this is already covered by other tests
     assert len(result.data) == 91
+
+
+@pytest.mark.parametrize(
+    "pdu, expected",
+    [
+        (GetRequest(PDUContent(1, [])), True),
+        (GetNextRequest(PDUContent(1, [])), True),
+        (BulkGetRequest(1, 0, 1), True),
+        (SetRequest(PDUContent(1, [])), True),
+        (InformRequest(PDUContent(1, [])), True),
+        (GetResponse(PDUContent(1, [])), False),
+        (Trap(PDUContent(1, [])), False),
+        (Report(PDUContent(1, [])), False),
+    ],
+    ids=[
+        "GetRequest",
+        "GetNextRequest",
+        "BulkGetRequest",
+        "SetRequest",
+        "InformRequest",
+        "GetResponse",
+        "Trap",
+        "Report",
+    ],
+)
+def test_is_confirmed(pdu, expected):
+    """
+    Ensure only Confirmed Class PDUs request a reportable response (RFC 3412)
+    """
+    assert is_confirmed(pdu) is expected
+
+
+@pytest.mark.asyncio
+async def test_encode_set_request_is_reportable(mock_handler):
+    """
+    Ensure a SET request is sent with the reportable flag so agents answer
+    failures with a Report instead of dropping the request
+    """
+    instance = mpm.create(3, mock_handler, {})
+    pdu = SetRequest(PDUContent(123, []))
+    with patch(
+        "puresnmp_plugins.security.usm.get_request_id", return_value=123
+    ):
+        result = await instance.encode(
+            123, V3("username", None, None), b"engine-id", b"context", pdu
+        )
+    message = Message.decode(result.data)
+    assert message.header.flags.reportable is True
 
 
 @pytest.mark.asyncio
