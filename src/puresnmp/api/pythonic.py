@@ -25,7 +25,7 @@ returns the variable types unmodified which are all subclasses of
 import logging
 from collections import OrderedDict
 from datetime import timedelta
-from typing import Any, AsyncGenerator, Dict, List
+from typing import Any, AsyncGenerator, Dict, List, Union
 
 from x690.types import ObjectIdentifier, X690Type
 
@@ -37,6 +37,18 @@ from . import raw
 
 LOG = logging.getLogger(__name__)
 TWalkResponse = AsyncGenerator[PyVarBind, None]
+TOidArg = Union[str, ObjectIdentifier]
+
+
+def _as_oid(value: TOidArg) -> ObjectIdentifier:
+    """
+    Convert an OID argument given as string to an ObjectIdentifier.
+
+    Values which already are an ObjectIdentifier are returned unchanged.
+    """
+    if isinstance(value, ObjectIdentifier):
+        return value
+    return ObjectIdentifier(value)
 
 
 class PyWrapper:
@@ -60,33 +72,33 @@ class PyWrapper:
     def __init__(self, client: raw.Client) -> None:
         self.client = client
 
-    async def get(self, oid: str) -> Any:
+    async def get(self, oid: TOidArg) -> Any:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.get` but
         converts internal types to simple Python types.
         """
-        oid_internal = ObjectIdentifier(oid)
+        oid_internal = _as_oid(oid)
         raw_value = await self.client.get(oid_internal)
         return raw_value.pythonize()
 
-    async def getnext(self, oid: str) -> PyVarBind:
+    async def getnext(self, oid: TOidArg) -> PyVarBind:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.getnext` but
         converts internal types to simple Python types.
         """
-        varbind = await self.client.getnext(ObjectIdentifier(oid))
+        varbind = await self.client.getnext(_as_oid(oid))
         return PyVarBind.from_raw(varbind)
 
-    async def set(self, oid: str, value: X690Type[Any]) -> Dict[str, Any]:
+    async def set(self, oid: TOidArg, value: X690Type[Any]) -> Dict[str, Any]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.set` but
         converts internal types to simple Python types.
         """
         result = await self.multiset({oid: value})
-        return result[oid.lstrip(".")]  # type: ignore
+        return result[str(_as_oid(oid))]  # type: ignore
 
     async def multiset(
-        self, mappings: Dict[str, X690Type[Any]]
+        self, mappings: Dict[TOidArg, X690Type[Any]]
     ) -> Dict[str, Any]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.multiset` but
@@ -94,7 +106,7 @@ class PyWrapper:
         """
 
         mappings_internal = {
-            ObjectIdentifier(oid): value for oid, value in mappings.items()
+            _as_oid(oid): value for oid, value in mappings.items()
         }
         raw_output = await self.client.multiset(mappings_internal)
         pythonized = {
@@ -104,54 +116,54 @@ class PyWrapper:
 
     async def walk(
         self,
-        oid: str,
+        oid: TOidArg,
         errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.walk` but
         converts internal types to simple Python types.
         """
-        raw_result = self.client.walk(ObjectIdentifier(oid), errors)
+        raw_result = self.client.walk(_as_oid(oid), errors)
         async for varbind in raw_result:
             yield PyVarBind.from_raw(varbind)
 
-    async def multiwalk(self, oids: List[str]) -> TWalkResponse:
+    async def multiwalk(self, oids: List[TOidArg]) -> TWalkResponse:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.multiwalk` but
         converts internal types to simple Python types.
         """
-        oids_internal = [ObjectIdentifier(oid) for oid in oids]
+        oids_internal = [_as_oid(oid) for oid in oids]
         async for varbind in self.client.multiwalk(oids_internal):
             yield PyVarBind.from_raw(varbind)
 
-    async def multiget(self, oids: List[str]) -> List[Any]:
+    async def multiget(self, oids: List[TOidArg]) -> List[Any]:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.multiget` but
         converts internal types to simple Python types.
         """
-        oids_internal = [ObjectIdentifier(oid) for oid in oids]
+        oids_internal = [_as_oid(oid) for oid in oids]
         raw_output = await self.client.multiget(oids_internal)
         pythonized = [value.pythonize() for value in raw_output]
         return pythonized
 
     async def bulkwalk(
         self,
-        oids: List[str],
+        oids: List[TOidArg],
         bulk_size: int = 10,
     ) -> TWalkResponse:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.bulkwalk` but
         converts internal types to simple Python types.
         """
-        oids_internal = [ObjectIdentifier(oid) for oid in oids]
+        oids_internal = [_as_oid(oid) for oid in oids]
         result = self.client.bulkwalk(oids_internal, bulk_size=bulk_size)
         async for varbind in result:
             yield PyVarBind.from_raw(varbind)
 
     async def bulkget(
         self,
-        scalar_oids: List[str],
-        repeating_oids: List[str],
+        scalar_oids: List[TOidArg],
+        repeating_oids: List[TOidArg],
         max_list_size: int = 10,
     ) -> BulkResult:
         """
@@ -159,8 +171,8 @@ class PyWrapper:
         converts internal types to simple Python types.
         """
 
-        scalar_oids_int = [ObjectIdentifier(oid) for oid in scalar_oids]
-        repeating_oids_int = [ObjectIdentifier(oid) for oid in repeating_oids]
+        scalar_oids_int = [_as_oid(oid) for oid in scalar_oids]
+        repeating_oids_int = [_as_oid(oid) for oid in repeating_oids]
         raw_output = await self.client.bulkget(
             scalar_oids_int,
             repeating_oids_int,
@@ -179,7 +191,7 @@ class PyWrapper:
 
     async def table(
         self,
-        oid: str,
+        oid: TOidArg,
         _rowtype: TTableRow = Dict[str, Any],  # type: ignore
     ) -> List[Dict[str, Any]]:
         """
@@ -187,7 +199,7 @@ class PyWrapper:
         converts internal types to simple Python types.
         """
         tmp: List[TTableRow] = await self.client.table(
-            ObjectIdentifier(oid), _rowtype=_rowtype
+            _as_oid(oid), _rowtype=_rowtype
         )
         output = []
         for row in tmp:
@@ -199,7 +211,7 @@ class PyWrapper:
 
     async def bulktable(
         self,
-        oid: str,
+        oid: TOidArg,
         bulk_size: int = 10,
         _rowtype: TTableRow = Dict[str, Any],  # type: ignore
     ) -> List[TTableRow]:
@@ -208,7 +220,7 @@ class PyWrapper:
         converts internal types to simple Python types.
         """
         tmp: List[TTableRow] = await self.client.bulktable(
-            ObjectIdentifier(oid), bulk_size=bulk_size, _rowtype=_rowtype
+            _as_oid(oid), bulk_size=bulk_size, _rowtype=_rowtype
         )
         output: List[TTableRow] = []
         for row in tmp:

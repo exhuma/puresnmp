@@ -4,6 +4,9 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** ``PyWrapper`` methods now accept ``ObjectIdentifier``
+  instances as OID arguments in addition to strings, instead of raising
+  ``AttributeError``. (#110)
 * **[fixed]** A response from a faulty agent whose varbind value is a
   constructed SEQUENCE, possibly nested very deeply, now raises
   ``FaultySNMPImplementation`` instead of ``RecursionError``. (#129)
