@@ -4,6 +4,9 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** The SNMPv3 privacy key derivation is now cached across
+  requests instead of hashing 1 MB of data for every encrypted request
+  and decrypted response. (#137)
 * **[fixed]** ``PyWrapper`` methods now accept ``ObjectIdentifier``
   instances as OID arguments in addition to strings, instead of raising
   ``AttributeError``. (#110)

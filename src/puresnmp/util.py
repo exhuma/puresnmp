@@ -469,6 +469,17 @@ def iter_namespace(
     return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")  # type: ignore
 
 
+# Created once so that the cache of each deriver is shared across calls.
+_KEY_DERIVERS: Dict[str, Callable[[bytes, bytes], bytes]] = {
+    "md5": password_to_key(
+        cast(Callable[[bytes], TDigestable], hashlib.md5), 16
+    ),
+    "sha1": password_to_key(
+        cast(Callable[[bytes], TDigestable], hashlib.sha1), 20
+    ),
+}
+
+
 def localise_key(credentials: V3, engine_id: bytes) -> bytes:
     """
     Derive a localised key from the user-credentials.
@@ -497,18 +508,12 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
         raise SnmpError(
             "Attempting to derive a localised key from an empty " "auth object!"
         )
-    if credentials.auth.method == "md5":
-        hasher = password_to_key(
-            cast(Callable[[bytes], TDigestable], hashlib.md5), 16
-        )
-    elif credentials.auth.method == "sha1":
-        hasher = password_to_key(
-            cast(Callable[[bytes], TDigestable], hashlib.sha1), 20
-        )
-    else:
+    try:
+        hasher = _KEY_DERIVERS[credentials.auth.method]
+    except KeyError:
         raise SnmpError(
             "Unknown authentication method: %r" % credentials.auth.method
-        )
+        ) from None
 
     output = hasher(credentials.priv.key, engine_id)
     return output
