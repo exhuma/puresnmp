@@ -4,6 +4,10 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** ``import puresnmp`` no longer fails with
+  ``PackageNotFoundError`` in frozen applications (such as PyInstaller
+  builds) that do not bundle the package metadata. The version falls back
+  to ``0.0.0+unknown``. (#124)
 * **[fixed]** The trap receiver no longer fails with ``'Integer' object
   is not subscriptable``, and ``TrapInfo.origin`` now reports the sender
   of the trap. (#107) Patch provided by M. Ziesemer.

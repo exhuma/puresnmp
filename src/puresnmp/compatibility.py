@@ -11,4 +11,8 @@ except ModuleNotFoundError:
 
 
 def package_version(package_name: str) -> str:
-    return importlib_metadata.version(package_name)
+    try:
+        return importlib_metadata.version(package_name)
+    except importlib_metadata.PackageNotFoundError:
+        # Frozen applications (e.g. PyInstaller) may not bundle the metadata.
+        return "0.0.0+unknown"
