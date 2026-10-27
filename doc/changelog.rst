@@ -4,6 +4,9 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** The trap receiver no longer fails with ``'Integer' object
+  is not subscriptable``, and ``TrapInfo.origin`` now reports the sender
+  of the trap. (#107) Patch provided by M. Ziesemer.
 * **[fixed]** ``bulkget`` with several repeating OIDs no longer drops the
   values of the other repeaters when one of them reaches the end of the
   MIB view, and ``bulkwalk`` keeps those values with the right OID tree.
