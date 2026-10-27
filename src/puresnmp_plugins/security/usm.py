@@ -23,7 +23,7 @@ from puresnmp.adt import (
 )
 from puresnmp.credentials import V3, Credentials
 from puresnmp.exc import SnmpError
-from puresnmp.pdu import GetRequest, PDUContent
+from puresnmp.pdu import GetRequest, PDUContent, Report
 from puresnmp.plugins.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE
 from puresnmp.util import get_request_id, localise_key, validate_response_id
@@ -88,6 +88,20 @@ class UnknownUser(USMError):
     """
     This error is raised when a message is processed that is not consistent
     with the user-name passed in the credentials.
+    """
+
+
+class UnknownEngineId(USMError):
+    """
+    This error is raised when a message is processed that does not originate
+    from the engine the request was sent to.
+    """
+
+
+class InsufficientSecurityLevel(USMError):
+    """
+    This error is raised when a message is processed that is protected with a
+    lower security level than the one required by the credentials.
     """
 
 
@@ -333,6 +347,37 @@ def verify_authentication(
         )
 
 
+def check_security_level(
+    message: Union[PlainMessage, EncryptedMessage], credentials: V3
+) -> None:
+    """
+    Ensure that the message is protected at least as strongly as required by
+    the credentials.
+
+    Remote devices may legitimately send unauthenticated Report PDUs (f.ex.
+    for an unknown user or a wrong digest). Those are surfaced as errors but
+    their data is never returned.
+
+    :raises InsufficientSecurityLevel: If the message is not sufficiently
+        protected
+    """
+    flags = message.header.flags
+    missing_auth = credentials.auth is not None and not flags.auth
+    missing_priv = credentials.priv is not None and not flags.priv
+    if not (missing_auth or missing_priv):
+        return
+
+    if isinstance(message.scoped_pdu, ScopedPDU) and isinstance(
+        message.scoped_pdu.data, Report
+    ):
+        validate_usm_message(message)
+
+    raise InsufficientSecurityLevel(
+        f"Incoming message has an insufficient security level "
+        f"(auth={flags.auth}, priv={flags.priv})"
+    )
+
+
 def decrypt_message(
     message: Union[PlainMessage, EncryptedMessage], credentials: V3
 ) -> PlainMessage:
@@ -442,7 +487,13 @@ class UserSecurityModel(
             # See https://tools.ietf.org/html/rfc3414#section-3.1
             raise UnknownUser(f"Unknown user {security_name!r}")
 
+        # See https://tools.ietf.org/html/rfc3412#section-7.2
+        engine_id = security_params.authoritative_engine_id
+        if engine_id not in self.local_config:
+            raise UnknownEngineId(f"Unexpected engine-id {engine_id!r}")
+
         verify_authentication(message, credentials, security_params)
+        check_security_level(message, credentials)
         message = decrypt_message(message, credentials)
         validate_usm_message(message)
         return message

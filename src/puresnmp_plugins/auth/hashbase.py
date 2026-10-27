@@ -98,7 +98,7 @@ def for_incoming(hasher: THasher, hmac_method: str) -> TIncoming:
         expected_digest = get_message_digest(
             hasher, hmac_method, auth_key, data, engine_id
         )
-        return received_digest == expected_digest
+        return hmac.compare_digest(received_digest, expected_digest)
 
     return is_authentic
 
