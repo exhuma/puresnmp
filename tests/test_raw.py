@@ -24,7 +24,13 @@ from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 from puresnmp.api.raw import Client, register_trap_callback
 from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
-from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetResponse, PDUContent
+from puresnmp.pdu import (
+    BulkGetRequest,
+    EndOfMibView,
+    GetNextRequest,
+    GetResponse,
+    PDUContent,
+)
 from puresnmp.transport import Endpoint, SocketResponse
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.typevars import SocketInfo
@@ -578,6 +584,46 @@ async def test_bulkget(mocked_raw):
             max_list_size=5,
         )
     assert result == expected
+
+
+@pytest.mark.asyncio
+async def test_bulkget_repeater_ends_early(mocked_raw):
+    """
+    The repeaters in a bulk response are interleaved. When one repeater hits
+    "endOfMibView", the remaining entries of the other repeaters must still be
+    returned.
+    """
+    response = Sequence(
+        [
+            Integer(1),
+            OctetString(b"private"),
+            GetResponse(
+                PDUContent(
+                    123,
+                    [
+                        VarBind(OID("1.2.3.1"), Integer(1)),
+                        VarBind(OID("1.2.4.1"), Integer(10)),
+                        VarBind(OID("1.2.3.2"), EndOfMibView(b"")),
+                        VarBind(OID("1.2.4.2"), Integer(20)),
+                        VarBind(OID("1.2.3.3"), EndOfMibView(b"")),
+                        VarBind(OID("1.2.4.3"), Integer(30)),
+                    ],
+                )
+            ),
+        ]
+    )
+    mocked_raw.sender.set_values([bytes(response)])
+    with patch("puresnmp.api.raw.get_request_id") as gri:
+        gri.return_value = 123
+        result = await mocked_raw.bulkget(
+            [], [OID("1.2.3"), OID("1.2.4")], max_list_size=3
+        )
+    assert result.listing == {
+        OID("1.2.3.1"): Integer(1),
+        OID("1.2.4.1"): Integer(10),
+        OID("1.2.4.2"): Integer(20),
+        OID("1.2.4.3"): Integer(30),
+    }
 
 
 @pytest.mark.asyncio

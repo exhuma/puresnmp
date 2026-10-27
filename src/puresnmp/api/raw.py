@@ -792,8 +792,10 @@ class Client:
         # prepare output for listing
         repeating_out = OrderedDict()  # type: Dict[ObjectIdentifier, Type[Any]]
         for oid, value in repeating_tmp:
+            # The repeaters are interleaved, so an "endOfMibView" only ends
+            # the one repeater it belongs to, not the whole listing.
             if isinstance(value, EndOfMibView):
-                break
+                continue
             repeating_out[oid] = value
 
         return BulkResult(scalar_out, repeating_out)
