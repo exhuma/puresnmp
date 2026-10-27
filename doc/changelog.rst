@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Release 2.1.0 (unreleased)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **[fixed]** UDP sockets are now released when a request is cancelled
+  from the outside (for example by ``asyncio.wait_for`` or task
+  cancellation), and late replies no longer raise ``InvalidStateError``
+  in the event loop. (#130, #115)
+
+
 Release 2.0.2
 ~~~~~~~~~~~~~
 

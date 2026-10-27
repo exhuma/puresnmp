@@ -120,7 +120,7 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
             else:
                 LOG.debug("Connection lost: %s", exc)
 
-        if exc is not None:
+        if exc is not None and not self.future.done():
             self.future.set_exception(exc)
 
     def datagram_received(self, data, addr):
@@ -134,7 +134,8 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
                 "Received packet from %s:%d:\n%s", addr[0], addr[1], hexdump
             )
 
-        self.future.set_result(data)
+        if not self.future.done():
+            self.future.set_result(data)
         if self.transport:
             self.transport.close()
 
@@ -146,7 +147,8 @@ class SNMPClientProtocol(asyncio.DatagramProtocol):
         if LOG.isEnabledFor(logging.DEBUG):
             LOG.debug("Error received!", exc_info=exc)
 
-        self.future.set_exception(exc)
+        if not self.future.done():
+            self.future.set_exception(exc)
 
     async def get_data(self, timeout):
         # type: (int) -> bytes
@@ -182,7 +184,7 @@ async def send_udp(
         loop = asyncio.get_event_loop()
 
     while retries > 0:
-        _, protocol = await loop.create_datagram_endpoint(
+        transport, protocol = await loop.create_datagram_endpoint(
             lambda: SNMPClientProtocol(packet),
             remote_addr=(str(endpoint.ip), endpoint.port),
         )
@@ -194,6 +196,10 @@ async def send_udp(
                 raise
             retries -= 1
             LOG.debug("Resending UDP packet. %d retries left", retries)
+        finally:
+            # Release the socket on every exit path, including cancellation
+            # from the outside. Aborting an already closed transport is safe.
+            transport.abort()
 
     return response
 
