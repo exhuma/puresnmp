@@ -1605,7 +1605,7 @@ wheels = [
 
 [[package]]
 name = "puresnmp"
-version = "2.0.1"
+version = "2.0.2"
 source = { editable = "." }
 dependencies = [
     { name = "x690" },
@@ -1625,6 +1625,7 @@ dev = [
     { name = "fabric" },
     { name = "furo" },
     { name = "mypy" },
+    { name = "puresnmp-crypto" },
     { name = "pylint" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1649,6 +1650,7 @@ lint = [
     { name = "pylint" },
 ]
 test = [
+    { name = "puresnmp-crypto" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -1672,6 +1674,7 @@ dev = [
     { name = "fabric", specifier = ">=2.6.0" },
     { name = "furo" },
     { name = "mypy" },
+    { name = "puresnmp-crypto", specifier = ">=1.0.1" },
     { name = "pylint" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1690,6 +1693,7 @@ lint = [
     { name = "pylint" },
 ]
 test = [
+    { name = "puresnmp-crypto", specifier = ">=1.0.1" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },

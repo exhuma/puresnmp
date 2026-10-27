@@ -45,6 +45,7 @@ Repository = "https://github.com/exhuma/puresnmp"
 
 [dependency-groups]
 test = [
+    "puresnmp-crypto >= 1.0.1",
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
