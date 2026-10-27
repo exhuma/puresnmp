@@ -5,9 +5,10 @@ Collection of utility functions for the puresnmp package.
 import asyncio
 import hashlib
 import pkgutil
+import secrets
 from dataclasses import dataclass
 from functools import lru_cache
-from time import time
+from itertools import count
 from types import ModuleType
 from typing import (
     Any,
@@ -38,6 +39,10 @@ except ImportError:
 
 T = TypeVar("T", bound=Any)
 TTableRow = TypeVar("TTableRow", bound=Any)
+
+#: Source of request IDs. Starts at a random offset so IDs are not guessable
+#: from the outside.
+_REQUEST_IDS = count(secrets.randbelow(2**31))
 
 
 class TDigestable(Protocol):
@@ -509,14 +514,15 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
     return output
 
 
-def get_request_id() -> int:  # pragma: no cover
+def get_request_id() -> int:
     """
     Generates a SNMP request ID.
 
     This returns a simple integer used to validate if a given response
-    matches with the given request.
+    matches with the given request. Consecutive calls return distinct values
+    which always fit into a non-negative Integer32.
     """
-    return int(time())
+    return next(_REQUEST_IDS) & 0x7FFFFFFF
 
 
 def sync(coro: Awaitable[T]) -> T:

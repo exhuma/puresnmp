@@ -4,6 +4,8 @@ Unit-tests for utility functions
 import hashlib
 from binascii import unhexlify
 from ipaddress import ip_address
+from itertools import count
+from unittest.mock import patch
 
 from x690.types import Null, ObjectIdentifier
 
@@ -11,6 +13,7 @@ import puresnmp.util as util
 from puresnmp.pdu import VarBind
 from puresnmp.util import (
     WalkRow,
+    get_request_id,
     get_unfinished_walk_oids,
     group_varbinds,
     password_to_key,
@@ -141,3 +144,21 @@ def test_generate_engine_id_octets():
     result = util.generate_engine_id_octets(696, b"hello")
     expected = b"\x80\x00\x02\xb8\x05" + b"hello"
     assert result == expected
+
+
+def test_request_id_distinct():
+    """
+    Consecutive request IDs must differ and fit into a non-negative Integer32
+    """
+    ids = [get_request_id() for _ in range(100)]
+    assert len(set(ids)) == len(ids)
+    assert all(0 <= value <= 2**31 - 1 for value in ids)
+
+
+def test_request_id_wraps():
+    """
+    Request IDs wrap around instead of leaving the Integer32 range
+    """
+    with patch("puresnmp.util._REQUEST_IDS", count(2**31 - 1)):
+        assert get_request_id() == 2**31 - 1
+        assert get_request_id() == 0
