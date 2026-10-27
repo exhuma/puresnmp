@@ -4,6 +4,10 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[fixed]** ``bulkget`` with several repeating OIDs no longer drops the
+  values of the other repeaters when one of them reaches the end of the
+  MIB view, and ``bulkwalk`` keeps those values with the right OID tree.
+  (#142)
 * **[fixed]** ``bulkwalk`` and ``bulktable`` no longer loop forever on
   agents returning non-increasing OIDs. They now raise
   ``FaultySNMPImplementation``, or stop with a warning when the new

@@ -29,6 +29,7 @@ from x690.types import ObjectIdentifier
 
 from puresnmp.credentials import V3
 from puresnmp.exc import InvalidResponseId, SnmpError
+from puresnmp.pdu import EndOfMibView
 from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
 
@@ -194,8 +195,16 @@ def get_unfinished_walk_oids(
 
     # Build a mapping from the originally requested OID to the last fetched OID
     # from that tree.
+    #
+    # An endOfMibView value also finishes the walk of that OID: the agent has
+    # no further values for it (RFC 3416, section 4.2.3).
     last_received_oids = {
-        k: WalkRow(v[-1], v[-1].oid in k) for k, v in grouped_oids.items() if v
+        k: WalkRow(
+            v[-1],
+            v[-1].oid in k and not isinstance(v[-1].value, EndOfMibView),
+        )
+        for k, v in grouped_oids.items()
+        if v
     }
 
     output = [

@@ -120,6 +120,8 @@ def deduped_varbinds(
     """
     for var in sorted(grouped_oids.values()):
         for varbind in var:
+            if isinstance(varbind.value, EndOfMibView):
+                continue
             containment = [varbind.oid in _ for _ in requested_oids]
             if not any(containment) or varbind.oid in yielded:
                 LOG.debug(
@@ -769,6 +771,49 @@ class Client:
         """
 
         scalar_oids = scalar_oids or []  # protect against empty values
+        varbinds = await self._bulkget_varbinds(
+            scalar_oids, repeating_oids, max_list_size
+        )
+
+        # cut off the scalar OIDs from the listing(s)
+        scalar_tmp = varbinds[0 : len(scalar_oids)]
+        repeating_tmp = varbinds[len(scalar_oids) :]
+
+        # prepare output for scalar OIDs
+        scalar_out = dict(scalar_tmp)
+
+        # prepare output for listing
+        repeating_out = OrderedDict()  # type: Dict[ObjectIdentifier, Type[Any]]
+        for oid, value in repeating_tmp:
+            if isinstance(value, EndOfMibView):
+                # Responses are interleaved: other repeaters may still have
+                # values in later rows (RFC 3416, section 4.2.3).
+                continue
+            repeating_out[oid] = value
+
+        return BulkResult(scalar_out, repeating_out)
+
+    async def _bulkget_varbinds(
+        self,
+        scalar_oids: List[ObjectIdentifier],
+        repeating_oids: List[ObjectIdentifier],
+        max_list_size: int,
+    ) -> List[VarBind]:
+        """
+        Run a GETBULK request and return the response varbinds unchanged.
+
+        The varbinds keep the positions of the response, including
+        ``endOfMibView`` entries and repeated OIDs. The repeating part is
+        interleaved row by row (RFC 3416, section 4.2.3), which callers
+        grouping the values by position rely on.
+
+        :param scalar_oids: The OIDs sent as non-repeaters.
+        :param repeating_oids: The OIDs sent as repeaters.
+        :param max_list_size: The max-repetitions value of the request.
+        :returns: The varbinds of the response, scalars first.
+        :raises SnmpError: If the agent returns more varbinds than requested.
+        """
+        scalar_oids = scalar_oids or []  # protect against empty values
         repeating_oids = repeating_oids or []  # protect against empty values
 
         oids = list(scalar_oids) + list(repeating_oids)
@@ -793,21 +838,9 @@ class Client:
                 % (expected_max_varbinds, n_retrieved_varbinds)
             )
 
-        # cut off the scalar OIDs from the listing(s)
-        scalar_tmp = get_response.value.varbinds[0 : len(scalar_oids)]
-        repeating_tmp = get_response.value.varbinds[len(scalar_oids) :]
-
-        # prepare output for scalar OIDs
-        scalar_out = dict(scalar_tmp)
-
-        # prepare output for listing
-        repeating_out = OrderedDict()  # type: Dict[ObjectIdentifier, Type[Any]]
-        for oid, value in repeating_tmp:
-            if isinstance(value, EndOfMibView):
-                break
-            repeating_out[oid] = value
-
-        return BulkResult(scalar_out, repeating_out)
+        return [
+            VarBind(oid, value) for oid, value in get_response.value.varbinds
+        ]
 
     def _bulkwalk_fetcher(self, bulk_size: int = 10) -> TFetcher:
         """
@@ -818,8 +851,12 @@ class Client:
             """
             Executes a SNMP BulkGet request.
             """
-            result = await self.bulkget([], oids, max_list_size=bulk_size)
-            return [VarBind((k), v) for k, v in result.listing.items()]
+            # Keep the positions of the response (including endOfMibView
+            # entries): multiwalk assigns the values to the requested OIDs
+            # by position.
+            return await self._bulkget_varbinds(
+                [], oids, max_list_size=bulk_size
+            )
 
         fetcher.__name__ = "_bulkwalk_fetcher(%d)" % bulk_size
         return fetcher
