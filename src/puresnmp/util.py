@@ -19,6 +19,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Protocol,
     Tuple,
     Type,
     TypeVar,
@@ -32,11 +33,6 @@ from puresnmp.exc import InvalidResponseId, SnmpError
 from puresnmp.pdu import EndOfMibView
 from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
 
 T = TypeVar("T", bound=Any)
 TTableRow = TypeVar("TTableRow", bound=Any)

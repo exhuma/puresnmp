@@ -9,6 +9,7 @@ failing the import of :mod:`puresnmp`.
 import importlib.metadata
 import pytest
 
+import puresnmp.compatibility
 from puresnmp.compatibility import package_version
 
 
@@ -22,7 +23,7 @@ def test_missing_metadata_returns_fallback(
     def _raise(name: str) -> str:
         raise importlib.metadata.PackageNotFoundError(name)
 
-    monkeypatch.setattr(importlib.metadata, "version", _raise)
+    monkeypatch.setattr(puresnmp.compatibility, "version", _raise)
     assert package_version("puresnmp") == "0.0.0+unknown"
 
 

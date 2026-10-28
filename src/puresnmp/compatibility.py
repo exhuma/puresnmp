@@ -1,18 +1,22 @@
 """
-This file contains a compatibility layer for older Python versions which cause
-issues with type-hinting and/or linting. Type-checks and linting is disabled as
-needed in here.
+Helpers for the runtime environment puresnmp is installed in.
 """
 
-try:
-    import importlib.metadata as importlib_metadata
-except ModuleNotFoundError:
-    import importlib_metadata  # type: ignore
+from importlib.metadata import PackageNotFoundError, version
 
 
 def package_version(package_name: str) -> str:
+    """
+    Return the installed version of *package_name*.
+
+    Frozen applications (for example PyInstaller builds) may not bundle the
+    package metadata. The placeholder ``0.0.0+unknown`` is returned then,
+    instead of failing the import of :py:mod:`puresnmp`.
+
+    :param package_name: The distribution name, e.g. ``"puresnmp"``.
+    :returns: The installed version, or ``"0.0.0+unknown"``.
+    """
     try:
-        return importlib_metadata.version(package_name)
-    except importlib_metadata.PackageNotFoundError:
-        # Frozen applications (e.g. PyInstaller) may not bundle the metadata.
+        return version(package_name)
+    except PackageNotFoundError:
         return "0.0.0+unknown"

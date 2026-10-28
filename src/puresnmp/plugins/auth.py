@@ -40,12 +40,8 @@ rules:
 import importlib
 from threading import Lock
 from types import ModuleType
-from typing import Dict
+from typing import Dict, Protocol
 
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
 
 from puresnmp.exc import MissingPlugin, UnknownAuthModel, UnknownPrivacyModel
 from puresnmp.plugins.pluginbase import Loader

@@ -14,11 +14,7 @@ if TYPE_CHECKING:
 
     T = TypeVar("T")
 
-try:
-    from itertools import zip_longest
-except ImportError:
-    from itertools import izip_longest as zip_longest  # type: ignore
-
+from itertools import zip_longest
 
 DATA_DIR = join(dirname(__file__), "data")
 

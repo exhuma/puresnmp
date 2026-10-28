@@ -11,10 +11,7 @@ from ipaddress import ip_address
 from typing import Any
 from unittest.mock import Mock
 
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from asyncmock import AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString

@@ -42,6 +42,7 @@ from typing import (
     Generic,
     NamedTuple,
     Optional,
+    Protocol,
     TypeVar,
 )
 
@@ -50,11 +51,6 @@ from puresnmp.exc import UnknownMessageProcessingModel
 from puresnmp.pdu import PDU
 from puresnmp.plugins.pluginbase import Loader
 from puresnmp.plugins.security import SecurityModel
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
 
 
 class AbstractEncodingResult(NamedTuple):

@@ -24,10 +24,7 @@ from puresnmp.varbind import VarBind
 from puresnmp_plugins.mpm.v3 import is_confirmed
 from puresnmp_plugins.security.usm import USMSecurityParameters
 
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from asyncmock import AsyncMock
+from unittest.mock import AsyncMock
 
 
 @pytest.fixture

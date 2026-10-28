@@ -27,6 +27,7 @@ from typing import (
     Generator,
     List,
     Optional,
+    Protocol,
     Set,
     Tuple,
 )
@@ -76,11 +77,6 @@ from ..util import (
     validate_response_id,
 )
 from ..varbind import VarBind
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
 
 TWalkResponse = AsyncGenerator[VarBind, None]
 T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name

@@ -12,10 +12,7 @@ from ipaddress import ip_address
 from logging import WARNING, getLogger
 from unittest.mock import call, patch
 
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from asyncmock import AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
