@@ -4,6 +4,10 @@ Changelog
 Release 2.1.0 (unreleased)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* **[support]** Python 3.11 is now the minimum supported version. Older
+  Python versions keep installing puresnmp 2.0.x. The back-port
+  dependencies ``dataclasses``, ``importlib_metadata`` and
+  ``typing_extensions`` are no longer installed.
 * **[fixed]** Long-lived SNMPv3 clients no longer fail with "Not in time
   window": the engine time learned during discovery now advances with the
   local clock and is updated from authenticated responses. Agents that

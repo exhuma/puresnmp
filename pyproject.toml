@@ -20,17 +20,19 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: System :: Networking",
     "Topic :: System :: Networking :: Monitoring",
     "Topic :: System :: Systems Administration",
 ]
 license = { text = "MIT" }
 
-requires-python = ">=3.6"
+requires-python = ">=3.11"
 dependencies = [
-    'dataclasses; python_version < "3.7"',
-    'importlib_metadata; python_version < "3.8"',
-    'typing_extensions; python_version < "3.8"',
     'x690 >= 1.0, <2.0',
 ]
 
@@ -69,9 +71,6 @@ dev = [
 
 [tool.uv]
 default-groups = ["dev"]
-# Dev tooling needs a modern Python; this only limits the lock, not the
-# published package metadata (requires-python stays untouched).
-environments = ["python_version >= '3.10'"]
 
 [tool.black]
 line-length = 80
