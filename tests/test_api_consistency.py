@@ -26,7 +26,7 @@ async def test_getnext_returns_missing_value(mocked_raw, missing):
     """
     Ensure getnext keeps returning a missing value as a varbind in 2.x
 
-    Raising NoSuchOID instead is a breaking change planned for 3.0.
+    Raising NoSuchOID instead is a breaking change planned for 3.0 (#163).
     """
     varbind = VarBind(OID("1.2.3"), missing())
     mocked_raw.multigetnext = AsyncMock(return_value=[varbind])
