@@ -2,6 +2,8 @@
 This module contains the implementation for the SNMPv3 message-processing model
 """
 
+import inspect
+from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Optional, Union
 
 from x690.types import Integer, OctetString
@@ -47,6 +49,26 @@ def is_confirmed(pdu: PDU) -> bool:
 TV3SecModel = SecurityModel[PlainMessage, Union[PlainMessage, EncryptedMessage]]
 
 
+@lru_cache(maxsize=None)
+def accepts_whole_msg(model_class: type) -> bool:
+    """
+    Return True if ``process_incoming_message`` of *model_class* takes the
+    ``whole_msg`` argument.
+
+    The argument was added in puresnmp 2.1. Security plugins written for 2.0
+    only take *message* and *credentials* and must still be called that way.
+
+    :param model_class: The class of a security model
+    """
+    parameters = inspect.signature(
+        model_class.process_incoming_message
+    ).parameters.values()
+    return any(
+        param.name == "whole_msg" or param.kind is param.VAR_KEYWORD
+        for param in parameters
+    )
+
+
 class V3EncodingResult(AbstractEncodingResult):
     """
     A simple data-structure representing the output for encoded messages
@@ -71,7 +93,14 @@ class V3MPM(MessageProcessingModel[V3EncodingResult, TV3SecModel]):
         if self.security_model is None:
             self.security_model = create_sm(security_model_id)
         message = Message.decode(whole_msg)
-        msg = self.security_model.process_incoming_message(message, credentials)
+        if accepts_whole_msg(type(self.security_model)):
+            msg = self.security_model.process_incoming_message(
+                message, credentials, whole_msg=whole_msg
+            )
+        else:
+            msg = self.security_model.process_incoming_message(
+                message, credentials
+            )
         return msg.scoped_pdu.data
 
     async def encode(

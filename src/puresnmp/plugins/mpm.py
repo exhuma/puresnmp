@@ -33,12 +33,16 @@ rules:
   and :rfc:`3411`
 """
 
+import logging
+import struct
+from contextlib import contextmanager
 from types import ModuleType
 from typing import (
     Any,
     Awaitable,
     Callable,
     Dict,
+    Generator,
     Generic,
     NamedTuple,
     Optional,
@@ -46,11 +50,20 @@ from typing import (
     TypeVar,
 )
 
+from x690.exc import X690Error
+from x690.util import visible_octets
+
 from puresnmp.credentials import Credentials
-from puresnmp.exc import UnknownMessageProcessingModel
+from puresnmp.exc import (
+    InvalidMessage,
+    SnmpError,
+    UnknownMessageProcessingModel,
+)
 from puresnmp.pdu import PDU
 from puresnmp.plugins.pluginbase import Loader
 from puresnmp.plugins.security import SecurityModel
+
+LOG = logging.getLogger(__name__)
 
 
 class AbstractEncodingResult(NamedTuple):
@@ -163,6 +176,36 @@ class MessageProcessingModel(Generic[TEncodeResult, TSecurityModel]):
         raise NotImplementedError(
             "decode is not yet implemented in %r" % type(self)
         )
+
+
+@contextmanager
+def decoding_boundary(data: bytes) -> Generator[None, None, None]:
+    """
+    Convert low-level decoding failures into
+    :py:exc:`~puresnmp.exc.InvalidMessage`.
+
+    Wrap every call that decodes a message received from the network in this
+    context manager. Errors from puresnmp itself
+    (:py:exc:`~puresnmp.exc.SnmpError` and subclasses) pass through
+    unchanged, as they are raised on purpose by the message-processing
+    models and security models.
+
+    :param data: The raw message, kept on the exception and logged (as hexdump
+        at DEBUG level) for diagnosis.
+    """
+    try:
+        yield
+    except (X690Error, IndexError, ValueError, struct.error) as exc:
+        if isinstance(exc, SnmpError):
+            raise
+        if LOG.isEnabledFor(logging.DEBUG):
+            LOG.debug(
+                "Received message could not be decoded:\n%s",
+                visible_octets(data),
+            )
+        raise InvalidMessage(
+            f"Unable to decode message ({type(exc).__name__}: {exc})", data
+        ) from exc
 
 
 def is_valid_mpm_plugin(mod: ModuleType) -> bool:

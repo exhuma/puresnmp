@@ -127,13 +127,19 @@ class PyWrapper:
         async for varbind in raw_result:
             yield PyVarBind.from_raw(varbind)
 
-    async def multiwalk(self, oids: List[TOidArg]) -> TWalkResponse:
+    async def multiwalk(
+        self,
+        oids: List[TOidArg],
+        errors: str = ERRORS_STRICT,
+    ) -> TWalkResponse:
         """
         Delegates to :py:meth:`puresnmp.api.raw.Client.multiwalk` but
         converts internal types to simple Python types.
         """
         oids_internal = [_as_oid(oid) for oid in oids]
-        async for varbind in self.client.multiwalk(oids_internal):
+        async for varbind in self.client.multiwalk(
+            oids_internal, errors=errors
+        ):
             yield PyVarBind.from_raw(varbind)
 
     async def multiget(self, oids: List[TOidArg]) -> List[Any]:

@@ -8,12 +8,38 @@ Release 2.1.0 (unreleased)
   Python versions keep installing puresnmp 2.0.x. The back-port
   dependencies ``dataclasses``, ``importlib_metadata`` and
   ``typing_extensions`` are no longer installed.
+* **[changed]** Errors while decoding a received message are now raised
+  as ``puresnmp.exc.InvalidMessage`` instead of ``x690.exc.X690Error``,
+  ``IndexError``, ``ValueError`` or ``struct.error``. ``InvalidMessage``
+  is a ``SnmpError`` and also an ``X690Error``, a ``ValueError`` and an
+  ``IndexError``, so existing handlers for those keep working; handlers
+  for ``struct.error`` no longer match. The hexdump of the offending
+  packet is logged at DEBUG level. (#140)
+* **[deprecated]** The ``loop`` argument of ``register_trap_callback``,
+  ``puresnmp.transport.send_udp`` and ``puresnmp.transport.listen`` is
+  deprecated and will be removed in 3.0. It now emits a
+  ``DeprecationWarning`` when passed. Do not pass it: the running event
+  loop is used. (#147)
+* **[added]** SNMPv3 authentication with the HMAC-SHA-2 protocols of
+  RFC 7860. Use ``sha224``, ``sha256``, ``sha384`` or ``sha512`` as
+  method of ``Auth``. (#138)
+* **[added]** For plugin authors: authentication plugins may define
+  ``DIGEST_LENGTH`` (default 12) for digests of another length, and
+  security plugins may declare the optional keyword argument ``whole_msg``
+  in ``process_incoming_message`` to receive the SNMPv3 message as
+  received from the network. Plugins without them work as before. See
+  :ref:`plugins`. (#122, #138)
+* **[added]** ``PyWrapper.multiwalk`` accepts the ``errors`` argument,
+  like ``PyWrapper.walk`` and ``Client.multiwalk``. (#147)
 * **[fixed]** Long-lived SNMPv3 clients no longer fail with "Not in time
   window": the engine time learned during discovery now advances with the
   local clock and is updated from authenticated responses. Agents that
   report their engine time only in reply to the first authenticated
   request (such as some Alcatel devices) are now handled by resending that
   request once with the reported time. (#104)
+* **[fixed]** ``Client`` now resolves host names with
+  ``socket.getaddrinfo``, so names that only have IPv6 addresses work.
+  Names with an IPv4 address still use it, as before. (#148)
 * **[fixed]** ``import puresnmp`` no longer fails with
   ``PackageNotFoundError`` in frozen applications (such as PyInstaller
   builds) that do not bundle the package metadata. The version falls back
@@ -29,6 +55,11 @@ Release 2.1.0 (unreleased)
   agents returning non-increasing OIDs. They now raise
   ``FaultySNMPImplementation``, or stop with a warning when the new
   ``errors`` argument is ``ERRORS_WARN``. (#94, #51)
+* **[fixed]** Authenticated SNMPv3 responses no longer fail with
+  "Incoming message could not be authenticated!" when the agent encodes
+  the message differently than puresnmp would (for example with long-form
+  lengths, as some embedded agents do). The digest is now verified over
+  the message exactly as received. (#122)
 * **[fixed]** The SNMPv3 privacy key derivation is now cached across
   requests instead of hashing 1 MB of data for every encrypted request
   and decrypted response. (#137)

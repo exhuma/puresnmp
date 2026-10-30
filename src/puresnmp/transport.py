@@ -11,8 +11,10 @@ hard to test.
 import asyncio
 import logging
 import socket
+import warnings
 from asyncio.events import AbstractEventLoop
 from asyncio.transports import BaseTransport
+from ipaddress import ip_address
 from typing import Any, Callable, NamedTuple, Optional, Protocol, Tuple, Union
 
 from x690.util import visible_octets
@@ -23,6 +25,45 @@ from .typevars import SocketInfo, SocketResponse, TAnyIp
 
 LOG = logging.getLogger(__name__)
 MESSAGE_MAX_SIZE = 65507
+
+
+def warn_loop_deprecated(function: str, stacklevel: int = 3) -> None:
+    """
+    Emit the DeprecationWarning for the *loop* argument of *function*.
+
+    For internal use by puresnmp until the argument is removed in 3.0.
+    """
+    warnings.warn(
+        f"The 'loop' argument of {function}() is deprecated since puresnmp "
+        "2.1 and will be removed in 3.0. The running event loop is used "
+        "instead; drop the argument.",
+        DeprecationWarning,
+        stacklevel=stacklevel,
+    )
+
+
+def resolve_host(host: str, port: int) -> TAnyIp:
+    """
+    Convert *host* into an IP address object.
+
+    IP literals are used as they are. Anything else is resolved with
+    :py:func:`socket.getaddrinfo`. The first IPv4 result is used, as
+    :py:func:`socket.gethostbyname` did before; the first IPv6 result is
+    used only if the name has no IPv4 address.
+
+    :param host: An IPv4 or IPv6 address, or a host name
+    :param port: The UDP port, passed to the resolver
+    :raises socket.gaierror: If the name cannot be resolved
+    """
+    try:
+        return ip_address(host)
+    except ValueError:
+        pass
+    results = socket.getaddrinfo(host, port, type=socket.SOCK_DGRAM)
+    ipv4 = [item for item in results if item[0] == socket.AF_INET]
+    address = ip_address((ipv4 or results)[0][4][0])
+    LOG.debug("Resolved %s to %s", host, address)
+    return address
 
 
 class Endpoint(NamedTuple):
@@ -37,6 +78,11 @@ class Endpoint(NamedTuple):
 class TSender(Protocol):
     """
     A typing-protocol for callables which send data out to the network
+
+    .. deprecated:: 2.1
+        The *loop* argument is deprecated and will be removed in 3.0.
+        puresnmp never passes it; implementations should use the running
+        event loop.
     """
 
     # pylint: disable=too-few-public-methods
@@ -174,9 +220,15 @@ async def send_udp(
 
     If the connection fails due to a timeout, a Timeout exception is
     raised.
+
+    .. deprecated:: 2.1
+        The *loop* argument is deprecated and will be removed in 3.0. The
+        running event loop is always used. Do not pass it.
     """
     if loop is None:
         loop = asyncio.get_event_loop()
+    else:
+        warn_loop_deprecated("send_udp")
 
     while retries > 0:
         transport, protocol = await loop.create_datagram_endpoint(
@@ -227,9 +279,15 @@ async def listen(
 
         This defaults to the standard SNMP Trap port 162. This is a
         privileged port so processes using this port must run as root!
+
+    .. deprecated:: 2.1
+        The *loop* argument is deprecated and will be removed in 3.0. The
+        running event loop is always used. Do not pass it.
     """
     if loop is None:
         loop = asyncio.get_event_loop()
+    else:
+        warn_loop_deprecated("listen")
     await loop.create_datagram_endpoint(
         lambda: SNMPTrapReceiverProtocol(callback),
         local_addr=(bind_address, port),

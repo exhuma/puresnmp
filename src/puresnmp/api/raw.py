@@ -17,7 +17,6 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from ipaddress import ip_address
-from socket import gethostbyname
 from typing import (
     Any,
     AsyncGenerator,
@@ -38,6 +37,7 @@ from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 from x690.types import X690Type as Type
 
 from puresnmp.plugins import mpm
+from puresnmp.plugins.mpm import decoding_boundary
 from puresnmp.typevars import SocketResponse, TAnyIp
 
 from ..const import (
@@ -66,7 +66,14 @@ from ..pdu import (
     SetRequest,
     Trap,
 )
-from ..transport import Endpoint, TSender, listen, send_udp
+from ..transport import (
+    Endpoint,
+    TSender,
+    listen,
+    resolve_host,
+    send_udp,
+    warn_loop_deprecated,
+)
 from ..util import (
     BulkResult,
     TTableRow,
@@ -191,7 +198,12 @@ class Client:
     >>> client.get(ObjectIdentifier("1.3.6.1.2.1.1.2.0"))  # doctest: +ELLIPSIS
     <coroutine ...>
 
-    :param ip: The IP-address of the remote SNMP device
+    :param ip: The IP-address (IPv4 or IPv6) or host name of the remote SNMP
+        device. A host name is resolved once, when the client is created,
+        using :py:func:`socket.getaddrinfo`. IPv4 addresses are preferred;
+        an IPv6 address is used only if the name has no IPv4 address. If
+        the name cannot be resolved,
+        :py:exc:`socket.gaierror` is raised.
     :param credentials: User credentials for the request. These define the
         underlying protocol in use. See :py:mod:`puresnmp.credentials` for
         possible types.
@@ -221,10 +233,7 @@ class Client:
             lcd=lcd,
         )
 
-        try:
-            address = ip_address(ip)
-        except ValueError:
-            address = ip_address(gethostbyname(ip))
+        address = resolve_host(ip, port)
 
         endpoint = Endpoint(address, port)
 
@@ -363,7 +372,8 @@ class Client:
             timeout=self.config.timeout,
             retries=self.config.retries,
         )
-        response = self.mpm.decode(raw_response, self.credentials)
+        with decoding_boundary(raw_response):
+            response = self.mpm.decode(raw_response, self.credentials)
         validate_response_id(request_id, response.value.request_id)
         return response
 
@@ -428,6 +438,9 @@ class Client:
         <coroutine object ...>
         """
         result = await self.multigetnext([oid])
+        # This tests the VarBind instead of its value and never matches, so
+        # a noSuchObject/noSuchInstance value is returned as data. Raising
+        # NoSuchOID instead is a breaking change, planned for 3.0 (#163).
         if isinstance(result[0], (NoSuchObject, NoSuchInstance)):
             raise NoSuchOID(oid)
         return result[0]
@@ -942,12 +955,17 @@ def register_trap_callback(
     As per :rfc:`3416#section-4.2.6`, the first two varbinds are the system
     uptime and the trap OID. The following varbinds are the body of the trap
 
-    The callback will be called on the current asyncio loop. Alternatively, a
-    loop can be passed into this function in which case, the traps will be
-    handler on that loop instead.
+    The callback will be called on the current asyncio loop.
+
+    .. deprecated:: 2.1
+        The *loop* argument is deprecated and will be removed in 3.0. Call
+        this function from the thread whose event loop should run the
+        listener and do not pass *loop*.
     """
     if loop is None:
         loop = get_event_loop()
+    else:
+        warn_loop_deprecated("register_trap_callback")
 
     def decode(packet: SocketResponse) -> None:
         async def handler(data: bytes) -> bytes:
@@ -958,16 +976,16 @@ def register_trap_callback(
 
         lcd: Dict[str, Any] = {}
 
-        as_sequence = Sequence.decode(packet.data)
-
-        obj = cast(Tuple[Integer, OctetString, Trap], as_sequence)
-
-        mproc = mpm.create(obj[0].value, handler, lcd)
-        trap = mproc.decode(packet.data, credentials)
+        with decoding_boundary(packet.data):
+            as_sequence = Sequence.decode(packet.data)
+            obj = cast(Tuple[Integer, OctetString, Trap], as_sequence)
+            mproc = mpm.create(obj[0].value, handler, lcd)
+            trap = mproc.decode(packet.data, credentials)
         if isinstance(trap, Trap):
             trap.source = packet.info
         asyncio.ensure_future(callback(trap))
 
-    handler = listen(listen_address, port, decode, loop)
+    # listen() runs on *loop*, so it picks it up as the running loop.
+    handler = listen(listen_address, port, decode)
     loop.run_until_complete(handler)
     return loop

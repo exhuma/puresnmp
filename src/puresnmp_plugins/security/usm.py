@@ -10,7 +10,7 @@ from typing import Awaitable, Callable, Optional, Tuple, Union, cast
 
 from x690 import decode
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
-from x690.util import INDENT_STRING
+from x690.util import INDENT_STRING, get_value_slice
 
 import puresnmp.plugins.auth as auth
 import puresnmp.plugins.priv as priv
@@ -62,7 +62,9 @@ def find_time_window_report(message: Message) -> Optional[VarBind]:
     return None
 
 
-def reset_digest(message: Message) -> Message:
+def reset_digest(
+    message: Message, *, digest_length: int = auth.DEFAULT_DIGEST_LENGTH
+) -> Message:
     """
     Replace the current message-digest in a message with zeroes.
 
@@ -71,12 +73,15 @@ def reset_digest(message: Message) -> Message:
     message would change, because the digest changes.
 
     :param message: The message (with or without digest)
+    :param digest_length: The digest length of the authentication method
+        (12 for :rfc:`3414`, 16 to 48 for :rfc:`7860`)
     :returns: A new message with zeroed digest
     """
-    # As per https://tools.ietf.org/html/rfc3414#section-6.3.1,
-    # the auth-key needs to be initialised to 12 zeroes
+    # As per https://tools.ietf.org/html/rfc3414#section-6.3.1 and
+    # https://tools.ietf.org/html/rfc7860#section-4.2, the authentication
+    # parameters are initialised to as many zeroes as the digest is long
     secparams = USMSecurityParameters.decode(message.security_parameters)
-    neutral = replace(secparams, auth_params=b"\x00" * 12)
+    neutral = replace(secparams, auth_params=b"\x00" * digest_length)
     output = replace(
         message,
         security_parameters=bytes(neutral),
@@ -134,6 +139,71 @@ class InsufficientSecurityLevel(USMError):
     This error is raised when a message is processed that is protected with a
     lower security level than the one required by the credentials.
     """
+
+
+def _child_slices(data: bytes, parent: slice, count: int) -> list[slice]:
+    """
+    Return the value slices of the first *count* TLVs inside *parent*.
+
+    The lengths are taken from *data* as encoded (short or long form), so the
+    slices point at the octets as they were received.
+
+    :raises AuthenticationError: If a TLV does not fit inside *parent*
+    """
+    output = []
+    index = parent.start
+    for _ in range(count):
+        if index >= parent.stop:
+            raise AuthenticationError("Truncated SNMPv3 message")
+        value, index = get_value_slice(data, index)
+        if index > parent.stop:
+            raise AuthenticationError("Malformed SNMPv3 message")
+        output.append(value)
+    return output
+
+
+def locate_auth_params(whole_msg: bytes) -> slice:
+    """
+    Return the position of the msgAuthenticationParameters value inside an
+    SNMPv3 message as received from the network.
+
+    The message is not re-encoded, so the position is correct for any valid
+    BER encoding (long-form lengths, non-minimal integers, ...).
+
+    :param whole_msg: The complete SNMPv3 message as received
+    :returns: The slice covering the octets of the authentication parameters
+    :raises AuthenticationError: If the message structure is not as expected
+    """
+    message = get_value_slice(whole_msg, 0).bounds
+    security_parameters = _child_slices(whole_msg, message, 3)[2]
+    usm_params = _child_slices(whole_msg, security_parameters, 1)[0]
+    auth_params = _child_slices(whole_msg, usm_params, 5)[4]
+    return auth_params
+
+
+def reset_received_digest(whole_msg: bytes, auth_params: bytes) -> bytes:
+    """
+    Replace the digest in a received SNMPv3 message with zeroes, in place.
+
+    This is the received counterpart of :py:func:`reset_digest`: the digest
+    must be computed over the bytes the remote engine sent (see
+    :rfc:`3414#section-6.3.2`). Re-encoding a decoded message may produce
+    different, equally valid, bytes and therefore a different digest.
+
+    :param whole_msg: The complete SNMPv3 message as received
+    :param auth_params: The decoded msgAuthenticationParameters, used to
+        check that the correct octets are replaced
+    :returns: The message with the authentication parameters zeroed
+    :raises AuthenticationError: If the authentication parameters cannot be
+        found in the message
+    """
+    position = locate_auth_params(whole_msg)
+    if whole_msg[position] != auth_params:
+        raise AuthenticationError(
+            "Unable to locate the authentication parameters in the message"
+        )
+    zeroes = b"\x00" * len(auth_params)
+    return whole_msg[: position.start] + zeroes + whole_msg[position.stop :]
 
 
 @dataclass(frozen=True)
@@ -327,7 +397,9 @@ def apply_authentication(
 
     auth_method = auth.create(credentials.auth.method)
     try:
-        without_digest = reset_digest(unauthed_message)
+        without_digest = reset_digest(
+            unauthed_message, digest_length=auth.digest_length(auth_method)
+        )
         auth_result = auth_method.authenticate_outgoing_message(
             credentials.auth.key,
             bytes(without_digest),
@@ -348,12 +420,25 @@ def apply_authentication(
 
 
 def verify_authentication(
-    message: Message, credentials: V3, security_params: USMSecurityParameters
+    message: Message,
+    credentials: V3,
+    security_params: USMSecurityParameters,
+    whole_msg: Optional[bytes] = None,
 ) -> None:
     """
     Verify authenticity of the message using the credentials.
 
-    :raises AuthenticationError: If the message is not authentic
+    The digest is computed over *whole_msg*, the message exactly as it was
+    received (see :rfc:`3414#section-6.3.2`). Without it, the digest is
+    computed over a re-encoded *message*, which only matches if the remote
+    engine used the same encoding as puresnmp.
+
+    :param message: The decoded message
+    :param credentials: The user-credentials
+    :param security_params: The decoded security parameters of *message*
+    :param whole_msg: The complete message as received from the network
+    :raises AuthenticationError: If the message is not authentic or its
+        digest does not have the length of the authentication method
     """
 
     if not message.header.flags.auth:
@@ -365,10 +450,23 @@ def verify_authentication(
         )
 
     auth_method = auth.create(credentials.auth.method)
-    without_digest = reset_digest(message)
+    expected_length = auth.digest_length(auth_method)
+    if len(security_params.auth_params) != expected_length:
+        raise AuthenticationError(
+            f"Unexpected digest length {len(security_params.auth_params)} "
+            f"(expected {expected_length} for {credentials.auth.method!r})"
+        )
+    if whole_msg is None:
+        without_digest = bytes(
+            reset_digest(message, digest_length=expected_length)
+        )
+    else:
+        without_digest = reset_received_digest(
+            whole_msg, security_params.auth_params
+        )
     is_authentic = auth_method.authenticate_incoming_message(
         credentials.auth.key,
-        bytes(without_digest),
+        without_digest,
         security_params.auth_params,
         security_params.authoritative_engine_id,
     )
@@ -540,6 +638,7 @@ class UserSecurityModel(
         self,
         message: Union[PlainMessage, EncryptedMessage],
         credentials: Credentials,
+        whole_msg: Optional[bytes] = None,
     ) -> PlainMessage:
 
         if not isinstance(credentials, V3):
@@ -559,7 +658,7 @@ class UserSecurityModel(
         if engine_id not in self.local_config:
             raise UnknownEngineId(f"Unexpected engine-id {engine_id!r}")
 
-        verify_authentication(message, credentials, security_params)
+        verify_authentication(message, credentials, security_params, whole_msg)
         authenticated = message.header.flags.auth
         if authenticated:
             self.update_engine_timing(

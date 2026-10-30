@@ -16,7 +16,8 @@ class Auth(NamedTuple):
 
     #: The authentication key (password)
     key: bytes
-    #: The authentication method (md5, sha, ...)
+    #: The authentication method: ``md5``, ``sha1``, ``sha224``, ``sha256``,
+    #: ``sha384`` or ``sha512`` (see :ref:`plugins`)
     method: str
 
 

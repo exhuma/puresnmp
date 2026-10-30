@@ -2,6 +2,7 @@
 This module provides the SNMP security model for community based v1 exchanges
 """
 
+from typing import Optional
 from warnings import warn
 
 from x690.types import Integer, OctetString, Sequence
@@ -45,6 +46,7 @@ class SNMPv1SecurityModel(SecurityModel[PDU, Sequence]):
         self,
         message: Sequence,
         credentials: Credentials,
+        whole_msg: Optional[bytes] = None,  # pylint: disable=unused-argument
     ) -> PDU:
         proto_version, community, pdu = message
         if not isinstance(credentials, V1):

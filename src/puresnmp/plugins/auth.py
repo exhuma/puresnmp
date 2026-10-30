@@ -35,6 +35,12 @@ rules:
   registrations. See
   https://www.iana.org/assignments/snmp-number-spaces/snmp-number-spaces.xhtml
   and :rfc:`3411`
+
+Optionally, a module may contain an int-variable ``DIGEST_LENGTH`` with the
+number of octets of the digest it puts into the authentication parameters of
+a message. It defaults to 12, the length used by the :rfc:`3414` protocols.
+Protocols with a different digest length, like the HMAC-SHA-2 protocols of
+:rfc:`7860`, must set it.
 """
 
 import importlib
@@ -80,6 +86,21 @@ class TAuth(Protocol):
         function will return False.
         """
         ...
+
+
+#: The digest length of plugins which do not define ``DIGEST_LENGTH``
+DEFAULT_DIGEST_LENGTH = 12
+
+
+def digest_length(plugin: TAuth) -> int:
+    """
+    Return the number of octets of the digest created by *plugin*.
+
+    :param plugin: An authentication plugin as returned by :py:func:`create`
+    :returns: The plugin's ``DIGEST_LENGTH``, or
+        :py:data:`DEFAULT_DIGEST_LENGTH` if it does not define one
+    """
+    return int(getattr(plugin, "DIGEST_LENGTH", DEFAULT_DIGEST_LENGTH))
 
 
 def is_valid_auth_mod(mod: ModuleType) -> bool:
