@@ -1278,7 +1278,7 @@ wheels = [
 
 [[package]]
 name = "puresnmp"
-version = "2.0.2"
+version = "2.1.0a1"
 source = { editable = "." }
 dependencies = [
     { name = "x690" },
