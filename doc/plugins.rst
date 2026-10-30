@@ -35,6 +35,14 @@ The security model is defined by an identifier in the SNMPv3 message header.
 Additional arguments for the security model are encoded in the
 ``security_parameters`` field of the message header.
 
+Since version 2.1, the SNMPv3 message-processing model passes the message
+as received from the network to
+:py:meth:`~puresnmp.plugins.security.SecurityModel.process_incoming_message`
+as the optional keyword argument ``whole_msg`` (for example to verify a
+digest over the received bytes). It is only passed to implementations that
+declare a ``whole_msg`` parameter (or ``**kwargs``), so security plugins
+written for 2.0 keep working unchanged.
+
 Authentication
 --------------
 

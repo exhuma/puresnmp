@@ -8,6 +8,10 @@ Release 2.1.0 (unreleased)
   Python versions keep installing puresnmp 2.0.x. The back-port
   dependencies ``dataclasses``, ``importlib_metadata`` and
   ``typing_extensions`` are no longer installed.
+* **[added]** For plugin authors: security plugins may declare the
+  optional keyword argument ``whole_msg`` in ``process_incoming_message``
+  to receive the SNMPv3 message as received from the network. Plugins
+  without it are called as before. See :ref:`plugins`. (#122)
 * **[fixed]** Long-lived SNMPv3 clients no longer fail with "Not in time
   window": the engine time learned during discovery now advances with the
   local clock and is updated from authenticated responses. Agents that
@@ -29,6 +33,11 @@ Release 2.1.0 (unreleased)
   agents returning non-increasing OIDs. They now raise
   ``FaultySNMPImplementation``, or stop with a warning when the new
   ``errors`` argument is ``ERRORS_WARN``. (#94, #51)
+* **[fixed]** Authenticated SNMPv3 responses no longer fail with
+  "Incoming message could not be authenticated!" when the agent encodes
+  the message differently than puresnmp would (for example with long-form
+  lengths, as some embedded agents do). The digest is now verified over
+  the message exactly as received. (#122)
 * **[fixed]** The SNMPv3 privacy key derivation is now cached across
   requests instead of hashing 1 MB of data for every encrypted request
   and decrypted response. (#137)

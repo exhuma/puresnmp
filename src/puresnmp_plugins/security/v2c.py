@@ -2,6 +2,8 @@
 This module implements community based security model for SNMP
 """
 
+from typing import Optional
+
 from x690.types import Integer, OctetString, Sequence
 
 from puresnmp.credentials import V2C, Credentials
@@ -37,6 +39,7 @@ class SNMPv2cSecurityModel(SecurityModel[PDU, Sequence]):
         self,
         message: Sequence,
         credentials: Credentials,
+        whole_msg: Optional[bytes] = None,  # pylint: disable=unused-argument
     ) -> PDU:
         proto_version, community, pdu = message
         if not isinstance(credentials, V2C):

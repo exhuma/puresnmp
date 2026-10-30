@@ -31,7 +31,16 @@ rules:
 """
 
 from types import ModuleType
-from typing import Any, Awaitable, Callable, Dict, Generic, Protocol, TypeVar
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    Optional,
+    Protocol,
+    TypeVar,
+)
 
 from puresnmp.credentials import Credentials
 from puresnmp.exc import UnknownSecurityModel
@@ -103,6 +112,7 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         self,
         message: TX690Type,
         credentials: Credentials,
+        whole_msg: Optional[bytes] = None,
     ) -> TPureSNMPType:  # pragma: no cover
         """
         Takes a message which included potential security modifications (like
@@ -117,6 +127,9 @@ class SecurityModel(Generic[TPureSNMPType, TX690Type]):
         :param message: The original message
         :param credentials: A credential object giving information on what
             kind of operations are needed on the message.
+        :param whole_msg: The complete message as received from the network,
+            for security models that need the original bytes (f.ex. to
+            verify a digest). Models that do not need it may ignore it.
         """
         raise NotImplementedError(f"Not yet implemented in {self.__class__}")
 

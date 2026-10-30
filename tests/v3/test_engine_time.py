@@ -306,10 +306,16 @@ ALCATEL_REPORT = bytes.fromhex(
 )
 
 
-def test_alcatel_time_window_report(clock: FakeClock) -> None:
+@pytest.mark.parametrize("whole_msg", [None, ALCATEL_REPORT])
+def test_alcatel_time_window_report(
+    clock: FakeClock, whole_msg: Optional[bytes]
+) -> None:
     """
     Ensure the Report captured from an Alcatel device authenticates, raises
     NotInTimeWindow and yields the engine timing boots=12/time=9230468.
+
+    The digest is verified both over the received bytes and, for callers not
+    passing them, over the re-encoded message.
     """
     credentials = V3(
         "snmpv3user",
@@ -321,7 +327,7 @@ def test_alcatel_time_window_report(clock: FakeClock) -> None:
 
     with pytest.raises(NotInTimeWindow):
         model.process_incoming_message(
-            Message.decode(ALCATEL_REPORT), credentials
+            Message.decode(ALCATEL_REPORT), credentials, whole_msg
         )
     config = model.local_config[ALCATEL_ENGINE]
 
