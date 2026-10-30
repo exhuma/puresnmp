@@ -3,7 +3,7 @@ Collection of utility functions for the puresnmp package.
 """
 
 import asyncio
-import hashlib
+import importlib
 import pkgutil
 import secrets
 from dataclasses import dataclass
@@ -29,7 +29,7 @@ from typing import (
 from x690.types import ObjectIdentifier
 
 from puresnmp.credentials import V3
-from puresnmp.exc import InvalidResponseId, SnmpError
+from puresnmp.exc import InvalidResponseId, SnmpError, UnknownAuthModel
 from puresnmp.pdu import EndOfMibView
 from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
@@ -294,6 +294,7 @@ def password_to_key(
     Create a helper function to convert passwords to SNMP compliant keys
     according to :rfc:`3414`.
 
+    >>> import hashlib
     >>> hasher = password_to_key(hashlib.sha1, 20)
     >>> key = hasher(b"mypasswd", b"target-engine-id")
     >>> key.hex()
@@ -474,15 +475,28 @@ def iter_namespace(
     return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")  # type: ignore
 
 
-# Created once so that the cache of each deriver is shared across calls.
-_KEY_DERIVERS: Dict[str, Callable[[bytes, bytes], bytes]] = {
-    "md5": password_to_key(
-        cast(Callable[[bytes], TDigestable], hashlib.md5), 16
-    ),
-    "sha1": password_to_key(
-        cast(Callable[[bytes], TDigestable], hashlib.sha1), 20
-    ),
-}
+@lru_cache(maxsize=None)
+def _key_deriver(auth_method: str) -> Callable[[bytes, bytes], bytes]:
+    """
+    Return the key derivation function of the authentication plugin
+    *auth_method*.
+
+    The plugin's ``hasher`` caches its results, and the lookup is cached
+    here, so repeated key localisations are not recomputed.
+
+    :param auth_method: The identifier of an authentication plugin
+    :raises SnmpError: If no plugin with that identifier exists or it does
+        not provide a key derivation function
+    """
+    # Looked up at runtime: puresnmp.plugins.auth imports this module.
+    auth = importlib.import_module("puresnmp.plugins.auth")
+    try:
+        hasher = getattr(auth.create(auth_method), "hasher")
+    except (UnknownAuthModel, AttributeError):
+        raise SnmpError(
+            f"Unknown authentication method: {auth_method!r}"
+        ) from None
+    return cast(Callable[[bytes, bytes], bytes], hasher)
 
 
 def localise_key(credentials: V3, engine_id: bytes) -> bytes:
@@ -494,6 +508,10 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
     of packets.
 
     .. seealso: https://tools.ietf.org/html/rfc3414#section-2.6
+
+    The key is as long as the output of the hash used by the authentication
+    method (16 octets for ``md5`` up to 64 octets for ``sha512``). Privacy
+    plugins use as many leading octets of it as their cipher needs.
 
     >>> from puresnmp.credentials import V3, Auth, Priv
     >>> engine_id = b"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02"
@@ -513,13 +531,7 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
         raise SnmpError(
             "Attempting to derive a localised key from an empty " "auth object!"
         )
-    try:
-        hasher = _KEY_DERIVERS[credentials.auth.method]
-    except KeyError:
-        raise SnmpError(
-            "Unknown authentication method: %r" % credentials.auth.method
-        ) from None
-
+    hasher = _key_deriver(credentials.auth.method)
     output = hasher(credentials.priv.key, engine_id)
     return output
 

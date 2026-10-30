@@ -8,10 +8,15 @@ Release 2.1.0 (unreleased)
   Python versions keep installing puresnmp 2.0.x. The back-port
   dependencies ``dataclasses``, ``importlib_metadata`` and
   ``typing_extensions`` are no longer installed.
-* **[added]** For plugin authors: security plugins may declare the
-  optional keyword argument ``whole_msg`` in ``process_incoming_message``
-  to receive the SNMPv3 message as received from the network. Plugins
-  without it are called as before. See :ref:`plugins`. (#122)
+* **[added]** SNMPv3 authentication with the HMAC-SHA-2 protocols of
+  RFC 7860. Use ``sha224``, ``sha256``, ``sha384`` or ``sha512`` as
+  method of ``Auth``. (#138)
+* **[added]** For plugin authors: authentication plugins may define
+  ``DIGEST_LENGTH`` (default 12) for digests of another length, and
+  security plugins may declare the optional keyword argument ``whole_msg``
+  in ``process_incoming_message`` to receive the SNMPv3 message as
+  received from the network. Plugins without them work as before. See
+  :ref:`plugins`. (#122, #138)
 * **[fixed]** Long-lived SNMPv3 clients no longer fail with "Not in time
   window": the engine time learned during discovery now advances with the
   local clock and is updated from authenticated responses. Agents that

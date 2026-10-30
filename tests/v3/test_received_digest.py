@@ -25,6 +25,7 @@ from puresnmp_plugins.security import usm
 
 from .conftest import ENGINE, USER, make_mpm, make_response
 
+ALL_METHODS = ["md5", "sha1", "sha224", "sha256", "sha384", "sha512"]
 SYS_DESCR = bytes.fromhex("06082b06010201010100")  # 1.3.6.1.2.1.1.1.0
 
 
@@ -47,6 +48,8 @@ def make_nonminimal_response(auth_method: str, key: bytes) -> Tuple[bytes, int]:
 
     :returns: The message and the offset of a byte inside the varbind value
     """
+    plugin = auth.create(auth_method)
+    length = auth.digest_length(plugin)
     header = tlv(
         0x30,
         tlv(0x02, b"\x00\x00\x00\x7b")  # msgID 123, non-minimal
@@ -61,7 +64,7 @@ def make_nonminimal_response(auth_method: str, key: bytes) -> Tuple[bytes, int]:
         + tlv(0x02, b"\x00\x05")  # boots, non-minimal
         + tlv(0x02, b"\x00\x00\x10\x00")  # time, non-minimal
         + tlv(0x04, USER.encode("ascii"))
-        + tlv(0x04, b"\x00" * 12, long_form=True)
+        + tlv(0x04, b"\x00" * length, long_form=True)
         + tlv(0x04, b""),
         long_form=True,
     )
@@ -83,15 +86,13 @@ def make_nonminimal_response(auth_method: str, key: bytes) -> Tuple[bytes, int]:
         + scoped_pdu,
         long_form=True,
     )
-    digest = auth.create(auth_method).authenticate_outgoing_message(
-        key, unauthed, ENGINE
-    )
-    position = unauthed.index(b"\x00" * 12)
+    digest = plugin.authenticate_outgoing_message(key, unauthed, ENGINE)
+    position = unauthed.index(b"\x00" * length)
     message = unauthed[:position] + digest + unauthed[position + len(digest) :]
     return message, message.index(b"the-description")
 
 
-@pytest.mark.parametrize("auth_method", ["md5", "sha1"])
+@pytest.mark.parametrize("auth_method", ALL_METHODS)
 def test_non_minimal_encoding_authenticates(auth_method: str) -> None:
     """
     Ensure a correctly signed response using non-minimal BER encoding is
@@ -107,7 +108,7 @@ def test_non_minimal_encoding_authenticates(auth_method: str) -> None:
     assert pdu.value.varbinds[0].value.pythonize() == b"the-description"
 
 
-@pytest.mark.parametrize("auth_method", ["md5", "sha1"])
+@pytest.mark.parametrize("auth_method", ALL_METHODS)
 def test_tampered_message_is_rejected(auth_method: str) -> None:
     """
     Ensure a response modified after signing is rejected.

@@ -306,6 +306,7 @@ def test_incoming_auth_error():
             mck.authenticate_incoming_message.return_value = False
 
             auth.create.return_value = mck
+            auth.digest_length.return_value = 0  # matches the auth_params
             usm.verify_authentication(
                 msg,
                 V3(b"", Auth(b"foo", "md5"), None),

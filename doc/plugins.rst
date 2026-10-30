@@ -52,6 +52,26 @@ MD5 and SHA1 authentication modules use the authentication parameter of the
 credentials as secret key which is used together with a packet payload to
 generate a message authentication code.
 
+The following authentication methods are bundled with ``puresnmp``. Use the
+identifier as ``method`` of :py:class:`puresnmp.credentials.Auth`:
+
+========== ============================= ============== =========
+Identifier Protocol                      Defined in     Digest
+========== ============================= ============== =========
+``md5``    usmHMACMD5AuthProtocol        :rfc:`3414`    12 octets
+``sha1``   usmHMACSHAAuthProtocol        :rfc:`3414`    12 octets
+``sha224`` usmHMAC128SHA224AuthProtocol  :rfc:`7860`    16 octets
+``sha256`` usmHMAC192SHA256AuthProtocol  :rfc:`7860`    24 octets
+``sha384`` usmHMAC256SHA384AuthProtocol  :rfc:`7860`    32 octets
+``sha512`` usmHMAC384SHA512AuthProtocol  :rfc:`7860`    48 octets
+========== ============================= ============== =========
+
+Authentication plugins whose digest is not 12 octets long must define the
+module-level integer ``DIGEST_LENGTH`` (available since version 2.1). The
+digest of an incoming message must have exactly that length, otherwise the
+message is rejected. Plugins without it are assumed to use 12 octets, like
+the :rfc:`3414` protocols.
+
 Privacy
 -------
 

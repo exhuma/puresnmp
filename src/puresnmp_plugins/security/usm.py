@@ -62,7 +62,9 @@ def find_time_window_report(message: Message) -> Optional[VarBind]:
     return None
 
 
-def reset_digest(message: Message) -> Message:
+def reset_digest(
+    message: Message, *, digest_length: int = auth.DEFAULT_DIGEST_LENGTH
+) -> Message:
     """
     Replace the current message-digest in a message with zeroes.
 
@@ -71,12 +73,15 @@ def reset_digest(message: Message) -> Message:
     message would change, because the digest changes.
 
     :param message: The message (with or without digest)
+    :param digest_length: The digest length of the authentication method
+        (12 for :rfc:`3414`, 16 to 48 for :rfc:`7860`)
     :returns: A new message with zeroed digest
     """
-    # As per https://tools.ietf.org/html/rfc3414#section-6.3.1,
-    # the auth-key needs to be initialised to 12 zeroes
+    # As per https://tools.ietf.org/html/rfc3414#section-6.3.1 and
+    # https://tools.ietf.org/html/rfc7860#section-4.2, the authentication
+    # parameters are initialised to as many zeroes as the digest is long
     secparams = USMSecurityParameters.decode(message.security_parameters)
-    neutral = replace(secparams, auth_params=b"\x00" * 12)
+    neutral = replace(secparams, auth_params=b"\x00" * digest_length)
     output = replace(
         message,
         security_parameters=bytes(neutral),
@@ -392,7 +397,9 @@ def apply_authentication(
 
     auth_method = auth.create(credentials.auth.method)
     try:
-        without_digest = reset_digest(unauthed_message)
+        without_digest = reset_digest(
+            unauthed_message, digest_length=auth.digest_length(auth_method)
+        )
         auth_result = auth_method.authenticate_outgoing_message(
             credentials.auth.key,
             bytes(without_digest),
@@ -430,7 +437,8 @@ def verify_authentication(
     :param credentials: The user-credentials
     :param security_params: The decoded security parameters of *message*
     :param whole_msg: The complete message as received from the network
-    :raises AuthenticationError: If the message is not authentic
+    :raises AuthenticationError: If the message is not authentic or its
+        digest does not have the length of the authentication method
     """
 
     if not message.header.flags.auth:
@@ -442,8 +450,16 @@ def verify_authentication(
         )
 
     auth_method = auth.create(credentials.auth.method)
+    expected_length = auth.digest_length(auth_method)
+    if len(security_params.auth_params) != expected_length:
+        raise AuthenticationError(
+            f"Unexpected digest length {len(security_params.auth_params)} "
+            f"(expected {expected_length} for {credentials.auth.method!r})"
+        )
     if whole_msg is None:
-        without_digest = bytes(reset_digest(message))
+        without_digest = bytes(
+            reset_digest(message, digest_length=expected_length)
+        )
     else:
         without_digest = reset_received_digest(
             whole_msg, security_params.auth_params

@@ -8,9 +8,11 @@ from ipaddress import ip_address
 from itertools import count
 from unittest.mock import patch
 
+import pytest
 from x690.types import Null, ObjectIdentifier
 
 import puresnmp.util as util
+from puresnmp.exc import SnmpError
 from puresnmp.pdu import VarBind
 from puresnmp.util import (
     WalkRow,
@@ -173,7 +175,7 @@ def test_localise_key_uses_cache():
 
     creds = V3(b"user", Auth(b"maplesyrup", "sha1"), Priv(b"cachetest", "des"))
     engine_id = b"\x00" * 11 + b"\x07"
-    deriver = util._KEY_DERIVERS["sha1"]
+    deriver = util._key_deriver("sha1")
     deriver.cache_clear()
 
     first = util.localise_key(creds, engine_id)
@@ -209,3 +211,15 @@ def test_localise_key_known_answer():
     key = util.localise_key(creds, b"\x00" * 11 + b"\x02")
 
     assert key.hex() == "4924c679907476d038b258097995a15c"
+
+
+def test_localise_key_unknown_method():
+    """
+    Ensure an unknown authentication method is reported as SnmpError.
+    """
+    from puresnmp.credentials import V3, Auth, Priv
+
+    creds = V3(b"user", Auth(b"maplesyrup", "unknown"), Priv(b"key", "des"))
+
+    with pytest.raises(SnmpError, match="Unknown authentication method"):
+        util.localise_key(creds, b"\x00" * 11 + b"\x02")

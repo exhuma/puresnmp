@@ -5,6 +5,8 @@ This module provides common code for hashing based authentication.
 import hmac
 from typing import Callable, Protocol
 
+from puresnmp.plugins.auth import DEFAULT_DIGEST_LENGTH
+
 THasher = Callable[[bytes, bytes], bytes]
 
 
@@ -38,12 +40,18 @@ class TIncoming(Protocol):
         ...
 
 
-def for_outgoing(hasher: THasher, hmac_method: str) -> TOutgoing:
+def for_outgoing(
+    hasher: THasher,
+    hmac_method: str,
+    *,
+    digest_length: int = DEFAULT_DIGEST_LENGTH,
+) -> TOutgoing:
     """
     Create a new callable able to authenticate outgoing messages.
 
     :param hasher: A function used to apply a hashing algorithm.
     :param hmac_method: The specific HMAC implementation to use
+    :param digest_length: The number of octets the HMAC is truncated to
     :return: A callable that can be used in a puresnmp authentication plugin
     """
 
@@ -59,18 +67,25 @@ def for_outgoing(hasher: THasher, hmac_method: str) -> TOutgoing:
             auth_key,
             data,
             engine_id,
+            digest_length=digest_length,
         )
         return digest
 
     return authenticate_outgoing_message
 
 
-def for_incoming(hasher: THasher, hmac_method: str) -> TIncoming:
+def for_incoming(
+    hasher: THasher,
+    hmac_method: str,
+    *,
+    digest_length: int = DEFAULT_DIGEST_LENGTH,
+) -> TIncoming:
     """
     Create a new callable able to authenticate incoming messages.
 
     :param hasher: A function used to apply a hashing algorithm.
     :param hmac_method: The specific HMAC implementation to use
+    :param digest_length: The number of octets the HMAC is truncated to
     :return: A callable that can be used in a puresnmp authentication plugin
     """
 
@@ -90,7 +105,12 @@ def for_incoming(hasher: THasher, hmac_method: str) -> TIncoming:
             applied
         """
         expected_digest = get_message_digest(
-            hasher, hmac_method, auth_key, data, engine_id
+            hasher,
+            hmac_method,
+            auth_key,
+            data,
+            engine_id,
+            digest_length=digest_length,
         )
         return hmac.compare_digest(received_digest, expected_digest)
 
@@ -103,6 +123,8 @@ def get_message_digest(
     auth_key: bytes,
     encoded_message: bytes,
     engine_id: bytes,
+    *,
+    digest_length: int = DEFAULT_DIGEST_LENGTH,
 ) -> bytes:
     """
     Calculate the digest for a given message.
@@ -112,7 +134,9 @@ def get_message_digest(
     :param auth_key: The authentication key for the user
     :param encoded_message: The SNMP message as bytes
     :param engine_id: The ID of the receiving engine
+    :param digest_length: The number of octets the HMAC is truncated to (12
+        for :rfc:`3414`, 16 to 48 for :rfc:`7860`)
     """
     auth_key = hasher(auth_key, engine_id)
     mac = hmac.new(auth_key, encoded_message, digestmod=method)
-    return mac.digest()[:12]
+    return mac.digest()[:digest_length]
