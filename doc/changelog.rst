@@ -15,6 +15,15 @@ Release 2.1.0 (unreleased)
   ``IndexError``, so existing handlers for those keep working; handlers
   for ``struct.error`` no longer match. The hexdump of the offending
   packet is logged at DEBUG level. (#140)
+* **[changed]** ``Client.getnext`` (and ``PyWrapper.getnext``) now raise
+  ``NoSuchOID`` when the agent answers with ``noSuchObject`` or
+  ``noSuchInstance``, as ``get`` does. Before, the error value was
+  returned as if it were data. (#147)
+* **[deprecated]** The ``loop`` argument of ``register_trap_callback``,
+  ``puresnmp.transport.send_udp`` and ``puresnmp.transport.listen`` is
+  deprecated and will be removed in 3.0. It now emits a
+  ``DeprecationWarning`` when passed. Do not pass it: the running event
+  loop is used. (#147)
 * **[added]** SNMPv3 authentication with the HMAC-SHA-2 protocols of
   RFC 7860. Use ``sha224``, ``sha256``, ``sha384`` or ``sha512`` as
   method of ``Auth``. (#138)
@@ -24,6 +33,8 @@ Release 2.1.0 (unreleased)
   in ``process_incoming_message`` to receive the SNMPv3 message as
   received from the network. Plugins without them work as before. See
   :ref:`plugins`. (#122, #138)
+* **[added]** ``PyWrapper.multiwalk`` accepts the ``errors`` argument,
+  like ``PyWrapper.walk`` and ``Client.multiwalk``. (#147)
 * **[fixed]** Long-lived SNMPv3 clients no longer fail with "Not in time
   window": the engine time learned during discovery now advances with the
   local clock and is updated from authenticated responses. Agents that

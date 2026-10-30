@@ -67,7 +67,13 @@ from ..pdu import (
     SetRequest,
     Trap,
 )
-from ..transport import Endpoint, TSender, listen, send_udp
+from ..transport import (
+    Endpoint,
+    TSender,
+    listen,
+    send_udp,
+    warn_loop_deprecated,
+)
 from ..util import (
     BulkResult,
     TTableRow,
@@ -430,7 +436,7 @@ class Client:
         <coroutine object ...>
         """
         result = await self.multigetnext([oid])
-        if isinstance(result[0], (NoSuchObject, NoSuchInstance)):
+        if isinstance(result[0].value, (NoSuchObject, NoSuchInstance)):
             raise NoSuchOID(oid)
         return result[0]
 
@@ -944,12 +950,17 @@ def register_trap_callback(
     As per :rfc:`3416#section-4.2.6`, the first two varbinds are the system
     uptime and the trap OID. The following varbinds are the body of the trap
 
-    The callback will be called on the current asyncio loop. Alternatively, a
-    loop can be passed into this function in which case, the traps will be
-    handler on that loop instead.
+    The callback will be called on the current asyncio loop.
+
+    .. deprecated:: 2.1
+        The *loop* argument is deprecated and will be removed in 3.0. Call
+        this function from the thread whose event loop should run the
+        listener and do not pass *loop*.
     """
     if loop is None:
         loop = get_event_loop()
+    else:
+        warn_loop_deprecated("register_trap_callback")
 
     def decode(packet: SocketResponse) -> None:
         async def handler(data: bytes) -> bytes:
@@ -969,6 +980,7 @@ def register_trap_callback(
             trap.source = packet.info
         asyncio.ensure_future(callback(trap))
 
-    handler = listen(listen_address, port, decode, loop)
+    # listen() runs on *loop*, so it picks it up as the running loop.
+    handler = listen(listen_address, port, decode)
     loop.run_until_complete(handler)
     return loop

@@ -5,6 +5,8 @@ Tests for the trap receiver in ``puresnmp.api.raw``.
 import asyncio
 from unittest.mock import patch
 
+import pytest
+
 from x690.types import Integer, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.api.pythonic import TrapInfo
@@ -30,7 +32,7 @@ def _receive():
     captured = {}
     received = []
 
-    async def fake_listen(address, port, callback, loop):
+    async def fake_listen(address, port, callback, loop=None):
         captured["decode"] = callback
 
     async def user_callback(trap):
@@ -46,7 +48,8 @@ def _receive():
     loop = asyncio.new_event_loop()
     try:
         with patch("puresnmp.api.raw.listen", fake_listen):
-            register_trap_callback(user_callback, loop=loop)
+            with pytest.warns(DeprecationWarning):
+                register_trap_callback(user_callback, loop=loop)
 
         async def deliver():
             captured["decode"](
@@ -89,7 +92,7 @@ def test_undecodable_trap_raises_invalid_message():
 
     captured = {}
 
-    async def fake_listen(address, port, callback, loop):
+    async def fake_listen(address, port, callback, loop=None):
         captured["decode"] = callback
 
     async def user_callback(trap):  # pragma: no cover
@@ -98,7 +101,8 @@ def test_undecodable_trap_raises_invalid_message():
     loop = asyncio.new_event_loop()
     try:
         with patch("puresnmp.api.raw.listen", fake_listen):
-            register_trap_callback(user_callback, loop=loop)
+            with pytest.warns(DeprecationWarning):
+                register_trap_callback(user_callback, loop=loop)
         with pytest.raises(InvalidMessage):
             captured["decode"](
                 SocketResponse(b"\x30\x82\x01", SocketInfo("192.0.2.1", 162))
