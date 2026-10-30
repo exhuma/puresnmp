@@ -8,6 +8,13 @@ Release 2.1.0 (unreleased)
   Python versions keep installing puresnmp 2.0.x. The back-port
   dependencies ``dataclasses``, ``importlib_metadata`` and
   ``typing_extensions`` are no longer installed.
+* **[changed]** Errors while decoding a received message are now raised
+  as ``puresnmp.exc.InvalidMessage`` instead of ``x690.exc.X690Error``,
+  ``IndexError``, ``ValueError`` or ``struct.error``. ``InvalidMessage``
+  is a ``SnmpError`` and also an ``X690Error``, a ``ValueError`` and an
+  ``IndexError``, so existing handlers for those keep working; handlers
+  for ``struct.error`` no longer match. The hexdump of the offending
+  packet is logged at DEBUG level. (#140)
 * **[added]** SNMPv3 authentication with the HMAC-SHA-2 protocols of
   RFC 7860. Use ``sha224``, ``sha256``, ``sha384`` or ``sha512`` as
   method of ``Auth``. (#138)

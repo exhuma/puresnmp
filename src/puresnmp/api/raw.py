@@ -38,6 +38,7 @@ from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 from x690.types import X690Type as Type
 
 from puresnmp.plugins import mpm
+from puresnmp.plugins.mpm import decoding_boundary
 from puresnmp.typevars import SocketResponse, TAnyIp
 
 from ..const import (
@@ -363,7 +364,8 @@ class Client:
             timeout=self.config.timeout,
             retries=self.config.retries,
         )
-        response = self.mpm.decode(raw_response, self.credentials)
+        with decoding_boundary(raw_response):
+            response = self.mpm.decode(raw_response, self.credentials)
         validate_response_id(request_id, response.value.request_id)
         return response
 
@@ -958,12 +960,11 @@ def register_trap_callback(
 
         lcd: Dict[str, Any] = {}
 
-        as_sequence = Sequence.decode(packet.data)
-
-        obj = cast(Tuple[Integer, OctetString, Trap], as_sequence)
-
-        mproc = mpm.create(obj[0].value, handler, lcd)
-        trap = mproc.decode(packet.data, credentials)
+        with decoding_boundary(packet.data):
+            as_sequence = Sequence.decode(packet.data)
+            obj = cast(Tuple[Integer, OctetString, Trap], as_sequence)
+            mproc = mpm.create(obj[0].value, handler, lcd)
+            trap = mproc.decode(packet.data, credentials)
         if isinstance(trap, Trap):
             trap.source = packet.info
         asyncio.ensure_future(callback(trap))

@@ -77,3 +77,31 @@ def test_trap_origin_is_set():
     trap = _receive()[0]
     assert trap.source == SocketInfo("192.0.2.1", 162)
     assert TrapInfo(trap).origin == "192.0.2.1"
+
+
+def test_undecodable_trap_raises_invalid_message():
+    """
+    Ensure a garbage trap packet raises InvalidMessage in the receiver.
+    """
+    import pytest
+
+    from puresnmp.exc import InvalidMessage
+
+    captured = {}
+
+    async def fake_listen(address, port, callback, loop):
+        captured["decode"] = callback
+
+    async def user_callback(trap):  # pragma: no cover
+        pass
+
+    loop = asyncio.new_event_loop()
+    try:
+        with patch("puresnmp.api.raw.listen", fake_listen):
+            register_trap_callback(user_callback, loop=loop)
+        with pytest.raises(InvalidMessage):
+            captured["decode"](
+                SocketResponse(b"\x30\x82\x01", SocketInfo("192.0.2.1", 162))
+            )
+    finally:
+        loop.close()

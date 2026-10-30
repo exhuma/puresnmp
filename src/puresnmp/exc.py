@@ -6,6 +6,7 @@ Most exceptions in this module are based on :rfc:`3416`
 
 from typing import Any, List
 
+from x690.exc import X690Error
 from x690.types import ObjectIdentifier
 
 from puresnmp.const import MAX_VARBINDS
@@ -194,6 +195,27 @@ class NotWritable(ErrorResponse):
 class InconsistentName(ErrorResponse):
     DEFAULT_MESSAGE = "Inconsistent name"
     IDENTIFIER = 18
+
+
+class InvalidMessage(SnmpError, X690Error, ValueError, IndexError):
+    """
+    Raised when a received message cannot be decoded, for example because it
+    is truncated or not valid BER.
+
+    This replaces the low-level decoding errors (``x690.exc.X690Error``,
+    ``IndexError``, ``ValueError`` and ``struct.error``) that used to escape
+    from the message-processing boundary. For compatibility it also inherits
+    from :py:class:`x690.exc.X690Error`, :py:class:`ValueError` and
+    :py:class:`IndexError`, so handlers written for those exceptions keep
+    working. The original error is available as ``__cause__``.
+
+    The raw bytes of the offending packet are available as :py:attr:`data`.
+    """
+
+    def __init__(self, message: str, data: bytes = b"") -> None:
+        super().__init__(message)
+        #: The raw bytes of the message that could not be decoded
+        self.data = data
 
 
 class EmptyMessage(SnmpError):
