@@ -13,7 +13,6 @@ from x690.types import Integer, ObjectIdentifier as OID
 from puresnmp import PyWrapper
 from puresnmp.api.raw import Client, register_trap_callback
 from puresnmp.const import ERRORS_STRICT, ERRORS_WARN
-from puresnmp.exc import NoSuchOID
 from puresnmp.pdu import NoSuchInstance, NoSuchObject
 from puresnmp.transport import Endpoint, listen, send_udp
 from puresnmp.varbind import VarBind
@@ -23,15 +22,15 @@ from .conftest import AsyncIter
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("missing", [NoSuchObject, NoSuchInstance])
-async def test_getnext_raises_for_missing_value(mocked_raw, missing):
+async def test_getnext_returns_missing_value(mocked_raw, missing):
     """
-    Ensure getnext raises NoSuchOID if the agent reports a missing value
+    Ensure getnext keeps returning a missing value as a varbind in 2.x
+
+    Raising NoSuchOID instead is a breaking change planned for 3.0.
     """
-    mocked_raw.multigetnext = AsyncMock(
-        return_value=[VarBind(OID("1.2.3"), missing())]
-    )
-    with pytest.raises(NoSuchOID):
-        await mocked_raw.getnext(OID("1.2.3"))
+    varbind = VarBind(OID("1.2.3"), missing())
+    mocked_raw.multigetnext = AsyncMock(return_value=[varbind])
+    assert await mocked_raw.getnext(OID("1.2.3")) == varbind
 
 
 @pytest.mark.asyncio

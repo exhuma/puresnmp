@@ -438,7 +438,10 @@ class Client:
         <coroutine object ...>
         """
         result = await self.multigetnext([oid])
-        if isinstance(result[0].value, (NoSuchObject, NoSuchInstance)):
+        # This tests the VarBind instead of its value and never matches, so
+        # a noSuchObject/noSuchInstance value is returned as data. Raising
+        # NoSuchOID instead is a breaking change, planned for 3.0 (#147).
+        if isinstance(result[0], (NoSuchObject, NoSuchInstance)):
             raise NoSuchOID(oid)
         return result[0]
 

@@ -15,10 +15,6 @@ Release 2.1.0 (unreleased)
   ``IndexError``, so existing handlers for those keep working; handlers
   for ``struct.error`` no longer match. The hexdump of the offending
   packet is logged at DEBUG level. (#140)
-* **[changed]** ``Client.getnext`` (and ``PyWrapper.getnext``) now raise
-  ``NoSuchOID`` when the agent answers with ``noSuchObject`` or
-  ``noSuchInstance``, as ``get`` does. Before, the error value was
-  returned as if it were data. (#147)
 * **[deprecated]** The ``loop`` argument of ``register_trap_callback``,
   ``puresnmp.transport.send_udp`` and ``puresnmp.transport.listen`` is
   deprecated and will be removed in 3.0. It now emits a
