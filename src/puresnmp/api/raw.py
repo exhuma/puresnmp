@@ -17,7 +17,6 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from ipaddress import ip_address
-from socket import gethostbyname
 from typing import (
     Any,
     AsyncGenerator,
@@ -71,6 +70,7 @@ from ..transport import (
     Endpoint,
     TSender,
     listen,
+    resolve_host,
     send_udp,
     warn_loop_deprecated,
 )
@@ -198,7 +198,12 @@ class Client:
     >>> client.get(ObjectIdentifier("1.3.6.1.2.1.1.2.0"))  # doctest: +ELLIPSIS
     <coroutine ...>
 
-    :param ip: The IP-address of the remote SNMP device
+    :param ip: The IP-address (IPv4 or IPv6) or host name of the remote SNMP
+        device. A host name is resolved once, when the client is created,
+        using :py:func:`socket.getaddrinfo`. IPv4 addresses are preferred;
+        an IPv6 address is used only if the name has no IPv4 address. If
+        the name cannot be resolved,
+        :py:exc:`socket.gaierror` is raised.
     :param credentials: User credentials for the request. These define the
         underlying protocol in use. See :py:mod:`puresnmp.credentials` for
         possible types.
@@ -228,10 +233,7 @@ class Client:
             lcd=lcd,
         )
 
-        try:
-            address = ip_address(ip)
-        except ValueError:
-            address = ip_address(gethostbyname(ip))
+        address = resolve_host(ip, port)
 
         endpoint = Endpoint(address, port)
 

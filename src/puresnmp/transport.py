@@ -14,6 +14,7 @@ import socket
 import warnings
 from asyncio.events import AbstractEventLoop
 from asyncio.transports import BaseTransport
+from ipaddress import ip_address
 from typing import Any, Callable, NamedTuple, Optional, Protocol, Tuple, Union
 
 from x690.util import visible_octets
@@ -39,6 +40,30 @@ def warn_loop_deprecated(function: str, stacklevel: int = 3) -> None:
         DeprecationWarning,
         stacklevel=stacklevel,
     )
+
+
+def resolve_host(host: str, port: int) -> TAnyIp:
+    """
+    Convert *host* into an IP address object.
+
+    IP literals are used as they are. Anything else is resolved with
+    :py:func:`socket.getaddrinfo`. The first IPv4 result is used, as
+    :py:func:`socket.gethostbyname` did before; the first IPv6 result is
+    used only if the name has no IPv4 address.
+
+    :param host: An IPv4 or IPv6 address, or a host name
+    :param port: The UDP port, passed to the resolver
+    :raises socket.gaierror: If the name cannot be resolved
+    """
+    try:
+        return ip_address(host)
+    except ValueError:
+        pass
+    results = socket.getaddrinfo(host, port, type=socket.SOCK_DGRAM)
+    ipv4 = [item for item in results if item[0] == socket.AF_INET]
+    address = ip_address((ipv4 or results)[0][4][0])
+    LOG.debug("Resolved %s to %s", host, address)
+    return address
 
 
 class Endpoint(NamedTuple):

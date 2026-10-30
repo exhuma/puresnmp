@@ -41,6 +41,9 @@ Release 2.1.0 (unreleased)
   report their engine time only in reply to the first authenticated
   request (such as some Alcatel devices) are now handled by resending that
   request once with the reported time. (#104)
+* **[fixed]** ``Client`` now resolves host names with
+  ``socket.getaddrinfo``, so names that only have IPv6 addresses work.
+  Names with an IPv4 address still use it, as before. (#148)
 * **[fixed]** ``import puresnmp`` no longer fails with
   ``PackageNotFoundError`` in frozen applications (such as PyInstaller
   builds) that do not bundle the package metadata. The version falls back
