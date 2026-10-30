@@ -213,3 +213,58 @@ def test_default_trap_handler(caplog: Any) -> None:
         )
     assert "fake-payload" in caplog.text
     assert "192.0.2.1:42" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_send_udp_cancel_closes_transport() -> None:
+    """
+    Ensure the transport is aborted if the request is cancelled from outside
+    """
+    loop = asyncio.get_running_loop()
+    # A real loopback socket which never answers.
+    silent, _ = await loop.create_datagram_endpoint(
+        asyncio.DatagramProtocol, local_addr=("127.0.0.1", 0)
+    )
+    port = silent.get_extra_info("sockname")[1]
+    created = []
+    original = loop.create_datagram_endpoint
+
+    async def spy(*args: Any, **kwargs: Any) -> Any:
+        result = await original(*args, **kwargs)
+        created.append(result[0])
+        return result
+
+    loop.create_datagram_endpoint = spy  # type: ignore
+    try:
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(
+                tpt.send_udp(tpt.Endpoint("127.0.0.1", port), b"x", timeout=10),
+                0.2,
+            )
+        await asyncio.sleep(0)
+    finally:
+        del loop.create_datagram_endpoint
+        silent.close()
+    assert len(created) == 1
+    assert created[0].is_closing()
+
+
+@pytest.mark.asyncio
+async def test_client_proto_late_packet_after_cancel() -> None:
+    """
+    Ensure late replies on a cancelled future do not hit the loop handler
+    """
+    loop = asyncio.get_running_loop()
+    handler = Mock()
+    loop.set_exception_handler(handler)
+    try:
+        proto = tpt.SNMPClientProtocol(b"SNMP-packet")
+        proto.future.cancel()
+        proto.datagram_received(b"late", ("192.0.2.1", 42))
+        proto.error_received(ValueError("late"))
+        proto.connection_lost(ValueError("late"))
+        await asyncio.sleep(0)
+    finally:
+        loop.set_exception_handler(None)
+    handler.assert_not_called()
+    assert proto.future.cancelled()

@@ -27,13 +27,14 @@ from typing import (
     Generator,
     List,
     Optional,
+    Protocol,
     Set,
     Tuple,
 )
 from typing import Type as TType
 from typing import TypeVar, cast
 
-from x690.types import Integer, Null, ObjectIdentifier, Sequence
+from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 from x690.types import X690Type as Type
 
 from puresnmp.plugins import mpm
@@ -47,7 +48,12 @@ from ..const import (
     ERRORS_WARN,
 )
 from ..credentials import V2C, Credentials
-from ..exc import FaultySNMPImplementation, NoSuchOID, SnmpError
+from ..exc import (
+    FaultySNMPImplementation,
+    NoSuchOID,
+    NotInTimeWindow,
+    SnmpError,
+)
 from ..pdu import (
     PDU,
     BulkGetRequest,
@@ -71,11 +77,6 @@ from ..util import (
     validate_response_id,
 )
 from ..varbind import VarBind
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
 
 TWalkResponse = AsyncGenerator[VarBind, None]
 T = TypeVar("T", bound=TType[Any])  # pylint: disable=invalid-name
@@ -120,6 +121,8 @@ def deduped_varbinds(
     """
     for var in sorted(grouped_oids.values()):
         for varbind in var:
+            if isinstance(varbind.value, EndOfMibView):
+                continue
             containment = [varbind.oid in _ for _ in requested_oids]
             if not any(containment) or varbind.oid in yielded:
                 LOG.debug(
@@ -338,6 +341,15 @@ class Client:
             self.mpm = old_mpm
 
     async def _send(self, pdu: PDU, request_id: int) -> PDU:
+        try:
+            return await self._send_once(pdu, request_id)
+        except NotInTimeWindow:
+            # The security model resynchronised the engine time from the
+            # authenticated Report of the agent. The request needs to be
+            # encoded again with the new timing (RFC 3414 section 4).
+            return await self._send_once(pdu, request_id)
+
+    async def _send_once(self, pdu: PDU, request_id: int) -> PDU:
         packet, _ = await self.mpm.encode(
             request_id,
             self.credentials,
@@ -477,8 +489,22 @@ class Client:
         # those.
         while unfinished_oids:
             next_fetches = [_[1].value.oid for _ in unfinished_oids]
+            start_oids = {k: row.value.oid for k, row in unfinished_oids}
             try:
                 varbinds = await fetcher(next_fetches)
+                grouped_oids = group_varbinds(
+                    varbinds, next_fetches, user_roots=oids
+                )
+                unfinished_oids = get_unfinished_walk_oids(grouped_oids)
+                # Guard against agents which loop (cycle back or repeat an
+                # OID): the walk would otherwise never terminate.
+                for root, row in unfinished_oids:
+                    last = row.value.oid
+                    if root in start_oids and not start_oids[root] < last:
+                        raise FaultySNMPImplementation(
+                            "The OID %s is not a successor of %s!"
+                            % (last, start_oids[root])
+                        )
             except NoSuchOID:
                 # Reached end of OID tree, finish iteration
                 break
@@ -495,10 +521,6 @@ class Client:
                     )
                     break
                 raise
-            grouped_oids = group_varbinds(
-                varbinds, next_fetches, user_roots=oids
-            )
-            unfinished_oids = get_unfinished_walk_oids(grouped_oids)
             if LOG.isEnabledFor(logging.DEBUG) and len(oids) > 1:
                 LOG.debug(
                     "%d of %d OIDs need to be continued",
@@ -759,6 +781,49 @@ class Client:
         """
 
         scalar_oids = scalar_oids or []  # protect against empty values
+        varbinds = await self._bulkget_varbinds(
+            scalar_oids, repeating_oids, max_list_size
+        )
+
+        # cut off the scalar OIDs from the listing(s)
+        scalar_tmp = varbinds[0 : len(scalar_oids)]
+        repeating_tmp = varbinds[len(scalar_oids) :]
+
+        # prepare output for scalar OIDs
+        scalar_out = dict(scalar_tmp)
+
+        # prepare output for listing
+        repeating_out = OrderedDict()  # type: Dict[ObjectIdentifier, Type[Any]]
+        for oid, value in repeating_tmp:
+            if isinstance(value, EndOfMibView):
+                # Responses are interleaved: other repeaters may still have
+                # values in later rows (RFC 3416, section 4.2.3).
+                continue
+            repeating_out[oid] = value
+
+        return BulkResult(scalar_out, repeating_out)
+
+    async def _bulkget_varbinds(
+        self,
+        scalar_oids: List[ObjectIdentifier],
+        repeating_oids: List[ObjectIdentifier],
+        max_list_size: int,
+    ) -> List[VarBind]:
+        """
+        Run a GETBULK request and return the response varbinds unchanged.
+
+        The varbinds keep the positions of the response, including
+        ``endOfMibView`` entries and repeated OIDs. The repeating part is
+        interleaved row by row (RFC 3416, section 4.2.3), which callers
+        grouping the values by position rely on.
+
+        :param scalar_oids: The OIDs sent as non-repeaters.
+        :param repeating_oids: The OIDs sent as repeaters.
+        :param max_list_size: The max-repetitions value of the request.
+        :returns: The varbinds of the response, scalars first.
+        :raises SnmpError: If the agent returns more varbinds than requested.
+        """
+        scalar_oids = scalar_oids or []  # protect against empty values
         repeating_oids = repeating_oids or []  # protect against empty values
 
         oids = list(scalar_oids) + list(repeating_oids)
@@ -783,21 +848,9 @@ class Client:
                 % (expected_max_varbinds, n_retrieved_varbinds)
             )
 
-        # cut off the scalar OIDs from the listing(s)
-        scalar_tmp = get_response.value.varbinds[0 : len(scalar_oids)]
-        repeating_tmp = get_response.value.varbinds[len(scalar_oids) :]
-
-        # prepare output for scalar OIDs
-        scalar_out = dict(scalar_tmp)
-
-        # prepare output for listing
-        repeating_out = OrderedDict()  # type: Dict[ObjectIdentifier, Type[Any]]
-        for oid, value in repeating_tmp:
-            if isinstance(value, EndOfMibView):
-                break
-            repeating_out[oid] = value
-
-        return BulkResult(scalar_out, repeating_out)
+        return [
+            VarBind(oid, value) for oid, value in get_response.value.varbinds
+        ]
 
     def _bulkwalk_fetcher(self, bulk_size: int = 10) -> TFetcher:
         """
@@ -808,8 +861,12 @@ class Client:
             """
             Executes a SNMP BulkGet request.
             """
-            result = await self.bulkget([], oids, max_list_size=bulk_size)
-            return [VarBind((k), v) for k, v in result.listing.items()]
+            # Keep the positions of the response (including endOfMibView
+            # entries): multiwalk assigns the values to the requested OIDs
+            # by position.
+            return await self._bulkget_varbinds(
+                [], oids, max_list_size=bulk_size
+            )
 
         fetcher.__name__ = "_bulkwalk_fetcher(%d)" % bulk_size
         return fetcher
@@ -818,6 +875,7 @@ class Client:
         self,
         oids: List[ObjectIdentifier],
         bulk_size: int = 10,
+        errors: str = ERRORS_STRICT,
     ) -> TWalkResponse:
         """
         Identical to :py:meth:`~.walk` but uses "bulk" requests instead.
@@ -828,6 +886,7 @@ class Client:
 
         :param oids: Delegated to :py:meth:`~.walk`
         :param bulk_size: Number of values to fetch per request.
+        :param errors: Delegated to :py:meth:`~.multiwalk`
         """
 
         if not isinstance(oids, list):
@@ -836,6 +895,7 @@ class Client:
         result = self.multiwalk(
             oids,
             fetcher=self._bulkwalk_fetcher(bulk_size),
+            errors=errors,
         )
         async for oid, value in result:
             yield VarBind(oid, value)
@@ -844,6 +904,7 @@ class Client:
         self,
         oid: ObjectIdentifier,
         bulk_size: int = 10,
+        errors: str = ERRORS_STRICT,
         _rowtype: TType[TTableRow] = Dict[str, Any],  # type: ignore
     ) -> List[TTableRow]:
         """
@@ -855,9 +916,10 @@ class Client:
 
         :param oid: Delegated to :py:meth:`~.table`
         :param bulk_size: Number of values to fetch per request.
+        :param errors: Delegated to :py:meth:`~.bulkwalk`
         """
         tmp = []
-        varbinds = self.bulkwalk([oid], bulk_size=bulk_size)
+        varbinds = self.bulkwalk([oid], bulk_size=bulk_size, errors=errors)
         async for varbind in varbinds:
             tmp.append(varbind)
         as_table = tablify(tmp, num_base_nodes=len(oid) + 1, _rowtype=_rowtype)
@@ -898,10 +960,12 @@ def register_trap_callback(
 
         as_sequence = Sequence.decode(packet.data)
 
-        obj = cast(Tuple[Integer, Integer, Trap], as_sequence[0])
+        obj = cast(Tuple[Integer, OctetString, Trap], as_sequence)
 
         mproc = mpm.create(obj[0].value, handler, lcd)
         trap = mproc.decode(packet.data, credentials)
+        if isinstance(trap, Trap):
+            trap.source = packet.info
         asyncio.ensure_future(callback(trap))
 
     handler = listen(listen_address, port, decode, loop)

@@ -6,25 +6,28 @@ Test the external "raw" interface.
 PureSNMP object instances.
 """
 
-
 import asyncio
 import unittest
 from ipaddress import ip_address
 from logging import WARNING, getLogger
 from unittest.mock import call, patch
 
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from asyncmock import AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
 
 from puresnmp.api.raw import Client, register_trap_callback
+from puresnmp.const import ERRORS_WARN
 from puresnmp.credentials import V2C
 from puresnmp.exc import FaultySNMPImplementation, NoSuchOID, SnmpError
-from puresnmp.pdu import BulkGetRequest, GetNextRequest, GetResponse, PDUContent
+from puresnmp.pdu import (
+    BulkGetRequest,
+    EndOfMibView,
+    GetNextRequest,
+    GetResponse,
+    PDUContent,
+)
 from puresnmp.transport import Endpoint, SocketResponse
 from puresnmp.types import Counter, Gauge, IpAddress, TimeTicks
 from puresnmp.typevars import SocketInfo
@@ -603,6 +606,45 @@ async def test_bulkget(mocked_raw):
 
 
 @pytest.mark.asyncio
+async def test_bulkget_keeps_values_after_end_of_mib_view(mocked_raw):
+    """
+    Ensure bulkget keeps the values of other repeaters when one repeater
+    reports endOfMibView in an interleaved response.
+    """
+    a_oid = OID("1.3.6.1.2.1.1.1")
+    b_oid = OID("1.3.6.1.2.1.2.1")
+    eom = EndOfMibView(b"")  # empty payload makes it encodable
+    # Interleaved per RFC 3416: row 1 = (A, B), row 2 = (A, B), ...
+    varbinds = [
+        VarBind(OID("1.3.6.1.2.1.1.1.0"), Integer(1)),
+        VarBind(OID("1.3.6.1.2.1.2.1.0"), Integer(10)),
+        VarBind(a_oid, eom),
+        VarBind(OID("1.3.6.1.2.1.2.1.1"), Integer(11)),
+        VarBind(a_oid, eom),
+        VarBind(OID("1.3.6.1.2.1.2.1.2"), Integer(12)),
+    ]
+    response = Sequence(
+        [
+            Integer(1),
+            OctetString(b"private"),
+            GetResponse(PDUContent(234, varbinds)),
+        ]
+    )
+    mocked_raw.sender.set_values([bytes(response)])
+
+    with patch("puresnmp.api.raw.get_request_id") as gri:
+        gri.return_value = 234
+        result = await mocked_raw.bulkget([], [a_oid, b_oid], max_list_size=3)
+
+    assert list(result.listing.items()) == [
+        (OID("1.3.6.1.2.1.1.1.0"), Integer(1)),
+        (OID("1.3.6.1.2.1.2.1.0"), Integer(10)),
+        (OID("1.3.6.1.2.1.2.1.1"), Integer(11)),
+        (OID("1.3.6.1.2.1.2.1.2"), Integer(12)),
+    ]
+
+
+@pytest.mark.asyncio
 async def test_eom_bulkwalk(mocked_raw):
     """
     Test a bulk-get operation which runs into the "endOfMibView" marker.
@@ -717,7 +759,7 @@ async def test_bulkwalk(mocked_raw):
         VarBind(OID("1.3.6.1.2.1.2.2.1.6.1"), OctetString(b"")),
         VarBind(
             OID("1.3.6.1.2.1.2.2.1.6.10"),
-            OctetString(b"\x02\x42\xAC\x11\x00\x02"),
+            OctetString(b"\x02\x42\xac\x11\x00\x02"),
         ),
         VarBind(OID("1.3.6.1.2.1.2.2.1.7.1"), Integer(1)),
         VarBind(OID("1.3.6.1.2.1.2.2.1.7.10"), Integer(1)),
@@ -982,3 +1024,191 @@ async def test_table_base_oid():
         },
     ]
     assert sorted(result, key=lambda x: x["0"]) == expected
+
+
+def _looping_bulkget(responses):
+    """
+    Create a fake ``_bulkget_varbinds`` which returns the given listings in
+    order and fails the test if it is called too often (endless loop).
+    """
+    calls = []
+
+    async def fake_bulkget(self, scalar_oids, repeating_oids, max_list_size):
+        calls.append(list(repeating_oids))
+        if len(calls) > 50:
+            pytest.fail("bulkwalk did not terminate")
+        index = min(len(calls) - 1, len(responses) - 1)
+        return [VarBind(k, v) for k, v in responses[index].items()]
+
+    return fake_bulkget, calls
+
+
+LOOPING_RESPONSES = {
+    "cycle": [
+        {
+            OID("1.2.3.1"): Integer(1),
+            OID("1.2.3.2"): Integer(2),
+            OID("1.2.3.3"): Integer(3),
+        },
+        # The agent cycles back to the start of the table
+        {OID("1.2.3.1"): Integer(1), OID("1.2.3.2"): Integer(2)},
+    ],
+    "repeat": [
+        {OID("1.2.3.1"): Integer(1), OID("1.2.3.2"): Integer(2)},
+        # The agent keeps returning the same OID
+        {OID("1.2.3.2"): Integer(2)},
+    ],
+}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", sorted(LOOPING_RESPONSES))
+async def test_bulkwalk_looping_agent_strict(mocked_raw, kind):
+    """
+    Ensure a bulkwalk on an agent returning non-increasing OIDs raises
+    instead of looping forever.
+    """
+    fake, _ = _looping_bulkget(LOOPING_RESPONSES[kind])
+    with patch("puresnmp.api.raw.Client._bulkget_varbinds", fake):
+        with pytest.raises(FaultySNMPImplementation):
+            async for _ in mocked_raw.bulkwalk([OID("1.2.3")]):
+                pass
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", sorted(LOOPING_RESPONSES))
+async def test_bulkwalk_looping_agent_warn(mocked_raw, kind):
+    """
+    Ensure a bulkwalk with ``errors=ERRORS_WARN`` on a looping agent stops and
+    returns the values collected so far.
+    """
+    fake, _ = _looping_bulkget(LOOPING_RESPONSES[kind])
+    with patch("puresnmp.api.raw.Client._bulkget_varbinds", fake):
+        result = [
+            row
+            async for row in mocked_raw.bulkwalk(
+                [OID("1.2.3")], errors=ERRORS_WARN
+            )
+        ]
+    first = LOOPING_RESPONSES[kind][0]
+    assert result == [VarBind(k, v) for k, v in first.items()]
+
+
+@pytest.mark.asyncio
+async def test_bulktable_looping_agent_strict(mocked_raw):
+    """
+    Ensure bulktable passes the error handling through to bulkwalk.
+    """
+    fake, _ = _looping_bulkget(LOOPING_RESPONSES["repeat"])
+    with patch("puresnmp.api.raw.Client._bulkget_varbinds", fake):
+        with pytest.raises(FaultySNMPImplementation):
+            await mocked_raw.bulktable(OID("1.2.3"))
+        rows = await mocked_raw.bulktable(OID("1.2"), errors=ERRORS_WARN)
+    assert rows is not None
+
+
+def _bulk_agent(first_response):
+    """
+    Create a fake ``Client._send`` for GETBULK requests.
+
+    The first request is answered with *first_response*. Later requests are
+    answered with one varbind per requested OID which lies outside of every
+    walked tree, ending the walk. Every call records the requested OIDs and
+    the test fails if the walk does not terminate.
+    """
+    calls = []
+
+    async def fake_send(self, pdu, request_id):
+        requested = [varbind.oid for varbind in pdu.varbinds]
+        calls.append(requested)
+        if len(calls) > 10:
+            pytest.fail("bulkwalk did not terminate")
+        if len(calls) == 1:
+            varbinds = first_response
+        else:
+            varbinds = [VarBind(OID("1.9.9"), Integer(99)) for _ in requested]
+        return GetResponse(PDUContent(request_id, varbinds))
+
+    return fake_send, calls
+
+
+#: Pairs of walked roots (A, B). In the first pair, B's OIDs sort before A's
+#: root, in the second pair after it.
+BULKWALK_ROOTS = [
+    (OID("1.3.6.1.9.1"), OID("1.3.6.1.2.1")),
+    (OID("1.3.6.1.2.1"), OID("1.3.6.1.9.1")),
+]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("a_root, b_root", BULKWALK_ROOTS)
+async def test_bulkwalk_column_ends_before_other(mocked_raw, a_root, b_root):
+    """
+    Ensure a bulkwalk keeps each value with its own column when one column
+    reports endOfMibView in an interleaved response while the other one
+    continues, and only continues the unfinished column.
+    """
+    a_1, a_2 = a_root + OID("1"), a_root + OID("2")
+    b_1, b_2, b_3 = b_root + OID("1"), b_root + OID("2"), b_root + OID("3")
+    eom = EndOfMibView(b"")
+    # Interleaved per RFC 3416: row 1 = (A, B), row 2 = (A, B), ...
+    fake_send, calls = _bulk_agent(
+        [
+            VarBind(a_1, Integer(1)),
+            VarBind(b_1, Integer(10)),
+            VarBind(a_2, Integer(2)),
+            VarBind(b_2, Integer(20)),
+            VarBind(a_2, eom),
+            VarBind(b_3, Integer(30)),
+        ]
+    )
+
+    with patch("puresnmp.api.raw.Client._send", fake_send):
+        result = [row async for row in mocked_raw.bulkwalk([a_root, b_root], 3)]
+
+    assert sorted(result) == sorted(
+        [
+            VarBind(a_1, Integer(1)),
+            VarBind(a_2, Integer(2)),
+            VarBind(b_1, Integer(10)),
+            VarBind(b_2, Integer(20)),
+            VarBind(b_3, Integer(30)),
+        ]
+    )
+    assert len(result) == 5
+    assert calls == [[a_root, b_root], [b_3]]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("a_root, b_root", BULKWALK_ROOTS)
+async def test_bulkwalk_repeated_end_of_mib_view(mocked_raw, a_root, b_root):
+    """
+    Ensure a bulkwalk finishes without further requests when the agent
+    repeats the last OID of each column with endOfMibView in several
+    positions.
+    """
+    a_1 = a_root + OID("1")
+    b_1, b_2 = b_root + OID("1"), b_root + OID("2")
+    eom = EndOfMibView(b"")
+    fake_send, calls = _bulk_agent(
+        [
+            VarBind(a_1, Integer(1)),
+            VarBind(b_1, Integer(10)),
+            VarBind(a_1, eom),
+            VarBind(b_2, Integer(20)),
+            VarBind(a_1, eom),
+            VarBind(b_2, eom),
+        ]
+    )
+
+    with patch("puresnmp.api.raw.Client._send", fake_send):
+        result = [row async for row in mocked_raw.bulkwalk([a_root, b_root], 3)]
+
+    assert sorted(result) == sorted(
+        [
+            VarBind(a_1, Integer(1)),
+            VarBind(b_1, Integer(10)),
+            VarBind(b_2, Integer(20)),
+        ]
+    )
+    assert calls == [[a_root, b_root]]

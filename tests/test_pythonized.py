@@ -11,10 +11,7 @@ from ipaddress import ip_address
 from typing import Any
 from unittest.mock import Mock
 
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from asyncmock import AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 from x690.types import Integer, ObjectIdentifier, OctetString
@@ -368,3 +365,85 @@ async def test_bulktable():
         {"0": "2", "1": 2},
     ]
     assert result == expected
+
+
+@pytest.mark.asyncio
+async def test_get_accepts_object_identifier():
+    """
+    Ensure get returns the same result for an ObjectIdentifier as for a str.
+    """
+    raw_client = Mock(spec=Client)
+    client = PyWrapper(client=raw_client)
+    raw_client.get = AsyncMock(return_value=OctetString(b"foo"))
+
+    from_str = await client.get("1.2.3")
+    from_oid = await client.get(OID("1.2.3"))
+
+    assert from_oid == from_str == b"foo"
+    raw_client.get.assert_awaited_with(OID("1.2.3"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("oid", [OID("1.2.3"), "1.2.3", ".1.2.3"])
+async def test_set_accepts_oid_and_leading_dot(oid):
+    """
+    Ensure set works with ObjectIdentifier, str and leading-dot str.
+    """
+    raw_client = Mock(spec=Client)
+    client = PyWrapper(client=raw_client)
+    raw_client.multiset = AsyncMock(
+        return_value={OID("1.2.3"): OctetString(b"foo")}
+    )
+
+    result = await client.set(oid, OctetString(b"foo"))
+
+    assert result == b"foo"
+
+
+@pytest.mark.asyncio
+async def test_multiget_accepts_object_identifiers():
+    """
+    Ensure multiget returns the same result for ObjectIdentifiers as for str.
+    """
+    raw_client = Mock(spec=Client)
+    client = PyWrapper(client=raw_client)
+    raw_client.multiget = AsyncMock(return_value=[Integer(1), Integer(2)])
+
+    from_str = await client.multiget(["1.2.3", "1.2.4"])
+    from_oid = await client.multiget([OID("1.2.3"), OID("1.2.4")])
+
+    assert from_oid == from_str == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_walk_accepts_object_identifier():
+    """
+    Ensure walk returns the same result for an ObjectIdentifier as for a str.
+    """
+    raw_client = Mock(spec=Client)
+    client = PyWrapper(client=raw_client)
+    data = [VarBind(OID("1.2.3.1"), Integer(1))]
+
+    raw_client.walk.return_value = AsyncIter(data)
+    from_str = [row async for row in client.walk("1.2.3")]
+    raw_client.walk.return_value = AsyncIter(data)
+    from_oid = [row async for row in client.walk(OID("1.2.3"))]
+
+    assert from_oid == from_str == [PyVarBind("1.2.3.1", 1)]
+
+
+@pytest.mark.asyncio
+async def test_bulkwalk_accepts_object_identifiers():
+    """
+    Ensure bulkwalk returns the same result for ObjectIdentifiers as for str.
+    """
+    raw_client = Mock(spec=Client)
+    client = PyWrapper(client=raw_client)
+    data = [VarBind(OID("1.2.3.1"), Integer(1))]
+
+    raw_client.bulkwalk.return_value = AsyncIter(data)
+    from_str = [row async for row in client.bulkwalk(["1.2.3"])]
+    raw_client.bulkwalk.return_value = AsyncIter(data)
+    from_oid = [row async for row in client.bulkwalk([OID("1.2.3")])]
+
+    assert from_oid == from_str == [PyVarBind("1.2.3.1", 1)]

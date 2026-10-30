@@ -31,12 +31,8 @@ rules:
 """
 
 from types import ModuleType
-from typing import NamedTuple
+from typing import NamedTuple, Protocol
 
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
 
 from puresnmp.exc import UnknownPrivacyModel
 from puresnmp.plugins.pluginbase import Loader

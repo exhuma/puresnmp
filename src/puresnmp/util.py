@@ -19,6 +19,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Protocol,
     Tuple,
     Type,
     TypeVar,
@@ -29,13 +30,9 @@ from x690.types import ObjectIdentifier
 
 from puresnmp.credentials import V3
 from puresnmp.exc import InvalidResponseId, SnmpError
+from puresnmp.pdu import EndOfMibView
 from puresnmp.typevars import TAnyIp
 from puresnmp.varbind import VarBind
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore
 
 T = TypeVar("T", bound=Any)
 TTableRow = TypeVar("TTableRow", bound=Any)
@@ -194,8 +191,16 @@ def get_unfinished_walk_oids(
 
     # Build a mapping from the originally requested OID to the last fetched OID
     # from that tree.
+    #
+    # An endOfMibView value also finishes the walk of that OID: the agent has
+    # no further values for it (RFC 3416, section 4.2.3).
     last_received_oids = {
-        k: WalkRow(v[-1], v[-1].oid in k) for k, v in grouped_oids.items() if v
+        k: WalkRow(
+            v[-1],
+            v[-1].oid in k and not isinstance(v[-1].value, EndOfMibView),
+        )
+        for k, v in grouped_oids.items()
+        if v
     }
 
     output = [
@@ -469,6 +474,17 @@ def iter_namespace(
     return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")  # type: ignore
 
 
+# Created once so that the cache of each deriver is shared across calls.
+_KEY_DERIVERS: Dict[str, Callable[[bytes, bytes], bytes]] = {
+    "md5": password_to_key(
+        cast(Callable[[bytes], TDigestable], hashlib.md5), 16
+    ),
+    "sha1": password_to_key(
+        cast(Callable[[bytes], TDigestable], hashlib.sha1), 20
+    ),
+}
+
+
 def localise_key(credentials: V3, engine_id: bytes) -> bytes:
     """
     Derive a localised key from the user-credentials.
@@ -497,18 +513,12 @@ def localise_key(credentials: V3, engine_id: bytes) -> bytes:
         raise SnmpError(
             "Attempting to derive a localised key from an empty " "auth object!"
         )
-    if credentials.auth.method == "md5":
-        hasher = password_to_key(
-            cast(Callable[[bytes], TDigestable], hashlib.md5), 16
-        )
-    elif credentials.auth.method == "sha1":
-        hasher = password_to_key(
-            cast(Callable[[bytes], TDigestable], hashlib.sha1), 20
-        )
-    else:
+    try:
+        hasher = _KEY_DERIVERS[credentials.auth.method]
+    except KeyError:
         raise SnmpError(
             "Unknown authentication method: %r" % credentials.auth.method
-        )
+        ) from None
 
     output = hasher(credentials.priv.key, engine_id)
     return output

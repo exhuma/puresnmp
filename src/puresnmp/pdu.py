@@ -43,7 +43,12 @@ from x690.types import X690Type as Type
 from x690.util import TypeClass, TypeInfo, TypeNature, encode_length
 
 from .const import MAX_VARBINDS
-from .exc import EmptyMessage, ErrorResponse, TooManyVarbinds
+from .exc import (
+    EmptyMessage,
+    ErrorResponse,
+    FaultySNMPImplementation,
+    TooManyVarbinds,
+)
 from .typevars import SocketInfo
 from .varbind import VarBind
 
@@ -91,7 +96,7 @@ class PDU(Type[PDUContent]):
             error_detail, nxt = decode(data, nxt, enforce_type=Sequence)
             varbinds = [VarBind(oid, value) for oid, value in error_detail]  # type: ignore
             offending_oid = None
-            if error_index.value != 0:
+            if 0 < error_index.value <= len(varbinds):
                 offending_oid = varbinds[error_index.value - 1].oid
             exception = ErrorResponse.construct(
                 error_status.value, offending_oid or ObjectIdentifier()
@@ -110,6 +115,14 @@ class PDU(Type[PDUContent]):
         for oid, value in values:  # type: ignore
             oid = cast(ObjectIdentifier, oid)  # type: ignore
             value = cast(Type[Any], value)  # type: ignore
+            if isinstance(value, Sequence):
+                # RFC 3416 section 3: varbind values are ObjectSyntax
+                # values, never constructed SEQUENCEs. Rejecting them here
+                # also avoids recursing into hostile nesting later.
+                raise FaultySNMPImplementation(
+                    f"Illegal varbind value type {type(value).__name__} "
+                    f"for OID {oid}"
+                )
             varbinds.append(VarBind(oid, value))
 
         return PDUContent(

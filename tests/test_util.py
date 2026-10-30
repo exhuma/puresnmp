@@ -1,6 +1,7 @@
 """
 Unit-tests for utility functions
 """
+
 import hashlib
 from binascii import unhexlify
 from ipaddress import ip_address
@@ -162,3 +163,49 @@ def test_request_id_wraps():
     with patch("puresnmp.util._REQUEST_IDS", count(2**31 - 1)):
         assert get_request_id() == 2**31 - 1
         assert get_request_id() == 0
+
+
+def test_localise_key_uses_cache():
+    """
+    Ensure repeated key localisation is served from the deriver's cache.
+    """
+    from puresnmp.credentials import V3, Auth, Priv
+
+    creds = V3(b"user", Auth(b"maplesyrup", "sha1"), Priv(b"cachetest", "des"))
+    engine_id = b"\x00" * 11 + b"\x07"
+    deriver = util._KEY_DERIVERS["sha1"]
+    deriver.cache_clear()
+
+    first = util.localise_key(creds, engine_id)
+    hits_before = deriver.cache_info().hits
+    second = util.localise_key(creds, engine_id)
+
+    assert first == second
+    assert deriver.cache_info().hits == hits_before + 1
+
+
+def test_localise_key_differs_per_engine_id():
+    """
+    Ensure different engine IDs produce different localised keys.
+    """
+    from puresnmp.credentials import V3, Auth, Priv
+
+    creds = V3(b"user", Auth(b"maplesyrup", "md5"), Priv(b"privkey", "des"))
+
+    key_a = util.localise_key(creds, b"\x00" * 11 + b"\x01")
+    key_b = util.localise_key(creds, b"\x00" * 11 + b"\x02")
+
+    assert key_a != key_b
+
+
+def test_localise_key_known_answer():
+    """
+    Ensure the RFC 3414 known-answer value is still produced.
+    """
+    from puresnmp.credentials import V3, Auth, Priv
+
+    creds = V3(b"user", Auth(b"maplesyrup", "md5"), Priv(b"privkey", "des"))
+
+    key = util.localise_key(creds, b"\x00" * 11 + b"\x02")
+
+    assert key.hex() == "4924c679907476d038b258097995a15c"

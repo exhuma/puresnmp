@@ -3,9 +3,10 @@ This module implements the SNMPv3 "User Security Model" as defined in
 :rfc:`3414`
 """
 
+import time
 from dataclasses import dataclass, replace
 from textwrap import indent
-from typing import Awaitable, Callable, Union, cast
+from typing import Awaitable, Callable, Optional, Tuple, Union, cast
 
 from x690 import decode
 from x690.types import Integer, Null, ObjectIdentifier, OctetString, Sequence
@@ -22,13 +23,43 @@ from puresnmp.adt import (
     V3Flags,
 )
 from puresnmp.credentials import V3, Credentials
-from puresnmp.exc import SnmpError
+from puresnmp.exc import NotInTimeWindow, SnmpError
 from puresnmp.pdu import GetRequest, PDUContent, Report
 from puresnmp.plugins.security import SecurityModel
 from puresnmp.transport import MESSAGE_MAX_SIZE
 from puresnmp.util import get_request_id, localise_key, validate_response_id
+from puresnmp.varbind import VarBind
 
 IDENTIFIER = 3
+
+#: The usmStatsNotInTimeWindows counter (RFC 3414 section 5)
+NOT_IN_TIME_WINDOWS = ObjectIdentifier("1.3.6.1.6.3.15.1.1.2.0")
+
+
+def clock() -> float:
+    """
+    Return the local monotonic time in seconds.
+
+    This is used to advance the local notion of a remote engine's time
+    (see :rfc:`3414#section-2.3`).
+    """
+    return time.monotonic()
+
+
+def find_time_window_report(message: Message) -> Optional[VarBind]:
+    """
+    Return the usmStatsNotInTimeWindows varbind if *message* is a decrypted
+    Report carrying it, ``None`` otherwise.
+    """
+    if not isinstance(message.scoped_pdu, ScopedPDU):
+        return None
+    pdu = message.scoped_pdu.data
+    if not isinstance(pdu, Report):
+        return None
+    for varbind in pdu.value.varbinds:
+        if varbind.oid == NOT_IN_TIME_WINDOWS:
+            return varbind
+    return None
 
 
 def reset_digest(message: Message) -> Message:
@@ -437,6 +468,44 @@ class UserSecurityModel(
         engine_config = self.local_config.setdefault(engine_id, {})
         engine_config["authoritative_engine_boots"] = engine_boots
         engine_config["authoritative_engine_time"] = engine_time
+        engine_config["local_timestamp"] = clock()
+
+    def get_engine_timing(self, engine_id: bytes) -> Tuple[int, int]:
+        """
+        Return the local notion of the remote engine's boots and time.
+
+        The engine time is advanced by the local time elapsed since the
+        timing was learned (see :rfc:`3414#section-2.3`).
+
+        :param engine_id: The ID of the authoritative engine
+        :returns: A tuple of engine boots and engine time
+        """
+        engine_config = self.local_config[engine_id]
+        engine_boots = engine_config["authoritative_engine_boots"]
+        engine_time = engine_config["authoritative_engine_time"]
+        timestamp = engine_config.get("local_timestamp")
+        if timestamp is not None:
+            engine_time += int(clock() - timestamp)
+        return engine_boots, engine_time
+
+    def update_engine_timing(
+        self, engine_id: bytes, engine_boots: int, engine_time: int
+    ) -> None:
+        """
+        Update the timing of a remote engine from an authenticated message.
+
+        The values are only taken over if they are more recent than the
+        local notion (see :rfc:`3414#section-3.2`, step 7b).
+
+        :param engine_id: The ID of the authoritative engine
+        :param engine_boots: The engine boots of the received message
+        :param engine_time: The engine time of the received message
+        """
+        local_boots, local_time = self.get_engine_timing(engine_id)
+        if engine_boots > local_boots or (
+            engine_boots == local_boots and engine_time > local_time
+        ):
+            self.set_engine_timing(engine_id, engine_boots, engine_time)
 
     def generate_request_message(
         self,
@@ -450,9 +519,7 @@ class UserSecurityModel(
             )
 
         security_name = credentials.username.encode("ascii")
-        engine_config = self.local_config[security_engine_id]
-        engine_boots = engine_config["authoritative_engine_boots"]
-        engine_time = engine_config["authoritative_engine_time"]
+        engine_boots, engine_time = self.get_engine_timing(security_engine_id)
 
         encrypted_message = apply_encryption(
             message,
@@ -493,10 +560,45 @@ class UserSecurityModel(
             raise UnknownEngineId(f"Unexpected engine-id {engine_id!r}")
 
         verify_authentication(message, credentials, security_params)
+        authenticated = message.header.flags.auth
+        if authenticated:
+            self.update_engine_timing(
+                engine_id,
+                security_params.authoritative_engine_boots,
+                security_params.authoritative_engine_time,
+            )
+            self._check_time_window(message, security_params)
         check_security_level(message, credentials)
         message = decrypt_message(message, credentials)
+        if authenticated:
+            self._check_time_window(message, security_params)
         validate_usm_message(message)
         return message
+
+    def _check_time_window(
+        self, message: Message, security_params: USMSecurityParameters
+    ) -> None:
+        """
+        Resynchronise with the remote engine if the authenticated *message*
+        reports that our request was outside its time window.
+
+        The remote engine reports its current timing in such a Report (see
+        :rfc:`3414#section-4`), so it is taken over unconditionally.
+
+        :raises NotInTimeWindow: If the message is such a Report
+        """
+        varbind = find_time_window_report(message)
+        if varbind is None:
+            return
+        engine_id = security_params.authoritative_engine_id
+        self.set_engine_timing(
+            engine_id,
+            security_params.authoritative_engine_boots,
+            security_params.authoritative_engine_time,
+        )
+        raise NotInTimeWindow(
+            str(varbind.oid), varbind.value.pythonize(), engine_id.hex()
+        )
 
     async def send_discovery_message(
         self,

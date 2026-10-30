@@ -1,6 +1,58 @@
 Changelog
 =========
 
+Release 2.1.0 (unreleased)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **[support]** Python 3.11 is now the minimum supported version. Older
+  Python versions keep installing puresnmp 2.0.x. The back-port
+  dependencies ``dataclasses``, ``importlib_metadata`` and
+  ``typing_extensions`` are no longer installed.
+* **[fixed]** Long-lived SNMPv3 clients no longer fail with "Not in time
+  window": the engine time learned during discovery now advances with the
+  local clock and is updated from authenticated responses. Agents that
+  report their engine time only in reply to the first authenticated
+  request (such as some Alcatel devices) are now handled by resending that
+  request once with the reported time. (#104)
+* **[fixed]** ``import puresnmp`` no longer fails with
+  ``PackageNotFoundError`` in frozen applications (such as PyInstaller
+  builds) that do not bundle the package metadata. The version falls back
+  to ``0.0.0+unknown``. (#124)
+* **[fixed]** The trap receiver no longer fails with ``'Integer' object
+  is not subscriptable``, and ``TrapInfo.origin`` now reports the sender
+  of the trap. (#107) Patch provided by M. Ziesemer.
+* **[fixed]** ``bulkget`` with several repeating OIDs no longer drops the
+  values of the other repeaters when one of them reaches the end of the
+  MIB view, and ``bulkwalk`` keeps those values with the right OID tree.
+  (#142)
+* **[fixed]** ``bulkwalk`` and ``bulktable`` no longer loop forever on
+  agents returning non-increasing OIDs. They now raise
+  ``FaultySNMPImplementation``, or stop with a warning when the new
+  ``errors`` argument is ``ERRORS_WARN``. (#94, #51)
+* **[fixed]** The SNMPv3 privacy key derivation is now cached across
+  requests instead of hashing 1 MB of data for every encrypted request
+  and decrypted response. (#137)
+* **[fixed]** ``PyWrapper`` methods now accept ``ObjectIdentifier``
+  instances as OID arguments in addition to strings, instead of raising
+  ``AttributeError``. (#110)
+* **[fixed]** A response from a faulty agent whose varbind value is a
+  constructed SEQUENCE, possibly nested very deeply, now raises
+  ``FaultySNMPImplementation`` instead of ``RecursionError``. (#129)
+* **[fixed]** UDP sockets are now released when a request is cancelled
+  from the outside (for example by ``asyncio.wait_for`` or task
+  cancellation), and late replies no longer raise ``InvalidStateError``
+  in the event loop. (#130, #115)
+* **[fixed]** An error response whose error index does not point to a
+  varbind (for example an out-of-range index) now raises the matching
+  ``ErrorResponse`` subclass instead of an ``IndexError``. (#98)
+* **[fixed]** Error responses for error-status 7 to 18 (for example
+  ``notWritable``) now carry a specific message instead of "unknown
+  error". (#62)
+* **[fixed]** SNMPv3 SET and GETBULK requests now set the reportable flag
+  as RFC 3412 requires, so agents answer failures with an error instead of
+  dropping the request. (#136)
+
+
 Release 2.0.2
 ~~~~~~~~~~~~~
 
